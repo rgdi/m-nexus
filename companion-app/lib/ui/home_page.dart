@@ -177,7 +177,7 @@ class _HomePageState extends State<HomePage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => const VoiceNotesLauncher(backendUrl: '', authToken: ''),
+        builder: (_) => VoiceNotesLauncher(backendUrl: backendUrl, authToken: authToken),
       ),
     );
   }
@@ -201,13 +201,16 @@ class _HomePageState extends State<HomePage> {
               final path = controller.text.trim();
               if (path.isEmpty) return;
               Navigator.pop(ctx);
+              // setState callback is not async — resolve the version first, then call setState.
+              final installedVersion = await _updater.readInstalledVersion(path);
+              if (!mounted) return;
               setState(() {
                 _vaults = [
                   VaultInfo(
                     path: path,
                     name: path.split('/').last,
                     hasObsidianFolder: true,
-                    installedPluginVersion: await _updater.readInstalledVersion(path),
+                    installedPluginVersion: installedVersion,
                   ),
                 ];
               });
