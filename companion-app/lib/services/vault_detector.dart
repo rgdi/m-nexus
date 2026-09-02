@@ -59,13 +59,11 @@ class VaultDetector {
     // 3) App-specific storage (donde Obsidian guarda vaults privados)
     try {
       final app = await getApplicationDocumentsDirectory();
-      if (app != null) {
-        await for (final entity in app.list()) {
-          if (entity is Directory && !candidates.contains(entity.path)) {
-            final hasObsidian = Directory(p.join(entity.path, '.obsidian')).existsSync();
-            if (hasObsidian) {
-              candidates.add(entity.path);
-            }
+      await for (final entity in app.list()) {
+        if (entity is Directory && !candidates.contains(entity.path)) {
+          final hasObsidian = Directory(p.join(entity.path, '.obsidian')).existsSync();
+          if (hasObsidian) {
+            candidates.add(entity.path);
           }
         }
       }
