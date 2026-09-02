@@ -74,7 +74,6 @@ class Updater extends ChangeNotifier {
 
   /// Configura el vault activo para leer la versión instalada.
   Future<void> setVault(String vaultPath) async {
-    _vaultPath = vaultPath;
     _installedVersion = await readInstalledVersion(vaultPath);
     notifyListeners();
   }
