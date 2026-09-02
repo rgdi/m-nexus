@@ -136,12 +136,26 @@ jobs:
         run: |
           if [ -f artifacts/app-release.apk ]; then
             mv artifacts/app-release.apk artifacts/m-nexus-companion-${GITHUB_REF_NAME}.apk
+            # Sin versión para quicklinks
+            cp artifacts/m-nexus-companion-${GITHUB_REF_NAME}.apk artifacts/m-nexus-companion.apk
           fi
       - name: Rename install script
         run: |
           if [ -f artifacts/install.sh ]; then
             mv artifacts/install.sh artifacts/m-nexus-install-${GITHUB_REF_NAME}.sh
+            # Sin versión para quicklinks
+            cp artifacts/m-nexus-install-${GITHUB_REF_NAME}.sh artifacts/m-nexus-install.sh
           fi
+      - name: Duplicate ZIPs sin versión (para quicklinks)
+        run: |
+          for f in artifacts/m-nexus-plugin-${GITHUB_REF_NAME}.zip artifacts/m-nexus-backend-${GITHUB_REF_NAME}.zip; do
+            if [ -f "$f" ]; then
+              # Quita "-vX.Y.Z" del nombre
+              base=$(basename "$f" | sed "s/-${GITHUB_REF_NAME}//")
+              cp "$f" "artifacts/$base"
+              echo "Duplicado: $f → artifacts/$base"
+            fi
+          done
       - name: List artifacts
         run: ls -la artifacts/
       - name: Create Release

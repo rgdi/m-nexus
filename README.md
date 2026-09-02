@@ -19,6 +19,14 @@ Estos enlaces apuntan siempre a la **última versión**:
 | 📱 **Companion App** (Android) | [⬇ m-nexus-companion.apk](https://github.com/rgdi/m-nexus/releases/latest/download/m-nexus-companion.apk) | Notificación en la app |
 | 🔧 **Install script** | [⬇ install.sh](https://github.com/rgdi/m-nexus/releases/latest/download/m-nexus-install.sh) | — |
 
+> 📱 **Nota sobre el APK**: la primera release (v0.28.0) no incluye APK pre-compilado. Para generar la companion app Android necesitas Flutter SDK + Android SDK. Ver [docs/BUILD_APK.md](docs/BUILD_APK.md) o compílalo con:
+> ```bash
+> git clone https://github.com/rgdi/m-nexus.git
+> cd m-nexus/companion-app
+> flutter pub get
+> flutter build apk --release
+> ```
+
 **Última release**: [github.com/rgdi/m-nexus/releases/latest](https://github.com/rgdi/m-nexus/releases/latest)
 
 ---
