@@ -107,7 +107,12 @@ void main() {
 
   group('Updater.autoDownload', () {
     test('descarga el ZIP si autoDownload=true', () async {
+      // El mock debe responder JSON a la API de releases y ZIP al asset.
+      const fakeReleaseJson = '{"tag_name":"v0.99.0","name":"v0.99.0","body":"x","published_at":"2026-01-01T00:00:00Z","assets":[{"name":"m-nexus-plugin.zip","browser_download_url":"https://download/plugin.zip"}]}';
       final mockZip = MockClient((req) async {
+        if (req.url.host == 'api') {
+          return http.Response(fakeReleaseJson, 200);
+        }
         return http.Response('ZIP_CONTENT', 200);
       });
       final updater = Updater(
