@@ -99,6 +99,19 @@ jobs:
         run: cd companion-app && flutter analyze
       - name: Test
         run: cd companion-app && flutter test
+      - name: Regenerate Android platform files (the repo has incomplete android/ folder)
+        run: |
+          cd companion-app
+          # Backup our actual MainActivity
+          if [ -f android/app/src/main/kotlin/com/mnexus/installer/MainActivity.kt ]; then
+            cp android/app/src/main/kotlin/com/mnexus/installer/MainActivity.kt /tmp/MainActivity.kt
+          fi
+          # Regenerate the android/ folder (this fixes the missing settings.gradle, gradle wrapper, etc.)
+          flutter create --platforms=android --org com.mnexus --project-name mnexus_installer .
+          # Restore our actual MainActivity (flutter create may overwrite it)
+          if [ -f /tmp/MainActivity.kt ]; then
+            cp /tmp/MainActivity.kt android/app/src/main/kotlin/com/mnexus/installer/MainActivity.kt
+          fi
       - name: Build APK
         run: cd companion-app && flutter build apk --release --build-name=${GITHUB_REF_NAME#v} --build-number=${GITHUB_RUN_NUMBER}
       - uses: actions/upload-artifact@v4
