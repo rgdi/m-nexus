@@ -39,10 +39,11 @@ ios/Pods/
 ios/.symlinks/
 ios/Runner.xcworkspace
 
-# Coverage
-coverage/
+# Coverage reports (only the reports, not the source code!)
 *.lcov
 .nyc_output
+coverage/lcov.info
+coverage/coverage-summary.json
 
 # Editor
 .vscode/
