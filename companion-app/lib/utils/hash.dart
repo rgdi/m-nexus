@@ -1,6 +1,5 @@
 // Utilidades para hashes (SHA-256 sin dependencias externas, compatible con Dart puro).
 
-import 'dart:convert';
 import 'dart:typed_data';
 
 // SHA-256 implementation - simplified for the installer use case
