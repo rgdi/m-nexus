@@ -147,9 +147,20 @@ jobs:
     needs: [build-plugin, build-backend, build-companion, upload-installer]
     runs-on: ubuntu-latest
     steps:
+      # v0.29: download-artifact v4 creates subdirs per artifact name.
+      # We download each artifact into the parent artifacts/ dir using
+      # merge-multiple: true, then move them up so the release patterns match.
       - uses: actions/download-artifact@v4
         with:
-          path: artifacts
+          path: artifacts_tmp
+          merge-multiple: true
+      - name: Flatten artifact directories
+        run: |
+          mkdir -p artifacts
+          # Move every downloaded file up to artifacts/
+          find artifacts_tmp -type f -exec mv {} artifacts/ \;
+          rm -rf artifacts_tmp
+          ls -la artifacts/
       - name: Rename APK
         run: |
           if [ -f artifacts/app-release.apk ]; then
