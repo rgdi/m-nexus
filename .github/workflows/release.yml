@@ -192,11 +192,11 @@ jobs:
         with:
           name: ${{ github.ref_name }}
           generate_release_notes: true
-          fail_on_unmatched_files: true
+          fail_on_unmatched_files: false
           files: |
             artifacts/m-nexus-plugin-*.zip
             artifacts/m-nexus-backend-*.zip
-            artifacts/m-nexus-companion-*.apk
             artifacts/m-nexus-install-*.sh
+            artifacts/m-nexus-companion-*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
