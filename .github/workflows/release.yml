@@ -29,8 +29,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
-      - run: npm ci
+      - run: npm install --no-audit --no-fund
       - name: Bundle plugin
         run: npx esbuild src/main.ts --bundle --format=cjs --target=es2020 --platform=node --external:obsidian --external:electron --outfile=dist/main.js
       - name: Package ZIP
@@ -59,8 +58,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
-      - run: npm ci
+      - run: npm install --no-audit --no-fund
       - name: Compile TypeScript
         run: npx tsc
       - name: Package ZIP
