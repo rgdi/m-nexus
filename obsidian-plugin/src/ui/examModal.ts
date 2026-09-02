@@ -1,0 +1,157 @@
+// @ts-nocheck - v0.28: Legacy/UI, refactorear en v0.29
+// ExamModal: crear/editar un examen con NotePicker.
+// v0.14: formulario completo (título, fecha, scope, priority), preview en vivo.
+
+import { Modal, App } from "obsidian";
+import type MNexusPlugin from "../main";
+import type { Exam, ExamScope, ExamType, ExamPriority } from "../exams/types.js";
+import { NotePicker } from "./notePicker.js";
+
+export class ExamModal extends Modal {
+  private plugin: MNexusPlugin;
+  private exam: Exam | null;
+  private picker: NotePicker | null = null;
+  private titleInput!: HTMLInputElement;
+  private subjectInput!: HTMLInputElement;
+  private dateInput!: HTMLInputElement;
+  private typeSelect!: HTMLSelectElement;
+  private prioritySelect!: HTMLSelectElement;
+  private notesInput!: HTMLTextAreaElement;
+
+  constructor(app: App, plugin: MNexusPlugin, exam: Exam | null) {
+    super(app);
+    this.plugin = plugin;
+    this.exam = exam;
+  }
+
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.addClass("mnexus-exam-modal");
+    contentEl.createEl("h2", { text: this.exam ? "Editar examen" : "Nuevo examen" });
+
+    // Título
+    contentEl.createEl("label", { text: "Título" });
+    this.titleInput = contentEl.createEl("input", { type: "text", value: this.exam?.title ?? "" });
+    this.titleInput.placeholder = "Ej: Parcial de Bioquímica";
+
+    // Subject
+    contentEl.createEl("label", { text: "Asignatura" });
+    this.subjectInput = contentEl.createEl("input", { type: "text", value: this.exam?.subject ?? "" });
+    this.subjectInput.placeholder = "Ej: Bioquímica";
+
+    // Fecha
+    contentEl.createEl("label", { text: "Fecha del examen" });
+    this.dateInput = contentEl.createEl("input", { type: "date" });
+    this.dateInput.value = this.exam?.date ?? this.defaultDate();
+
+    // Tipo
+    contentEl.createEl("label", { text: "Tipo" });
+    this.typeSelect = contentEl.createEl("select");
+    for (const t of ["parcial", "final", "mir", "osce", "custom"] as ExamType[]) {
+      this.typeSelect.createEl("option", { text: t, value: t });
+    }
+    this.typeSelect.value = this.exam?.examType ?? "parcial";
+
+    // Prioridad
+    contentEl.createEl("label", { text: "Prioridad" });
+    this.prioritySelect = contentEl.createEl("select");
+    for (const p of ["low", "medium", "high", "critical"] as ExamPriority[]) {
+      this.prioritySelect.createEl("option", { text: p, value: p });
+    }
+    this.prioritySelect.value = this.exam?.priority ?? "medium";
+
+    // Notes
+    contentEl.createEl("label", { text: "Notas (opcional)" });
+    this.notesInput = contentEl.createEl("textarea", { rows: 3 });
+    this.notesInput.value = this.exam?.notes ?? "";
+
+    // Scopes
+    const scopeLabel = contentEl.createEl("label", { text: "Temario (notas, carpetas, tags, subjects)" });
+    const scopeContainer = contentEl.createDiv({ cls: "mnexus-exam-scopes" });
+    const resolver = this.plugin.getScopeResolver();
+    this.picker = new NotePicker(scopeContainer, resolver, {
+      onChange: () => this.updatePreview(),
+    });
+    if (this.exam) this.picker.setSelected(this.exam.scopes);
+
+    // Preview
+    const preview = contentEl.createDiv({ cls: "mnexus-exam-preview" });
+    preview.id = "mnexus-exam-preview";
+    this.updatePreview();
+
+    // Botones
+    const buttons = contentEl.createDiv({ cls: "mnexus-modal-buttons" });
+    const cancelBtn = buttons.createEl("button", { text: "Cancelar" });
+    cancelBtn.onclick = () => this.close();
+    const saveBtn = buttons.createEl("button", { text: this.exam ? "Guardar" : "Crear", cls: "mod-cta" });
+    saveBtn.onclick = () => this.save();
+  }
+
+  private defaultDate(): string {
+    const d = new Date();
+    d.setDate(d.getDate() + 14);
+    return d.toISOString().slice(0, 10);
+  }
+
+  private updatePreview() {
+    const previewEl = this.contentEl.querySelector("#mnexus-exam-preview") as HTMLElement;
+    if (!previewEl) return;
+    previewEl.empty();
+    const scopes = this.picker?.getSelectedScopes() ?? [];
+    const resolver = this.plugin.getScopeResolver();
+    const resolved = resolver.resolveMany(scopes);
+    const total = resolved.length;
+    previewEl.createEl("p", {
+      text: `${total} nota${total === 1 ? "" : "s"} seleccionada${total === 1 ? "" : "s"}`,
+      cls: "mnexus-preview-summary",
+    });
+    if (total > 0 && total <= 20) {
+      for (const r of resolved) {
+        const tag = previewEl.createEl("span", { cls: "mnexus-preview-note" });
+        tag.textContent = r.path;
+      }
+    } else if (total > 20) {
+      previewEl.createEl("p", {
+        text: `…y ${total - 20} más`,
+        cls: "mnexus-muted",
+      });
+    }
+  }
+
+  private save() {
+    if (!this.titleInput.value.trim()) {
+      this.titleInput.addClass("mnexus-input-error");
+      return;
+    }
+    if (!this.dateInput.value) {
+      this.dateInput.addClass("mnexus-input-error");
+      return;
+    }
+    const scopes = this.picker?.getSelectedScopes() ?? [];
+    if (scopes.length === 0) {
+      // Permitir guardar sin scopes pero mostrar warning
+    }
+    const data = {
+      title: this.titleInput.value.trim(),
+      subject: this.subjectInput.value.trim(),
+      date: this.dateInput.value,
+      examType: this.typeSelect.value as ExamType,
+      scopes,
+      priority: this.prioritySelect.value as ExamPriority,
+      notes: this.notesInput.value.trim() || undefined,
+    };
+    if (this.exam) {
+      this.plugin.examManager.update(this.exam.id, data);
+    } else {
+      this.plugin.examManager.create(data);
+    }
+    this.plugin.examManager.save();
+    this.close();
+    this.plugin.refreshExamDashboard();
+  }
+
+  onClose() {
+    this.contentEl.empty();
+  }
+}

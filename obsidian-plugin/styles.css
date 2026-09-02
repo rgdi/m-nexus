@@ -1,0 +1,684 @@
+/* M-NEXUS — estilos del plugin
+   Diseñado para integrarse con el tema Obsidian (oscuro/claro)
+   sin colores demasiado saturados; paleta inspirada en azul clínico. */
+
+.mnexus-panel {
+  padding: 12px 14px;
+  font-size: var(--font-ui-small);
+}
+
+.mnexus-panel h2 {
+  margin-top: 0;
+  font-size: 1.2em;
+  border-bottom: 1px solid var(--background-modifier-border);
+  padding-bottom: 6px;
+}
+
+.mnexus-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  gap: 8px;
+}
+
+.mnexus-row .mnexus-label {
+  color: var(--text-muted);
+}
+
+.mnexus-row .mnexus-value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.mnexus-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+
+.mnexus-stat-card {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.mnexus-stat-card .stat-label {
+  font-size: 0.75em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.mnexus-stat-card .stat-value {
+  font-size: 1.4em;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.mnexus-stat-card.alert {
+  border-color: var(--text-error);
+  background: rgba(220, 80, 80, 0.08);
+}
+
+.mnexus-stat-card.warn {
+  border-color: var(--text-warning);
+  background: rgba(220, 160, 60, 0.08);
+}
+
+.mnexus-priority-High {
+  color: var(--text-error);
+  font-weight: 700;
+}
+
+.mnexus-priority-Medium {
+  color: var(--text-warning);
+  font-weight: 600;
+}
+
+.mnexus-priority-Low {
+  color: var(--text-muted);
+}
+
+.mnexus-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.75em;
+  background: var(--background-modifier-border);
+  color: var(--text-normal);
+}
+
+.mnexus-badge.draft {
+  background: rgba(220, 160, 60, 0.15);
+  color: var(--text-warning);
+}
+
+.mnexus-badge.approved {
+  background: rgba(60, 170, 90, 0.15);
+  color: var(--text-success, #4caf50);
+}
+
+.mnexus-badge.inbox {
+  background: rgba(80, 130, 200, 0.18);
+  color: var(--text-accent);
+}
+
+.mnexus-flashcard {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 8px 0;
+  background: var(--background-secondary);
+}
+
+.mnexus-flashcard .front,
+.mnexus-flashcard .back {
+  font-size: 0.95em;
+  line-height: 1.5;
+}
+
+.mnexus-flashcard .front {
+  font-weight: 600;
+}
+
+.mnexus-flashcard .meta {
+  font-size: 0.75em;
+  color: var(--text-muted);
+  margin-top: 6px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mnexus-flashcard .actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.mnexus-flashcard .actions button {
+  flex: 1;
+}
+
+.mnexus-coverage-alert {
+  border-left: 3px solid var(--text-warning);
+  background: rgba(220, 160, 60, 0.06);
+  padding: 8px 10px;
+  margin: 6px 0;
+  border-radius: 4px;
+}
+
+.mnexus-coverage-alert strong {
+  color: var(--text-warning);
+}
+
+.mnexus-inbox-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--background-modifier-border);
+}
+
+.mnexus-inbox-item:last-child {
+  border-bottom: none;
+}
+
+.mnexus-inbox-item .filename {
+  font-family: var(--font-monospace);
+  font-size: 0.85em;
+  color: var(--text-muted);
+}
+
+.mnexus-progress {
+  height: 4px;
+  background: var(--background-modifier-border);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.mnexus-progress .bar {
+  height: 100%;
+  background: var(--text-accent);
+  transition: width 0.3s ease;
+}
+
+.mnexus-timestamp-link {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--background-modifier-border);
+  color: var(--text-accent);
+  font-family: var(--font-monospace);
+  font-size: 0.8em;
+  text-decoration: none;
+}
+
+.mnexus-timestamp-link:hover {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.mnexus-empty {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 24px 12px;
+  font-style: italic;
+}
+
+.mnexus-pill-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 4px 0;
+}
+
+.mnexus-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75em;
+  background: var(--background-modifier-border);
+}
+
+/* ─── Drawing canvas ─────────────────────────────────────────────────── */
+.mnexus-draw-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  padding: 6px 8px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+.mnexus-draw-toolbar button {
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+  cursor: pointer;
+  font-size: 0.85em;
+}
+.mnexus-draw-toolbar button:hover {
+  background: var(--background-modifier-hover);
+}
+.mnexus-draw-canvas-wrap {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: #fff;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+.mnexus-draw-canvas-wrap svg {
+  display: block;
+  background: #fff;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+/* ─── Template editor ────────────────────────────────────────────────── */
+.mnexus-template-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+.mnexus-template-card > div:first-child {
+  flex: 1;
+  min-width: 0;
+}
+.mnexus-template-card strong {
+  display: block;
+}
+
+/* ─── Calendar ──────────────────────────────────────────────────────── */
+.mnexus-calendar-match {
+  border-left: 3px solid var(--text-accent);
+  background: var(--background-secondary);
+  padding: 8px 10px;
+  margin: 6px 0;
+  border-radius: 4px;
+}
+.mnexus-calendar-match.confidence-high { border-left-color: var(--text-error); }
+.mnexus-calendar-match.confidence-medium { border-left-color: var(--text-warning); }
+.mnexus-calendar-match.confidence-low { border-left-color: var(--text-muted); }
+
+/* ─── Settings extras ────────────────────────────────────────────────── */
+.mnexus-llm-status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  margin-left: 8px;
+}
+.mnexus-llm-status.ok { background: rgba(40, 167, 69, 0.15); color: var(--text-success, #28a745); }
+.mnexus-llm-status.error { background: rgba(220, 53, 69, 0.15); color: var(--text-error); }
+
+/* ─── Chat RAG ─────────────────────────────────────────────────────── */
+.mnexus-chat { padding: 8px; }
+.mnexus-chat-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.mnexus-chat-header h2 { margin: 0; }
+.mnexus-chat-actions { margin-left: auto; display: flex; gap: 4px; }
+.mnexus-chat-actions button {
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+  cursor: pointer;
+}
+.mnexus-chat-sessions {
+  max-height: 100px;
+  overflow-y: auto;
+  border-bottom: 1px solid var(--background-modifier-border);
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+}
+.mnexus-chat-session {
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-bottom: 2px;
+}
+.mnexus-chat-session:hover { background: var(--background-modifier-hover); }
+.mnexus-chat-session.active { background: var(--interactive-accent); color: var(--text-on-accent); }
+.mnexus-chat-session .title { font-size: 0.9em; font-weight: 600; }
+.mnexus-chat-messages {
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 4px;
+  margin-bottom: 8px;
+  background: var(--background-secondary);
+  border-radius: 4px;
+  min-height: 200px;
+}
+.mnexus-chat-msg {
+  padding: 6px 10px;
+  margin-bottom: 6px;
+  border-radius: 6px;
+  font-size: 0.9em;
+}
+.mnexus-chat-msg .role { font-size: 0.7em; font-weight: 700; text-transform: uppercase; opacity: 0.6; }
+.mnexus-chat-msg .content { white-space: pre-wrap; word-wrap: break-word; }
+.mnexus-chat-user { background: var(--background-primary); border: 1px solid var(--background-modifier-border); }
+.mnexus-chat-assistant { background: var(--background-primary); border-left: 3px solid var(--text-accent); }
+.mnexus-chat-msg .sources a:hover { text-decoration: underline; }
+
+/* ─── Schedule ────────────────────────────────────────────────────── */
+.mnexus-schedule-block:hover { background: var(--background-modifier-hover); }
+
+/* ─── v0.5: Photo + Image Occlusion ───────────────────────────────── */
+.mnexus-dropzone {
+  transition: background 0.2s, border-color 0.2s;
+}
+.mnexus-dropzone:hover {
+  background: var(--background-modifier-hover);
+}
+.mnexus-label {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  margin: 4px 0;
+}
+.mnexus-photo-ocr {
+  margin: 8px 0;
+  padding: 8px;
+  background: var(--background-secondary);
+  border-radius: 4px;
+}
+
+/* Image occlusion canvas overlay */
+.mnexus-occlusion-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  cursor: crosshair;
+}
+.mnexus-occlusion-rect {
+  fill: rgba(255, 200, 0, 0.4);
+  stroke: #ffc800;
+  stroke-width: 2;
+}
+.mnexus-occlusion-rect.saved {
+  fill: rgba(63, 185, 80, 0.4);
+  stroke: #3fb950;
+}
+
+/* ─── v0.6: Servidor + Backup ─────────────────────────────────────── */
+.mnexus-server-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: var(--font-ui-smaller);
+  transition: background 0.15s;
+}
+.mnexus-server-badge:hover {
+  background: var(--background-modifier-hover);
+}
+.mnexus-server-badge-icon {
+  display: inline-flex;
+  align-items: center;
+}
+.mnexus-server-status {
+  padding: 12px;
+  border-radius: 6px;
+  background: var(--background-secondary);
+}
+.mnexus-server-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.mnexus-server-actions button {
+  padding: 4px 10px;
+  font-size: var(--font-ui-small);
+}
+
+/* ─── v0.7: Analytics Dashboard + Clinical + PDF ───────────────────── */
+.mnexus-analytics-root {
+  padding: 12px 16px;
+  overflow-y: auto;
+  max-height: 100%;
+}
+.mnexus-analytics-root h2 {
+  margin-top: 0;
+  border-bottom: 1px solid var(--background-modifier-border);
+  padding-bottom: 6px;
+}
+.mnexus-analytics-root h3 {
+  margin-top: 16px;
+  font-size: 1.1em;
+  color: var(--text-accent);
+}
+.mnexus-prediction-card {
+  transition: transform 0.15s;
+}
+.mnexus-prediction-card:hover {
+  transform: translateY(-2px);
+}
+.mnexus-table th {
+  background: var(--background-secondary);
+}
+
+/* ─── v0.28: Design system unificado ───
+   Eye-friendly, intuitivo, sin emojis redundantes.
+   Estos estilos complementan a designSystem.ts. */
+
+/* Animación de spinner */
+@keyframes mnexus-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Spinner de carga reutilizable */
+.mnexus-spinner {
+  display: inline-block;
+  animation: mnexus-spin 0.8s linear infinite;
+}
+
+/* Stack vertical consistente */
+.mnexus-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Cluster horizontal consistente */
+.mnexus-cluster {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Separador visual sutil */
+.mnexus-separator {
+  height: 1px;
+  background: var(--background-modifier-border);
+  margin: 12px 0;
+}
+
+/* Estado vacío */
+.mnexus-empty-state {
+  text-align: center;
+  padding: 48px 16px;
+  color: var(--text-muted);
+}
+
+/* Transición suave por defecto en tarjetas */
+.mnexus-card-interactive {
+  transition: border-color 120ms ease-out, box-shadow 120ms ease-out;
+}
+.mnexus-card-interactive:hover {
+  border-color: var(--background-modifier-border-hover);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+/* Tooltip nativo (atributo title) — Obsidian no los sobreescribe */
+
+/* Accesibilidad: focus visible en todos los interactivos */
+.mnexus-interactive:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+/* Modal genérico: sin padding heredado raro */
+.modal .mnexus-proposals-header,
+.modal .mnexus-quiz-progress {
+  /* Sin padding extra del contenedor padre */
+}
+
+/* Inputs en dark mode: legibles */
+input[type="text"]:focus,
+input[type="number"]:focus {
+  border-color: var(--interactive-accent);
+  outline: none;
+}
+
+/* Sliders nativos con el accent color */
+input[type="range"] {
+  accent-color: var(--interactive-accent);
+}
+
+/* Botones con animación sutil al hacer click */
+button:active:not(:disabled) {
+  transform: scale(0.98);
+  transition: transform 80ms ease-out;
+}
+
+/* Accesibilidad: skip link para lectores de pantalla */
+.mnexus-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── v0.28: BackupManagerModal ──────────────────────────────────── */
+
+.mnexus-backup-modal {
+  width: 700px;
+  max-width: 90vw;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.mnexus-backup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.mnexus-backup-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.mnexus-backup-dropzone {
+  border: 2px dashed var(--background-modifier-border);
+  border-radius: 8px;
+  padding: 24px;
+  text-align: center;
+  margin-bottom: 16px;
+  background: var(--background-secondary);
+  transition: all 150ms ease-out;
+}
+
+.mnexus-backup-dropzone-active {
+  border-color: var(--interactive-accent);
+  background: var(--background-modifier-hover);
+  transform: scale(1.02);
+}
+
+.mnexus-backup-dropzone-text {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.mnexus-backup-section {
+  margin-bottom: 20px;
+}
+
+.mnexus-backup-section h3 {
+  margin: 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.mnexus-backup-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mnexus-backup-card {
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  padding: 12px;
+  cursor: grab;
+  transition: all 120ms ease-out;
+}
+
+.mnexus-backup-card:hover {
+  background: var(--background-modifier-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.mnexus-backup-card:active {
+  cursor: grabbing;
+}
+
+.mnexus-backup-card-title {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.mnexus-backup-card-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.mnexus-backup-card-meta-secondary {
+  font-size: 11px;
+  color: var(--text-faint);
+  font-family: var(--font-monospace);
+}
+
+.mnexus-backup-card-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.mnexus-backup-card-actions button {
+  font-size: 11px;
+  padding: 3px 8px;
+}
+
+.mnexus-backup-loading {
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: center;
+  padding: 12px;
+}
+
+.mnexus-backup-empty {
+  text-align: center;
+  padding: 24px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.mnexus-btn-danger {
+  color: var(--text-error) !important;
+  border-color: var(--text-error) !important;
+}

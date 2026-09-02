@@ -1,0 +1,40 @@
+name: mnexus_installer
+description: "Instalador y actualizador del plugin M-NEXUS para Obsidian. Crea las carpetas necesarias en el vault y mantiene el plugin al día."
+version: 0.28.0+1
+publish_to: "none"
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+  flutter: ">=3.22.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # Permisos y archivos
+  path_provider: ^2.1.4
+  permission_handler: ^11.3.1
+  file_picker: ^8.0.7
+  # HTTP para descargar el plugin
+  http: ^1.2.2
+  # Storage paths
+  path: ^1.9.0
+  # UI
+  cupertino_icons: ^1.0.8
+  shared_preferences: ^2.3.2
+  url_launcher: ^6.3.0
+  # v0.22: Voice notes
+  record: ^5.1.2
+  # Para timestamps con fuente monoespaciada
+  google_fonts: ^6.2.1
+  # Para extraer el ZIP del plugin
+  archive: ^3.6.1
+  # v0.28: para auto-update (consultar versión actual)
+  package_info_plus: ^8.0.0
+
+dev_dependencies:
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/release-info.json

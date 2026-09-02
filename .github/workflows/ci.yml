@@ -1,0 +1,62 @@
+# GitHub Actions: CI — Tests
+# Se ejecuta en cada push y PR. Si falla, no se puede mergear.
+name: CI
+
+on:
+  push:
+    branches: [main, develop, 'v*']
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test-obsidian-plugin:
+    name: Test Obsidian Plugin
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: obsidian-plugin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: obsidian-plugin/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm test
+      - name: Build plugin
+        run: npx esbuild src/main.ts --bundle --format=cjs --target=es2020 --platform=node --external:obsidian --external:electron --outfile=dist/main.js
+
+  test-backend:
+    name: Test Backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm test
+
+  test-companion-app:
+    name: Test Companion App
+    runs-on: ubuntu-latest
+    defaults:
+        run:
+          working-directory: companion-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test

@@ -1,0 +1,161 @@
+# GitHub Actions: Release
+# Se ejecuta cuando se pushea un tag v*.*.* (ej. v0.28.0).
+# Construye el plugin, el backend, y la app Android companion.
+# Sube los ZIPs/APK a una release de GitHub.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────
+  # 1. Plugin de Obsidian → ZIP con 4 archivos
+  # ─────────────────────────────────────────────────────────────────
+  build-plugin:
+    name: Build Obsidian Plugin
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: obsidian-plugin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - name: Bundle plugin
+        run: npx esbuild src/main.ts --bundle --format=cjs --target=es2020 --platform=node --external:obsidian --external:electron --outfile=dist/main.js
+      - name: Package ZIP
+        run: |
+          mkdir -p ../../artifacts
+          cd dist
+          zip ../../../artifacts/m-nexus-plugin-${GITHUB_REF_NAME}.zip \
+            main.js manifest.json styles.css versions.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: plugin
+          path: artifacts/m-nexus-plugin-*.zip
+          if-no-files-found: error
+
+  # ─────────────────────────────────────────────────────────────────
+  # 2. Backend Node.js → ZIP con dist/ + package.json
+  # ─────────────────────────────────────────────────────────────────
+  build-backend:
+    name: Build Backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - name: Compile TypeScript
+        run: npx tsc
+      - name: Package ZIP
+        run: |
+          mkdir -p deploy
+          cp -r dist/ package.json deploy/
+          cd deploy
+          zip -r ../../artifacts/m-nexus-backend-${GITHUB_REF_NAME}.zip .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backend
+          path: artifacts/m-nexus-backend-*.zip
+          if-no-files-found: error
+
+  # ─────────────────────────────────────────────────────────────────
+  # 3. Companion App Android → APK
+  # ─────────────────────────────────────────────────────────────────
+  build-companion:
+    name: Build Companion App
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: companion-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+      - name: Get dependencies
+        run: flutter pub get
+      - name: Analyze
+        run: flutter analyze
+      - name: Test
+        run: flutter test
+      - name: Build APK
+        run: |
+          flutter build apk --release --build-name=${GITHUB_REF_NAME#v} --build-number=${GITHUB_RUN_NUMBER}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: companion
+          path: companion-app/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+
+  # ─────────────────────────────────────────────────────────────────
+  # 4. Install script (lo descargamos tal cual del repo)
+  # ─────────────────────────────────────────────────────────────────
+  upload-installer:
+    name: Upload Install Script
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installer
+          path: install/install.sh
+          if-no-files-found: error
+
+  # ─────────────────────────────────────────────────────────────────
+  # 5. Crear la release de GitHub con todos los assets
+  # ─────────────────────────────────────────────────────────────────
+  create-release:
+    name: Create GitHub Release
+    needs: [build-plugin, build-backend, build-companion, upload-installer]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Rename APK
+        run: |
+          if [ -f artifacts/app-release.apk ]; then
+            mv artifacts/app-release.apk artifacts/m-nexus-companion-${GITHUB_REF_NAME}.apk
+          fi
+      - name: Rename install script
+        run: |
+          if [ -f artifacts/install.sh ]; then
+            mv artifacts/install.sh artifacts/m-nexus-install-${GITHUB_REF_NAME}.sh
+          fi
+      - name: List artifacts
+        run: ls -la artifacts/
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            artifacts/m-nexus-plugin-*.zip
+            artifacts/m-nexus-backend-*.zip
+            artifacts/m-nexus-companion-*.apk
+            artifacts/m-nexus-install-*.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

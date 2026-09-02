@@ -1,0 +1,58 @@
+# GitHub Actions: Auto-bump version on tag
+# Cuando se pushea un tag, actualiza el `version` en los package.json/manifest
+# de cada componente para que apunte al nuevo tag.
+
+name: Update Versions
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Nueva versión (ej. 0.28.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump-versions:
+    name: Bump versions across components
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update Obsidian plugin version
+        run: |
+          VERSION="${{ inputs.version }}"
+          # manifest.json
+          sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" obsidian-plugin/manifest.json
+          sed -i "s/\"minAppVersion\": \".*\"/\"minAppVersion\": \"1.5.0\"/" obsidian-plugin/manifest.json
+          # versions.json
+          echo "{\"1.5.0\": \"$VERSION\"}" > obsidian-plugin/versions.json
+          # package.json
+          sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" obsidian-plugin/package.json
+          # main.ts version references
+          sed -i "s/m-nexus-plugin-v.*\.zip/m-nexus-plugin-v$VERSION.zip/g" install/install.sh || true
+
+      - name: Update Backend version
+        run: |
+          VERSION="${{ inputs.version }}"
+          sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" backend/package.json
+
+      - name: Update Companion app version
+        run: |
+          VERSION="${{ inputs.version }}"
+          sed -i "s/^version: .*/version: $VERSION+1/" companion-app/pubspec.yaml
+          sed -i "s/0\.28\.0+1/$VERSION+1/" companion-app/pubspec.yaml || true
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore: bump version to ${{ inputs.version }}"
+          git push

@@ -1,0 +1,390 @@
+// v0.19: Study Goals — sistema de objetivos con tracking y progress bar.
+//
+// Tipos de goals:
+//   - daily-cards: cards repasadas hoy
+//   - weekly-cards: cards repasadas esta semana
+//   - streak-days: días consecutivos de estudio
+//   - accuracy: % de respuestas correctas (rating >= 3)
+//
+// Cada goal tiene: target, current, deadline, status (pending/in-progress/completed/expired).
+// Persistencia: en data.json vía PluginDataStorage.
+
+import type { ReviewEvent } from "./persistence.js";
+import type { PluginDataStorage } from "./persistence.js";
+import type { NotificationServiceV2 } from "./notificationsV2.js";
+
+export type GoalType = "daily-cards" | "weekly-cards" | "streak-days" | "accuracy";
+
+export type GoalStatus = "pending" | "in-progress" | "completed" | "expired";
+
+export interface StudyGoal {
+  id: string;
+  type: GoalType;
+  target: number;
+  current: number;
+  /** YYYY-MM-DD del inicio del período. */
+  periodStart: string;
+  /** YYYY-MM-DD del fin del período. */
+  periodEnd: string;
+  status: GoalStatus;
+  /** Última actualización. */
+  updatedAt: number;
+  /** Metadata opcional (e.g., examId, topic). */
+  meta?: Record<string, unknown>;
+}
+
+export interface GoalConfig {
+  dailyCards: number;
+  weeklyCards: number;
+  streakDays: number;
+  accuracyRate: number;
+}
+
+export const DEFAULT_GOAL_CONFIG: GoalConfig = {
+  dailyCards: 30,
+  weeklyCards: 200,
+  streakDays: 7,
+  accuracyRate: 0.8,
+};
+
+/** Estado persistido de goals. */
+export interface GoalsState {
+  goals: StudyGoal[];
+  config: GoalConfig;
+  /** Historial de goals completados. */
+  completedHistory: StudyGoal[];
+}
+
+export const DEFAULT_GOALS_STATE: GoalsState = {
+  goals: [],
+  config: { ...DEFAULT_GOAL_CONFIG },
+  completedHistory: [],
+};
+
+const STORAGE_KEY_GOALS = "m-nexus-goals-v1";
+
+function dateString(timestamp: number = Date.now()): string {
+  const d = new Date(timestamp);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function startOfDay(timestamp: number = Date.now()): number {
+  const d = new Date(timestamp);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+
+function startOfWeek(timestamp: number = Date.now()): number {
+  // Semana inicia en lunes
+  const d = new Date(timestamp);
+  d.setHours(0, 0, 0, 0);
+  const day = d.getDay();
+  const diff = (day === 0 ? -6 : 1) - day; // lunes
+  d.setDate(d.getDate() + diff);
+  return d.getTime();
+}
+
+function endOfDay(timestamp: number = Date.now()): number {
+  return startOfDay(timestamp) + 86_400_000 - 1;
+}
+
+function endOfWeek(timestamp: number = Date.now()): number {
+  return startOfWeek(timestamp) + 7 * 86_400_000 - 1;
+}
+
+export class StudyGoals {
+  private storage: PluginDataStorage;
+  private notificationService?: NotificationServiceV2;
+
+  constructor(storage: PluginDataStorage, notificationService?: NotificationServiceV2) {
+    this.storage = storage;
+    this.notificationService = notificationService;
+  }
+
+  setNotificationService(svc: NotificationServiceV2): void {
+    this.notificationService = svc;
+  }
+
+  /** Lee el state desde el storage (migración v0 si hace falta). */
+  private getState(): GoalsState {
+    const raw = this.storage.getGoals?.() ?? null;
+    if (raw) return raw;
+    return { ...DEFAULT_GOALS_STATE, goals: [], config: { ...DEFAULT_GOAL_CONFIG }, completedHistory: [] };
+  }
+
+  private setState(state: GoalsState): void {
+    this.storage.setGoals?.(state);
+  }
+
+  /** Configura los goals (settings del usuario). */
+  setConfig(config: Partial<GoalConfig>): void {
+    const state = this.getState();
+    state.config = { ...state.config, ...config };
+    this.setState(state);
+  }
+
+  getConfig(): GoalConfig {
+    return { ...this.getState().config };
+  }
+
+  /** Sincroniza los goals según la config y el período actual. */
+  syncGoals(now: number = Date.now()): StudyGoal[] {
+    const state = this.getState();
+    const config = state.config;
+    const today = dateString(now);
+    const weekStart = dateString(startOfWeek(now));
+    const weekEnd = dateString(endOfWeek(now));
+
+    // Goal diario
+    let daily = state.goals.find((g) => g.type === "daily-cards" && g.periodStart === today);
+    if (!daily) {
+      daily = this.makeGoal("daily-cards", config.dailyCards, today, today, now);
+      state.goals.push(daily);
+    } else {
+      daily.target = config.dailyCards;
+    }
+
+    // Goal semanal
+    let weekly = state.goals.find((g) => g.type === "weekly-cards" && g.periodStart === weekStart);
+    if (!weekly) {
+      weekly = this.makeGoal("weekly-cards", config.weeklyCards, weekStart, weekEnd, now);
+      state.goals.push(weekly);
+    } else {
+      weekly.target = config.weeklyCards;
+      weekly.periodEnd = weekEnd;
+    }
+
+    // Goal de racha (no tiene período — siempre activo)
+    let streak = state.goals.find((g) => g.type === "streak-days" && g.status !== "expired");
+    if (!streak) {
+      streak = this.makeGoal("streak-days", config.streakDays, today, "9999-12-31", now);
+      state.goals.push(streak);
+    } else {
+      streak.target = config.streakDays;
+    }
+
+    // Goal de accuracy
+    let accuracy = state.goals.find((g) => g.type === "accuracy" && g.status !== "expired");
+    if (!accuracy) {
+      accuracy = this.makeGoal("accuracy", config.accuracyRate, weekStart, weekEnd, now);
+      state.goals.push(accuracy);
+    } else {
+      accuracy.target = config.accuracyRate;
+    }
+
+    // Marcar goals expirados
+    for (const g of state.goals) {
+      if (g.periodEnd === "9999-12-31") continue;
+      if (g.status === "completed") continue;
+      if (dateString(now) > g.periodEnd) {
+        g.status = "expired";
+        state.completedHistory.push(g);
+      }
+    }
+
+    // Mantener goals activos + completados del período actual (para no recrearlos).
+    // Los expired se eliminan.
+    state.goals = state.goals.filter(
+      (g) => g.status === "pending" || g.status === "in-progress" || g.status === "completed"
+    );
+    if (state.completedHistory.length > 30) {
+      state.completedHistory = state.completedHistory.slice(-30);
+    }
+
+    this.setState(state);
+    return state.goals;
+  }
+
+  /** Actualiza el progreso de un goal. */
+  updateProgress(goalId: string, current: number, now: number = Date.now()): StudyGoal | null {
+    const state = this.getState();
+    const goal = state.goals.find((g) => g.id === goalId);
+    if (!goal) return null;
+    goal.current = current;
+    goal.updatedAt = now;
+    if (current >= goal.target) {
+      goal.status = "completed";
+      state.completedHistory.push(goal);
+    } else if (current > 0) {
+      goal.status = "in-progress";
+    }
+    this.setState(state);
+    return goal;
+  }
+
+  /** Recalcula el progreso desde reviews (recomputa todos los daily/weekly/accuracy goals activos). */
+  recomputeProgress(reviews: ReviewEvent[], streakCurrent: number, now: number = Date.now()): StudyGoal[] {
+    this.syncGoals(now);
+    const state = this.getState();
+    const today = dateString(now);
+    const weekStart = dateString(startOfWeek(now));
+    const weekEnd = dateString(endOfWeek(now));
+
+    const completedThisRun: StudyGoal[] = [];
+
+    // v0.20 FIX: crear daily goals retroactivos para cada día con reviews
+    // que no tenga goal todavía.
+    const daysWithReviews = new Set(reviews.map((r) => r.date));
+    for (const day of daysWithReviews) {
+      if (day > today) continue; // futuro
+      const existing = state.goals.find((g) => g.type === "daily-cards" && g.periodStart === day);
+      if (!existing) {
+        const goal = this.makeGoal("daily-cards", state.config.dailyCards, day, day, now);
+        state.goals.push(goal);
+      }
+    }
+
+    // Daily: iterar sobre TODOS los daily goals
+    for (const goal of state.goals) {
+      if (goal.type !== "daily-cards") continue;
+      if (goal.status === "completed") continue;
+      const dayReviews = reviews.filter((r) => r.date === goal.periodStart);
+      const wasNotCompleted = goal.status !== "completed";
+      goal.current = dayReviews.length;
+      const newStatus = goal.current >= goal.target ? "completed" :
+                       goal.current > 0 ? "in-progress" : "pending";
+      if (newStatus === "completed" && wasNotCompleted) completedThisRun.push(goal);
+      goal.status = newStatus;
+    }
+
+    // Weekly
+    const weeklyReviews = reviews.filter((r) => r.date >= weekStart && r.date <= weekEnd);
+    for (const goal of state.goals) {
+      if (goal.type !== "weekly-cards") continue;
+      if (goal.status === "completed") continue;
+      const wasNotCompleted = goal.status !== "completed";
+      goal.current = weeklyReviews.length;
+      const newStatus = goal.current >= goal.target ? "completed" :
+                       goal.current > 0 ? "in-progress" : "pending";
+      if (newStatus === "completed" && wasNotCompleted) completedThisRun.push(goal);
+      goal.status = newStatus;
+    }
+
+    // Streak
+    for (const goal of state.goals) {
+      if (goal.type !== "streak-days") continue;
+      if (goal.status === "completed") continue;
+      const wasNotCompleted = goal.status !== "completed";
+      goal.current = streakCurrent;
+      const newStatus = goal.current >= goal.target ? "completed" : "in-progress";
+      if (newStatus === "completed" && wasNotCompleted) completedThisRun.push(goal);
+      goal.status = newStatus;
+    }
+
+    // Accuracy (rating >= 3 = correcta)
+    const weekReviews = reviews.filter((r) => r.date >= weekStart && r.date <= weekEnd);
+    if (weekReviews.length > 0) {
+      const correct = weekReviews.filter((r) => r.rating >= 3).length;
+      const acc = correct / weekReviews.length;
+      for (const goal of state.goals) {
+        if (goal.type !== "accuracy") continue;
+        if (goal.status === "completed") continue;
+        const wasNotCompleted = goal.status !== "completed";
+        goal.current = acc;
+        goal.meta = { reviews: weekReviews.length, correct };
+        const newStatus = goal.current >= goal.target ? "completed" : "in-progress";
+        if (newStatus === "completed" && wasNotCompleted) completedThisRun.push(goal);
+        goal.status = newStatus;
+      }
+    }
+
+    this.setState(state);
+
+    // v0.20: notificar goals recién completados
+    if (this.notificationService) {
+      for (const g of completedThisRun) {
+        const summary = g.type === "accuracy"
+          ? `Has alcanzado ${(g.current * 100).toFixed(0)}% de accuracy (objetivo ${(g.target * 100).toFixed(0)}%)`
+          : g.type === "streak-days"
+          ? `Llevas ${g.current} días consecutivos`
+          : `Has completado ${g.current}/${g.target} cards`;
+        const title = g.type === "daily-cards" ? "Goal diario completado"
+                     : g.type === "weekly-cards" ? "Goal semanal completado"
+                     : g.type === "streak-days" ? `Racha de ${g.current} días`
+                     : "Goal de accuracy completado";
+        this.notificationService.notifyGoalCompleted(g.id, title, summary);
+      }
+    }
+
+    return state.goals;
+  }
+
+  /** Devuelve los goals activos. */
+  getActiveGoals(): StudyGoal[] {
+    return this.getState().goals.filter((g) => g.status === "pending" || g.status === "in-progress");
+  }
+
+  /** Devuelve los goals completados en el historial. */
+  getCompleted(): StudyGoal[] {
+    return [...this.getState().completedHistory];
+  }
+
+  /** Devuelve todos los goals. */
+  getAll(): StudyGoal[] {
+    return [...this.getState().goals];
+  }
+
+  /** Resetea un goal (lo marca como pending y current=0). */
+  resetGoal(goalId: string): void {
+    const state = this.getState();
+    const goal = state.goals.find((g) => g.id === goalId);
+    if (goal) {
+      goal.current = 0;
+      goal.status = "pending";
+      goal.updatedAt = Date.now();
+      this.setState(state);
+    }
+  }
+
+  /** Resetea todos los goals. */
+  resetAll(): void {
+    this.setState({ ...DEFAULT_GOALS_STATE, config: this.getConfig() });
+  }
+
+  private makeGoal(type: GoalType, target: number, periodStart: string, periodEnd: string, now: number): StudyGoal {
+    return {
+      id: `${type}-${periodStart}-${Math.random().toString(36).slice(2, 8)}`,
+      type,
+      target,
+      current: 0,
+      periodStart,
+      periodEnd,
+      status: "pending",
+      updatedAt: now,
+    };
+  }
+}
+
+// ─── Helpers de UI ───────────────────────────────────────
+
+/** Calcula el porcentaje de progreso (0..1). */
+export function goalProgress(goal: StudyGoal): number {
+  if (goal.target === 0) return 0;
+  return Math.min(1, goal.current / goal.target);
+}
+
+/** Color según el progreso y tipo. */
+export function goalColor(goal: StudyGoal): "green" | "yellow" | "red" | "blue" {
+  if (goal.status === "completed") return "green";
+  if (goal.status === "expired") return "red";
+  const progress = goalProgress(goal);
+  if (goal.type === "accuracy") {
+    // Accuracy goal: queremos >= 0.8
+    if (progress >= 1) return "green";
+    if (progress >= 0.6) return "yellow";
+    return "red";
+  }
+  if (progress >= 0.7) return "blue";
+  if (progress >= 0.3) return "yellow";
+  return "red";
+}
+
+/** Etiqueta humana del goal. */
+export function goalLabel(goal: StudyGoal): string {
+  switch (goal.type) {
+    case "daily-cards": return `📅 Diario: ${goal.current}/${goal.target} cards`;
+    case "weekly-cards": return `📆 Semanal: ${goal.current}/${goal.target} cards`;
+    case "streak-days": return `🔥 Racha: ${goal.current}/${goal.target} días`;
+    case "accuracy": return `🎯 Accuracy: ${(goal.current * 100).toFixed(0)}% / ${(goal.target * 100).toFixed(0)}%`;
+  }
+}

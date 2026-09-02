@@ -1,0 +1,203 @@
+// E2E encryption: cifra el contenido de las notas con AES-GCM
+// usando una clave por vault. La clave NO se envía al servidor.
+// v0.12: privacy-first — el servidor nunca ve el plaintext de notas marcadas como sensibles.
+//
+// Setup: - generateVaultKey() crea una clave AES-GCM 256 y la guarda localmente.
+//         - encryptNote(plaintext) → { iv, ciphertext, alg } base64
+//         - decryptNote({ iv, ciphertext }) → plaintext
+//         - exportVaultKey() devuelve JWK para backup (cifrado por passphrase del usuario).
+//
+// Si el vault cambia de dispositivo, hay que exportar/importar la clave manualmente.
+
+export interface EncryptedNote {
+  alg: "AES-GCM-256";
+  iv: string; // base64
+  ct: string;  // base64
+  v: 1;
+}
+
+const STORAGE_KEY = "m-nexus-vault-key-v1";
+const PASSPHRASE_KEY = "m-nexus-vault-key-backup-v1";
+
+export interface E2EManager {
+  hasKey(): boolean;
+  generate(): Promise<void>;
+  importKey(jwk: JsonWebKey): Promise<void>;
+  exportKey(): Promise<JsonWebKey | null>;
+  /** Backup cifrado con passphrase del usuario, para sincronizar entre dispositivos. */
+  exportEncryptedWithPassphrase(passphrase: string): Promise<string>;
+  importEncryptedWithPassphrase(passphrase: string, payload: string): Promise<void>;
+  encrypt(plaintext: string): Promise<EncryptedNote>;
+  decrypt(note: EncryptedNote | { iv: string; ct: string }): Promise<string>;
+  clear(): void;
+}
+
+async function getSubtle(): Promise<SubtleCrypto> {
+  // En jsdom tests no hay SubtleCrypto; usar polyfill mock o devolver mock.
+  if (typeof crypto !== "undefined" && crypto.subtle) return crypto.subtle;
+  throw new Error("SubtleCrypto no disponible (¿estás en jsdom?)");
+}
+
+async function importRawKey(rawKey: Uint8Array): Promise<CryptoKey> {
+  const subtle = await getSubtle();
+  return await subtle.importKey("raw", rawKey, "AES-GCM", false, ["encrypt", "decrypt"]);
+}
+
+async function exportRawKey(key: CryptoKey): Promise<Uint8Array> {
+  const subtle = await getSubtle();
+  const raw = await subtle.exportKey("raw", key);
+  return new Uint8Array(raw);
+}
+
+function toB64(bytes: Uint8Array): string {
+  if (typeof btoa === "function") {
+    let bin = "";
+    for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin);
+  }
+  return Buffer.from(bytes).toString("base64");
+}
+
+function fromB64(b64: string): Uint8Array {
+  if (typeof atob === "function") {
+    const bin = atob(b64);
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+  return new Uint8Array(Buffer.from(b64, "base64"));
+}
+
+export function createE2EManager(storage: {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+  removeItem(key: string): void;
+}): E2EManager {
+  let cachedKey: CryptoKey | null = null;
+  let cachedJwk: JsonWebKey | null = null;
+
+  async function loadKey(): Promise<CryptoKey> {
+    if (cachedKey) return cachedKey;
+    const raw = storage.getItem(STORAGE_KEY);
+    if (!raw) throw new Error("No vault key. Llama a generate() primero.");
+    const jwk = JSON.parse(raw) as JsonWebKey;
+    cachedJwk = jwk;
+    const subtle = await getSubtle();
+    cachedKey = await subtle.importKey("jwk", jwk, "AES-GCM", false, ["encrypt", "decrypt"]);
+    return cachedKey;
+  }
+
+  return {
+    hasKey() {
+      return storage.getItem(STORAGE_KEY) !== null;
+    },
+
+    async generate() {
+      const subtle = await getSubtle();
+      const key = await subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]);
+      const jwk = await subtle.exportKey("jwk", key);
+      storage.setItem(STORAGE_KEY, JSON.stringify(jwk));
+      cachedKey = key;
+      cachedJwk = jwk;
+    },
+
+    async importKey(jwk) {
+      const subtle = await getSubtle();
+      const key = await subtle.importKey("jwk", jwk, "AES-GCM", false, ["encrypt", "decrypt"]);
+      storage.setItem(STORAGE_KEY, JSON.stringify(jwk));
+      cachedKey = key;
+      cachedJwk = jwk;
+    },
+
+    async exportKey() {
+      if (cachedJwk) return cachedJwk;
+      const raw = storage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw) as JsonWebKey;
+    },
+
+    async exportEncryptedWithPassphrase(passphrase) {
+      const jwk = await this.exportKey();
+      if (!jwk) throw new Error("No key to export");
+      // Deriva una clave de la passphrase con PBKDF2 y cifra el JWK
+      const subtle = await getSubtle();
+      const enc = new TextEncoder();
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const baseKey = await subtle.importKey("raw", enc.encode(passphrase), "PBKDF2", false, ["deriveKey"]);
+      const aesKey = await subtle.deriveKey(
+        { name: "PBKDF2", salt, iterations: 100_000, hash: "SHA-256" },
+        baseKey,
+        { name: "AES-GCM", length: 256 },
+        false,
+        ["encrypt"]
+      );
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const ct = await subtle.encrypt({ name: "AES-GCM", iv }, aesKey, enc.encode(JSON.stringify(jwk)));
+      return JSON.stringify({
+        v: 1,
+        salt: toB64(salt),
+        iv: toB64(iv),
+        ct: toB64(new Uint8Array(ct)),
+      });
+    },
+
+    async importEncryptedWithPassphrase(passphrase, payload) {
+      const parsed = JSON.parse(payload) as { v: number; salt: string; iv: string; ct: string };
+      if (parsed.v !== 1) throw new Error("Version no soportada");
+      const subtle = await getSubtle();
+      const enc = new TextEncoder();
+      const dec = new TextDecoder();
+      const salt = fromB64(parsed.salt);
+      const iv = fromB64(parsed.iv);
+      const ct = fromB64(parsed.ct);
+      const baseKey = await subtle.importKey("raw", enc.encode(passphrase), "PBKDF2", false, ["deriveKey"]);
+      const aesKey = await subtle.deriveKey(
+        { name: "PBKDF2", salt, iterations: 100_000, hash: "SHA-256" },
+        baseKey,
+        { name: "AES-GCM", length: 256 },
+        false,
+        ["decrypt"]
+      );
+      const plain = await subtle.decrypt({ name: "AES-GCM", iv }, aesKey, ct);
+      const jwk = JSON.parse(dec.decode(plain)) as JsonWebKey;
+      await this.importKey(jwk);
+    },
+
+    async encrypt(plaintext) {
+      const key = await loadKey();
+      const subtle = await getSubtle();
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const ct = await subtle.encrypt({ name: "AES-GCM", iv }, key, new TextEncoder().encode(plaintext));
+      return {
+        alg: "AES-GCM-256",
+        iv: toB64(iv),
+        ct: toB64(new Uint8Array(ct)),
+        v: 1,
+      };
+    },
+
+    async decrypt(note) {
+      const key = await loadKey();
+      const subtle = await getSubtle();
+      const iv = fromB64(note.iv);
+      const ct = fromB64(note.ct);
+      const plain = await subtle.decrypt({ name: "AES-GCM", iv }, key, ct);
+      return new TextDecoder().decode(plain);
+    },
+
+    clear() {
+      storage.removeItem(STORAGE_KEY);
+      storage.removeItem(PASSPHRASE_KEY);
+      cachedKey = null;
+      cachedJwk = null;
+    },
+  };
+}
+
+// ------------------------------------------------------------------
+// Polyfill de SubtleCrypto para tests jsdom
+// ------------------------------------------------------------------
+// Node 18+ tiene `crypto.subtle`. Si no, en tests podemos hacer:
+//   import { webcrypto } from "node:crypto";
+//   globalThis.crypto = webcrypto as Crypto;
+// ------------------------------------------------------------------

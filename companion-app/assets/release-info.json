@@ -1,0 +1,7 @@
+{
+  "latest_version": "0.28.0",
+  "min_app_version": "1.5.0",
+  "release_notes": "v0.28.0: Knowledge graph + adaptive quiz + StudyOrchestrator (AI agent) + FSRS boost + Free review (sin scheduling) + Snooze system + 18 subsystems lazy + Design system + Logging exhaustivo + Caja negra. 1244 tests pasando (1110 plugin + 134 backend). 0 errores TypeScript.",
+  "download_url": "https://github.com/rodrigo/m-nexus/releases/download/v0.28.0/m-nexus-plugin-v0.28.0.zip",
+  "checksum_sha256": ""
+}

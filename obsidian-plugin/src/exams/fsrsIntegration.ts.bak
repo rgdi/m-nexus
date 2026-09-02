@@ -1,0 +1,236 @@
+// ⚠️ DEPRECATED v0.28: Esta lógica se ejecuta en el backend.
+// El plugin debe usar src/services/aiClient.ts en su lugar.
+// Esta implementación se mantiene solo como fallback offline y para tests.
+// Migrar a backend: import { backendEvalVault, backendGenerateProposals, etc. } from './services/aiClient';
+// v0.15: Integración FSRS↔Exam.
+//
+// Idea: cuando hay un examen próximo, las cards del scope deben repasarse
+// ANTES del examen, no según la cadencia FSRS normal.
+//
+// Algoritmo:
+//   1. Para cada card del scope del examen, calcular:
+//      - dueDate_actual = FSRS dice cuándo se repasa
+//      - dueDate_target = fecha_examen - daysBeforeExam
+//      - Si dueDate_actual > dueDate_target → BOOST: dueDate = dueDate_target
+//   2. Estimar número de repasos que la card recibirá entre hoy y el examen.
+//   3. Si los repasos planeados < targetReviews, hacer boost más agresivo.
+//
+// Boost es "sugerido" hasta que se aplica. Una vez aplicado, la card se marca
+// con `examBoost: {...}` y se añade al historial.
+
+import type { Flashcard, Exam } from "./types.js";
+import {
+  type BoostOptions,
+  type CardExamBoost,
+  type BoostReason,
+  DEFAULT_BOOST_OPTIONS,
+  type FlashcardFSRS,
+} from "./boost.js";
+
+export interface FSRSAdapter {
+  /** Devuelve la dueDate "natural" de FSRS para una card, sin boost. */
+  naturalDue(card: Flashcard): string;
+  /** Aplica un boost a una card y devuelve la nueva dueDate. */
+  applyBoost(card: Flashcard, newDue: string): void;
+}
+
+export const defaultFSRSAdapter: FSRSAdapter = {
+  naturalDue(card) {
+    return card.dueDate ?? new Date().toISOString().slice(0, 10);
+  },
+  applyBoost(card, newDue) {
+    card.dueDate = newDue;
+  },
+};
+
+/** Decide si una card necesita boost dado el examen. */
+export function shouldBoost(
+  card: Flashcard,
+  exam: Exam,
+  options: BoostOptions = DEFAULT_BOOST_OPTIONS
+): { should: boolean; reason: BoostReason; confidence: number } {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const examDate = new Date(exam.date);
+  examDate.setHours(0, 0, 0, 0);
+  const daysUntil = Math.round((examDate.getTime() - today.getTime()) / 86_400_000);
+  if (daysUntil < 0) {
+    return { should: false, reason: "exam-before-due", confidence: 0 };
+  }
+  const due = card.dueDate ? new Date(card.dueDate) : today;
+  due.setHours(0, 0, 0, 0);
+  const target = new Date(examDate);
+  target.setDate(target.getDate() - options.daysBeforeExam);
+  const dueDays = Math.round((due.getTime() - today.getTime()) / 86_400_000);
+  const targetDays = Math.round((target.getTime() - today.getTime()) / 86_400_000);
+  if (due.getTime() > target.getTime()) {
+    // dueDate natural es POSTERIOR al target → hay que adelantar
+    const daysPulled = dueDays - targetDays;
+    if (daysPulled > options.maxPullInDays) {
+      // Demasiado lejano; no boost
+      return { should: false, reason: "exam-before-due", confidence: 0.3 };
+    }
+    // Confianza: alta si el boost es razonable, menor si es muy agresivo
+    const confidence = Math.max(0.4, 1 - daysPulled / options.maxPullInDays);
+    return { should: true, reason: "exam-before-due", confidence };
+  }
+  if (due.getTime() < today.getTime()) {
+    // Ya está atrasada — el boost es crítico
+    // La dueDate se mantiene en HOY (no en target futuro) para que el repaso
+    // entre en el plan de hoy, no se posponga a un día futuro.
+    return { should: true, reason: "exam-overdue-card", confidence: 1 };
+  }
+  return { should: false, reason: "exam-scope-priority", confidence: 0 };
+}
+
+/** Genera un boost para una card. */
+export function generateBoost(
+  card: Flashcard,
+  exam: Exam,
+  options: BoostOptions = DEFAULT_BOOST_OPTIONS
+): CardExamBoost | null {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  // Parsear fecha como local para evitar problemas con zonas horarias.
+  const [y, m, d] = exam.date.split("-").map((n) => parseInt(n, 10));
+  const examDate = new Date(y, m - 1, d);
+  examDate.setHours(0, 0, 0, 0);
+  const target = new Date(examDate);
+  target.setDate(target.getDate() - options.daysBeforeExam);
+  const targetStr = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, "0")}-${String(target.getDate()).padStart(2, "0")}`;
+
+  const decision = shouldBoost(card, exam, options);
+  if (!decision.should) return null;
+
+  // Si la card está atrasada, el boost la pone HOY (no en target futuro).
+  // Si la card está en el futuro, el boost la adelanta al target.
+  const originalDue = card.dueDate ? new Date(card.dueDate) : null;
+  const isOverdue = originalDue !== null && originalDue.getTime() < today.getTime();
+  const boostedDateStr = isOverdue ? todayStr : targetStr;
+  const daysPulledIn = originalDue
+    ? Math.max(0, Math.round((originalDue.getTime() - new Date(boostedDateStr).getTime()) / 86_400_000))
+    : 0;
+
+  return {
+    cardId: card.id,
+    examId: exam.id,
+    examTitle: exam.title,
+    originalDueDate: card.dueDate ?? todayStr,
+    boostedDueDate: boostedDateStr,
+    daysPulledIn,
+    reason: decision.reason,
+    confidence: decision.confidence,
+    applied: false,
+  };
+}
+
+/** Aplica los boosts a una lista de cards. Devuelve la lista modificada y los boosts aplicados. */
+export function applyBoosts(
+  cards: Flashcard[],
+  exam: Exam,
+  options: BoostOptions = DEFAULT_BOOST_OPTIONS,
+  adapter: FSRSAdapter = defaultFSRSAdapter
+): { updated: FlashcardFSRS[]; boosts: CardExamBoost[] } {
+  const updated: FlashcardFSRS[] = [];
+  const boosts: CardExamBoost[] = [];
+  for (const card of cards) {
+    const boost = generateBoost(card, exam, options);
+    if (boost) {
+      const fsrsCard = card as FlashcardFSRS;
+      // Capturar dueDate ANTES de aplicar el boost
+      const originalDue = card.dueDate ?? new Date().toISOString().slice(0, 10);
+      boost.originalDueDate = originalDue;
+      boost.applied = true;
+      fsrsCard.examBoost = boost;
+      fsrsCard.boostHistory = [...(fsrsCard.boostHistory ?? []), { ...boost, applied: true }];
+      adapter.applyBoost(fsrsCard, boost.boostedDueDate);
+      boosts.push({ ...boost, applied: true });
+    }
+    updated.push(card as FlashcardFSRS);
+  }
+  return { updated, boosts };
+}
+
+/** Revierte los boosts aplicados. */
+export function revertBoosts(
+  cards: FlashcardFSRS[],
+  examId: string,
+  adapter: FSRSAdapter = defaultFSRSAdapter
+): Flashcard[] {
+  return cards.map((card) => {
+    // Buscar el boost correspondiente en el historial
+    const boost = card.boostHistory?.find((b) => b.examId === examId && b.applied);
+    if (boost) {
+      adapter.applyBoost(card, boost.originalDueDate);
+      // Marcar como NO aplicado para evitar re-revertir
+      boost.applied = false;
+      // Si el examBoost activo es el mismo, limpiarlo
+      if (card.examBoost?.examId === examId) {
+        card.examBoost.applied = false;
+      }
+    } else if (card.examBoost?.examId === examId && card.examBoost.applied) {
+      // Fallback al examBoost si no hay history
+      adapter.applyBoost(card, card.examBoost.originalDueDate);
+      card.examBoost.applied = false;
+    }
+    return card;
+  });
+}
+
+/** Detecta si una card está siendo "forzada" por un examen activo. */
+export function isExamForced(card: FlashcardFSRS, examId?: string): boolean {
+  if (!card.examBoost?.applied) return false;
+  if (examId && card.examBoost.examId !== examId) return false;
+  return true;
+}
+
+/** Devuelve los boosts activos de una card. */
+export function getActiveBoosts(card: FlashcardFSRS): CardExamBoost[] {
+  return card.boostHistory?.filter((b) => b.applied) ?? [];
+}
+
+/** Calcula la cadencia óptima de una card teniendo en cuenta N exámenes. */
+export function optimalCadence(
+  card: Flashcard,
+  exams: Exam[],
+  options: BoostOptions = DEFAULT_BOOST_OPTIONS
+): { dueDate: string; source: "fsrs" | "exam-boost"; examId?: string } {
+  const activeExams = exams.filter((e) => e.status === "active" && isCardInExam(card, e));
+  if (activeExams.length === 0) {
+    return { dueDate: card.dueDate ?? new Date().toISOString().slice(0, 10), source: "fsrs" };
+  }
+  // Encontrar el examen que pux más fuerte (target más cercano)
+  let bestExam: Exam | null = null;
+  let bestTarget = "";
+  for (const exam of activeExams) {
+    const target = new Date(exam.date);
+    target.setDate(target.getDate() - options.daysBeforeExam);
+    const targetStr = target.toISOString().slice(0, 10);
+    if (!bestExam || targetStr < bestTarget) {
+      bestExam = exam;
+      bestTarget = targetStr;
+    }
+  }
+  // Si la dueDate natural está antes del target, no hay boost
+  if (card.dueDate && card.dueDate <= bestTarget) {
+    return { dueDate: card.dueDate, source: "fsrs" };
+  }
+  return { dueDate: bestTarget, source: "exam-boost", examId: bestExam!.id };
+}
+
+/** ¿La card pertenece al scope de este examen? */
+function isCardInExam(card: Flashcard, exam: Exam): boolean {
+  for (const scope of exam.scopes) {
+    if (scope.type === "note" && card.notePath === scope.path) return true;
+    if (scope.type === "folder" && card.notePath.startsWith(scope.path + "/")) {
+      if (scope.includeSubfolders) return true;
+      // Sin subcarpetas: solo nivel directo
+      const sub = card.notePath.slice(scope.path.length + 1);
+      if (!sub.includes("/")) return true;
+    }
+    if (scope.type === "tag" && card.tags.includes(scope.tag)) return true;
+    if (scope.type === "subject" && card.subject === scope.subject) return true;
+  }
+  return false;
+}
