@@ -54,7 +54,6 @@ class Updater extends ChangeNotifier {
   UpdateCheckResult? _lastResult;
   bool _checking = false;
   String? _installedVersion;
-  String? _vaultPath;
 
   Updater({http.Client? client, this.config = const UpdaterConfig()}) : _http = client ?? http.Client();
 

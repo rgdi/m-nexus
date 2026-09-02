@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/plugin_release.dart';
 import '../services/vault_detector.dart';
-import '../services/plugin_installer.dart';
 import '../services/updater.dart';
 import '../voice_notes/voice_notes_launcher.dart';
 import 'install_page.dart';
@@ -119,7 +118,6 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
         title: const Text('M-NEXUS Installer'),
