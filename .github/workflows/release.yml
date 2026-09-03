@@ -112,23 +112,56 @@ allprojects {
         google()
         mavenCentral()
     }
-
-    // v0.29.1: force Kotlin to 1.9.22 across ALL subprojects (including
-    // shared_preferences_android) so the app compiles against the same
-    // metadata version used by the plugins.
-    configurations.all {
-        resolutionStrategy.eachDependency { details ->
-            if (details.requested.group == 'org.jetbrains.kotlin') {
-                details.useVersion '1.9.22'
-                details.because "Pin Kotlin to 1.9.22 to match shared_preferences_android metadata"
-            }
-        }
-    }
 }
 
 rootProject.name = "mnexus_installer"
 EOF
           echo "Created /tmp/root-build.gradle ($(wc -l < /tmp/root-build.gradle) lines)"
+
+          # v0.29.1: settings.gradle with Kotlin 1.9.22 plugin version.
+          # Flutter 3.24+ requires the Kotlin plugin version to be specified
+          # in the settings.gradle plugins block, otherwise it defaults to 1.7.1
+          # which can't read the 1.9.0 metadata in shared_preferences_android.
+          cat > /tmp/settings.gradle << 'EOF'
+pluginManagement {
+    def flutterSdkPath = {
+        def properties = new Properties()
+        file("local.properties").withInputStream { properties.load(it) }
+        def flutterSdkPath = properties.getProperty("flutter.sdk")
+        assert flutterSdkPath != null, "flutter.sdk not set in local.properties"
+        return flutterSdkPath
+    }()
+
+    includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
+
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+
+    plugins {
+        id "dev.flutter.flutter-plugin-loader" version "1.0.0"
+        id "com.android.application" version "8.3.0" apply false
+        // v0.29.1: pin Kotlin plugin to 1.9.22
+        id "org.jetbrains.kotlin.android" version "1.9.22" apply false
+    }
+}
+
+include ":app"
+EOF
+          echo "Created /tmp/settings.gradle ($(wc -l < /tmp/settings.gradle) lines)"
+
+          # v0.29.1: gradle.properties with AndroidX + JVM 17
+          cat > /tmp/gradle.properties << 'EOF'
+org.gradle.jvmargs=-Xmx4G -XX:MaxMetaspaceSize=2G -XX:+HeapDumpOnOutOfMemoryError
+android.useAndroidX=true
+android.enableJetifier=true
+org.gradle.parallel=true
+org.gradle.configureondemand=true
+org.gradle.caching=true
+EOF
+          echo "Created /tmp/gradle.properties"
       - name: Regenerate Android platform files (the repo has incomplete android/ folder)
         run: |
           cd companion-app
@@ -142,7 +175,7 @@ EOF
           if [ -f /tmp/MainActivity.kt ]; then
             cp /tmp/MainActivity.kt android/app/src/main/kotlin/com/mnexus/installer/MainActivity.kt
           fi
-          # v0.29.1: also restore our custom build.gradle (flutter create overwrites it)
+          # v0.29.1: restore our custom build files
           if [ -f /tmp/build.gradle ]; then
             cp /tmp/build.gradle android/app/build.gradle
             echo "Restored custom app/build.gradle"
@@ -150,6 +183,14 @@ EOF
           if [ -f /tmp/root-build.gradle ]; then
             cp /tmp/root-build.gradle android/build.gradle
             echo "Installed root android/build.gradle"
+          fi
+          if [ -f /tmp/settings.gradle ]; then
+            cp /tmp/settings.gradle android/settings.gradle
+            echo "Installed android/settings.gradle"
+          fi
+          if [ -f /tmp/gradle.properties ]; then
+            cp /tmp/gradle.properties android/gradle.properties
+            echo "Installed android/gradle.properties"
           fi
       - name: Patch record_android build.gradle (workaround for v2 embedding issue)
         run: |
