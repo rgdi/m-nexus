@@ -31,8 +31,6 @@ jobs:
       - name: Read latest tag
         id: v
         run: |
-          # v0.29.6: when triggered by tag push, GITHUB_REF_NAME is the tag.
-          # When triggered by main push, we need to read the latest tag from git.
           if [[ "${GITHUB_REF_TYPE:-}" == "tag" ]]; then
             VERSION="${GITHUB_REF_NAME#v}"
             REF_NAME="${GITHUB_REF_NAME}"
@@ -41,9 +39,11 @@ jobs:
             VERSION="${LATEST_TAG#v}"
             REF_NAME="${LATEST_TAG}"
           fi
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "ref_name=${REF_NAME}" >> $GITHUB_OUTPUT
-          echo "Detected version: v${VERSION}"
+          {
+            echo "version=${VERSION}"
+            echo "ref_name=${REF_NAME}"
+          } >> "$GITHUB_OUTPUT"
+          echo "Detected version: v${VERSION} (tag: ${REF_NAME})"
 
   # -----------------------------------------------------------------
   # 1. Plugin de Obsidian -> ZIP con 4 archivos
@@ -210,14 +210,21 @@ jobs:
           fi
           ls -la artifacts/
       - name: Ensure tag exists and is pushed
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="${{ needs.set-version.outputs.ref_name }}"
+          echo "ref_name is: '${TAG}'"
+          if [ -z "$TAG" ]; then
+            echo "ERROR: ref_name is empty, cannot create tag"
+            exit 1
+          fi
           if ! git rev-parse "$TAG" >/dev/null 2>&1; then
             echo "Creating and pushing tag $TAG"
             git config user.email "actions@github.com"
             git config user.name "GitHub Actions"
             git tag "$TAG"
-            git push origin "$TAG"
+            git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$TAG"
           else
             echo "Tag $TAG already exists, skipping"
           fi
