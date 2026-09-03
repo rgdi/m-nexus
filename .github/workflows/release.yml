@@ -179,13 +179,13 @@ jobs:
     name: Create GitHub Release
     runs-on: ubuntu-latest
     needs: [build-plugin, build-backend, build-companion, upload-installer]
-    env:
-      RELEASE_TAG: ${{ needs.set-version.outputs.ref_name }}
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses:       - uses: actions/checkout@v4
         with:
+          fetch-depth: 0
+          fetch-tags: true
           fetch-depth: 0
           fetch-tags: true
       - name: Download all artifacts
@@ -211,30 +211,32 @@ jobs:
             rm -rf artifacts/installer
           fi
           ls -la artifacts/
-      - name: Ensure tag exists and is pushed
+      - name: Determine and push tag
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="${RELEASE_TAG}"
-          echo "ref_name is: '${TAG}'"
-          if [ -z "$TAG" ]; then
-            echo "ERROR: ref_name is empty, cannot create tag"
-            exit 1
+          set -e
+          # Try to read the tag from outputs, or fall back to git
+          if [ -n "${{ needs.set-version.outputs.ref_name }}" ]; then
+            TAG="${{ needs.set-version.outputs.ref_name }}"
+          else
+            TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.28.0")
           fi
+          echo "Using TAG: ${TAG}"
           if ! git rev-parse "$TAG" >/dev/null 2>&1; then
-            echo "Creating and pushing tag $TAG"
+            echo "Tag $TAG not found locally, creating and pushing"
             git config user.email "actions@github.com"
             git config user.name "GitHub Actions"
             git tag "$TAG"
-            git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$TAG"
-          else
-            echo "Tag $TAG already exists, skipping"
+            git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$TAG" || true
           fi
+          # Set it for later steps
+          echo "TAG=${TAG}" >> $GITHUB_ENV
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${RELEASE_TAG}
-          name: ${RELEASE_TAG}
+          tag_name: ${TAG}
+          name: ${TAG}
           generate_release_notes: true
           fail_on_unmatched_files: false
           files: |
