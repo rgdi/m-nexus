@@ -1,38 +1,56 @@
 # M-NEXUS Changelog
 
+## v0.30.0 (2026-09-03) - Auto-update system (backend + companion)
+
+### Added
+- **Backend auto-update**:
+  - Module `utils/updateChecker.ts` with fetchLatestRelease, getUpdateInfo (5-min cache), downloadFile, applyUpdate (backup+extract+restart), detectRestartCommand (PM2/systemd)
+  - REST endpoints: GET /api/v1/update (info), POST /api/v1/update/check, POST /api/v1/update/apply
+  - CLI: `mnexus version`, `mnexus update-check [--pre]`, `mnexus update-apply [--pre]`
+  - 23 new tests
+- **Companion app auto-update**:
+  - Rewrote `lib/services/updater.dart`: GitHub API + optional backend proxy
+  - New `lib/ui/update_dialog.dart`: shows changelog, version diff, download/install button
+  - Android platform channel (`com.mnexus.installer/install`) in MainActivity.kt
+  - FileProvider + REQUEST_INSTALL_PACKAGES permission
+  - 8 new tests
+- **Documentation**: `docs/AUTO_UPDATE.md` (5KB guide)
+
+### Changed
+- Companion app: added FAB to force check for updates + AppBar badge when update available
+- Companion app: home page shows update banner at top of vault list
+- Backend: package.json has `bin: { mnexus: dist/cli.js }`
+
+### Fixed
+- N/A (pure feature addition)
+
+### Known limitations
+- Voice notes feature still disabled in companion (record plugin incompatible with AGP 8.3+)
+- Backend `update-apply` needs write permissions to backend directory
+- GitHub API rate limit: 60 req/h unauthenticated (cache mitigates this)
+
 ## v0.29.7 (2026-09-03) - APK build working + full release pipeline
 
 ### Added
 - **APK build**: Android APK successfully built via GitHub Actions (49 MB)
-- **Release pipeline fully automated**: All 6 jobs (set-version, build-plugin, build-backend, build-companion, upload-installer, create-release) run end-to-end
-- **8 release assets**: 4 versioned (v0.29.7 suffix) + 4 quicklinks (no version, always point to latest)
+- **Release pipeline fully automated**: All 6 jobs run end-to-end via Actions
+- **8 release assets**: 4 versioned (v0.29.7 suffix) + 4 quicklinks (no version)
 - **GitHub Release creation**: softprops/action-gh-release@v2 with auto-generated release notes
-- **Tag pushing from CI**: Workflow creates and pushes tag if it doesn't exist
-- **Workflow-level env**: `RELEASE_TAG` for reliable cross-job data passing
 
 ### Changed
-- **Gradle wrapper**: 7.6.3 → 8.4 (required for AGP 8.3.0)
-- **Android Gradle Plugin**: 8.1.4 → 8.3.0
-- **Kotlin**: pinned to 1.9.22 across all gradle files
-- **Companion app**: simplified by removing `record` plugin (incompatible with AGP 8.12+)
-  - Removed: record 5.1.2, file_picker 8.0.7, permission_handler 11.3.1, url_launcher 6.3.0
-  - Removed: lib/voice_notes/ directory
-  - Voice notes feature: temporarily disabled (re-enable in future version with different audio plugin)
+- Gradle wrapper 7.6.3 → 8.4 (AGP 8.3.0 requirement)
+- Android Gradle Plugin 8.1.4 → 8.3.0
+- Kotlin 1.9.22 across all gradle files
+- Companion app: removed `record`, `file_picker`, `permission_handler`, `url_launcher` plugins (incompatible)
 
 ### Fixed
-- **GitHub Actions YAML parser silent failure**: removed all non-ASCII characters (Unicode box-drawing, accented chars) from release.yml
-- **APK build with AGP 8.3.0**: full Android build files (build.gradle, settings.gradle, gradle.properties, gradle-wrapper.properties) committed to repo
-- **Output propagation between jobs**: use `env.TAG` instead of `needs.set-version.outputs.ref_name` for reliable cross-job data
-- **YAML duplicate `- uses:` syntax error**: fixed create-release checkout
-- **fetch-tags: true**: ensures git tags are available in checkout for tag detection
-- **Absolute paths in zip commands**: avoid relative path issues in CI
+- GitHub Actions YAML parser silent failure (Unicode chars)
+- Cross-job output propagation (use $GITHUB_ENV + ${{ env.X }})
+- fetch-tags: true in set-version + create-release checkouts
+- Absolute paths in zip commands
+- Duplicate `- uses:` syntax error in create-release checkout
 
-### Known limitations
-- **PAT doesn't trigger tag-push workflows**: workflow uses `push:branches:main` trigger
-- **Voice notes feature removed**: incompatible plugins (record 5.1.2 needs AGP 8.12+ / Gradle 8.13+ which is beyond Flutter 3.24)
-- **Build time**: full release takes ~5-7 minutes (APK build is the longest step)
-
-## v0.29.0 (2026-09-02) - Auto-update system
+## v0.29.0 (2026-09-02) - Auto-update system (plugin)
 
 ### Added
 - 3-component auto-update: plugin (obsidian-plugin), backend, companion app
