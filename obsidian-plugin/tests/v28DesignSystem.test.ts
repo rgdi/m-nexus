@@ -163,13 +163,17 @@ describe("Design system helpers", () => {
   });
 });
 
+
+// Helper: directorio raíz del plugin
+const cwd = () => process.cwd().replace(/\/m-nexus-obsidian$/, "");
+
 // ── Consistencia: modales refactorizados usan design system
 
 describe("Modales refactorizados", () => {
   it("3.1 ProposalsModal importa del design system", async () => {
     // Verificar que el archivo importa los tokens correctos
     const fs = await import("node:fs");
-    const path = "/workspace/m-nexus-obsidian/src/ui/proposalsModal.ts";
+    const path = `${cwd()}/src/ui/proposalsModal.ts`;
     const content = fs.readFileSync(path, "utf-8");
     expect(content).toContain("designSystem.js");
     expect(content).toContain("SPACING");
@@ -180,7 +184,7 @@ describe("Modales refactorizados", () => {
 
   it("3.2 AdaptiveQuizModal importa del design system", async () => {
     const fs = await import("node:fs");
-    const path = "/workspace/m-nexus-obsidian/src/ui/adaptiveQuizModal.ts";
+    const path = `${cwd()}/src/ui/adaptiveQuizModal.ts`;
     const content = fs.readFileSync(path, "utf-8");
     expect(content).toContain("designSystem.js");
     expect(content).toContain("primaryButton");
@@ -190,8 +194,8 @@ describe("Modales refactorizados", () => {
   it("3.3 modales NO usan emojis redundantes (solo iconos semánticos)", async () => {
     const fs = await import("node:fs");
     const files = [
-      "/workspace/m-nexus-obsidian/src/ui/proposalsModal.ts",
-      "/workspace/m-nexus-obsidian/src/ui/adaptiveQuizModal.ts",
+      `${cwd()}/src/ui/proposalsModal.ts`,
+      `${cwd()}/src/ui/adaptiveQuizModal.ts`,
     ];
     for (const f of files) {
       const content = fs.readFileSync(f, "utf-8");
@@ -239,7 +243,7 @@ describe("Onboarding hints", () => {
 describe("CSS unificado", () => {
   it("5.1 styles.css incluye design system classes", async () => {
     const fs = await import("node:fs");
-    const css = fs.readFileSync("/workspace/m-nexus-obsidian/styles.css", "utf-8");
+    const css = fs.readFileSync(`${cwd()}/styles.css`, "utf-8");
     expect(css).toContain(".mnexus-stack");
     expect(css).toContain(".mnexus-cluster");
     expect(css).toContain(".mnexus-spinner");
@@ -249,14 +253,14 @@ describe("CSS unificado", () => {
 
   it("5.2 CSS tiene accesibilidad (focus, sr-only)", async () => {
     const fs = await import("node:fs");
-    const css = fs.readFileSync("/workspace/m-nexus-obsidian/styles.css", "utf-8");
+    const css = fs.readFileSync(`${cwd()}/styles.css`, "utf-8");
     expect(css).toContain("focus-visible");
     expect(css).toContain(".mnexus-sr-only");
   });
 
   it("5.3 CSS no usa colores hardcodeados críticos", async () => {
     const fs = await import("node:fs");
-    const css = fs.readFileSync("/workspace/m-nexus-obsidian/styles.css", "utf-8");
+    const css = fs.readFileSync(`${cwd()}/styles.css`, "utf-8");
     // Los colores deben usar var(--...)
     const hardcoded = css.match(/color:\s*#[0-9a-fA-F]{3,6}/g) ?? [];
     // Permitimos un máximo de 5 hardcoded (acentos decorativos)
