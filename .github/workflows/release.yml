@@ -173,3 +173,67 @@ jobs:
           name: companion
           path: artifacts/m-nexus-companion-*.apk
           if-no-files-found: warn
+
+
+  upload-installer:
+    name: Upload Installer Script
+    runs-on: ubuntu-latest
+    needs: set-version
+    steps:
+      - uses: actions/checkout@v4
+      - name: Copy installer to artifacts
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/artifacts
+          cp install/install.sh $GITHUB_WORKSPACE/artifacts/m-nexus-install-${{ needs.set-version.outputs.ref_name }}.sh
+          cp install/install.sh $GITHUB_WORKSPACE/artifacts/m-nexus-install.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installer
+          path: artifacts/m-nexus-install-*.sh
+          if-no-files-found: error
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [build-plugin, build-backend, build-companion, upload-installer]
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Flatten artifact directories
+        run: |
+          if [ -d artifacts/plugin ]; then
+            mv artifacts/plugin/*.zip artifacts/ 2>/dev/null || true
+            rm -rf artifacts/plugin
+          fi
+          if [ -d artifacts/backend ]; then
+            mv artifacts/backend/*.zip artifacts/ 2>/dev/null || true
+            rm -rf artifacts/backend
+          fi
+          if [ -d artifacts/companion ]; then
+            mv artifacts/companion/*.apk artifacts/ 2>/dev/null || true
+            rm -rf artifacts/companion
+          fi
+          if [ -d artifacts/installer ]; then
+            mv artifacts/installer/*.sh artifacts/ 2>/dev/null || true
+            rm -rf artifacts/installer
+          fi
+          ls -la artifacts/
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.set-version.outputs.ref_name }}
+          name: ${{ needs.set-version.outputs.ref_name }}
+          generate_release_notes: true
+          fail_on_unmatched_files: false
+          files: |
+            artifacts/m-nexus-plugin-*.zip
+            artifacts/m-nexus-backend-*.zip
+            artifacts/m-nexus-install-*.sh
+            artifacts/m-nexus-companion-*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
