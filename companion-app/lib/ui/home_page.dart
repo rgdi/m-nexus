@@ -24,8 +24,6 @@ class _HomePageState extends State<HomePage> {
       checkInterval: const Duration(hours: 6),
     ),
   );
-  // Endpoint de releases. En producción, URL al servidor M-NEXUS.
-  static const _releaseInfoUrl = 'https://raw.githubusercontent.com/rodrigo/m-nexus/main/release-info.json';
 
   @override
   void initState() {
@@ -135,7 +133,12 @@ class _HomePageState extends State<HomePage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => InstallPage(vault: vault, release: release),
+        builder: (_) => InstallPage(
+          vault: vault,
+          release: release,
+          installedVersion: vault.installedPluginVersion,
+          needsUpdate: r?.hasUpdate ?? false,
+        ),
       ),
     );
   }
