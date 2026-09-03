@@ -42,11 +42,9 @@ jobs:
         run: cd obsidian-plugin && npx esbuild src/main.ts --bundle --format=cjs --target=es2020 --platform=node --external:obsidian --external:electron --outfile=dist/main.js
       - name: Package ZIP
         run: |
-          mkdir -p ../../artifacts
+          mkdir -p $GITHUB_WORKSPACE/artifacts
           cp obsidian-plugin/manifest.json obsidian-plugin/styles.css obsidian-plugin/versions.json obsidian-plugin/dist/
-          cd obsidian-plugin/dist
-          zip ../../../artifacts/m-nexus-plugin-${{ needs.set-version.outputs.ref_name }}.zip \
-            main.js manifest.json styles.css versions.json
+          (cd obsidian-plugin/dist && zip $GITHUB_WORKSPACE/artifacts/m-nexus-plugin-${{ needs.set-version.outputs.ref_name }}.zip main.js manifest.json styles.css versions.json)
       - uses: actions/upload-artifact@v4
         with:
           name: plugin
