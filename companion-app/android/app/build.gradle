@@ -1,11 +1,7 @@
 // M-NEXUS Installer — Android build config.
-plugins {
-    id "com.android.application"
-    id "kotlin-android"
-    id "dev.flutter.flutter-gradle-plugin"
-}
 
-// v0.29.1: pin Kotlin plugin to 1.9.22 to match shared_preferences_android.
+// v0.29.1: pin Kotlin plugin to 1.9.22 to match shared_preferences_android
+// and other plugins compiled with newer Kotlin metadata.
 buildscript {
     ext.kotlin_version = '1.9.22'
     repositories {
@@ -15,6 +11,12 @@ buildscript {
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
+}
+
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    id "dev.flutter.flutter-gradle-plugin"
 }
 
 android {
@@ -30,11 +32,6 @@ android {
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_17.toString()
     }
-
-    // v0.29.1: pin Kotlin to 1.9.22 to match shared_preferences_android and
-    // other plugins that ship compiled with newer Kotlin metadata.
-    // (1.7.1 was the previous default and triggers
-    // "Class was compiled with an incompatible version of Kotlin" errors.)
 
     defaultConfig {
         applicationId = "com.mnexus.installer"
