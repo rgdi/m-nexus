@@ -3,10 +3,8 @@
 // v0.31: integracion con device identity + setup wizard.
 
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'services/backend_client.dart';
 import 'services/device_id.dart';
-import 'services/updater.dart';
 import 'ui/home_page.dart';
 import 'ui/setup_wizard.dart';
 

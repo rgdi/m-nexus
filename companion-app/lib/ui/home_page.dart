@@ -12,7 +12,6 @@
 
 import 'package:flutter/material.dart';
 import '../models/plugin_release.dart';
-import '../services/backend_client.dart';
 import '../services/calendar_service.dart';
 import '../services/device_id.dart';
 import '../services/updater.dart';

@@ -12,7 +12,6 @@
 // 6. Volver a esta app para verificar
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 class ActivatePluginPage extends StatefulWidget {
   const ActivatePluginPage({super.key});
