@@ -128,24 +128,6 @@ jobs:
       - run: cd companion-app && flutter pub get
       - run: cd companion-app && flutter analyze
       - run: cd companion-app && flutter test
-      - name: Patch record_android plugin
-        run: |
-          PLUGIN_DIR=$(find ~/.pub-cache/hosted -type d -name 'record_android-*' 2>/dev/null | head -1)
-          if [ -n "$PLUGIN_DIR" ]; then
-            echo "Patching record_android at $PLUGIN_DIR"
-            sed -i 's/compileSdkVersion flutter.compileSdkVersion/compileSdkVersion 34/g' $PLUGIN_DIR/android/build.gradle 2>/dev/null || true
-            sed -i 's/ndkVersion flutter.ndkVersion/ndkVersion "27.0.12077973"/g' $PLUGIN_DIR/android/build.gradle 2>/dev/null || true
-            sed -i 's/targetSdkVersion flutter.targetSdkVersion/targetSdkVersion 34/g' $PLUGIN_DIR/android/build.gradle 2>/dev/null || true
-            sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 23/g' $PLUGIN_DIR/android/build.gradle 2>/dev/null || true
-            sed -i 's/kotlin_version = .*/kotlin_version = "1.9.22"/g' $PLUGIN_DIR/android/build.gradle 2>/dev/null || true
-          fi
-      - name: Patch shared_preferences_android plugin
-        run: |
-          PLUGIN_DIR=$(find ~/.pub-cache/hosted -type d -name 'shared_preferences_android-*' 2>/dev/null | head -1)
-          if [ -n "$PLUGIN_DIR" ]; then
-            echo "Patching shared_preferences_android at $PLUGIN_DIR"
-            sed -i 's/kotlin_version = .*/kotlin_version = "1.9.22"/g' $PLUGIN_DIR/android/build.gradle 2>/dev/null || true
-          fi
       - name: Copy custom android files
         run: |
           cp companion-app/android/build.gradle /tmp/build.gradle

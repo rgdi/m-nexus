@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/plugin_release.dart';
 import '../services/vault_detector.dart';
 import '../services/updater.dart';
-import '../voice_notes/voice_notes_launcher.dart';
 import 'install_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -144,43 +143,16 @@ class _HomePageState extends State<HomePage> {
                       vaults: _vaults,
                       onTap: _checkAndInstall,
                     ),
-      floatingActionButton: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          FloatingActionButton.extended(
-            heroTag: 'voice-notes',
-            onPressed: _openVoiceNotes,
-            icon: const Icon(Icons.mic),
-            label: const Text('Voice note'),
-            backgroundColor: Theme.of(context).colorScheme.errorContainer,
-          ),
-          const SizedBox(height: 12),
-          FloatingActionButton.extended(
-            heroTag: 'vault-manual',
-            onPressed: _showManualPathInput,
-            icon: const Icon(Icons.folder_open),
-            label: const Text('Vault manual'),
-          ),
-        ],
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'vault-manual',
+        onPressed: _showManualPathInput,
+        icon: const Icon(Icons.folder_open),
+        label: const Text('Vault manual'),
       ),
     );
   }
 
-  Future<void> _openVoiceNotes() async {
-    // Cargar backendUrl y authToken desde shared_preferences (o settings)
-    final prefs = await SharedPreferences.getInstance();
-    final backendUrl = prefs.getString('backendUrl') ?? 'https://api.mnexus.app';
-    final authToken = prefs.getString('authToken') ?? '';
-    if (!mounted) return;
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => VoiceNotesLauncher(backendUrl: backendUrl, authToken: authToken),
-      ),
-    );
-  }
-
-  Future<void> _showManualPathInput() async {
+Future<void> _showManualPathInput() async {
     final controller = TextEditingController();
     await showDialog<void>(
       context: context,
