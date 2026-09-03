@@ -1,216 +1,163 @@
-# M-NEXUS — Sistema de estudio médico para Obsidian
+# M-NEXUS — Sistema de estudio médico con control humano
 
-**v0.28.0** · Knowledge graph + adaptive quiz + StudyOrchestrator + FSRS boost + Free review + Backups ultrarrápidos (ZIP binario con drag-and-drop)
+[![Release](https://img.shields.io/github/v/release/rgdi/m-nexus)](https://github.com/rgdi/m-nexus/releases/latest)
+[![License](https://img.shields.io/github/license/rgdi/m-nexus)](LICENSE)
+[![Tests](https://img.shields.io/badge/tests-1125%20passing-brightgreen)]()
+[![Topic](https://img.shields.io/badge/topics-15-blue)]()
 
-M-NEXUS es un plugin de Obsidian + backend opcional + app companion Android
-para estudio médico. Diseñado para ser **humano en el loop**: la IA propone,
-tú decides.
+> **v0.31.0** · Auto-update system + device identity + Google Calendar + setup wizard
 
----
+**M-NEXUS** = plugin de Obsidian + backend Node.js + companion app Android
+para estudio médico con IA en el loop (FSRS spaced repetition, voice notes,
+proposals de IA, backup ultrarrápido, offline-first).
 
-## 🚀 Descarga rápida (autoupdating)
-
-Estos enlaces apuntan siempre a la **última versión**:
-
-| Componente | Descarga | Auto-update |
-|---|---|---|
-| 🧩 **Plugin Obsidian** | [⬇ m-nexus-plugin.zip](https://github.com/rgdi/m-nexus/releases/latest/download/m-nexus-plugin.zip) | BRAT / Community Plugins |
-| ⚙️ **Backend** (Node 22+) | [⬇ m-nexus-backend.zip](https://github.com/rgdi/m-nexus/releases/latest/download/m-nexus-backend.zip) | `install.sh --update` |
-| 📱 **Companion App** (Android) | [⬇ m-nexus-companion.apk](https://github.com/rgdi/m-nexus/releases/latest/download/m-nexus-companion.apk) | Notificación en la app |
-| 🔧 **Install script** | [⬇ install.sh](https://github.com/rgdi/m-nexus/releases/latest/download/m-nexus-install.sh) | — |
-
-> 📱 **Nota sobre el APK**: la primera release (v0.28.0) no incluye APK pre-compilado. Para generar la companion app Android necesitas Flutter SDK + Android SDK. Ver [docs/BUILD_APK.md](docs/BUILD_APK.md) o compílalo con:
-> ```bash
-> git clone https://github.com/rgdi/m-nexus.git
-> cd m-nexus/companion-app
-> flutter pub get
-> flutter build apk --release
-> ```
-
-**Última release**: [github.com/rgdi/m-nexus/releases/latest](https://github.com/rgdi/m-nexus/releases/latest)
+Diseñado para ser **humano en el loop**: la IA propone, tú decides.
 
 ---
 
-## ⚡ Instalación rápida (5 minutos)
+## 🎯 ¿Qué hace M-NEXUS?
+
+- **🎙️ Voice notes de clases** — Graba la clase desde el móvil, se transcribe automáticamente, y se vincula al evento del Calendar
+- **🧠 FSRS spaced repetition** — Algoritmo de repetición espaciada moderno (mejor que SM-2/Anki)
+- **🤖 Proposals de IA** — Flashcards, resúmenes y preguntas generadas desde tus notas (LLM local o remoto)
+- **📅 Integración Calendar** — Detecta eventos de clase y sugiere nombres/contextos
+- **💾 Backup ultrarrápido** — ZIP binario con SQLite index, drag-and-drop
+- **🔄 Offline-first** — Cola de cambios en el plugin, sincroniza cuando hay red
+- **🚀 Auto-update** — Los 3 componentes (plugin, backend, companion) se actualizan solos
+- **🔐 Device identity** — El companion se "reconoce" entre actualizaciones (mismo device_id, misma config)
+- **🎨 Design system** — UI consistente con CSS variables y componentes reutilizables
+
+---
+
+## 🚀 Quick start (60 segundos)
+
+### 1. Instala el plugin en Obsidian
+
+| Método | Pasos |
+|---|---|
+| **Community Plugins** (recomendado) | Settings → Community plugins → Browse → "M-NEXUS" → Install → Enable |
+| **BRAT** (beta) | Install BRAT, luego `brat install m-nexus` |
+| **Manual** | Descarga y extrae en `{vault}/.obsidian/plugins/m-nexus/` |
+
+### 2. (Opcional) Instala el backend
+
+Para voz → texto, OCR, LLM proposals, etc.:
 
 ```bash
-# 1. Backend
-curl -fsSL https://github.com/rgdi/m-nexus/releases/latest/download/m-nexus-install.sh | bash
-
-# 2. Plugin de Obsidian
-# Settings → Community plugins → Install from disk
-# Selecciona: m-nexus-plugin.zip
+# Universal installer
+curl -fsSL https://github.com/rgdi/m-nexus/releases/latest/download/m-nexus-install.sh -o install.sh
+bash install.sh
+# Sigue el wizard (puerto, IP, modelo LLM, etc.)
 ```
 
-El script de instalación es **universal**: detecta tu OS, RAM, CPU, disco, y
-adapta la instalación. Soporta Linux, macOS, WSL, Docker, systemd, launchd.
+El backend es **opcional**: el plugin funciona solo (FSRS, voice notes local, flashcards), pero sin transcripción automática de audio.
+
+### 3. (Opcional) Instala la companion app Android
+
+Descarga el APK: [⬇ m-nexus-companion.apk](https://github.com/rgdi/m-nexus/releases/latest/download/m-nexus-companion.apk)
+
+La companion app es:
+- 🎙️ **Grabadora de clases** (vinculada a Calendar)
+- 🛠️ **Setup wizard** del plugin en tu vault
+- 🔧 **Configurador del backend** (URL/IP editable)
+- 🔄 **Auto-update** del propio APK
+
+---
+
+## 📦 Componentes
+
+| Componente | Stack | Tamaño | Auto-update |
+|---|---|---|---|
+| 🧩 **Plugin Obsidian** | TypeScript + esbuild | ~160 KB | Sí (Notice + link) |
+| ⚙️ **Backend** | Node.js 22 + Fastify + SQLite | ~70 KB | `mnexus update-apply` |
+| 📱 **Companion App** | Flutter 3.24 + Kotlin | ~50 MB | Diálogo nativo Android |
+
+---
+
+## 🛠️ Desarrollo
+
+### Requisitos
+
+- Node.js 22+
+- pnpm o npm
+- Flutter 3.24+ (solo para companion)
+- JDK 17+ (solo para Android)
+
+### Setup local
+
+```bash
+git clone https://github.com/rgdi/m-nexus.git
+cd m-nexus
+npm install --workspaces  # si tienes workspaces, si no, instalar cada uno
+
+# Plugin
+cd obsidian-plugin && npm install && npm test
+# → 1125 tests
+
+# Backend
+cd ../backend && npm install && npm test
+# → 23 update tests + resto
+
+# Companion (requiere Flutter)
+cd ../companion-app && flutter pub get && flutter test
+# → 8 update tests + resto
+```
+
+### Estructura del monorepo
+
+```
+m-nexus/
+├── obsidian-plugin/         # Plugin de Obsidian
+│   ├── src/                 # TypeScript
+│   ├── tests/               # vitest (1125 tests)
+│   ├── manifest.json
+│   └── versions.json
+├── backend/                 # Backend Node.js
+│   ├── src/
+│   │   ├── routes/          # Fastify routes
+│   │   ├── services/        # Whisper, LLM, OCR
+│   │   ├── utils/
+│   │   │   └── updateChecker.ts
+│   │   └── cli.ts           # mnexus update-apply
+│   └── tests/               # vitest
+├── companion-app/           # App Android (Flutter)
+│   ├── lib/
+│   │   ├── services/        # device_id, calendar, updater
+│   │   ├── ui/              # home, settings, setup_wizard
+│   │   └── main.dart
+│   ├── android/             # Kotlin platform channels
+│   └── test/
+├── docs/                    # Guías (BACKUP, AUTO_UPDATE, BUILD_APK)
+├── install/                 # install.sh universal
+└── .github/workflows/       # CI/CD (ci.yml, release.yml)
+```
 
 ---
 
 ## 📚 Documentación
 
-| Guía | Descripción |
-|---|---|
-| [INSTALL](docs/BACKUP_INSTALL.md) | Instalación detallada del backend (4 opciones) |
-| [USER GUIDE](docs/BACKUP_USER_GUIDE.md) | Cómo usar el sistema de backups con drag-and-drop |
-| [ADMIN](docs/BACKUP_ADMIN_GUIDE.md) | Mantenimiento del server, SQLite, S3, monitorización |
-| [DOCKER](docs/BACKUP_DOCKER.md) | Deployment con docker-compose + Nginx + TLS |
-| [TROUBLESHOOTING](docs/BACKUP_TROUBLESHOOTING.md) | Problemas comunes con soluciones |
-
-Más documentación en [docs/](docs/).
+- [docs/AUTO_UPDATE.md](docs/AUTO_UPDATE.md) — Cómo funciona el auto-update
+- [docs/BACKUP_*.md](docs/) — Sistema de backups ultrarrápidos
+- [CHANGELOG.md](CHANGELOG.md) — Historial de versiones
+- [Releases](https://github.com/rgdi/m-nexus/releases) — Binarios descargables
 
 ---
 
-## 🎯 Features principales
+## 🤝 Contribuir
 
-### Plugin de Obsidian
-- **Knowledge graph** + **adaptive quiz** con mastery bayesiano
-- **StudyOrchestrator** (agente IA que genera propuestas)
-- **FSRS boost** integrado con knowledge mastery
-- **Free review** sin scheduling (estudia lo que TÚ quieras)
-- **Snooze system** ("no me molestes con esto por X tiempo")
-- **Backups ZIP binarios** con drag-and-drop a un `.db` SQLite
-- **18 subsistemas lazy** que solo se cargan cuando se necesitan
-- **Logging exhaustivo** + **Caja negra / breadcrumbs** para debugging
-- **Human-in-the-loop** estricto: la IA propone, tú apruebas
-
-### Backend (opcional pero recomendado)
-- **Whisper** para transcripción de audio
-- **OCR** (Tesseract) para imágenes
-- **LLM** (Ollama, OpenRouter) para chat y propuestas
-- **Embeddings** + RAG para búsqueda semántica
-- **Cross-relevance** entre notas
-- **Knowledge graph** persistente por usuario
-- **Adaptive quiz** server-side con FSRS
-
-### Companion App (Android, Flutter)
-- Detecta vaults de Obsidian en el dispositivo
-- Instala/actualiza el plugin automáticamente
-- **Voice notes**: graba audio m4a y lo sube al backend
-- Auto-clasifica por horario de clases
-- Drag & drop de backups
+1. Fork
+2. Branch (`git checkout -b feature/amazing`)
+3. Tests (`npm test` en cada componente)
+4. PR
 
 ---
 
-## 🏗️ Arquitectura
+## 📄 Licencia
 
-```
-┌──────────────────┐         ┌──────────────────┐
-│   Obsidian       │  HTTPS  │   Backend        │
-│   (plugin)       │ ◄─────► │   (Node 22+)     │
-│                  │         │   Fastify        │
-│   - Knowledge    │         │   - Whisper      │
-│   - Quiz         │         │   - Tesseract    │
-│   - Backups      │         │   - LLM          │
-└────────┬─────────┘         └────────┬─────────┘
-         │                            │
-         │ ZIP/drag-drop             │ SQLite .db
-         │                            │
-         ▼                            ▼
-   .mnexus-backups/            /var/lib/mnexus/
-   {manual,auto,emergency}-    {deviceId}/{id}.zip
-   {timestamp}.mnexus-backup   backups-index.db
-```
-
-**Thin client**: el plugin NO ejecuta IA localmente, todo va al backend.
-**Privacy-first**: E2E encryption opcional por nota.
-**Offline-first**: OfflineQueue intercepta cuando el server está caído.
+MIT — ver [LICENSE](LICENSE)
 
 ---
 
-## 🔄 Auto-updating
+## ❤️ Hecho con cariño para estudiantes de medicina
 
-Cada componente verifica updates automáticamente:
-
-| Componente | Mecanismo | Frecuencia |
-|---|---|---|
-| **Plugin** | Al abrir Obsidian (5s después) | Una vez por sesión |
-| **Backend** | Al arrancar el server | Una vez por startup |
-| **Companion** | Al abrir la app | Una vez por sesión |
-
-Todos consultan la GitHub Releases API y notifican si hay versión nueva
-con un link directo a la release.
-
-Para **autoupdate completo del backend**, ejecuta:
-```bash
-./install.sh --update
-```
-
-Para el **plugin via BRAT** (Beta Reviewer's Auto-update Tool):
-1. Instala [BRAT](https://github.com/TfTHacker/obsidian42-brat)
-2. BRAT → Add Beta plugin → `rgdi/m-nexus`
-3. Las nuevas versiones se actualizan automáticamente
-
----
-
-## 📊 Estado
-
-| Componente | Tests | Tamaño |
-|---|---|---|
-| Plugin | 1125/1125 ✅ | 163KB |
-| Backend | 145/145 ✅ | 63KB |
-| Companion (Dart) | 30 tests ✅ | 28KB |
-| **TypeScript errors** | **0** en plugin y backend ✅ | |
-
----
-
-## 🛠️ Development
-
-```bash
-# Plugin
-cd obsidian-plugin
-npm install
-npm test
-npx esbuild src/main.ts --bundle --format=cjs --platform=node \
-  --external:obsidian --external:electron --outfile=dist/main.js
-
-# Backend
-cd backend
-npm install
-npm test
-npm run build
-
-# Companion
-cd companion-app
-flutter pub get
-flutter test
-flutter build apk --release
-```
-
-### Crear un release
-
-```bash
-# Bump version
-./scripts/bump-version.sh 0.29.0
-
-# Commit
-git add -A
-git commit -m "Release v0.29.0"
-git tag v0.29.0
-git push --tags
-
-# GitHub Actions se encarga del resto:
-# - Compila todo
-# - Crea la release con ZIPs y APK
-# - Publica el changelog
-```
-
----
-
-## 📜 Licencia
-
-MIT — ver [LICENSE](LICENSE).
-
----
-
-## 🙏 Créditos
-
-- **FSRS**: algoritmo de spaced repetition de [open-spaced-repetition](https://github.com/open-spaced-repetition)
-- **Obsidian**: plataforma de notas
-- **Comunidad**: contribuciones, issues, sugerencias
-
----
-
-**Repositorio**: [github.com/rgdi/m-nexus](https://github.com/rgdi/m-nexus)
-**Issues**: [github.com/rgdi/m-nexus/issues](https://github.com/rgdi/m-nexus/issues)
-**Releases**: [github.com/rgdi/m-nexus/releases](https://github.com/rgdi/m-nexus/releases)
+Rodrigo · 2026 · Hecho en Berlin, comiendo döner

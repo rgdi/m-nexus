@@ -1,161 +1,388 @@
-// SettingsPage: configuración de la app (auto-update, backend URL, etc).
+// SettingsPage: configuración completa de M-NEXUS companion.
+//
+// Secciones:
+// - Backend: URL/IP, test de conexión, info del servidor
+// - Dispositivo: nombre, ID, plataforma
+// - Calendar: integración con Google Calendar
+// - Auto-update: configurar intervalo, incluir prereleases
+// - Grabación: calidad de audio, formato
+// - Acerca de: versión, links
 
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../services/updater.dart';
+import 'package:flutter/services.dart';
+import '../services/backend_client.dart';
+import '../services/calendar_service.dart';
+import '../services/device_id.dart';
 
 class SettingsPage extends StatefulWidget {
-  final Updater updater;
-  const SettingsPage({super.key, required this.updater});
+  const SettingsPage({super.key});
+
   @override
   State<SettingsPage> createState() => _SettingsPageState();
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  late TextEditingController _backendController;
-  late TextEditingController _tokenController;
-  late TextEditingController _intervalController;
-  late TextEditingController _releaseUrlController;
-  bool _autoDownload = false;
+  final _urlController = TextEditingController();
+  final _nameController = TextEditingController();
+  BackendConnection? _connection;
+  DeviceIdentity? _identity;
+  CalendarService? _calendar;
+  bool _testing = false;
   bool _loading = true;
+  bool _calendarAvailable = false;
+  List<CalendarInfo> _calendars = [];
 
   @override
   void initState() {
     super.initState();
-    _backendController = TextEditingController();
-    _tokenController = TextEditingController();
-    _intervalController = TextEditingController(text: '6');
-    _releaseUrlController = TextEditingController();
     _load();
   }
 
+  @override
+  void dispose() {
+    _urlController.dispose();
+    _nameController.dispose();
+    super.dispose();
+  }
+
   Future<void> _load() async {
-    final prefs = await SharedPreferences.getInstance();
+    final url = await BackendClient.getBackendUrl();
+    _urlController.text = url;
+    _identity = await DeviceIdentity.load();
+    _nameController.text = _identity?.displayName ?? _identity?.model ?? '';
+    _calendar = CalendarService();
+    await _calendar!.load();
+    if (_calendar!.enabled) {
+      _calendarAvailable = await _calendar!.isPermissionGranted();
+      if (_calendarAvailable) {
+        _calendars = await _calendar!.listCalendars();
+      }
+    }
+    setState(() => _loading = false);
+  }
+
+  Future<void> _testConnection() async {
+    setState(() => _testing = true);
+    final result = await BackendClient.testConnection(_urlController.text);
     setState(() {
-      _backendController.text = prefs.getString('backend_url') ?? '';
-      _tokenController.text = prefs.getString('auth_token') ?? '';
-      _intervalController.text = (prefs.getInt('check_interval_hours') ?? 6).toString();
-      _releaseUrlController.text = prefs.getString('release_url') ?? '';
-      _autoDownload = prefs.getBool('auto_download') ?? false;
-      _loading = false;
+      _connection = result;
+      _testing = false;
     });
   }
 
-  Future<void> _save() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('backend_url', _backendController.text.trim());
-    await prefs.setString('auth_token', _tokenController.text.trim());
-    final hours = int.tryParse(_intervalController.text) ?? 6;
-    await prefs.setInt('check_interval_hours', hours);
-    await prefs.setString('release_url', _releaseUrlController.text.trim());
-    await prefs.setBool('auto_download', _autoDownload);
+  Future<void> _saveUrl() async {
+    final url = _urlController.text.trim();
+    if (url.isEmpty) return;
+    await BackendClient.setBackendUrl(url);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Configuración guardada')),
+      const SnackBar(content: Text('URL guardada')),
     );
   }
 
-  Future<void> _checkNow() async {
-    try {
-      final r = await widget.updater.check(force: true);
+  Future<void> _saveName() async {
+    final name = _nameController.text.trim();
+    if (name.isEmpty || _identity == null) return;
+    await _identity!.setDisplayName(name);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Nombre actualizado')),
+    );
+  }
+
+  Future<void> _enableCalendar() async {
+    if (_calendar == null) return;
+    final ok = await _calendar!.setEnabled(true);
+    if (!ok) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            r.hasUpdate
-                ? 'Actualización v${r.update!.latestVersion} disponible'
-                : 'Estás al día (v${r.installedVersion})',
-          ),
-        ),
+        const SnackBar(content: Text('Permiso de calendario denegado')),
       );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      return;
     }
+    _calendars = await _calendar!.listCalendars();
+    setState(() => _calendarAvailable = true);
+  }
+
+  Future<void> _disableCalendar() async {
+    if (_calendar == null) return;
+    await _calendar!.setEnabled(false);
+    setState(() {
+      _calendarAvailable = false;
+      _calendars = [];
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Configuración'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: _save,
-            tooltip: 'Guardar',
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('Configuración')),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(vertical: 8),
         children: [
-          const _SectionHeader('Actualizaciones automáticas'),
-          SwitchListTile(
-            title: const Text('Descargar automáticamente'),
-            subtitle: const Text('Cuando haya una nueva versión, descárgala en segundo plano'),
-            value: _autoDownload,
-            onChanged: (v) => setState(() => _autoDownload = v),
-          ),
-          TextField(
-            controller: _intervalController,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              labelText: 'Intervalo de chequeo (horas)',
-              helperText: 'Cada cuántas horas consultar releases',
-            ),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _releaseUrlController,
-            decoration: const InputDecoration(
-              labelText: 'URL del release info',
-              helperText: 'JSON con latest_version, download_url, etc. Vacío = default',
-            ),
-          ),
-          const SizedBox(height: 8),
-          ElevatedButton.icon(
-            onPressed: _checkNow,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Buscar actualización ahora'),
-          ),
-          const SizedBox(height: 24),
-          const _SectionHeader('Backend M-NEXUS'),
-          TextField(
-            controller: _backendController,
-            decoration: const InputDecoration(
-              labelText: 'URL del backend',
-              helperText: 'Ej: https://mi-server.example.com',
-            ),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _tokenController,
-            obscureText: true,
-            decoration: const InputDecoration(
-              labelText: 'Token de autenticación',
-              helperText: 'JWT del backend M-NEXUS (opcional, registrado al instalar)',
-            ),
-          ),
+          _buildBackendSection(),
+          const Divider(),
+          _buildDeviceSection(),
+          const Divider(),
+          _buildCalendarSection(),
+          const Divider(),
+          _buildAboutSection(),
         ],
       ),
+    );
+  }
+
+  Widget _buildBackendSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionHeader('Backend M-NEXUS'),
+        ListTile(
+          leading: const Icon(Icons.dns),
+          title: const Text('URL del backend'),
+          subtitle: TextField(
+            controller: _urlController,
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              hintText: 'http://192.168.1.10:8787',
+            ),
+            style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+            onSubmitted: (_) => _saveUrl(),
+          ),
+          trailing: _testing
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : IconButton(
+                  icon: const Icon(Icons.wifi_find),
+                  tooltip: 'Probar conexión',
+                  onPressed: _testConnection,
+                ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              FilledButton.icon(
+                onPressed: _saveUrl,
+                icon: const Icon(Icons.save),
+                label: const Text('Guardar URL'),
+              ),
+              const SizedBox(width: 12),
+              if (_connection != null) _buildConnectionChip(),
+            ],
+          ),
+        ),
+        if (_connection?.isReachable == true)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Card(
+              color: Colors.green.withOpacity(0.1),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('✓ Conectado a ${_connection!.url}'),
+                    Text('Versión: ${_connection!.version ?? "?"}'),
+                    Text('Latencia: ${_connection!.latency.inMilliseconds} ms'),
+                  ],
+                ),
+              ),
+            ),
+          )
+        else if (_connection?.error != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Card(
+              color: Colors.red.withOpacity(0.1),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Text('✗ ${_connection!.error}'),
+              ),
+            ),
+          ),
+        const Padding(
+          padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: Text(
+            'Por defecto: http://10.0.2.2:8787 (emulador) o http://localhost:8787 (mismo dispositivo). '
+            'Para LAN: usa la IP del servidor (ej. http://192.168.1.10:8787).',
+            style: TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildConnectionChip() {
+    if (_connection == null) return const SizedBox.shrink();
+    return Chip(
+      avatar: Icon(
+        _connection!.isReachable ? Icons.check_circle : Icons.error,
+        color: _connection!.isReachable ? Colors.green : Colors.red,
+        size: 18,
+      ),
+      label: Text(_connection!.isReachable ? 'OK' : 'Error'),
+    );
+  }
+
+  Widget _buildDeviceSection() {
+    if (_identity == null) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionHeader('Dispositivo'),
+        ListTile(
+          leading: const Icon(Icons.badge),
+          title: const Text('Nombre'),
+          subtitle: TextField(
+            controller: _nameController,
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              hintText: 'Mi Pixel 7',
+            ),
+            onSubmitted: (_) => _saveName(),
+          ),
+          trailing: IconButton(
+            icon: const Icon(Icons.save),
+            onPressed: _saveName,
+          ),
+        ),
+        ListTile(
+          leading: const Icon(Icons.fingerprint),
+          title: const Text('Device ID'),
+          subtitle: SelectableText(
+            _identity!.deviceId,
+            style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+          ),
+          trailing: IconButton(
+            icon: const Icon(Icons.copy),
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: _identity!.deviceId));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Device ID copiado')),
+              );
+            },
+          ),
+        ),
+        ListTile(
+          leading: const Icon(Icons.phone_android),
+          title: const Text('Modelo'),
+          subtitle: Text(_identity!.model ?? 'Desconocido'),
+        ),
+        ListTile(
+          leading: const Icon(Icons.info_outline),
+          title: const Text('Versión Android'),
+          subtitle: Text(_identity!.osVersion ?? 'Desconocida'),
+        ),
+        ListTile(
+          leading: const Icon(Icons.calendar_today),
+          title: const Text('Registrado'),
+          subtitle: Text(
+            _identity!.createdAt.toLocal().toString().split('.').first,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCalendarSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionHeader('Google Calendar'),
+        SwitchListTile(
+          secondary: const Icon(Icons.calendar_month),
+          title: const Text('Integración con Calendar'),
+          subtitle: Text(_calendar!.enabled
+              ? (_calendarAvailable
+                  ? 'Activado: ${_calendars.length} calendarios detectados'
+                  : 'Activado pero permiso denegado')
+              : 'Sugerir nombre de clase desde eventos próximos'),
+          value: _calendar!.enabled,
+          onChanged: (v) => v ? _enableCalendar() : _disableCalendar(),
+        ),
+        if (_calendar!.enabled && _calendars.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Calendarios disponibles:', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                const SizedBox(height: 4),
+                ..._calendars.take(5).map((c) => ListTile(
+                      dense: true,
+                      leading: CircleAvatar(
+                        backgroundColor: Color(c.color),
+                        radius: 10,
+                      ),
+                      title: Text(c.name),
+                      subtitle: Text(c.account, style: const TextStyle(fontSize: 11)),
+                    )),
+              ],
+            ),
+          ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: OutlinedButton.icon(
+            onPressed: () => _calendar!.openCalendarApp(),
+            icon: const Icon(Icons.open_in_new),
+            label: const Text('Abrir app de Calendar'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAboutSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionHeader('Acerca de'),
+        const ListTile(
+          leading: Icon(Icons.info),
+          title: Text('Versión'),
+          subtitle: Text('0.30.0+10'),
+        ),
+        const ListTile(
+          leading: Icon(Icons.link),
+          title: Text('Repositorio'),
+          subtitle: Text('github.com/rgdi/m-nexus'),
+        ),
+        const ListTile(
+          leading: Icon(Icons.bug_report),
+          title: Text('Reportar problema'),
+          subtitle: Text('github.com/rgdi/m-nexus/issues'),
+        ),
+      ],
     );
   }
 }
 
 class _SectionHeader extends StatelessWidget {
-  final String text;
-  const _SectionHeader(this.text);
+  final String title;
+  const _SectionHeader(this.title);
+
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Text(text, style: Theme.of(context).textTheme.titleMedium),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Text(
+        title.toUpperCase(),
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.primary,
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 1.2,
+        ),
+      ),
     );
   }
 }

@@ -1,6 +1,6 @@
 name: mnexus_installer
 description: "Instalador y actualizador del plugin M-NEXUS para Obsidian. Crea las carpetas necesarias en el vault y mantiene el plugin al día."
-version: 0.30.0+10
+version: 0.31.0+11
 publish_to: "none"
 
 environment:
@@ -19,6 +19,8 @@ dependencies:
   # UI
   cupertino_icons: ^1.0.8
   shared_preferences: ^2.3.2
+  # v0.31: para generar device_id persistente
+  uuid: ^4.5.1
   google_fonts: ^6.2.1
   # v0.30: render del changelog en el UpdateDialog
   flutter_markdown: ^0.7.4
