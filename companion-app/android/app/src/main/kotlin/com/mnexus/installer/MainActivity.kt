@@ -172,10 +172,10 @@ class MainActivity: FlutterActivity() {
                                 events.add(mapOf(
                                     "id" to c.getLong(0),
                                     "title" to (c.getString(1) ?: ""),
-                                    "description" to (c.getString(2) ?? ""),
+                                    "description" to (c.getString(2) ?: ""),
                                     "startMs" to c.getLong(3),
                                     "endMs" to c.getLong(4),
-                                    "location" to (c.getString(5) ?? ""),
+                                    "location" to (c.getString(5) ?: ""),
                                     "calendarId" to c.getLong(6)
                                 ))
                             }
