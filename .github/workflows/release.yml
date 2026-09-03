@@ -113,11 +113,6 @@ jobs:
             cp /tmp/MainActivity.kt android/app/src/main/kotlin/com/mnexus/installer/MainActivity.kt
           fi
       - name: Build APK
-        # v0.29: The 'record' plugin (5.1.2) has compatibility issues with the
-        # latest Flutter Android scaffold. The APK is built locally instead —
-        # see docs/BUILD_APK.md. Mark as continue-on-error so the release still
-        # ships the plugin + backend + install script.
-        continue-on-error: true
         run: cd companion-app && flutter build apk --release --build-name=${GITHUB_REF_NAME#v} --build-number=${GITHUB_RUN_NUMBER}
       - uses: actions/upload-artifact@v4
         with:
