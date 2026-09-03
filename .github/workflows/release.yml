@@ -91,7 +91,7 @@ jobs:
           java-version: '17'
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.27.0'
+          flutter-version: '3.24.0'
           channel: 'stable'
       - name: Get dependencies
         run: cd companion-app && flutter pub get
@@ -111,6 +111,36 @@ jobs:
           # Restore our actual MainActivity (flutter create may overwrite it)
           if [ -f /tmp/MainActivity.kt ]; then
             cp /tmp/MainActivity.kt android/app/src/main/kotlin/com/mnexus/installer/MainActivity.kt
+          fi
+      - name: Patch record_android build.gradle (workaround for v2 embedding issue)
+        run: |
+          # v0.29.1: record_android 1.5.2 uses the legacy Flutter Gradle API
+          # (`flutter.ndkVersion`, `flutter.compileSdkVersion`) which fails with
+          # 'Build failed due to use of deleted Android v1 embedding' in modern
+          # Flutter scaffolds. Patch the file to use literal values.
+          #
+          # Find the pub-cache path used by this workflow.
+          PUB_CACHE_DIR="${PUB_CACHE:-$HOME/.pub-cache}"
+          RECORD_BUILD="$PUB_CACHE_DIR/hosted/pub.dev/record_android-1.5.2/android/build.gradle"
+          if [ ! -f "$RECORD_BUILD" ]; then
+            # Try resolving via flutter pub cache
+            RECORD_BUILD=$(find "$PUB_CACHE_DIR" -path "*record_android*/android/build.gradle" 2>/dev/null | head -1)
+          fi
+          echo "Patching: $RECORD_BUILD"
+          if [ -f "$RECORD_BUILD" ]; then
+            # Replace `flutter.ndkVersion` with the literal value.
+            sed -i "s|flutter\\.ndkVersion|'27.0.12077973'|g" "$RECORD_BUILD"
+            # Replace `flutter.compileSdkVersion` with literal 34.
+            sed -i "s|flutter\\.compileSdkVersion|34|g" "$RECORD_BUILD"
+            # Replace `flutter.minSdkVersion` with literal 23.
+            sed -i "s|flutter\\.minSdkVersion|23|g" "$RECORD_BUILD"
+            # Replace `flutter.targetSdkVersion` with literal 34.
+            sed -i "s|flutter\\.targetSdkVersion|34|g" "$RECORD_BUILD"
+            echo "Patched successfully"
+            grep -E "ndkVersion|compileSdkVersion|minSdkVersion|targetSdkVersion" "$RECORD_BUILD" | head -5
+          else
+            echo "WARNING: Could not find record_android build.gradle to patch"
+            find "$PUB_CACHE_DIR" -name "record_android*" 2>/dev/null | head -3
           fi
       - name: Build APK
         run: cd companion-app && flutter build apk --release --build-name=${GITHUB_REF_NAME#v} --build-number=${GITHUB_RUN_NUMBER}

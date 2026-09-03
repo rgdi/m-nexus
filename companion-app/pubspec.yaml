@@ -4,8 +4,8 @@ version: 0.29.1+2
 publish_to: "none"
 
 environment:
-  sdk: ">=3.12.0 <4.0.0"
-  flutter: ">=3.27.0"
+  sdk: ">=3.3.0 <4.0.0"
+  flutter: ">=3.22.0"
 
 dependencies:
   flutter:
@@ -23,7 +23,7 @@ dependencies:
   shared_preferences: ^2.3.2
   url_launcher: ^6.3.0
   # v0.22: Voice notes
-  record: ^7.1.1
+  record: ^5.1.2
   # Para timestamps con fuente monoespaciada
   google_fonts: ^6.2.1
   # Para extraer el ZIP del plugin
