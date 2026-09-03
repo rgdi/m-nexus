@@ -152,7 +152,7 @@ jobs:
           cp companion-app/android/settings.gradle /tmp/settings.gradle 2>/dev/null || true
           cp companion-app/android/gradle.properties /tmp/gradle.properties 2>/dev/null || true
       - name: Regenerate Android platform files
-        run: cd companion-app && flutter create --platforms=android --no-overwrite .
+        run: cd companion-app && flutter create --platforms=android --no-overwrite --project-name companion_app .
       - name: Restore custom android files
         run: |
           cp /tmp/build.gradle companion-app/android/build.gradle
