@@ -182,10 +182,8 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses:       - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-          fetch-tags: true
           fetch-depth: 0
           fetch-tags: true
       - name: Download all artifacts
