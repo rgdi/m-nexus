@@ -1,7 +1,6 @@
 // HomePage: detecta vaults, muestra estado, permite instalar/actualizar.
 
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/plugin_release.dart';
 import '../services/vault_detector.dart';
 import '../services/updater.dart';
