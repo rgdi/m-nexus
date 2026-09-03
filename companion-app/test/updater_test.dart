@@ -6,7 +6,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:mnexus_installer/services/updater.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
