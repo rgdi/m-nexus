@@ -53,3 +53,6 @@ The GitHub Actions release workflow runs successfully for the first time:
 - Release was published manually via GitHub API (GitHub Actions workflow was not yet ready)
 - 6 assets, 0 errors TS, 1270 tests passing
 - APK not built (Flutter SDK not available at build time)
+
+## v0.29.7 - Patches and APK build fixes
+Thu Sep  3 08:38:02 UTC 2026
