@@ -59,16 +59,6 @@ dependencies {
     implementation "androidx.core:core-ktx:1.13.1"
 }
 
-// v0.29.1: force all Kotlin stdlib + plugin versions to 1.9.22 so the app
-// compiles against the same metadata version used by shared_preferences_android
-// and other modern plugins.
-allprojects {
-    configurations.all {
-        resolutionStrategy.eachDependency { details ->
-            if (details.requested.group == 'org.jetbrains.kotlin') {
-                details.useVersion kotlin_version
-                details.because "Pin Kotlin to ${kotlin_version} to match shared_preferences_android metadata"
-            }
-        }
-    }
-}
+// v0.29.1: the allprojects { resolutionStrategy } block is now in
+// android/build.gradle (the root project) so it applies to ALL
+// subprojects, including shared_preferences_android.

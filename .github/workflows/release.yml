@@ -99,11 +99,36 @@ jobs:
         run: cd companion-app && flutter analyze
       - name: Test
         run: cd companion-app && flutter test
-      - name: Save custom build.gradle
+      - name: Save custom build.gradle files
         run: |
-          # Save the custom build.gradle BEFORE flutter create overwrites it.
+          # Save the custom build.gradle files BEFORE flutter create overwrites them.
           cp companion-app/android/app/build.gradle /tmp/build.gradle
-          echo "Saved $(wc -l < /tmp/build.gradle) lines to /tmp/build.gradle"
+          echo "Saved $(wc -l < /tmp/build.gradle) lines of app/build.gradle"
+          # Create the root build.gradle (which the repo is missing)
+          cat > /tmp/root-build.gradle << 'EOF'
+// M-NEXUS Installer — root build file.
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    // v0.29.1: force Kotlin to 1.9.22 across ALL subprojects (including
+    // shared_preferences_android) so the app compiles against the same
+    // metadata version used by the plugins.
+    configurations.all {
+        resolutionStrategy.eachDependency { details ->
+            if (details.requested.group == 'org.jetbrains.kotlin') {
+                details.useVersion '1.9.22'
+                details.because "Pin Kotlin to 1.9.22 to match shared_preferences_android metadata"
+            }
+        }
+    }
+}
+
+rootProject.name = "mnexus_installer"
+EOF
+          echo "Created /tmp/root-build.gradle ($(wc -l < /tmp/root-build.gradle) lines)"
       - name: Regenerate Android platform files (the repo has incomplete android/ folder)
         run: |
           cd companion-app
@@ -120,7 +145,11 @@ jobs:
           # v0.29.1: also restore our custom build.gradle (flutter create overwrites it)
           if [ -f /tmp/build.gradle ]; then
             cp /tmp/build.gradle android/app/build.gradle
-            echo "Restored custom build.gradle"
+            echo "Restored custom app/build.gradle"
+          fi
+          if [ -f /tmp/root-build.gradle ]; then
+            cp /tmp/root-build.gradle android/build.gradle
+            echo "Installed root android/build.gradle"
           fi
       - name: Patch record_android build.gradle (workaround for v2 embedding issue)
         run: |
