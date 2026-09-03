@@ -21,15 +21,15 @@ jobs:
     name: Determine release version
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.v.outputs.version }}
-      ref_name: ${{ steps.v.outputs.ref_name }}
+      version: ${{ steps.read_tag.outputs.version }}
+      ref_name: ${{ steps.read_tag.outputs.ref_name }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           fetch-tags: true
       - name: Read latest tag
-        id: v
+        id: read_tag
         run: |
           if [[ "${GITHUB_REF_TYPE:-}" == "tag" ]]; then
             VERSION="${GITHUB_REF_NAME#v}"
