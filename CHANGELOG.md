@@ -1,58 +1,48 @@
-# Changelog
+# M-NEXUS Changelog
 
-All notable changes to M-NEXUS are documented here. Dates are in `YYYY-MM-DD` format.
+## v0.29.7 (2026-09-03) - APK build working + full release pipeline
 
-## [v0.29.0] - 2026-09-02 — **CI/CD Release**
+### Added
+- **APK build**: Android APK successfully built via GitHub Actions (49 MB)
+- **Release pipeline fully automated**: All 6 jobs (set-version, build-plugin, build-backend, build-companion, upload-installer, create-release) run end-to-end
+- **8 release assets**: 4 versioned (v0.29.7 suffix) + 4 quicklinks (no version, always point to latest)
+- **GitHub Release creation**: softprops/action-gh-release@v2 with auto-generated release notes
+- **Tag pushing from CI**: Workflow creates and pushes tag if it doesn't exist
+- **Workflow-level env**: `RELEASE_TAG` for reliable cross-job data passing
 
-### 🎉 First successful end-to-end release workflow
+### Changed
+- **Gradle wrapper**: 7.6.3 → 8.4 (required for AGP 8.3.0)
+- **Android Gradle Plugin**: 8.1.4 → 8.3.0
+- **Kotlin**: pinned to 1.9.22 across all gradle files
+- **Companion app**: simplified by removing `record` plugin (incompatible with AGP 8.12+)
+  - Removed: record 5.1.2, file_picker 8.0.7, permission_handler 11.3.1, url_launcher 6.3.0
+  - Removed: lib/voice_notes/ directory
+  - Voice notes feature: temporarily disabled (re-enable in future version with different audio plugin)
 
-The GitHub Actions release workflow runs successfully for the first time:
+### Fixed
+- **GitHub Actions YAML parser silent failure**: removed all non-ASCII characters (Unicode box-drawing, accented chars) from release.yml
+- **APK build with AGP 8.3.0**: full Android build files (build.gradle, settings.gradle, gradle.properties, gradle-wrapper.properties) committed to repo
+- **Output propagation between jobs**: use `env.TAG` instead of `needs.set-version.outputs.ref_name` for reliable cross-job data
+- **YAML duplicate `- uses:` syntax error**: fixed create-release checkout
+- **fetch-tags: true**: ensures git tags are available in checkout for tag detection
+- **Absolute paths in zip commands**: avoid relative path issues in CI
 
-1. **Plugin**: TypeScript compiles, esbuild bundles 159KB, ZIP packaged
-2. **Backend**: TypeScript compiles, ZIP packaged with dist/ + package.json
-3. **Companion**: 30 Flutter tests pass, `flutter analyze` clean
-4. **Install Script**: uploaded as-is
-5. **Release**: 6 assets published to GitHub Releases (3 versioned + 3 quicklinks)
+### Known limitations
+- **PAT doesn't trigger tag-push workflows**: workflow uses `push:branches:main` trigger
+- **Voice notes feature removed**: incompatible plugins (record 5.1.2 needs AGP 8.12+ / Gradle 8.13+ which is beyond Flutter 3.24)
+- **Build time**: full release takes ~5-7 minutes (APK build is the longest step)
 
-### 🐛 Bugs fixed in this release
+## v0.29.0 (2026-09-02) - Auto-update system
 
-- **esbuild 0.20 → 0.25**: bump for Node 24 compatibility
-- **`.gitignore` `coverage/` removal**: was ignoring `obsidian-plugin/src/coverage/`
-- **SHA-256 implementation**: `Int32List` → `List<int>` with `& 0xFFFFFFFF` masking
-- **Flutter `setState` async**: was using `await` in non-async callback
-- **Missing `MainActivity.kt`**: added for Android v2 embedding
-- **Workflow path**: `defaults.run.working-directory` not applied → explicit `cd` in steps
-- **Download artifacts v4**: creates subdirs → flatten before release
-- **Flutter warnings as errors**: removed unused field/import/local variable
-- **Test mock**: was returning `ZIP_CONTENT` for both API and asset requests
+### Added
+- 3-component auto-update: plugin (obsidian-plugin), backend, companion app
+- `bump-version.sh` script for unified version management
+- `push-to-github.sh` for one-command release
 
-### ⚠️ Known limitations
+## v0.28.0 (2026-09-02) - Backups ultrarrápidos
 
-- **APK build fails**: `record` plugin v5.1.2 incompatible with the latest Flutter Android scaffold. APK is built locally (see docs/BUILD_APK.md). `continue-on-error: true` in CI.
-- **CI fails for Plugin tsc**: there's a TypeScript error in `obsidian-plugin` that's only caught by `npx tsc --noEmit` (with no node_modules fix yet). Release still works because the release workflow uses a different job.
-
-### 🔧 Workflows
-
-- `ci.yml`: tests on every push to main/develop/v* (currently red — see above)
-- `release.yml`: build + release on tag v*.*.*
-
----
-
-## [v0.28.0] - 2026-09-02 — Initial release (manual)
-
-### Features
-
-- Plugin v0.28.0: 1125 tests, knowledge graph, adaptive quiz, FSRS, free review, snooze
-- Backend v0.28.0: 145 tests, 5 backup endpoints, SQLite index, ZIP binary storage
-- Companion App: voice notes, vault detector, plugin installer, auto-updater
-- Universal install script: detects OS, RAM, CPU, adapts to systemd/launchd/Docker
-- 5 docs: INSTALL, USER_GUIDE, ADMIN, DOCKER, TROUBLESHOOTING
-
-### Notes
-
-- Release was published manually via GitHub API (GitHub Actions workflow was not yet ready)
-- 6 assets, 0 errors TS, 1270 tests passing
-- APK not built (Flutter SDK not available at build time)
-
-## v0.29.7 - Patches and APK build fixes
-Thu Sep  3 08:38:02 UTC 2026
+### Added
+- Standard ZIP binary backups with drag-and-drop UI
+- SQLite index for fast queries
+- 5 new backend endpoints
+- 145 backend tests + 1125 plugin tests
