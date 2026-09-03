@@ -64,12 +64,15 @@ class _SetupWizardState extends State<SetupWizard> {
     super.dispose();
   }
 
+  DeviceIdentity? _identity;
+  
   Future<void> _loadInitial() async {
     final url = await BackendClient.getBackendUrl();
     _urlController.text = url;
     final cal = CalendarService();
     await cal.load();
     _calendarGranted = cal.enabled && await cal.isPermissionGranted();
+    _identity = await DeviceIdentity.load();
     setState(() {});
   }
 
@@ -80,10 +83,6 @@ class _SetupWizardState extends State<SetupWizard> {
       _connection = result;
       _busy = false;
     });
-  }
-
-  Future<void> _saveUrl() async {
-    await BackendClient.setBackendUrl(_urlController.text.trim());
   }
 
   Future<void> _detectVaults() async {
