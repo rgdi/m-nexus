@@ -5,6 +5,18 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
+// v0.29.1: pin Kotlin plugin to 1.9.22 to match shared_preferences_android.
+buildscript {
+    ext.kotlin_version = '1.9.22'
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
 android {
     namespace = "com.mnexus.installer"
     compileSdk = 34
@@ -18,6 +30,11 @@ android {
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_17.toString()
     }
+
+    // v0.29.1: pin Kotlin to 1.9.22 to match shared_preferences_android and
+    // other plugins that ship compiled with newer Kotlin metadata.
+    // (1.7.1 was the previous default and triggers
+    // "Class was compiled with an incompatible version of Kotlin" errors.)
 
     defaultConfig {
         applicationId = "com.mnexus.installer"
@@ -43,4 +60,18 @@ flutter {
 dependencies {
     implementation "androidx.activity:activity:1.9.0"
     implementation "androidx.core:core-ktx:1.13.1"
+}
+
+// v0.29.1: force all Kotlin stdlib + plugin versions to 1.9.22 so the app
+// compiles against the same metadata version used by shared_preferences_android
+// and other modern plugins.
+allprojects {
+    configurations.all {
+        resolutionStrategy.eachDependency { details ->
+            if (details.requested.group == 'org.jetbrains.kotlin') {
+                details.useVersion kotlin_version
+                details.because "Pin Kotlin to ${kotlin_version} to match shared_preferences_android metadata"
+            }
+        }
+    }
 }
