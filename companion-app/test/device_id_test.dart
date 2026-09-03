@@ -1,5 +1,6 @@
 // Tests para DeviceIdentity (v0.31).
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,6 +12,12 @@ void main() {
   setUp(() {
     // Reset SharedPreferences mock
     SharedPreferences.setMockInitialValues({});
+    // Pretend we're on Android so the platform channel code path runs
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+  });
+
+  tearDown(() {
+    debugDefaultTargetPlatformOverride = null;
   });
 
   group('DeviceIdentity.load', () {
