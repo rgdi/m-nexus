@@ -43,6 +43,7 @@ jobs:
       - name: Package ZIP
         run: |
           mkdir -p ../../artifacts
+          cp obsidian-plugin/manifest.json obsidian-plugin/styles.css obsidian-plugin/versions.json obsidian-plugin/dist/
           cd obsidian-plugin/dist
           zip ../../../artifacts/m-nexus-plugin-${{ needs.set-version.outputs.ref_name }}.zip \
             main.js manifest.json styles.css versions.json
