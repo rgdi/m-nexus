@@ -39,3 +39,4 @@ class MNexusInstallerApp extends StatelessWidget {
 // v0.29.7
 // v0.29.8
 // v0.29.9
+// v0.30
