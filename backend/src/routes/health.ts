@@ -9,6 +9,7 @@ import { getRegisteredDevices } from "../auth/devices.js";
 import { getRefreshTokenStats } from "../auth/jwt.js";
 import { getAuditStats } from "../auth/audit.js";
 import { logger } from "../utils/log.js";
+import { VERSION } from "../version.js";
 
 const START_TIME = Date.now();
 
@@ -35,7 +36,7 @@ export async function healthRoutes(app: FastifyInstance): Promise<void> {
     const allOk = whisperOk && (ollamaOk || openrouterOk) && tesseractOk && embOk;
     return {
       status: allOk ? "ok" : "degraded",
-      version: "0.28.0",
+      version: VERSION,
       providers: {
         whisper: whisperOk ? "available" : "unavailable",
         ollama: ollamaOk ? "available" : "unavailable",

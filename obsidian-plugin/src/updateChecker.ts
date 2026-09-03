@@ -101,7 +101,7 @@ export async function checkForUpdates(
       8000
     );
     // Hacer el notice clickable (Obsidian 1.5+)
-    const noticeEl = document.querySelector(".notice");
+    const noticeEl = document.querySelector(".notice") as HTMLElement | null;
     if (noticeEl) {
       noticeEl.style.cursor = "pointer";
       noticeEl.onclick = () => window.open(info.downloadUrl, "_blank");

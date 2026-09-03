@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>M-NEXUS Backend Dashboard</title>
+  <style>
+    body { font-family: -apple-system, system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem; color: #333; }
+    h1 { color: #2563eb; }
+    .card { background: #f5f5f5; border-radius: 8px; padding: 1rem; margin: 1rem 0; }
+    code { background: #e5e5e5; padding: 0.2rem 0.4rem; border-radius: 4px; }
+    a { color: #2563eb; }
+  </style>
+</head>
+<body>
+  <h1>M-NEXUS Backend</h1>
+  <div class="card">
+    <h2>Dashboard</h2>
+    <p>Welcome to the M-NEXUS backend admin panel.</p>
+    <ul>
+      <li><a href="/api/v1/health">/api/v1/health</a> - Health check</li>
+      <li><a href="/metrics">/metrics</a> - Prometheus metrics</li>
+      <li><a href="/api/v1/update">/api/v1/update</a> - Update check</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h2>Quick links</h2>
+    <p><a href="https://github.com/rgdi/m-nexus">GitHub repository</a></p>
+    <p><a href="https://github.com/rgdi/m-nexus/releases">Latest releases</a></p>
+  </div>
+</body>
+</html>
