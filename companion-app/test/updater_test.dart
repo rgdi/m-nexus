@@ -1,12 +1,31 @@
 // Tests para el updater.dart del companion app.
 // Mockea http.Client para no depender de la red.
 
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:mnexus_installer/services/updater.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  // Mock PackageInfo para que devuelva una versión conocida.
+  const channel = MethodChannel('dev.fluttercommunity.plus/package_info');
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(channel, (call) async {
+    if (call.method == 'getAll') {
+      return {
+        'appName': 'mnexus_installer',
+        'packageName': 'com.mnexus.installer',
+        'version': '0.29.7',
+        'buildNumber': '9',
+        'buildSignature': '',
+      };
+    }
+    return null;
+  });
   group('Updater.compareVersions', () {
     test('returns 0 for equal versions', () {
       // Función privada, no se puede testear directamente. Test via check().
