@@ -157,7 +157,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                color: theme.colorScheme.primaryContainer.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -225,7 +225,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.errorContainer.withValues(alpha: 0.5),
+                  color: theme.colorScheme.errorContainer.withOpacity(0.5),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Row(

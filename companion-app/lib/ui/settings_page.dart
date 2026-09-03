@@ -57,18 +57,14 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _checkNow() async {
     try {
-      final r = await widget.updater.check(
-        releaseUrl: _releaseUrlController.text.isNotEmpty
-            ? _releaseUrlController.text
-            : null,
-      );
+      final r = await widget.updater.check(force: true);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             r.hasUpdate
-                ? 'Actualización ${r.latestVersion} disponible'
-                : 'Estás al día (${r.installedVersion})',
+                ? 'Actualización v${r.update!.latestVersion} disponible'
+                : 'Estás al día (v${r.installedVersion})',
           ),
         ),
       );
