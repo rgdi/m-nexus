@@ -182,6 +182,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
@@ -205,6 +207,18 @@ jobs:
             rm -rf artifacts/installer
           fi
           ls -la artifacts/
+      - name: Ensure tag exists and is pushed
+        run: |
+          TAG="${{ needs.set-version.outputs.ref_name }}"
+          if ! git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Creating and pushing tag $TAG"
+            git config user.email "actions@github.com"
+            git config user.name "GitHub Actions"
+            git tag "$TAG"
+            git push origin "$TAG"
+          else
+            echo "Tag $TAG already exists, skipping"
+          fi
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
