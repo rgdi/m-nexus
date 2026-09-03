@@ -10,11 +10,6 @@ on:
     tags:
       - 'v*.*.*'
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version tag to build (e.g. v0.29.0)'
-        required: true
-        default: 'v0.29.1'
 
 permissions:
   contents: write
