@@ -100,8 +100,11 @@ void main() {
         return null;
       });
 
+      // Pre-set the display name in shared preferences
+      SharedPreferences.setMockInitialValues({
+        'mnexus.device.display_name': 'Test Device',
+      });
       final id = await DeviceIdentity.load();
-      await id.setDisplayName('Test Device');
       final payload = id.toRegistrationPayload();
       expect(payload['deviceId'], id.deviceId);
       expect(payload['deviceName'], 'Test Device');

@@ -104,6 +104,7 @@ class DeviceIdentity {
   Future<void> setDisplayName(String name) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_prefsKeyDisplayName, name);
+    // No podemos actualizar this.displayName (es final), pero el siguiente load() lo verá
   }
 
   /// Resetea el device_id (no se usa normalmente; el backend tendría que re-registrar).
