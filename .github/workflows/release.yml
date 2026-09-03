@@ -128,3 +128,48 @@ jobs:
       - run: cd companion-app && flutter pub get
       - run: cd companion-app && flutter analyze
       - run: cd companion-app && flutter test
+      - name: Patch record_android plugin
+        run: |
+          PLUGIN_DIR=$(find ~/.pub-cache/hosted -type d -name 'record_android-*' 2>/dev/null | head -1)
+          if [ -n "$PLUGIN_DIR" ]; then
+            echo "Patching record_android at $PLUGIN_DIR"
+            sed -i 's/compileSdkVersion flutter.compileSdkVersion/compileSdkVersion 34/g' $PLUGIN_DIR/android/build.gradle 2>/dev/null || true
+            sed -i 's/ndkVersion flutter.ndkVersion/ndkVersion "27.0.12077973"/g' $PLUGIN_DIR/android/build.gradle 2>/dev/null || true
+            sed -i 's/targetSdkVersion flutter.targetSdkVersion/targetSdkVersion 34/g' $PLUGIN_DIR/android/build.gradle 2>/dev/null || true
+            sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 23/g' $PLUGIN_DIR/android/build.gradle 2>/dev/null || true
+            sed -i 's/kotlin_version = .*/kotlin_version = "1.9.22"/g' $PLUGIN_DIR/android/build.gradle 2>/dev/null || true
+          fi
+      - name: Patch shared_preferences_android plugin
+        run: |
+          PLUGIN_DIR=$(find ~/.pub-cache/hosted -type d -name 'shared_preferences_android-*' 2>/dev/null | head -1)
+          if [ -n "$PLUGIN_DIR" ]; then
+            echo "Patching shared_preferences_android at $PLUGIN_DIR"
+            sed -i 's/kotlin_version = .*/kotlin_version = "1.9.22"/g' $PLUGIN_DIR/android/build.gradle 2>/dev/null || true
+          fi
+      - name: Copy custom android files
+        run: |
+          cp companion-app/android/build.gradle /tmp/build.gradle
+          cp companion-app/android/settings.gradle /tmp/settings.gradle 2>/dev/null || true
+          cp companion-app/android/gradle.properties /tmp/gradle.properties 2>/dev/null || true
+      - name: Regenerate Android platform files
+        run: cd companion-app && flutter create --platforms=android --no-overwrite .
+      - name: Restore custom android files
+        run: |
+          cp /tmp/build.gradle companion-app/android/build.gradle
+          cp /tmp/settings.gradle companion-app/android/settings.gradle 2>/dev/null || true
+          cp /tmp/gradle.properties companion-app/android/gradle.properties 2>/dev/null || true
+      - name: Build APK
+        continue-on-error: true
+        run: cd companion-app && flutter build apk --release
+      - name: Copy APK
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/artifacts
+          if [ -f companion-app/build/app/outputs/flutter-apk/app-release.apk ]; then
+            cp companion-app/build/app/outputs/flutter-apk/app-release.apk $GITHUB_WORKSPACE/artifacts/m-nexus-companion-${{ needs.set-version.outputs.ref_name }}.apk
+            cp $GITHUB_WORKSPACE/artifacts/m-nexus-companion-${{ needs.set-version.outputs.ref_name }}.apk $GITHUB_WORKSPACE/artifacts/m-nexus-companion.apk
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: companion
+          path: artifacts/m-nexus-companion-*.apk
+          if-no-files-found: warn
