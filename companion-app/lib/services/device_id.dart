@@ -69,17 +69,14 @@ class DeviceIdentity {
     final displayName = prefs.getString(_prefsKeyDisplayName);
     final platform = prefs.getString(_prefsKeyPlatform) ?? Platform.operatingSystem;
 
-    // 2. ANDROID_ID (opcional, solo Android)
+    // 2. ANDROID_ID (via platform channel — en CI devuelve null si no hay handler)
     String? androidId;
-    if (Platform.isAndroid) {
-      try {
-        androidId = await _platformChannel.invokeMethod<String>('getAndroidId');
-      } on PlatformException {
-        // Permiso denegado o no disponible
-        androidId = null;
-      } on MissingPluginException {
-        androidId = null;
-      }
+    try {
+      androidId = await _platformChannel.invokeMethod<String>('getAndroidId');
+    } on PlatformException {
+      androidId = null;
+    } on MissingPluginException {
+      androidId = null;
     }
 
     // 3. Model y OS version
