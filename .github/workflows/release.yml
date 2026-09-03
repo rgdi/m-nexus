@@ -1,9 +1,22 @@
-name: M-NEXUS Release
+# GitHub Actions: Release
+# Se ejecuta cuando se pushea un tag v*.*.* (ej. v0.28.0).
+# Construye el plugin, el backend, y la app Android companion.
+# Sube los ZIPs/APK a una release de GitHub.
+
+name: "M-NEXUS Release"
+
 on:
   push:
     branches:
       - main
+
+# v0.29.6: workaround for fine-grained PAT that doesn't trigger tag-push events.
+# The release workflow now runs on push to main, then figures out the version
+# by reading git tags inside the jobs.
 jobs:
+  # -----------------------------------------------------------------
+  # 0. Determine version from latest tag
+  # -----------------------------------------------------------------
   set-version:
     name: Determine release version
     runs-on: ubuntu-latest
@@ -17,6 +30,8 @@ jobs:
       - name: Read latest tag
         id: v
         run: |
+          # v0.29.6: when triggered by tag push, GITHUB_REF_NAME is the tag.
+          # When triggered by main push, we need to read the latest tag from git.
           if [[ "${GITHUB_REF_TYPE:-}" == "tag" ]]; then
             VERSION="${GITHUB_REF_NAME#v}"
             REF_NAME="${GITHUB_REF_NAME}"
@@ -28,3 +43,7 @@ jobs:
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "ref_name=${REF_NAME}" >> $GITHUB_OUTPUT
           echo "Detected version: v${VERSION}"
+
+  # -----------------------------------------------------------------
+  # 1. Plugin de Obsidian -> ZIP con 4 archivos
+  # -----------------------------------------------------------------
