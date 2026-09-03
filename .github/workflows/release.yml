@@ -99,6 +99,11 @@ jobs:
         run: cd companion-app && flutter analyze
       - name: Test
         run: cd companion-app && flutter test
+      - name: Save custom build.gradle
+        run: |
+          # Save the custom build.gradle BEFORE flutter create overwrites it.
+          cp companion-app/android/app/build.gradle /tmp/build.gradle
+          echo "Saved $(wc -l < /tmp/build.gradle) lines to /tmp/build.gradle"
       - name: Regenerate Android platform files (the repo has incomplete android/ folder)
         run: |
           cd companion-app
@@ -111,6 +116,11 @@ jobs:
           # Restore our actual MainActivity (flutter create may overwrite it)
           if [ -f /tmp/MainActivity.kt ]; then
             cp /tmp/MainActivity.kt android/app/src/main/kotlin/com/mnexus/installer/MainActivity.kt
+          fi
+          # v0.29.1: also restore our custom build.gradle (flutter create overwrites it)
+          if [ -f /tmp/build.gradle ]; then
+            cp /tmp/build.gradle android/app/build.gradle
+            echo "Restored custom build.gradle"
           fi
       - name: Patch record_android build.gradle (workaround for v2 embedding issue)
         run: |
@@ -142,6 +152,19 @@ jobs:
             echo "WARNING: Could not find record_android build.gradle to patch"
             find "$PUB_CACHE_DIR" -name "record_android*" 2>/dev/null | head -3
           fi
+      - name: Patch shared_preferences_android (kotlin 1.9.0 metadata)
+        run: |
+          # v0.29.1: shared_preferences_android 2.4.7 was compiled with Kotlin 1.9.0
+          # but the default Flutter 3.24 scaffold ships Kotlin 1.7.1 → incompatible.
+          # Patch the build.gradle to force a compatible Kotlin version.
+          PUB_CACHE_DIR="${PUB_CACHE:-$HOME/.pub-cache}"
+          for f in $(find "$PUB_CACHE_DIR" -path "*shared_preferences_android*/android/build.gradle" 2>/dev/null); do
+            echo "Patching shared_preferences: $f"
+            # Add a buildscript that pins Kotlin to 1.9.22 if not present.
+            if ! grep -q "kotlin_version" "$f"; then
+              sed -i '1i buildscript { ext.kotlin_version = "1.9.22" }' "$f"
+            fi
+          done
       - name: Build APK
         run: cd companion-app && flutter build apk --release --build-name=${GITHUB_REF_NAME#v} --build-number=${GITHUB_RUN_NUMBER}
       - uses: actions/upload-artifact@v4
