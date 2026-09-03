@@ -1,7 +1,7 @@
 {
   "id": "m-nexus",
   "name": "M-NEXUS",
-  "version": "0.29.0",
+  "version": "0.29.1",
   "minAppVersion": "1.5.0",
   "description": "M-NEXUS v0.28.0 — Production ready. Knowledge graph + adaptive quiz + StudyOrchestrator (AI agent) + FSRS boost + Free review (sin scheduling) + Backups ultrarrápidos ZIP binario con drag-and-drop + 18 subsystems lazy + Design system + Logging exhaustivo + Caja negra. 1125 tests plugin + 145 tests backend (1270 total). 0 errores TypeScript.",
   "author": "Rodrigo",
