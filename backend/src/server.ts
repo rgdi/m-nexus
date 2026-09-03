@@ -28,6 +28,7 @@ import { dashboardRoutes } from "./routes/dashboard.js";
 import { pushRoutes } from "./routes/push.js";
 import { aiRoutes } from "./routes/ai.js";
 import { backupRoutes } from "./routes/backup.js"; // v0.28: backups ultrarrápidos (ZIP binario)
+import { updateRoutes } from "./routes/update.js"; // v0.30: auto-update del backend
 import { audit } from "./auth/audit.js";
 import { VERSION } from "./version.js";
 export { VERSION };
@@ -137,6 +138,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(pushRoutes); // v0.21: push notifications
   await app.register(aiRoutes); // v0.28: AI routes (vault eval, proposals, knowledge, quiz, cross-relevance, fsrs)
   await app.register(backupRoutes); // v0.28: backup ultrarrápido (ZIP binario, SQLite index)
+  await app.register(updateRoutes); // v0.30: auto-update del backend (info, check, apply)
 
   app.setErrorHandler((err, _req, reply) => {
     logger.error({ err: { msg: err.message, code: err.code } }, "Request error");

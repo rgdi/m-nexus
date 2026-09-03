@@ -17,6 +17,9 @@ const PUBLIC_PATHS = new Set([
   "/api/v1/auth/refresh",
   "/api/v1/devices",
   "/api/v1/stats",
+  "/api/v1/update", // v0.30: info pública del update
+  "/api/v1/update/check", // v0.30: forzar re-check
+  "/api/v1/update/apply", // v0.30: aplicar update (descarga pública)
   // v0.28: AI routes (vault eval, proposals, knowledge, quiz) son de uso
   // interno entre el plugin y el backend. La seguridad se hace a nivel de
   // red (el backend está detrás de Tailscale/VPN). Si se exponen públicamente,

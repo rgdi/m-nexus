@@ -6,6 +6,7 @@ import '../models/plugin_release.dart';
 import '../services/vault_detector.dart';
 import '../services/updater.dart';
 import 'install_page.dart';
+import 'update_dialog.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -49,13 +50,12 @@ class _HomePageState extends State<HomePage> {
     if (r?.hasUpdate ?? false) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('M-NEXUS ${r!.latestVersion} disponible (tienes ${r.installedVersion})'),
+          content: Text('M-NEXUS v${r!.update!.latestVersion} disponible (tienes v${r.installedVersion})'),
           action: SnackBarAction(
             label: 'Ver',
-            onPressed: () {
-              // Navegar a instalación
-            },
+            onPressed: _showUpdateDialog,
           ),
+          duration: const Duration(seconds: 10),
         ),
       );
     }
@@ -143,13 +143,55 @@ class _HomePageState extends State<HomePage> {
                       vaults: _vaults,
                       onTap: _checkAndInstall,
                     ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'vault-manual',
-        onPressed: _showManualPathInput,
-        icon: const Icon(Icons.folder_open),
-        label: const Text('Vault manual'),
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          FloatingActionButton.small(
+            heroTag: 'update-check',
+            onPressed: _forceCheck,
+            tooltip: 'Buscar actualizaciones',
+            child: const Icon(Icons.refresh),
+          ),
+          const SizedBox(height: 12),
+          FloatingActionButton.extended(
+            heroTag: 'vault-manual',
+            onPressed: _showManualPathInput,
+            icon: const Icon(Icons.folder_open),
+            label: const Text('Vault manual'),
+          ),
+        ],
       ),
     );
+  }
+
+  Future<void> _showUpdateDialog() async {
+    if (!mounted) return;
+    final r = _updater.lastResult;
+    if (r?.update == null || !r!.hasUpdate) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No hay actualizaciones disponibles')),
+      );
+      return;
+    }
+    await showDialog(
+      context: context,
+      builder: (_) => UpdateDialog(
+        update: r.update!,
+        installedVersion: r.installedVersion,
+        updater: _updater,
+        onDismiss: () => Navigator.of(context).pop(),
+      ),
+    );
+  }
+
+  Future<void> _forceCheck() async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Buscando actualizaciones...'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+    await _updater.check(force: true);
   }
 
 Future<void> _showManualPathInput() async {
