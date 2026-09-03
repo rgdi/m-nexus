@@ -316,17 +316,17 @@ EOF
         run: |
           if [ -f artifacts/app-release.apk ]; then
             mv artifacts/app-release.apk artifacts/m-nexus-companion-${{ needs.set-version.outputs.ref_name }}.apk
-            # Sin versión para quicklinks
+            # Sin version para quicklinks
             cp artifacts/m-nexus-companion-${{ needs.set-version.outputs.ref_name }}.apk artifacts/m-nexus-companion.apk
           fi
       - name: Rename install script
         run: |
           if [ -f artifacts/install.sh ]; then
             mv artifacts/install.sh artifacts/m-nexus-install-${{ needs.set-version.outputs.ref_name }}.sh
-            # Sin versión para quicklinks
+            # Sin version para quicklinks
             cp artifacts/m-nexus-install-${{ needs.set-version.outputs.ref_name }}.sh artifacts/m-nexus-install.sh
           fi
-      - name: Duplicate ZIPs sin versión (para quicklinks)
+      - name: Duplicate ZIPs sin version (para quicklinks)
         run: |
           for f in artifacts/m-nexus-plugin-${{ needs.set-version.outputs.ref_name }}.zip artifacts/m-nexus-backend-${{ needs.set-version.outputs.ref_name }}.zip; do
             if [ -f "$f" ]; then
