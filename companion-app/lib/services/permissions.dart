@@ -8,6 +8,7 @@
 
 import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:permission_handler/permission_handler.dart' as ph show PermissionStatus;
 
 class PermissionStatus {
   final String name;
@@ -165,7 +166,7 @@ class PermissionsService {
       description: spec.description,
       granted: result.isGranted,
       permanentlyDenied: result.isPermanentlyDenied ||
-          (perm.status == PermissionStatus.permanentlyDenied),
+          (perm.status == ph.PermissionStatus.permanentlyDenied),
     );
   }
 
