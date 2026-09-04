@@ -10,6 +10,7 @@
 //   - Stats cards rediseñadas (gradientes, mejor jerarquía)
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -38,7 +39,6 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   List<VaultInfo> _vaults = [];
   bool _loading = true;
-  String? _error;
   DeviceIdentity? _identity;
   CalendarService? _calendar;
   CalendarEvent? _upcomingClass;
@@ -81,7 +81,6 @@ class _HomePageState extends State<HomePage> {
   Future<void> _load() async {
     setState(() {
       _loading = true;
-      _error = null;
     });
     try {
       _identity = await DeviceIdentity.load();
@@ -110,7 +109,7 @@ class _HomePageState extends State<HomePage> {
       });
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        debugPrint('HomePage load error: $e');
         _loading = false;
       });
     }

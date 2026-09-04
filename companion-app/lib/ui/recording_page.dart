@@ -206,7 +206,7 @@ class _RecordingPageState extends State<RecordingPage> {
         targetSubdir: 'voice_notes',
       );
       await _syncQueue.markSynced(localPath);
-      client.close();
+      httpClient.close();
     } catch (e) {
       await _syncQueue.markFailed(localPath, e.toString());
     } finally {
@@ -242,7 +242,7 @@ class _RecordingPageState extends State<RecordingPage> {
             targetSubdir: 'voice_notes',
           );
           await _syncQueue.markSynced(entry.localPath);
-          client.close();
+          httpClient.close();
           synced++;
         } catch (e) {
           await _syncQueue.markFailed(entry.localPath, e.toString());
