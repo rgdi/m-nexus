@@ -178,6 +178,8 @@ jobs:
           if [ -d /tmp/drawable ]; then cp -r /tmp/drawable companion-app/android/app/src/main/res/; fi
           if [ -f /tmp/colors.xml ]; then cp /tmp/colors.xml companion-app/android/app/src/main/res/values/colors.xml; fi
           if [ -f /tmp/file_paths.xml ]; then cp /tmp/file_paths.xml companion-app/android/app/src/main/res/xml/file_paths.xml; fi
+      - name: Patch plugin build.gradle for AGP 8.3 compat
+        run: bash companion-app/android/fix-plugins.sh
       - name: Build APK
         continue-on-error: true
         run: cd companion-app && flutter build apk --release
