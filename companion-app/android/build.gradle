@@ -35,3 +35,16 @@ subprojects {
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }
+
+// v0.32: workaround para plugins viejos (speech_to_text 7.x, record 5.x, etc.)
+// que usan 'flutter.x' (compileSdkVersion, ndkVersion, path) en sus
+// build.gradle. AGP 8.x ya no expone automáticamente 'flutter' como
+// property, así que lo inyectamos como ext property.
+allprojects {
+    ext.flutter = [
+        compileSdkVersion: 34,
+        ndkVersion: '26.1.10909125',
+        minSdkVersion: 23,
+        targetSdkVersion: 34,
+    ]
+}
