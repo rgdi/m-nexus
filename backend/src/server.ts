@@ -29,6 +29,11 @@ import { pushRoutes } from "./routes/push.js";
 import { aiRoutes } from "./routes/ai.js";
 import { backupRoutes } from "./routes/backup.js"; // v0.28: backups ultrarrápidos (ZIP binario)
 import { updateRoutes } from "./routes/update.js"; // v0.30: auto-update del backend
+import { secretsRoutes } from "./routes/secrets.js"; // v0.33: secret manager (API keys cifradas)
+import { structuredRoutes } from "./routes/structured.js"; // v0.33: Notion-style databases
+import { uploadRoutes } from "./routes/upload.js"; // v0.33: chunked upload
+import { rollbackRoutes } from "./routes/rollback.js"; // v0.33: backup + rollback
+import { fsrsQueueRoutes } from "./routes/fsrsQueue.js"; // v0.33: FSRS async worker queue
 import { audit } from "./auth/audit.js";
 import { VERSION } from "./version.js";
 export { VERSION };
@@ -139,6 +144,11 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(aiRoutes); // v0.28: AI routes (vault eval, proposals, knowledge, quiz, cross-relevance, fsrs)
   await app.register(backupRoutes); // v0.28: backup ultrarrápido (ZIP binario, SQLite index)
   await app.register(updateRoutes); // v0.30: auto-update del backend (info, check, apply)
+  await app.register(secretsRoutes); // v0.33: secret manager
+  await app.register(structuredRoutes); // v0.33: Notion-style structured notes
+  await app.register(uploadRoutes); // v0.33: chunked audio upload
+  await app.register(rollbackRoutes); // v0.33: backup + rollback
+  await app.register(fsrsQueueRoutes); // v0.33: FSRS async worker queue
 
   app.setErrorHandler((err, _req, reply) => {
     logger.error({ err: { msg: err.message, code: err.code } }, "Request error");
@@ -156,6 +166,13 @@ async function main() {
   try {
     await app.listen({ port: config.port, host: config.host });
     logger.info(`M-NEXUS Backend v${VERSION} escuchando en http://${config.host}:${config.port}`);
+
+    // v0.33: inicializa secret manager (carga master key, descifra store)
+    const { getSecretManager } = await import("./services/secretManager.js");
+    const sm = getSecretManager();
+    sm.initialize();
+    sm.load();
+    logger.info(`SecretManager: ${sm.list().length} secrets cargados`);
 
     // v0.28: chequea updates en background (no bloquea el arranque)
     if (process.env.MNEXUS_SKIP_UPDATE_CHECK !== "1") {
