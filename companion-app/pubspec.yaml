@@ -22,7 +22,7 @@ dependencies:
   # v0.32: para solicitar permisos de manera nativa
   permission_handler: ^11.3.1
   # v0.32: voice notes con speech_to_text 7.x (compatible Flutter 3.24 + AGP 8.3+)
-  speech_to_text: ^7.0.0
+  speech_to_text: ^8.0.0
   # v0.32: para reproducir grabaciones
   audioplayers: ^6.1.0
 
