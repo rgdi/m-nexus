@@ -1,4 +1,28 @@
 # M-NEXUS Changelog
+## v0.33.0 (2026-09-04) - Notion-style + resilience
+
+### Added
+- **Notion-style databases** (plugin): typed properties (text/number/select/multi/date/url/email/relation/formula) en el frontmatter. Vistas Table, Kanban, Calendar, Gallery, List. Fórmulas: today(), now(), upper(), lower(), length(), concat(), abs(), round(), if(), prop(). Filtros (=, !=, >, <, contains, in, isEmpty, isNotEmpty) y sorts.
+- **Secret Manager** (backend): AES-256-GCM, 96-bit IV, 16-byte salt, 32-byte key. Master key de env o file 0o600 o auto-generate. Cache TTL 5 min, audit log, `rotateMasterKey()`. Routes: GET/POST/DELETE `/api/v1/secrets`, POST `/api/v1/secrets/test/:name`.
+- **Conflict Resolution** (backend): vector clocks per-field, LWW con tie-break por ts+deviceId, merge automático por campo. `resolveField()` retorna `{value, resolution, reason, mergedClock}`. `resolveNote()` retorna `{resolved, report}` con `hasConflict`, `diffs[]`, `mergedClock`.
+- **Chunked Upload** (backend): `POST /init` con filename+size+chunkSize+expectedSha256, `PUT /:id/chunk/:n` idempotente, `GET /:id/status` con missing chunks, `POST /:id/complete` con SHA-256 verify. 1 MB default chunks, 24h cleanup.
+- **Rollback** (backend): `POST /rollback/create` (tar.gz de /var/lib/mnexus, excluye uploads/final), `GET /rollback/list` (registry JSON), `POST /rollback/restore` (requiere confirm:true), `GET /rollback/strategy`. Pre-restore backup auto-creado.
+- **FSRS async worker queue** (backend): EventEmitter-based, maxConcurrency=1, maxAttempts=3 con backoff exponencial, maxQueueSize=1000. Routes: POST `/api/v1/fsrs/eval`, GET `/api/v1/fsrs/job/:id`, GET `/api/v1/fsrs/stats`, POST `/api/v1/fsrs/wait/:id` (long polling 30s).
+- **Chunked Upload client** (companion): Dart `ChunkedUpload` con retry+backoff, resume desde chunks ya recibidos, progress callback, deviceId+targetSubdir+expectedSha256 opcionales.
+- **Web Clipper** (extension Chrome MV3): popup con vault selector, extrae metadata (title/author/date/cover/excerpt) con heurísticas Readability-like, detecta dominios médicos (PubMed, OpenAlex, NEJM, Lancet, BMJ, JAMA, Cochrane), marca la página con `data-mnexus-medical`.
+- **Setup script reescrito** (`install/install.sh`, 546 líneas): `--component=backend|plugin|companion|all`, `--tag=stable|beta|nightly`, `--update`, `--rollback`, `--uninstall`, `--list-versions`, `--version=vX.Y.Z`, `--auto`, `--dry-run`. Backups en `/var/backups/mnexus` con `ROLLBACK_LIMIT=3`. Systemd unit con auto-restart. Idempotente.
+
+### Fixed
+- **ConflictResolver edge case**: cuando local y remote tienen el mismo clock y mismo value, ahora retorna `resolution: "equal"` y `hasConflict: false` (antes lo marcaba como conflicto).
+- **Chunked Upload body parsing**: el handler de `/complete` ahora acepta `expectedSha256` en el body (antes solo lo del init). Fastify con bodyLimit 100 MB.
+- **Rollback dynamic paths**: DATA_DIR, BACKUP_DIR y REGISTRY_PATH ahora son funciones que leen de env en cada llamada (antes eran const → tests con tmpDir no funcionaban).
+
+### Tests
+- Backend: 245 tests (+58 nuevos: 11 secretManager + 17 conflictResolver + 24 structuredNotes + 11 upload + 6 rollback + 8 fsrsQueue)
+- Plugin: 1162 tests (+37 nuevos: structured.ts)
+- Companion: 40 tests (+5 nuevos: chunked_upload_test.dart)
+- **Total: 1484 tests passing**
+
 ## v0.32.0 (2026-09-04) - Voice notes rescued + wizard fix + APK signing
 
 ### Fixed

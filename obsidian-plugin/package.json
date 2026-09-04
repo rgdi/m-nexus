@@ -1,6 +1,6 @@
 {
   "name": "obsidian-m-nexus",
-  "version": "0.31.0",
+  "version": "0.33.0",
   "description": "M-NEXUS — sistema de estudio médico con control humano obligatorio (Obsidian plugin).",
   "main": "main.js",
   "scripts": {

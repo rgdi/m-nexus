@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>M-NEXUS Web Clipper</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <h1>📎 M-NEXUS Web Clipper</h1>
+  <p id="url"></p>
+  <label>Vault:
+    <select id="vaults"><option>Cargando…</option></select>
+  </label>
+  <label>Carpeta:
+    <input id="folder" type="text" value="Clippings">
+  </label>
+  <label>Tags (separados por coma):
+    <input id="tags" type="text" placeholder="ej. cardio, revisión">
+  </label>
+  <button id="clip">✂️ Clip página</button>
+  <p id="status"></p>
+  <script src="popup.js"></script>
+</body>
+</html>
