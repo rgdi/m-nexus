@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mnexus_installer/services/recorder.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('AudioRecorderService state', () {
     test('estado inicial es idle', () {
       final r = AudioRecorderService();
