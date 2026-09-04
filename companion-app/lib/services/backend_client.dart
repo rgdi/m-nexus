@@ -203,3 +203,17 @@ class BackendClient {
     _http.close();
   }
 }
+
+/// Helper estático para hacer HTTP GET sin necesidad de crear un BackendClient.
+Future<http.Response> httpGet(String url) async {
+  final r = await http.get(Uri.parse(url), headers: {
+    'Accept': 'application/json',
+    'User-Agent': 'mnexus-companion',
+  }).timeout(const Duration(seconds: 15));
+  return r;
+}
+
+/// Helper estático para decodificar JSON.
+Future<dynamic> decodeJson(http.Response response) async {
+  return jsonDecode(response.body);
+}
