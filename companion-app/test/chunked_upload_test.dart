@@ -34,7 +34,7 @@ class FakeUploadBackend {
       return http.Response(
         jsonEncode({
           'uploadId': id,
-          'totalChunks': (body['totalSize'] as int + (body['chunkSize'] as int) - 1) ~/ (body['chunkSize'] as int),
+          'totalChunks': ((body['totalSize'] as int + (body['chunkSize'] as int) - 1) ~/ (body['chunkSize'] as int)),
           'chunkSize': body['chunkSize'] as int,
         }),
         200,
