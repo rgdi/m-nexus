@@ -153,7 +153,7 @@ void main() {
     );
   });
 
-  test('resumes by skipping already-received chunks', () async {
+  test('resumes by skipping already-received chunks', async () {
     final fake = FakeUploadBackend();
     final client = MockClient((req) => fake.handle(req));
     final uploader = ChunkedUpload(client: client, baseUrlGetter: () => 'http://test');
@@ -161,25 +161,31 @@ void main() {
     final file = File('${tmp.path}/resume.bin');
     await file.writeAsBytes(List.generate(2000, (i) => i));
 
-    // Pre-popular la sesión con el chunk 0 ya recibido
-    final initResp = await client.post(
-      Uri.parse('http://test/api/v1/upload/init'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'filename': 'resume.bin', 'totalSize': 2000, 'chunkSize': 1000, 'deviceId': 'd1'}),
-    );
-    final upId = (jsonDecode(initResp.body) as Map<String, dynamic>)['uploadId'] as String;
-    // subir chunk 0 manualmente
-    final chunk0 = List<int>.generate(1000, (i) => i);
-    final r0 = await client.put(
-      Uri.parse('http://test/api/v1/upload/$upId/chunk/0'),
-      body: chunk0,
-      headers: {'Content-Type': 'application/octet-stream'},
-    );
-    expect(r0.statusCode, 200);
+    // Mock que responde con un uploadId FIJO y con chunk 0 ya recibido
+    String fixedId = 'resume-id-123';
+    final mockClient = MockClient((req) async {
+      final url = req.url.toString();
+      if (req.method == 'POST' && url.endsWith('/upload/init')) {
+        return http.Response(
+          jsonEncode({'uploadId': fixedId, 'totalChunks': 2, 'chunkSize': 1000}),
+          200,
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+      if (req.method == 'GET' && url.contains('/status')) {
+        return http.Response(
+          jsonEncode({'received': [0], 'total': 2}),
+          200,
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+      return fake.handle(req);
+    });
+    final customUploader = ChunkedUpload(client: mockClient, baseUrlGetter: () => 'http://test');
 
-    // Ahora el upload "real" — debe saltarse el chunk 0
+    // Ahora el upload "real" - debe saltarse el chunk 0
     final chunkCallsBefore = fake.chunkCalls;
-    final r = await uploader.upload(file: file, deviceId: 'd1', chunkSize: 1000);
+    final r = await customUploader.upload(file: file, deviceId: 'd1', chunkSize: 1000);
     // Solo debe haber subido el chunk 1 (1 nuevo PUT)
     expect(fake.chunkCalls - chunkCallsBefore, 1);
     expect(r.size, 2000);
