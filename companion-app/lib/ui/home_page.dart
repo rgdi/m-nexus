@@ -237,7 +237,7 @@ class _HomePageState extends State<HomePage> {
     return false;
   }
 
-  Future<PluginRelease> _fetchPluginRelease(dynamic update) async {
+  Future<PluginRelease> _fetchPluginRelease() async {
     final response = await http.get(Uri.parse(
       'https://api.github.com/repos/rgdi/m-nexus/releases/latest',
     ));
@@ -426,26 +426,6 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               );
-            }).toList()
-              ..add(
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        child: const Text('Cancelar'),
-                      ),
-                      const SizedBox(width: 8),
-                      FilledButton(
-                        onPressed: () => Navigator.pop(ctx, current),
-                        child: const Text('Seleccionar'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
           );
         },
       ),
@@ -458,11 +438,17 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _showInfo(String message) {
+  void _showInfo(String message, {bool error = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), duration: const Duration(seconds: 3)),
-    );
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: error ? Colors.red.shade700 : null,
+          duration: const Duration(seconds: 3),
+        ),
+      );
   }
 
   /// v0.34: lista los próximos eventos con tap-to-open
