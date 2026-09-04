@@ -11,7 +11,7 @@ import { join, dirname } from "node:path";
 import { createHash } from "node:crypto";
 import { logger } from "../utils/log.js";
 
-const UPLOAD_DIR = process.env.UPLOAD_DIR ?? "/var/lib/mnexus/uploads";
+function uploadDir() { return process.env.UPLOAD_DIR ?? "/var/lib/mnexus/uploads"; }
 const CHUNK_SIZE_DEFAULT = 1024 * 1024; // 1 MB
 
 // In-memory session state (en producción: Redis o SQLite)
@@ -42,7 +42,7 @@ setInterval(() => {
     if (now - s.createdAt > maxAge) {
       sessions.delete(id);
       // Borrar chunks parciales
-      const dir = join(UPLOAD_DIR, id);
+      const dir = join(uploadDir(), id);
       if (existsSync(dir)) {
         try { unlinkSync(dir); } catch { /* ignore */ }
       }
@@ -51,7 +51,7 @@ setInterval(() => {
 }, 60 * 60 * 1000);
 
 function chunksDir(uploadId: string): string {
-  return join(UPLOAD_DIR, uploadId);
+  return join(uploadDir(), uploadId);
 }
 
 export async function uploadRoutes(app: FastifyInstance): Promise<void> {
@@ -194,7 +194,7 @@ export async function uploadRoutes(app: FastifyInstance): Promise<void> {
         });
       }
       // Ensamblar chunks en orden
-      const targetDir = join(UPLOAD_DIR, "final", session.targetSubdir ?? "");
+      const targetDir = join(uploadDir(), "final", session.targetSubdir ?? "");
       mkdirSync(targetDir, { recursive: true });
       const targetPath = join(targetDir, session.filename);
       try {

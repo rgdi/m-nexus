@@ -82,14 +82,14 @@ export class TableView extends ItemView {
     }
 
     // Apply filters + sort
-    let rows = this.rows;
-    rows = applyFilters(rows, this.filters);
-    rows = applySorts(rows, this.sort);
+    let rows: NoteRow[] = this.rows;
+    rows = applyFilters<NoteRow>(rows, this.filters);
+    rows = applySorts<NoteRow>(rows, this.sort);
 
     // Table
     const table = el.createEl("table", { cls: "mnexus-data-table" });
     const thead = table.createTHead();
-    const trh = thead.createTr();
+    const trh = (thead as any).createTr();
     trh.createTh({ text: "📄" });
     for (const prop of this.database.properties) {
       if (this.config.hiddenColumns.includes(prop.name)) continue;
@@ -98,13 +98,15 @@ export class TableView extends ItemView {
     }
 
     const tbody = table.createTBody();
+    // createTr exists on tbody/thead but TS HTML types are limited
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (rows.length === 0) {
-      const tr = tbody.createTr();
+      const tr = (tbody as any).createTr();
       const td = tr.createTd({ text: "Sin notas. Crea una nueva." });
       td.colSpan = this.database.properties.length + 1;
     } else {
       for (const row of rows) {
-        const tr = tbody.createTr();
+        const tr = (tbody as any).createTr();
         const iconCell = tr.createTd();
         if (row.icon) iconCell.setText(row.icon);
         else iconCell.setText("📄");
@@ -114,7 +116,7 @@ export class TableView extends ItemView {
           const td = tr.createTd();
           if (prop.name === this.database.titleProperty) {
             const link = td.createEl("a", { text: row.name, href: "#" });
-            link.onclick = (e) => {
+            link.onclick = (e: MouseEvent) => {
               e.preventDefault();
               this.app.workspace.openLinkText(row.path, "", false);
             };
