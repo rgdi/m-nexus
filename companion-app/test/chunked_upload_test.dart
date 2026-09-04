@@ -21,6 +21,8 @@ class FakeUploadBackend {
   int completeCalls = 0;
   bool completeShouldFail = false;
   String? failChunkIndexFor;
+  String? initIdOverride;
+  List<int>? statusReceivedOverride;
 
   Future<http.Response> handle(http.Request req) async {
     final url = req.url.toString();
@@ -29,7 +31,7 @@ class FakeUploadBackend {
     if (method == 'POST' && url.endsWith('/api/v1/upload/init')) {
       initCalls++;
       final body = jsonDecode(req.body) as Map<String, dynamic>;
-      final id = 'up-${DateTime.now().microsecondsSinceEpoch}';
+      final id = initIdOverride ?? 'up-${DateTime.now().microsecondsSinceEpoch}';
       sessions[id] = _Session(
         filename: body['filename'] as String,
         totalSize: body['totalSize'] as int,
@@ -63,8 +65,9 @@ class FakeUploadBackend {
     if (method == 'GET' && url.contains('/status')) {
       final id = url.split('/').reversed.skip(1).first;
       final s = sessions[id]!;
+      final received = statusReceivedOverride ?? s.chunks.keys.toList()..sort();
       return http.Response(jsonEncode({
-        'received': s.chunks.keys.toList()..sort(),
+        'received': received,
         'total': s.totalChunks,
       }), 200, headers: {'Content-Type': 'application/json'});
     }
@@ -155,31 +158,17 @@ void main() {
 
   test('resumes by skipping already-received chunks', () async {
     final fake = FakeUploadBackend();
+    final client = MockClient((req) => fake.handle(req));
     final tmp = await Directory.systemTemp.createTemp('chunked-test-');
     final file = File('${tmp.path}/resume.bin');
     await file.writeAsBytes(List.generate(2000, (i) => i));
 
-    // Mock que responde con un uploadId FIJO y con chunk 0 ya recibido
+    // Wrapper: el fake maneja todo, pero el init usa un id fijo
+    // y el status reporta que chunk 0 ya está recibido.
     String fixedId = 'resume-id-123';
-    final mockClient = MockClient((req) async {
-      final url = req.url.toString();
-      if (req.method == 'POST' && url.endsWith('/upload/init')) {
-        return http.Response(
-          jsonEncode({'uploadId': fixedId, 'totalChunks': 2, 'chunkSize': 1000}),
-          200,
-          headers: {'Content-Type': 'application/json'},
-        );
-      }
-      if (req.method == 'GET' && url.contains('/status')) {
-        return http.Response(
-          jsonEncode({'received': [0], 'total': 2}),
-          200,
-          headers: {'Content-Type': 'application/json'},
-        );
-      }
-      return fake.handle(req);
-    });
-    final customUploader = ChunkedUpload(client: mockClient, baseUrlGetter: () => 'http://test');
+    fake.initIdOverride = fixedId;
+    fake.statusReceivedOverride = [0];
+    final customUploader = ChunkedUpload(client: client, baseUrlGetter: () => 'http://test');
 
     // Ahora el upload "real" - debe saltarse el chunk 0
     final chunkCallsBefore = fake.chunkCalls;
