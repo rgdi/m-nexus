@@ -22,9 +22,7 @@ dependencies:
   # v0.32: para solicitar permisos de manera nativa
   permission_handler: ^11.3.1
   # v0.32: voice notes con record 5.2.0 (compatible Flutter 3.24 + AGP 8.3)
-  record: ^6.0.0
-  # v0.32: para reproducir grabaciones
-  audioplayers: ^6.1.0
+
   # v0.31: para generar device_id persistente
   uuid: ^4.5.1
   google_fonts: ^6.2.1
@@ -45,7 +43,9 @@ flutter:
   assets:
     - assets/release-info.json
 
-# v0.32: forzar record_android 2.0+ que sí es AGP 8.3 compatible
-# (record 6.x tiene una dep transitiva a record_android 1.5.2 que rompe el build)
-dependency_overrides:
-  record_android: ^2.0.0
+# v0.32: voice notes con speech_to_text 7.x (compatible Flutter 3.24 + AGP 8.3+)
+# Antes intenté `record` 5.x/6.x pero record_android 1.5.2 es incompatible con AGP 8.3
+# y record_android 2.x requiere Dart 3.12+ (Flutter 3.27+)
+# speech_to_text 7.0.0 es estable, simple y compatible con nuestro stack.
+  speech_to_text: ^7.0.0
+  audioplayers: ^6.1.0

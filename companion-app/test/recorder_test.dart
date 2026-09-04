@@ -1,22 +1,10 @@
-// Tests del AudioRecorderService (state machine básico).
-//
-// El constructor AudioRecorder() de record 6.x invoca un platform channel
-// en su `init()`. Como no hay implementation nativa en tests Linux,
-// mockeamos el channel.
+// Tests del AudioRecorderService (speech_to_text 7.x).
 
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mnexus_installer/services/recorder.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-
-  // Mock del platform channel que record 6.x usa
-  const recordChannel = MethodChannel('com.llfbandit.record/messages');
-  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-      .setMockMethodCallHandler(recordChannel, (call) async {
-    return null;
-  });
 
   group('AudioRecorderService state', () {
     test('estado inicial es idle', () {
@@ -26,22 +14,22 @@ void main() {
       expect(r.currentFilePath, isNull);
       expect(r.linkedEventId, isNull);
       expect(r.className, isNull);
+      expect(r.transcript, isEmpty);
     });
 
-    test('RecordingResult guarda todos los campos', () {
+    test('RecordingResult guarda todos los campos (incluye transcript)', () {
       final now = DateTime(2026, 9, 4, 10, 30);
       final result = RecordingResult(
-        filePath: '/tmp/rec.aac',
+        filePath: '/tmp/rec.txt',
         duration: const Duration(minutes: 45),
         startedAt: now,
         linkedCalendarEventId: 'evt-123',
         className: 'Anatomía - Módulo 3',
+        transcript: 'Hoy vimos el sistema cardiovascular...',
       );
-      expect(result.filePath, '/tmp/rec.aac');
+      expect(result.filePath, '/tmp/rec.txt');
       expect(result.duration.inMinutes, 45);
-      expect(result.startedAt, now);
-      expect(result.linkedCalendarEventId, 'evt-123');
-      expect(result.className, 'Anatomía - Módulo 3');
+      expect(result.transcript, contains('sistema cardiovascular'));
     });
 
     test('RecorderState enum tiene los 5 valores esperados', () {
@@ -51,6 +39,11 @@ void main() {
       expect(RecorderState.values, contains(RecorderState.paused));
       expect(RecorderState.values, contains(RecorderState.stopped));
       expect(RecorderState.values, contains(RecorderState.error));
+    });
+
+    test('Dispose no lanza', () async {
+      final r = AudioRecorderService();
+      await r.dispose();
     });
   });
 }

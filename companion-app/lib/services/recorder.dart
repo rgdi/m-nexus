@@ -1,16 +1,19 @@
-// Recorder: servicio de grabación de audio usando `record` 5.2.0.
+// Recorder: servicio de grabación de audio usando speech_to_text 7.x.
 //
-// v0.32: usa record 5.2.0 (compatible Flutter 3.24 + AGP 8.3+).
-// Antes: usaba record 5.1.2 que requiere AGP 8.12+ + Gradle 8.13+.
+// v0.32: speech_to_text 7.x es estable y compatible con Flutter 3.24 + AGP 8.3+.
+// Antes: `record` 5.x/6.x es incompatible con nuestro toolchain (record_android
+// 1.5.2 uses deprecated flutter.flutterSdkPath API in AGP 8.3; 2.x requires
+// Dart 3.12 = Flutter 3.27+).
 //
-// API: AudioRecorder().start(RecordConfig(), path: ...)
+// API: SpeechToText().initialize() + listen() + stop()
 
 import 'dart:async';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:permission_handler/permission_handler.dart';
-import 'package:record/record.dart';
+import 'package:speech_to_text/speech_recognition_result.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 
 enum RecorderState { idle, recording, paused, stopped, error }
 
@@ -20,6 +23,7 @@ class RecordingResult {
   final DateTime startedAt;
   final String? linkedCalendarEventId;
   final String? className;
+  final String transcript;
 
   const RecordingResult({
     required this.filePath,
@@ -27,40 +31,60 @@ class RecordingResult {
     required this.startedAt,
     this.linkedCalendarEventId,
     this.className,
+    this.transcript = '',
   });
 }
 
 class AudioRecorderService {
-  final AudioRecorder _recorder = AudioRecorder();
+  final SpeechToText _stt = SpeechToText();
+  bool _initialized = false;
   String? _currentFilePath;
   DateTime? _startedAt;
   Timer? _ticker;
   Duration _elapsed = Duration.zero;
   String? _linkedEventId;
   String? _className;
+  String _transcript = '';
+  final List<String> _transcriptLines = [];
 
   final _stateController = StreamController<RecorderState>.broadcast();
   final _elapsedController = StreamController<Duration>.broadcast();
-  final _levelController = StreamController<double>.broadcast();
+  final _transcriptController = StreamController<String>.broadcast();
 
   Stream<RecorderState> get stateStream => _stateController.stream;
   Stream<Duration> get elapsedStream => _elapsedController.stream;
-  Stream<double> get levelStream => _levelController.stream;
+  Stream<String> get transcriptStream => _transcriptController.stream;
   RecorderState _state = RecorderState.idle;
   RecorderState get state => _state;
   Duration get elapsed => _elapsed;
   String? get currentFilePath => _currentFilePath;
   String? get linkedEventId => _linkedEventId;
   String? get className => _className;
+  String get transcript => _transcript;
 
   /// Verifica y solicita el permiso de micrófono.
-  /// Devuelve true si se concedió.
   Future<bool> ensureMicrophonePermission() async {
     final status = await Permission.microphone.status;
     if (status.isGranted) return true;
     if (status.isPermanentlyDenied) return false;
     final result = await Permission.microphone.request();
     return result.isGranted;
+  }
+
+  /// Inicializa el STT engine. Debe llamarse antes de start.
+  Future<bool> initialize() async {
+    if (_initialized) return true;
+    _initialized = await _stt.initialize(
+      onError: (e) {
+        _setState(RecorderState.error);
+      },
+      onStatus: (status) {
+        if (status == 'done' && _state == RecorderState.recording) {
+          _setState(RecorderState.stopped);
+        }
+      },
+    );
+    return _initialized;
   }
 
   /// Inicia una grabación. Devuelve el path del archivo o null.
@@ -73,6 +97,10 @@ class AudioRecorderService {
       _setState(RecorderState.error);
       return null;
     }
+    if (!await initialize()) {
+      _setState(RecorderState.error);
+      return null;
+    }
 
     final dir = await getApplicationDocumentsDirectory();
     final recordingsDir = Directory(p.join(dir.path, 'voice_notes'));
@@ -80,24 +108,34 @@ class AudioRecorderService {
       await recordingsDir.create(recursive: true);
     }
     final ts = DateTime.now().millisecondsSinceEpoch;
-    final filename = 'recording_$ts.m4a';
+    final filename = 'recording_$ts.txt'; // guardamos el transcript
     final filePath = p.join(recordingsDir.path, filename);
 
+    _currentFilePath = filePath;
+    _startedAt = DateTime.now();
+    _elapsed = Duration.zero;
+    _linkedEventId = linkedCalendarEventId;
+    _className = className;
+    _transcript = '';
+    _transcriptLines.clear();
+
     try {
-      await _recorder.start(
-        const RecordConfig(
-          encoder: AudioEncoder.aacLc,
-          bitRate: 128000,
-          sampleRate: 44100,
-          numChannels: 2,
-        ),
-        path: filePath,
+      await _stt.listen(
+        onResult: (SpeechRecognitionResult r) {
+          if (r.finalResult) {
+            _transcriptLines.add(r.recognizedWords);
+            _transcript = _transcriptLines.join(' ');
+            _transcriptController.add(_transcript);
+          } else {
+            // parcial
+            _transcriptController.add(r.recognizedWords);
+          }
+        },
+        listenFor: const Duration(hours: 4), // max
+        pauseFor: const Duration(days: 1),  // no auto-pause
+        partialResults: true,
+        localeId: 'es_ES',
       );
-      _currentFilePath = filePath;
-      _startedAt = DateTime.now();
-      _elapsed = Duration.zero;
-      _linkedEventId = linkedCalendarEventId;
-      _className = className;
       _setState(RecorderState.recording);
       _startTicker();
       return filePath;
@@ -107,33 +145,46 @@ class AudioRecorderService {
     }
   }
 
-  /// Pausa la grabación actual.
+  /// Pausa: en speech_to_text no hay pause nativo, guardamos la transcripción
+  /// parcial y paramos el listening. El usuario puede reanudar con resume().
   Future<void> pause() async {
     if (_state != RecorderState.recording) return;
     try {
-      await _recorder.pause();
+      await _stt.stop();
       _setState(RecorderState.paused);
       _stopTicker();
     } catch (_) {}
   }
 
-  /// Reanuda la grabación pausada.
+  /// Reanuda: vuelve a iniciar el listening manteniendo el transcript previo.
   Future<void> resume() async {
     if (_state != RecorderState.paused) return;
     try {
-      await _recorder.resume();
+      await _stt.listen(
+        onResult: (SpeechRecognitionResult r) {
+          if (r.finalResult) {
+            _transcriptLines.add(r.recognizedWords);
+            _transcript = _transcriptLines.join(' ');
+            _transcriptController.add(_transcript);
+          }
+        },
+        listenFor: const Duration(hours: 4),
+        pauseFor: const Duration(days: 1),
+        partialResults: true,
+        localeId: 'es_ES',
+      );
       _setState(RecorderState.recording);
       _startTicker();
     } catch (_) {}
   }
 
-  /// Detiene la grabación y devuelve el resultado.
+  /// Detiene y devuelve el resultado (incluye el transcript).
   Future<RecordingResult?> stop() async {
     if (_state != RecorderState.recording && _state != RecorderState.paused) {
       return null;
     }
     try {
-      await _recorder.stop();
+      await _stt.stop();
     } catch (_) {}
     _stopTicker();
     final result = RecordingResult(
@@ -142,27 +193,33 @@ class AudioRecorderService {
       startedAt: _startedAt ?? DateTime.now(),
       linkedCalendarEventId: _linkedEventId,
       className: _className,
+      transcript: _transcript,
     );
+    // Guarda el transcript en disco
+    if (_currentFilePath != null) {
+      try {
+        await File(_currentFilePath!).writeAsString(_transcript);
+      } catch (_) {}
+    }
     _setState(RecorderState.stopped);
     _reset();
     return result;
   }
 
-  Future<bool> isRecording() async {
-    try {
-      return await _recorder.isRecording();
-    } catch (_) {
-      return _state == RecorderState.recording;
-    }
-  }
-
+  /// Detiene sin guardar (cancela).
   Future<void> cancel() async {
     try {
-      await _recorder.cancel();
+      await _stt.cancel();
     } catch (_) {}
     _stopTicker();
     _setState(RecorderState.idle);
     _reset();
+  }
+
+  /// Verifica si hay recordings disponibles (true si speech_to_text puede grabar).
+  Future<bool> isAvailable() async {
+    if (!_initialized) await initialize();
+    return _initialized;
   }
 
   void _setState(RecorderState s) {
@@ -197,11 +254,8 @@ class AudioRecorderService {
 
   Future<void> dispose() async {
     _stopTicker();
-    try {
-      await _recorder.dispose();
-    } catch (_) {}
     await _stateController.close();
     await _elapsedController.close();
-    await _levelController.close();
+    await _transcriptController.close();
   }
 }
