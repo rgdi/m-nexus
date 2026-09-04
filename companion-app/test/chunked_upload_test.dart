@@ -153,7 +153,7 @@ void main() {
     );
   });
 
-  test('resumes by skipping already-received chunks', async () {
+  test('resumes by skipping already-received chunks', () async {
     final fake = FakeUploadBackend();
     final client = MockClient((req) => fake.handle(req));
     final uploader = ChunkedUpload(client: client, baseUrlGetter: () => 'http://test');
