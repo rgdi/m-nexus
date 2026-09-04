@@ -395,40 +395,58 @@ class _HomePageState extends State<HomePage> {
     final initialId = _selectedCalendarId ?? cals.first.id;
     final selected = await showDialog<int>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setLocal) {
-          int current = initialId;
-          return SimpleDialog(
+      builder: (ctx) {
+        int current = initialId;
+        return StatefulBuilder(
+          builder: (ctx2, setLocal) => SimpleDialog(
             title: Text('${cals.length} calendarios'),
-            children: cals.map((c) {
-              final isSelected = c.id == current;
-              return RadioListTile<int>(
-                value: c.id,
-                groupValue: current,
-                onChanged: (v) {
-                  if (v != null) {
-                    current = v;
-                    setLocal(() {});
-                  }
-                },
-                title: Text(c.name,
-                  style: TextStyle(
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            children: [
+              for (final c in cals)
+                RadioListTile<int>(
+                  value: c.id,
+                  groupValue: current,
+                  onChanged: (v) {
+                    if (v != null) {
+                      current = v;
+                      setLocal(() {});
+                    }
+                  },
+                  title: Text(c.name,
+                    style: TextStyle(
+                      fontWeight: c.id == current ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                  subtitle: Text(c.account, style: const TextStyle(fontSize: 11)),
+                  secondary: CircleAvatar(
+                    backgroundColor: Color(c.color == 0 ? 0xFF2563EB : c.color),
+                    radius: 14,
+                    child: Text(
+                      c.name.isNotEmpty ? c.name[0].toUpperCase() : '?',
+                      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
-                subtitle: Text(c.account, style: const TextStyle(fontSize: 11)),
-                secondary: CircleAvatar(
-                  backgroundColor: Color(c.color == 0 ? 0xFF2563EB : c.color),
-                  radius: 14,
-                  child: Text(
-                    c.name.isNotEmpty ? c.name[0].toUpperCase() : '?',
-                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                  ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('Cancelar'),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(ctx, current),
+                      child: const Text('Seleccionar'),
+                    ),
+                  ],
                 ),
-              );
-          );
-        },
-      ),
+              ),
+            ],
+          ),
+        );
+      },
     );
     if (selected != null) {
       await _calendar!.setSelectedCalendar(selected);
