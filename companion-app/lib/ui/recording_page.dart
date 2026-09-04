@@ -9,13 +9,12 @@
 //   - Integración con ChunkedUpload para subir (resumable)
 
 import 'dart:async';
-import 'dart:ui' show FontFeature;
+import 'package:http/http.dart' as http;
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:permission_handler/permission_handler.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../services/calendar_service.dart';
 import '../services/recorder.dart';
@@ -113,7 +112,7 @@ class _RecordingPageState extends State<RecordingPage> {
   }
 
   /// Lee la cola de sincronización desde SharedPreferences (v0.34 offline-first).
-  Future<Map<String, _SyncEntry>> _loadSyncMap() async {
+  Future<Map<String, SyncEntry>> _loadSyncMap() async {
     final entries = await _syncQueue.getAll();
     return {for (final e in entries) e.localPath: e};
   }
@@ -195,10 +194,11 @@ class _RecordingPageState extends State<RecordingPage> {
     if (_isUploading) return;
     setState(() => _isUploading = true);
     try {
-      final client = await BackendClient.create();
+      final httpClient = http.Client();
+      final baseUrl = await BackendClient.getBackendUrl();
       final uploader = ChunkedUpload(
-        client: client,
-        baseUrlGetter: () => client.baseUrl,
+        client: httpClient,
+        baseUrlGetter: () => baseUrl,
       );
       await uploader.upload(
         file: File(localPath),
@@ -230,10 +230,11 @@ class _RecordingPageState extends State<RecordingPage> {
           continue;
         }
         try {
-          final client = await BackendClient.create();
+          final httpClient = http.Client();
+          final baseUrl = await BackendClient.getBackendUrl();
           final uploader = ChunkedUpload(
-            client: client,
-            baseUrlGetter: () => client.baseUrl,
+            client: httpClient,
+            baseUrlGetter: () => baseUrl,
           );
           await uploader.upload(
             file: File(entry.localPath),

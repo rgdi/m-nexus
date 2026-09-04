@@ -77,7 +77,6 @@ class SyncEntry {
 class SyncQueue {
   static const _prefsKey = 'mnexus.sync_queue';
   final _controller = StreamController<void>.broadcast();
-  final _httpClient = () {}; // marcador, no se usa
 
   /// Stream de cambios (notifica cuando algo cambia).
   Stream<void> get stream => _controller.stream;
