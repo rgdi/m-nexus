@@ -15,6 +15,9 @@ class MainActivity: FlutterActivity() {
     private val DEVICE_CHANNEL = "com.mnexus.installer/device"
     private val CALENDAR_CHANNEL = "com.mnexus.installer/calendar"
     private val RECORDING_CHANNEL = "com.mnexus.installer/recording"
+    private val PERMISSIONS_CHANNEL = "com.mnexus.installer/permissions"
+    private val VAULT_CHANNEL = "com.mnexus.installer/vault"
+    private val safPathPrefs = "mnexus_saf_path"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -109,6 +112,83 @@ class MainActivity: FlutterActivity() {
             }
         }
 
+        // ── Permissions extras (v0.34) ─────────────────────
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, PERMISSIONS_CHANNEL).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "openManageStorageSettings" -> {
+                    try {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+                            intent.data = Uri.parse("package:${applicationContext.packageName}")
+                            startActivity(intent)
+                        } else {
+                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                            intent.data = Uri.parse("package:${applicationContext.packageName}")
+                            startActivity(intent)
+                        }
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("open_failed", e.message, null)
+                    }
+                }
+                "isManageStorageGranted" -> {
+                    try {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            result.success(android.os.Environment.isExternalStorageManager())
+                        } else {
+                            result.success(true)
+                        }
+                    } catch (e: Exception) {
+                        result.error("check_failed", e.message, null)
+                    }
+                }
+                "isInstallPermissionGranted" -> {
+                    try {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            val granted = packageManager.canRequestPackageInstalls()
+                            result.success(granted)
+                        } else {
+                            // En Android < 8 siempre está habilitado
+                            result.success(true)
+                        }
+                    } catch (e: Exception) {
+                        result.error("check_failed", e.message, null)
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
+
+        // ── Vault / SAF picker (v0.34) ─────────────────────
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, VAULT_CHANNEL).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "getSafPath" -> {
+                    val prefs = applicationContext.getSharedPreferences(safPathPrefs, android.content.Context.MODE_PRIVATE)
+                    result.success(prefs.getString("path", null))
+                }
+                "setSafPath" -> {
+                    val path = call.argument<String>("path") ?: ""
+                    val prefs = applicationContext.getSharedPreferences(safPathPrefs, android.content.Context.MODE_PRIVATE)
+                    prefs.edit().putString("path", path).apply()
+                    result.success(true)
+                }
+                "pickVault" -> {
+                    // Abre el selector de Storage Access Framework (SAF)
+                    try {
+                        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+                        intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                                       Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
+                                       Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
+                        startActivityForResult(intent, 4242)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("saf_failed", e.message, null)
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
+
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CALENDAR_CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "checkCalendarPermission" -> {
@@ -129,6 +209,23 @@ class MainActivity: FlutterActivity() {
                         result.success(true)
                     } catch (e: Exception) {
                         result.error("no_calendar_app", "No calendar app installed", null)
+                    }
+                }
+                "openEvent" -> {
+                    // Abre el detalle de un evento en la app de Calendar
+                    val eventId = call.argument<Number>("eventId")?.toLong() ?: 0L
+                    try {
+                        val uri = android.content.ContentUris.withAppendedId(
+                            android.provider.CalendarContract.Events.CONTENT_URI, eventId
+                        )
+                        val intent = Intent(Intent.ACTION_VIEW).apply {
+                            setDataAndType(uri, "vnd.android.cursor.item/event")
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        }
+                        startActivity(intent)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("open_event_failed", e.message, null)
                     }
                 }
                 "listCalendars" -> {

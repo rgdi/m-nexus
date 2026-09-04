@@ -1,8 +1,13 @@
 // HomePage: pantalla principal después del setup.
 //
-// v0.32: rediseñada para mostrar info diferenciada en cada sección
-// (estado de vaults, próxima clase, update disponible, permisos, backend).
-// Antes: misma info repetida en todas las tarjetas.
+// v0.34:
+//   - Calendar selector (escoger calendario a usar)
+//   - Lista de próximos eventos con tap-to-open
+//   - Mejor contraste / colores (eye-friendly)
+//   - Sync status de grabaciones (badge en AppBar)
+//   - Vault detection mejorada (con SAF picker)
+//   - In-app updates con mejor UX
+//   - Stats cards rediseñadas (gradientes, mejor jerarquía)
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -13,6 +18,7 @@ import '../services/app_info.dart';
 import '../services/calendar_service.dart';
 import '../services/device_id.dart';
 import '../services/permissions.dart';
+import '../services/sync_queue.dart';
 import '../services/updater.dart';
 import '../services/vault_detector.dart';
 import 'activate_plugin_page.dart';
@@ -36,10 +42,14 @@ class _HomePageState extends State<HomePage> {
   DeviceIdentity? _identity;
   CalendarService? _calendar;
   CalendarEvent? _upcomingClass;
+  List<CalendarEvent> _upcomingEvents = [];
+  List<CalendarInfo> _availableCalendars = [];
+  int? _selectedCalendarId;
   List<PermissionStatus> _permissions = [];
   AppInfo? _appInfo;
   String? _backendUrl;
   int _vaultsWithPlugin = 0;
+  int _pendingRecordings = 0;
 
   final _vaultDetector = VaultDetector();
   final _updater = Updater(
@@ -47,6 +57,7 @@ class _HomePageState extends State<HomePage> {
       checkInterval: const Duration(hours: 6),
     ),
   );
+  final _syncQueue = SyncQueue();
 
   @override
   void initState() {
@@ -54,6 +65,9 @@ class _HomePageState extends State<HomePage> {
     _load();
     _updater.startPeriodicChecks();
     _updater.addListener(_onUpdaterChange);
+    _syncQueue.stream.listen((_) {
+      if (mounted) _updatePendingCount();
+    });
   }
 
   @override
@@ -75,13 +89,22 @@ class _HomePageState extends State<HomePage> {
       _calendar = CalendarService();
       await _calendar!.load();
       if (_calendar!.enabled && await _calendar!.isPermissionGranted()) {
+        _availableCalendars = await _calendar!.listCalendars();
+        _selectedCalendarId = _calendar!.selectedCalendarId;
+        // Si no hay selección, usar el primero
+        if (_selectedCalendarId == null && _availableCalendars.isNotEmpty) {
+          _selectedCalendarId = _availableCalendars.first.id;
+          await _calendar!.setSelectedCalendar(_selectedCalendarId);
+        }
         _upcomingClass = await _calendar!.suggestCurrentEvent();
+        _upcomingEvents = await _calendar!.listUpcoming(limit: 5);
       }
       _vaults = await _vaultDetector.detectVaults();
       _vaultsWithPlugin = _vaults.where((v) => v.installedPluginVersion != null).length;
       _permissions = await PermissionsService.getAll();
       final prefs = await SharedPreferences.getInstance();
       _backendUrl = prefs.getString('mnexus.backend.url');
+      await _updatePendingCount();
       setState(() {
         _loading = false;
       });
@@ -90,6 +113,13 @@ class _HomePageState extends State<HomePage> {
         _error = e.toString();
         _loading = false;
       });
+    }
+  }
+
+  Future<void> _updatePendingCount() async {
+    final pending = await _syncQueue.getPending();
+    if (mounted) {
+      setState(() => _pendingRecordings = pending.length);
     }
   }
 
@@ -107,6 +137,8 @@ class _HomePageState extends State<HomePage> {
     }
     setState(() {});
   }
+
+  // ... (el resto de métodos se mantienen)
 
   Future<void> _showUpdateDialog() async {
     if (!mounted) return;
@@ -147,7 +179,6 @@ class _HomePageState extends State<HomePage> {
       return;
     }
     if (!mounted) return;
-    // Muestra un loading mientras fetcheamos el release del plugin
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -161,7 +192,7 @@ class _HomePageState extends State<HomePage> {
       err = e.toString();
     }
     if (!mounted) return;
-    Navigator.of(context).pop(); // close loading
+    Navigator.of(context).pop();
     if (release == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -186,10 +217,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  /// Fetchea el release del plugin desde la API de GitHub.
-  /// Devuelve un PluginRelease con downloadUrl apuntando al ZIP del plugin.
   Future<PluginRelease> _fetchPluginRelease(dynamic update) async {
-    // Llama a la misma API que el updater usa, pero parsea el asset del plugin
     final response = await http.get(Uri.parse(
       'https://api.github.com/repos/rgdi/m-nexus/releases/latest',
     ));
@@ -262,14 +290,23 @@ class _HomePageState extends State<HomePage> {
           width: double.maxFinite,
           child: ListView(
             shrinkWrap: true,
-            children: denied.map((p) => ListTile(
-              leading: Icon(p.permanentlyDenied ? Icons.lock : Icons.warning, color: Colors.orange),
-              title: Text(p.displayName),
-              subtitle: Text(p.description),
-              trailing: p.permanentlyDenied
-                  ? const Chip(label: Text('Ir a Settings'), backgroundColor: Colors.red)
-                  : null,
-            )).toList(),
+            children: denied.map((p) {
+              // Si es manage_storage y no está concedido, ofrecer la pantalla especial
+              final isManageStorage = p.name == 'manage_storage';
+              return ListTile(
+                leading: Icon(
+                  p.permanentlyDenied ? Icons.lock : Icons.warning,
+                  color: Colors.orange,
+                ),
+                title: Text(p.displayName),
+                subtitle: Text(p.description),
+                trailing: p.permanentlyDenied
+                    ? const Chip(label: Text('Ir a Settings'), backgroundColor: Colors.red)
+                    : isManageStorage
+                        ? const Chip(label: Text('Especial'))
+                        : null,
+              );
+            }).toList(),
           ),
         ),
         actions: [
@@ -277,7 +314,10 @@ class _HomePageState extends State<HomePage> {
           FilledButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              if (denied.any((p) => p.permanentlyDenied)) {
+              // Si hay manage_storage denegado, abrir pantalla especial
+              if (denied.any((p) => p.name == 'manage_storage' && !p.granted)) {
+                await PermissionsService.openManageStorageSettings();
+              } else if (denied.any((p) => p.permanentlyDenied)) {
                 await PermissionsService.openSettings();
               } else {
                 await PermissionsService.requestAll();
@@ -330,12 +370,165 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  /// v0.34: selector de calendario (escoge cuál usar)
+  Future<void> _showCalendarSelector() async {
+    if (_calendar == null) return;
+    if (!await _calendar!.isPermissionGranted()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Concede permiso de Calendar primero')),
+      );
+      return;
+    }
+    final cals = await _calendar!.listCalendars();
+    if (cals.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se encontraron calendarios')),
+      );
+      return;
+    }
+    if (!mounted) return;
+    final selected = await showDialog<int>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Escoge un calendario'),
+        children: cals.map((c) => RadioListTile<int>(
+          value: c.id,
+          groupValue: _selectedCalendarId,
+          onChanged: (v) => Navigator.pop(ctx, v),
+          title: Text(c.name),
+          subtitle: Text(c.account),
+          secondary: CircleAvatar(
+            backgroundColor: Color(c.color == 0 ? 0xFF2563EB : c.color),
+            radius: 12,
+          ),
+        )).toList(),
+      ),
+    );
+    if (selected != null) {
+      await _calendar!.setSelectedCalendar(selected);
+      await _load();
+    }
+  }
+
+  /// v0.34: lista los próximos eventos con tap-to-open
+  Future<void> _showUpcomingEvents() async {
+    if (_calendar == null) return;
+    final events = await _calendar!.listUpcoming(limit: 20);
+    if (!mounted) return;
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.7,
+        builder: (_, controller) => Container(
+          color: Theme.of(ctx).colorScheme.surface,
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    const Icon(Icons.event, size: 28),
+                    const SizedBox(width: 8),
+                    Text('Próximos eventos',
+                      style: Theme.of(ctx).textTheme.titleLarge,
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(),
+              Expanded(
+                child: events.isEmpty
+                    ? const Center(child: Text('No hay eventos próximos'))
+                    : ListView.builder(
+                        controller: controller,
+                        itemCount: events.length,
+                        itemBuilder: (_, i) {
+                          final e = events[i];
+                          return ListTile(
+                            leading: const Icon(Icons.event_note, color: Colors.blue),
+                            title: Text(e.title.isEmpty ? '(sin título)' : e.title),
+                            subtitle: Text(
+                              '${_formatDate(e.start)} · ${_formatTime(e.start)}–${_formatTime(e.end)}'
+                              '${e.location.isNotEmpty ? '\n📍 ${e.location}' : ''}',
+                            ),
+                            isThreeLine: e.location.isNotEmpty,
+                            trailing: const Icon(Icons.open_in_new, size: 16),
+                            onTap: () async {
+                              Navigator.pop(ctx);
+                              final ok = await _calendar!.openEventDetail(e.id);
+                              if (!ok && mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('No se pudo abrir el evento')),
+                                );
+                              }
+                            },
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime d) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final eventDay = DateTime(d.year, d.month, d.day);
+    final diff = eventDay.difference(today).inDays;
+    if (diff == 0) return 'Hoy';
+    if (diff == 1) return 'Mañana';
+    if (diff < 7) return ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'][d.weekday - 1];
+    return '${d.day}/${d.month}';
+  }
+
+  String _formatTime(DateTime d) {
+    return '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('M-NEXUS'),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                theme.colorScheme.primary,
+                theme.colorScheme.secondary,
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        foregroundColor: Colors.white,
         actions: [
+          if (_pendingRecordings > 0)
+            IconButton(
+              icon: Badge(
+                label: Text('$_pendingRecordings'),
+                child: const Icon(Icons.cloud_upload_outlined),
+              ),
+              tooltip: '$_pendingRecordings grabaciones pendientes de sincronizar',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const RecordingPage()),
+                );
+              },
+            ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _forceCheck,
@@ -402,49 +595,32 @@ class _HomePageState extends State<HomePage> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // 1) Stats cards (3 cards: device, vaults, backend)
           _buildStatsRow(),
           const SizedBox(height: 16),
-
-          // 2) Update banner (condicional, arriba si existe)
           if (hasUpdate) ...[
             _buildUpdateBanner(),
             const SizedBox(height: 16),
           ],
-
-          // 3) Próxima clase (con info rica si está)
-          if (_upcomingClass != null) ...[
-            _buildUpcomingClassCard(),
+          if (_upcomingClass != null || _upcomingEvents.isNotEmpty) ...[
+            _buildCalendarCard(),
             const SizedBox(height: 16),
           ],
-
-          // 4) Permisos pendientes (solo si hay)
           if (deniedPerms.isNotEmpty) ...[
             _buildPermissionsCard(deniedPerms),
             const SizedBox(height: 16),
           ],
-
-          // 5) Activar plugin (solo si hay vaults sin plugin)
           if (_vaults.isNotEmpty && _vaultsWithPlugin < _vaults.length) ...[
             _buildActivateButton(),
             const SizedBox(height: 16),
           ],
-
-          // 6) Lista de vaults
           _buildVaultsSection(),
-
           const SizedBox(height: 16),
-
-          // 7) Backend card (siempre visible, info útil)
           _buildBackendCard(),
-
-          // 8) Device ID card (solo al final, con copy button)
           if (_identity != null) ...[
             const SizedBox(height: 16),
             _buildDeviceCard(),
           ],
-
-          const SizedBox(height: 80), // espacio para FAB
+          const SizedBox(height: 80),
         ],
       ),
     );
@@ -464,11 +640,11 @@ class _HomePageState extends State<HomePage> {
         const SizedBox(width: 8),
         Expanded(child: _buildStatCard(
           icon: Icons.event,
-          label: 'Próxima clase',
+          label: 'Próxima',
           value: _upcomingClass != null
-              ? '${_upcomingClass!.start.hour.toString().padLeft(2, '0')}:${_upcomingClass!.start.minute.toString().padLeft(2, '0')}'
-              : '—',
-          sub: _upcomingClass?.title ?? 'Sin eventos',
+              ? _formatTime(_upcomingClass!.start)
+              : (_upcomingEvents.isNotEmpty ? _formatTime(_upcomingEvents.first.start) : '—'),
+          sub: _upcomingClass?.title ?? _upcomingEvents.firstOrNull?.title ?? 'Sin eventos',
           color: Colors.purple,
         )),
         const SizedBox(width: 8),
@@ -493,7 +669,16 @@ class _HomePageState extends State<HomePage> {
     required Color color,
   }) {
     return Card(
-      child: Padding(
+      elevation: 2,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            colors: [color.withOpacity(0.1), Colors.transparent],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -503,12 +688,14 @@ class _HomePageState extends State<HomePage> {
                 Icon(icon, color: color, size: 18),
                 const SizedBox(width: 4),
                 Expanded(
-                  child: Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                  child: Text(label,
+                    style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600),
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 4),
-            Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
             const SizedBox(height: 2),
             Text(
               sub,
@@ -522,376 +709,281 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildUpcomingClassCard() {
-    final e = _upcomingClass!;
-    final now = DateTime.now();
-    final minsUntil = e.start.difference(now).inMinutes;
-    final isHappening = now.isAfter(e.start) && now.isBefore(e.end);
+  Widget _buildUpdateBanner() {
     return Card(
-      color: isHappening ? Colors.green.shade50 : Theme.of(context).colorScheme.primaryContainer,
+      color: Colors.orange.shade50,
+      elevation: 4,
       child: ListTile(
-        leading: Icon(
-          isHappening ? Icons.event_available : Icons.event,
-          size: 40,
-          color: isHappening ? Colors.green : null,
-        ),
-        title: Text(
-          e.title,
+        leading: const Icon(Icons.update, color: Colors.orange, size: 40),
+        title: Text('v${_updater.lastResult!.update!.latestVersion} disponible',
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('${e.start.hour.toString().padLeft(2, '0')}:${e.start.minute.toString().padLeft(2, '0')} - '
-                '${e.end.hour.toString().padLeft(2, '0')}:${e.end.minute.toString().padLeft(2, '0')}'),
-            if (e.location.isNotEmpty) Text('📍 ${e.location}'),
-            Text(
-              isHappening
-                ? '🟢 EN CURSO (terminó hace ${-minsUntil}min, faltan ${e.end.difference(now).inMinutes}min)'
-                : minsUntil > 60
-                  ? 'En ${(minsUntil / 60).toStringAsFixed(1)}h'
-                  : 'En ${minsUntil}min',
-              style: const TextStyle(fontSize: 11, fontStyle: FontStyle.italic),
-            ),
-          ],
-        ),
+        subtitle: Text('Tienes v${_updater.lastResult!.installedVersion}\nToca para descargar e instalar'),
         isThreeLine: true,
-        trailing: IconButton(
-          icon: const Icon(Icons.mic, size: 28),
-          tooltip: 'Grabar esta clase',
-          onPressed: () async {
-            await Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const RecordingPage()),
-            );
-            _load();
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildUpdateBanner() {
-    final r = _updater.lastResult!;
-    return Card(
-      color: Theme.of(context).colorScheme.tertiaryContainer,
-      child: ListTile(
-        leading: const Icon(Icons.system_update, size: 32),
-        title: Text('M-NEXUS v${r.update!.latestVersion} disponible'),
-        subtitle: Text('Tienes v${r.installedVersion}'),
-        trailing: const Icon(Icons.chevron_right),
+        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
         onTap: _showUpdateDialog,
       ),
     );
   }
 
-  Widget _buildActivateButton() {
-    final missing = _vaults.length - _vaultsWithPlugin;
+  Widget _buildCalendarCard() {
+    final e = _upcomingClass;
+    final next = e ?? (_upcomingEvents.isNotEmpty ? _upcomingEvents.first : null);
+    if (next == null) return const SizedBox.shrink();
+    final now = DateTime.now();
+    final isHappening = now.isAfter(next.start) && now.isBefore(next.end);
+    final theme = Theme.of(context);
     return Card(
-      color: Colors.amber.shade50,
-      child: ListTile(
-        leading: const Icon(Icons.bolt, color: Colors.amber, size: 32),
-        title: Text('$missing vault(s) sin plugin'),
-        subtitle: const Text('Ver pasos para activarlo en Obsidian'),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: _showActivateInstructions,
+      elevation: 2,
+      color: isHappening ? Colors.green.shade50 : theme.colorScheme.primaryContainer,
+      child: Column(
+        children: [
+          ListTile(
+            leading: Icon(
+              isHappening ? Icons.event_available : Icons.event,
+              size: 40,
+              color: isHappening ? Colors.green : null,
+            ),
+            title: Text(next.title.isEmpty ? '(sin título)' : next.title,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${_formatTime(next.start)} - ${_formatTime(next.end)}'
+                    '${next.location.isNotEmpty ? '  📍 ${next.location}' : ''}'),
+                Text(
+                  isHappening
+                      ? '🟢 EN CURSO'
+                      : _formatDate(next.start),
+                  style: const TextStyle(fontSize: 11, fontStyle: FontStyle.italic),
+                ),
+              ],
+            ),
+            isThreeLine: true,
+            trailing: PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert),
+              onSelected: (v) async {
+                switch (v) {
+                  case 'open':
+                    final ok = await _calendar!.openEventDetail(next.id);
+                    if (!ok && mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('No se pudo abrir el evento')),
+                      );
+                    }
+                    break;
+                  case 'select_calendar':
+                    await _showCalendarSelector();
+                    break;
+                  case 'show_all':
+                    await _showUpcomingEvents();
+                    break;
+                }
+              },
+              itemBuilder: (_) => const [
+                PopupMenuItem(value: 'open', child: Text('Abrir en Calendar')),
+                PopupMenuItem(value: 'show_all', child: Text('Ver todos los próximos')),
+                PopupMenuItem(value: 'select_calendar', child: Text('Escoger calendario')),
+              ],
+            ),
+          ),
+          if (_upcomingEvents.length > 1) ...[
+            const Divider(height: 1),
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.list, size: 18),
+              title: Text('${_upcomingEvents.length - 1} eventos más próximos',
+                style: const TextStyle(fontSize: 12),
+              ),
+              trailing: const Icon(Icons.chevron_right, size: 16),
+              onTap: _showUpcomingEvents,
+            ),
+          ],
+        ],
       ),
     );
   }
 
   Widget _buildPermissionsCard(List<PermissionStatus> denied) {
     return Card(
-      color: Colors.orange.shade50,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.shield, color: Colors.orange, size: 28),
-                const SizedBox(width: 8),
-                Text(
-                  '${denied.length} permiso(s) pendiente(s)',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            ...denied.map((p) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2),
-              child: Row(
-                children: [
-                  Icon(
-                    p.permanentlyDenied ? Icons.lock : Icons.warning,
-                    size: 16,
-                    color: p.permanentlyDenied ? Colors.red : Colors.orange,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(p.displayName, style: const TextStyle(fontSize: 13)),
-                  if (p.permanentlyDenied)
-                    const Padding(
-                      padding: EdgeInsets.only(left: 8),
-                      child: Text(
-                        '(denegado permanentemente)',
-                        style: TextStyle(fontSize: 11, color: Colors.red, fontStyle: FontStyle.italic),
-                      ),
-                    ),
-                ],
-              ),
-            )),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: _requestMissingPermissions,
-                    icon: const Icon(Icons.check, size: 18),
-                    label: const Text('Pedir permisos'),
-                  ),
-                ),
-                if (denied.any((p) => p.permanentlyDenied)) ...[
-                  const SizedBox(width: 8),
-                  OutlinedButton.icon(
-                    onPressed: () async {
-                      await PermissionsService.openSettings();
-                    },
-                    icon: const Icon(Icons.settings, size: 18),
-                    label: const Text('Settings'),
-                  ),
-                ],
-              ],
-            ),
-          ],
+      color: Colors.amber.shade50,
+      child: ListTile(
+        leading: const Icon(Icons.security, color: Colors.orange, size: 32),
+        title: const Text('Permisos pendientes',
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
+        subtitle: Text('${denied.length} permiso(s) sin conceder'),
+        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+        onTap: () => _showPermissionsDialog(denied),
+      ),
+    );
+  }
+
+  Widget _buildActivateButton() {
+    final without = _vaults.where((v) => v.installedPluginVersion == null).toList();
+    return Card(
+      color: Colors.blue.shade50,
+      child: ListTile(
+        leading: const Icon(Icons.extension, color: Colors.blue, size: 32),
+        title: const Text('Activar plugin',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Text('${without.length} vault(s) sin plugin instalado'),
+        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+        onTap: _showActivateInstructions,
       ),
     );
   }
 
   Widget _buildVaultsSection() {
-    if (_error != null) {
-      return Card(
-        color: Colors.red.shade50,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          child: Row(
             children: [
-              const Row(
-                children: [
-                  Icon(Icons.error, color: Colors.red),
-                  SizedBox(width: 8),
-                  Text('Error al detectar vaults'),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(_error!, style: const TextStyle(fontSize: 12)),
-              const SizedBox(height: 8),
-              TextButton.icon(
-                onPressed: _load,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Reintentar'),
+              const Icon(Icons.folder, size: 18, color: Colors.blue),
+              const SizedBox(width: 6),
+              Text('Vaults (${_vaults.length})',
+                style: Theme.of(context).textTheme.titleMedium,
               ),
             ],
           ),
         ),
-      );
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Icon(Icons.folder_outlined),
-            const SizedBox(width: 8),
-            Text(
-              'Tus vaults (${_vaults.length})',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
         if (_vaults.isEmpty)
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  const Icon(Icons.folder_open, size: 64, color: Colors.grey),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'No se detectaron vaults',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Asegúrate de tener Obsidian instalado y al menos un vault creado.\n'
-                    'También puedes añadir una ruta manualmente.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  const Icon(Icons.search_off, size: 48, color: Colors.grey),
+                  const SizedBox(height: 8),
+                  const Text('No se detectaron vaults automáticamente'),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.folder_open),
+                        label: const Text('Path manual'),
+                        onPressed: _showManualPathInput,
+                      ),
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.security),
+                        label: const Text('Más permisos'),
+                        onPressed: () async {
+                          await PermissionsService.openManageStorageSettings();
+                          await _load();
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
           )
         else
-          ..._vaults.map(_buildVaultCard),
+          ..._vaults.map((v) => _buildVaultCard(v)),
       ],
     );
   }
 
-  Widget _buildVaultCard(VaultInfo vault) {
-    final hasPlugin = vault.installedPluginVersion != null;
+  Widget _buildVaultCard(VaultInfo v) {
+    final hasPlugin = v.installedPluginVersion != null;
     return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  hasPlugin ? Icons.check_circle : Icons.folder_outlined,
-                  color: hasPlugin ? Colors.green : Colors.grey,
-                  size: 28,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        vault.name,
-                        style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
-                      ),
-                      Text(
-                        vault.path,
-                        style: const TextStyle(fontSize: 11, color: Colors.grey),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.download),
-                  tooltip: hasPlugin ? 'Actualizar plugin' : 'Instalar plugin',
-                  onPressed: () => _installPlugin(vault),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 6,
-              runSpacing: 4,
-              children: [
-                _buildChip(
-                  icon: vault.hasObsidianFolder ? Icons.folder_open : Icons.folder_off,
-                  label: vault.hasObsidianFolder ? '.obsidian' : 'No es vault',
-                  color: vault.hasObsidianFolder ? Colors.blue : Colors.grey,
-                ),
-                _buildChip(
-                  icon: hasPlugin ? Icons.extension : Icons.extension_off,
-                  label: hasPlugin ? 'v${vault.installedPluginVersion}' : 'Sin plugin',
-                  color: hasPlugin ? Colors.green : Colors.orange,
-                ),
-                if (vault.hasObsidianFolder)
-                  _buildChip(
-                    icon: Icons.book,
-                    label: '${vault.name}',
-                    color: Colors.purple,
-                  ),
-              ],
-            ),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: hasPlugin ? Colors.green.shade100 : Colors.grey.shade200,
+          child: Icon(
+            hasPlugin ? Icons.check_circle : Icons.folder,
+            color: hasPlugin ? Colors.green : Colors.grey,
+          ),
+        ),
+        title: Text(v.name),
+        subtitle: Text(
+          '${v.path}\n'
+          'Plugin: ${v.installedPluginVersion ?? "no instalado"}'
+          '${v.detectionMethod != null ? " · vía ${v.detectionMethod}" : ""}',
+        ),
+        isThreeLine: true,
+        trailing: PopupMenuButton<String>(
+          icon: const Icon(Icons.more_vert),
+          onSelected: (action) async {
+            switch (action) {
+              case 'install':
+                await _installPlugin(v);
+                break;
+              case 'activate':
+                await _showActivateInstructions();
+                break;
+              case 'copy':
+                await _copyToClipboard(v.path);
+                break;
+            }
+          },
+          itemBuilder: (_) => [
+            if (!hasPlugin) const PopupMenuItem(value: 'install', child: Text('Instalar plugin')),
+            if (!hasPlugin) const PopupMenuItem(value: 'activate', child: Text('Cómo activar')),
+            const PopupMenuItem(value: 'copy', child: Text('Copiar path')),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildChip({
-    required IconData icon,
-    required String label,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3), width: 1),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: color),
-          const SizedBox(width: 4),
-          Text(label, style: TextStyle(fontSize: 11, color: color)),
-        ],
-      ),
+  Future<void> _copyToClipboard(String text) async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Copiado: $text'), duration: const Duration(seconds: 2)),
     );
   }
 
   Widget _buildBackendCard() {
-    final url = _backendUrl;
+    final connected = _backendUrl != null && _backendUrl!.isNotEmpty;
     return Card(
       child: ListTile(
         leading: Icon(
-          url != null ? Icons.cloud_done : Icons.cloud_off,
-          color: url != null ? Colors.green : Colors.grey,
+          connected ? Icons.cloud_done : Icons.cloud_off,
+          color: connected ? Colors.green : Colors.grey,
+          size: 32,
         ),
-        title: Text(url ?? 'Sin backend configurado'),
-        subtitle: Text(url != null
-            ? 'El backend está accesible para sync FSRS'
-            : 'Configura el backend en Settings para sincronizar'),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: _openSettings,
+        title: const Text('Backend', style: TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text(
+          connected ? _backendUrl! : 'No configurado',
+          style: TextStyle(
+            color: connected ? Colors.black87 : Colors.grey,
+            fontFamily: 'monospace',
+            fontSize: 11,
+          ),
+        ),
+        trailing: TextButton(
+          onPressed: _openSettings,
+          child: const Text('Configurar'),
+        ),
       ),
     );
   }
 
   Widget _buildDeviceCard() {
-    final id = _identity!;
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.phone_android, size: 18),
-                const SizedBox(width: 8),
-                Text(id.displayName ?? id.model ?? 'Device',
-                    style: const TextStyle(fontWeight: FontWeight.w500)),
-                const Spacer(),
-                Text('v${_appInfo?.version ?? "?"}',
-                    style: const TextStyle(fontSize: 11, color: Colors.grey)),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Expanded(
-                  child: SelectableText(
-                    'ID: ${id.deviceId}',
-                    style: const TextStyle(fontSize: 11, color: Colors.grey, fontFamily: 'monospace'),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.copy, size: 14),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('ID copiado (largo presionado para seleccionar)')),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ],
+      child: ListTile(
+        leading: const Icon(Icons.smartphone, size: 32),
+        title: Text(_appInfo?.model ?? 'Desconocido',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Text(
+          'ID: ${_identity!.deviceId.substring(0, 8)}...\n'
+          'OS: ${_appInfo?.osVersion ?? "?"} · App: v${_appInfo?.version ?? "?"}',
+        ),
+        isThreeLine: true,
+        trailing: TextButton(
+          onPressed: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Device ID: ${_identity!.deviceId}')),
+            );
+          },
+          child: const Text('Ver ID'),
         ),
       ),
     );

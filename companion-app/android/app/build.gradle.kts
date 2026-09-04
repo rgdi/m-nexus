@@ -54,8 +54,8 @@ android {
         applicationId = "com.mnexus.installer"
         minSdk = 23
         targetSdk = 34
-        versionCode = 13
-        versionName = "0.32.0"
+        versionCode = 15
+        versionName = "0.34.0"
     }
 
     // v0.32: signing config from the fixed release keystore.

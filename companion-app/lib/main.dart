@@ -3,6 +3,7 @@
 // v0.31: integracion con device identity + setup wizard.
 
 import 'package:flutter/material.dart';
+import 'services/app_info.dart';
 import 'services/backend_client.dart';
 import 'services/device_id.dart';
 import 'ui/home_page.dart';
@@ -13,15 +14,20 @@ void main() async {
 
   // Cargar identidad persistida
   final identity = await DeviceIdentity.load();
-  debugPrint('M-NEXUS companion v0.30.0+10 | device=${identity.deviceId}');
+  final info = await AppInfo.load();
+  debugPrint('M-NEXUS companion ${info.fullVersion} | device=${identity.deviceId}');
 
-  // Si el setup ya se completó, intentar registrar el device en el backend
-  // (fire-and-forget; no bloquea el arranque)
-  if (await SetupWizard.isCompleted()) {
+  // Determinar si mostrar el wizard:
+  //  - Test mode: SIEMPRE mostrar el wizard
+  //  - Normal: solo si no se completó
+  final testMode = await AppInfo.isTestMode();
+  final shouldShowWizard = testMode || !(await SetupWizard.isCompleted());
+  if (!shouldShowWizard) {
+    // Setup ya completado → registrar en background
     _registerInBackground(identity);
   }
 
-  runApp(const MnexusApp());
+  runApp(MnexusApp(forceSetup: shouldShowWizard));
 }
 
 void _registerInBackground(DeviceIdentity identity) async {
@@ -35,8 +41,86 @@ void _registerInBackground(DeviceIdentity identity) async {
   }
 }
 
+/// v0.34: splash screen que decide entre wizard o home.
+/// Long-press en el logo activa/desactiva el test mode (fuerza wizard).
+class _RootRouter extends StatelessWidget {
+  final bool forceSetup;
+  const _RootRouter({required this.forceSetup});
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: Future.wait([
+        SetupWizard.isCompleted(),
+        AppInfo.isTestMode(),
+      ]).then((results) => results[0] == false || results[1]),
+      builder: (context, snap) {
+        if (!snap.hasData) {
+          return Scaffold(
+            body: GestureDetector(
+              onLongPress: () async {
+                final newMode = await AppInfo.toggleTestMode();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(newMode
+                          ? '🧪 Test mode ON: wizard siempre visible'
+                          : '✅ Test mode OFF: respeta setup.completed'),
+                    ),
+                  );
+                }
+              },
+              child: Container(
+                color: Theme.of(context).colorScheme.surface,
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [
+                              Theme.of(context).colorScheme.primary,
+                              Theme.of(context).colorScheme.secondary,
+                            ],
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.medical_services,
+                          size: 64,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text('M-NEXUS',
+                          style: TextStyle(
+                              fontSize: 28, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      Text('v0.34.0',
+                          style: TextStyle(
+                              color: Colors.grey, fontSize: 14)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+        if (snap.data == true) {
+          return const SetupWizard();
+        }
+        return const HomePage();
+      },
+    );
+  }
+}
+
 class MnexusApp extends StatelessWidget {
-  const MnexusApp({super.key});
+  /// v0.34: si true, siempre muestra el setup wizard al inicio.
+  final bool forceSetup;
+  const MnexusApp({super.key, this.forceSetup = false});
 
   @override
   Widget build(BuildContext context) {
@@ -53,20 +137,7 @@ class MnexusApp extends StatelessWidget {
           brightness: Brightness.dark,
         ),
       ),
-      home: FutureBuilder<bool>(
-        future: SetupWizard.isCompleted(),
-        builder: (context, snap) {
-          if (!snap.hasData) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          }
-          if (snap.data == false) {
-            return const SetupWizard();
-          }
-          return const HomePage();
-        },
-      ),
+      home: _RootRouter(forceSetup: forceSetup),
     );
   }
 }

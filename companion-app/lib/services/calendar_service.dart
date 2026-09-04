@@ -195,6 +195,38 @@ class CalendarService {
     return events.first;
   }
 
+  /// v0.34: lista los próximos N eventos (para mostrar en home).
+  Future<List<CalendarEvent>> listUpcoming({int limit = 5, int daysAhead = 7}) async {
+    if (!Platform.isAndroid) return [];
+    if (!await isPermissionGranted()) return [];
+    final events = await listEvents(
+      from: DateTime.now(),
+      to: DateTime.now().add(Duration(days: daysAhead)),
+    );
+    events.sort((a, b) => a.start.compareTo(b.start));
+    return events.take(limit).toList();
+  }
+
+  /// v0.34: abre el detalle de un evento en la app de Calendar del sistema.
+  Future<bool> openEventDetail(int eventId) async {
+    if (!Platform.isAndroid) return false;
+    try {
+      final uri = Uri.parse("content://com.android.calendar/events/$eventId");
+      final intent = androidIntent(uri.toString());
+      return await _channel.invokeMethod<bool>('openEvent', {
+        'eventId': eventId,
+      }) ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // Helper privado para crear un Intent
+  android.Intent androidIntent(String data) {
+    // No se usa directamente; el invokeMethod hace la traducción
+    return android.Intent();
+  }
+
   /// Abre la app de Calendar del sistema (para que el usuario la configure).
   Future<bool> openCalendarApp() async {
     if (!Platform.isAndroid) return false;
