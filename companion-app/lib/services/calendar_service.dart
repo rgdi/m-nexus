@@ -211,8 +211,6 @@ class CalendarService {
   Future<bool> openEventDetail(int eventId) async {
     if (!Platform.isAndroid) return false;
     try {
-      final uri = Uri.parse("content://com.android.calendar/events/$eventId");
-      final intent = androidIntent(uri.toString());
       return await _channel.invokeMethod<bool>('openEvent', {
         'eventId': eventId,
       }) ?? false;
@@ -221,13 +219,7 @@ class CalendarService {
     }
   }
 
-  // Helper privado para crear un Intent
-  android.Intent androidIntent(String data) {
-    // No se usa directamente; el invokeMethod hace la traducción
-    return android.Intent();
-  }
-
-  /// Abre la app de Calendar del sistema (para que el usuario la configure).
+/// Abre la app de Calendar del sistema (para que el usuario la configure).
   Future<bool> openCalendarApp() async {
     if (!Platform.isAndroid) return false;
     try {

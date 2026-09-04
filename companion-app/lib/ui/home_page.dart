@@ -264,23 +264,6 @@ class _HomePageState extends State<HomePage> {
     _load();
   }
 
-  Future<void> _requestMissingPermissions() async {
-    final results = await PermissionsService.requestAll();
-    if (!mounted) return;
-    final granted = results.where((p) => p.granted).length;
-    final denied = results.where((p) => !p.granted).toList();
-    setState(() => _permissions = results);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Permisos: $granted/${results.length} concedidos'),
-        action: denied.isEmpty ? null : SnackBarAction(
-          label: 'Ver',
-          onPressed: () => _showPermissionsDialog(denied),
-        ),
-      ),
-    );
-  }
-
   void _showPermissionsDialog(List<PermissionStatus> denied) {
     showDialog(
       context: context,

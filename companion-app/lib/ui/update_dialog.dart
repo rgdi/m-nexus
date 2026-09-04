@@ -130,42 +130,6 @@ class _UpdateDialogState extends State<UpdateDialog> {
     }
   }
 
-  Future<void> _openReleasePage() async {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Descarga manual'),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('Abre este enlace en tu navegador para descargar:'),
-              const SizedBox(height: 12),
-              SelectableText(
-                widget.update.apkDownloadUrl,
-                style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                '1. Descarga el APK\n'
-                '2. Abre el archivo descargado\n'
-                '3. Android lo instalará encima de la versión actual\n'
-                '4. Tus datos y configuración se conservan',
-                style: TextStyle(fontSize: 12),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cerrar'),
-          ),
-        ],
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
