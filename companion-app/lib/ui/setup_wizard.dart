@@ -17,6 +17,7 @@ import '../services/backend_client.dart';
 import '../services/calendar_service.dart';
 import '../services/permissions.dart';
 import '../services/vault_detector.dart';
+import '../services/device_id.dart';
 import '../services/plugin_installer.dart';
 import '../models/plugin_release.dart';
 import 'home_page.dart';
@@ -861,9 +862,9 @@ class _SetupWizardState extends State<SetupWizard> {
                   _selectedVault = selected ? null : v;
                 });
               },
-            );
-          }
-        ),
+            ),
+          );
+        }),
       ],
     );
   }
