@@ -44,3 +44,8 @@ flutter:
   uses-material-design: true
   assets:
     - assets/release-info.json
+
+# v0.32: forzar record_android 2.0+ que sí es AGP 8.3 compatible
+# (record 6.x tiene una dep transitiva a record_android 1.5.2 que rompe el build)
+dependency_overrides:
+  record_android: ^2.1.0
