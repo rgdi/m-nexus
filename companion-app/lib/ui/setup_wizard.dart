@@ -46,6 +46,7 @@ class SetupWizard extends StatefulWidget {
 
 class _SetupWizardState extends State<SetupWizard> {
   int _currentStep = 0;
+  final PageController _pageController = PageController();
   final _urlController = TextEditingController();
   BackendConnection? _connection;
   VaultDetector _vaultDetector = VaultDetector();
@@ -61,6 +62,7 @@ class _SetupWizardState extends State<SetupWizard> {
 
   @override
   void dispose() {
+    _pageController.dispose();
     _urlController.dispose();
     super.dispose();
   }
@@ -115,9 +117,16 @@ class _SetupWizardState extends State<SetupWizard> {
 
   void _next() {
     if (_currentStep < 4) {
-      setState(() => _currentStep++);
-      // Auto-actions per step
-      if (_currentStep == 3) _detectVaults();
+      // Auto-actions per step BEFORE navigation
+      final nextStep = _currentStep + 1;
+      if (nextStep == 3) _detectVaults();
+      setState(() => _currentStep = nextStep);
+      // Animate the PageView to the new page
+      _pageController.animateToPage(
+        nextStep,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
     } else {
       _finish();
     }
@@ -125,7 +134,13 @@ class _SetupWizardState extends State<SetupWizard> {
 
   void _prev() {
     if (_currentStep > 0) {
-      setState(() => _currentStep--);
+      final prevStep = _currentStep - 1;
+      setState(() => _currentStep = prevStep);
+      _pageController.animateToPage(
+        prevStep,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
     }
   }
 
@@ -149,8 +164,11 @@ class _SetupWizardState extends State<SetupWizard> {
             _buildStepper(),
             Expanded(
               child: PageView(
-                controller: PageController(initialPage: _currentStep),
+                controller: _pageController,
                 physics: const NeverScrollableScrollPhysics(),
+                onPageChanged: (newPage) {
+                  setState(() => _currentStep = newPage);
+                },
                 children: [
                   _buildWelcome(),
                   _buildPermissions(),

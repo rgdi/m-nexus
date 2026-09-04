@@ -1,8 +1,20 @@
 # M-NEXUS Changelog
-## v0.32.0 (2026-09-04)
+## v0.32.0 (2026-09-04) - Voice notes rescued + wizard fix + APK signing
+
+### Fixed
+- **Setup wizard botón "Siguiente" no funcionaba**: el PageView se reconstruía
+  con `PageController(initialPage: _currentStep)` en cada build (nuevo
+  controller cada vez), así que la navegación programática no llegaba al
+  widget. Ahora usa un `PageController` en el state + `animateToPage()` +
+  `onPageChanged` para mantener ambos sincronizados.
+- **APK signature consistency**: cada build de CI firmaba con el
+  `debug.keystore` del runner (aleatorio por runner), así que Android veía
+  cada actualización como una app NUEVA. Ahora hay un keystore de release
+  fijo (en `companion-app/android/keystores/mnexus-release.keystore`) +
+  `key.properties` con credenciales. Todos los APKs usan la misma firma.
 
 ### Added
-- Voice notes con flutter_sound (reemplaza record, compatible Flutter 3.24 + AGP 8.3+)
+- Voice notes con `speech_to_text` 7.x (compatible Flutter 3.24 + AGP 8.3+)
 - Setup wizard: pide TODOS los permisos con UI rica por permiso
 - PermissionsService: gestión unificada de storage/mic/calendar/notifications/install
 - AppInfo service: versión dinámica desde PackageManager (no más string hardcoded)

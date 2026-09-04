@@ -23,14 +23,15 @@ build/
 pubspec.lock
 
 # Android
+# v0.32: keystore and key.properties are committed to the repo on purpose,
+# so the release APK signature is consistent across all CI builds.
+# This is a research/study tool, not a production app with secrets.
 android/.gradle/
 android/captures/
 android/local.properties
 android/app/release/
 android/app/debug/
-android/key.properties
 *.jks
-*.keystore
 
 # iOS (por si acaso)
 ios/Flutter/Flutter.framework

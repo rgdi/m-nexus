@@ -148,6 +148,10 @@ jobs:
           cp -r companion-app/android/app/src/main/res/drawable /tmp/drawable 2>/dev/null || true
           cp companion-app/android/app/src/main/res/values/colors.xml /tmp/colors.xml 2>/dev/null || true
           cp companion-app/android/app/src/main/res/xml/file_paths.xml /tmp/file_paths.xml 2>/dev/null || true
+          # v0.32: backup release signing config so the APK is signed with the
+          # same keystore on every build (so devices recognize updates).
+          cp companion-app/android/key.properties /tmp/key.properties 2>/dev/null || true
+          cp -r companion-app/android/keystores /tmp/keystores 2>/dev/null || true
       - name: Regenerate Android platform files
         run: cd companion-app && flutter create --platforms=android --no-overwrite --project-name companion_app .
       - name: Restore custom android files
@@ -162,6 +166,9 @@ jobs:
           elif [ -f /tmp/app-build.gradle ]; then
             cp /tmp/app-build.gradle companion-app/android/app/build.gradle
           fi
+          # v0.32: restore release signing config
+          if [ -f /tmp/key.properties ]; then cp /tmp/key.properties companion-app/android/key.properties; fi
+          if [ -d /tmp/keystores ]; then cp -r /tmp/keystores companion-app/android/; fi
           # restore MainActivity.kt + AndroidManifest.xml (v0.30+ have 3 platform channels)
           cp /tmp/AndroidManifest.xml companion-app/android/app/src/main/AndroidManifest.xml
           if [ -d /tmp/main-kotlin ]; then
@@ -178,6 +185,8 @@ jobs:
           if [ -d /tmp/drawable ]; then cp -r /tmp/drawable companion-app/android/app/src/main/res/; fi
           if [ -f /tmp/colors.xml ]; then cp /tmp/colors.xml companion-app/android/app/src/main/res/values/colors.xml; fi
           if [ -f /tmp/file_paths.xml ]; then cp /tmp/file_paths.xml companion-app/android/app/src/main/res/xml/file_paths.xml; fi
+          if [ -f /tmp/key.properties ]; then cp /tmp/key.properties companion-app/android/key.properties; fi
+          if [ -d /tmp/keystores ]; then cp -r /tmp/keystores companion-app/android/; fi
       - name: Patch plugin build.gradle for AGP 8.3 compat
         run: bash companion-app/android/fix-plugins.sh
       - name: Build APK
