@@ -38,29 +38,32 @@ tasks.register("clean", Delete) {
 
 // v0.32: workaround para paquetes (speech_to_text, record, etc.) que usan
 // la propiedad 'flutter' de la extensión 'android'. AGP 8.x ya no la expone
-// automáticamente. Inyectamos la property flutter.path en cada subproyecto
-// antes de que se evalúen.
+// automáticamente. Inyectamos project.ext.flutter con un Map que contiene
+// 'path' (lo que esos paquetes esperan).
 
 ext {
     flutterPath = { ->
         def properties = new Properties()
         file("local.properties").withInputStream { properties.load(it) }
-        def flutterSdkPath = properties.getProperty("flutter.sdk")
-        return flutterSdkPath
+        return properties.getProperty("flutter.sdk")
     }
 }
 
-subprojects { project ->
-    project.beforeEvaluate {
-        // nothing
+subprojects { subproject ->
+    subproject.plugins.withId("com.android.library") {
+        subproject.android {
+            // No es posible añadir 'flutter' a LibraryExtension en AGP 8,
+            // pero podemos usar ext.flutter que es lo que el plugin busca.
+        }
     }
-    project.afterEvaluate {
-        if (project.hasProperty("android")) {
-            try {
-                project.ext.flutter = [path: flutterPath()]
-            } catch (Exception e) {
-                // ignore
-            }
+}
+
+gradle.projectsEvaluated {
+    rootProject.subprojects.each { subproject ->
+        try {
+            subproject.ext.flutter = [path: flutterPath()]
+        } catch (Exception e) {
+            // ignore
         }
     }
 }
