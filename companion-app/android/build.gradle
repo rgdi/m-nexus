@@ -38,17 +38,28 @@ tasks.register("clean", Delete) {
 
 // v0.32: workaround para paquetes (speech_to_text, record, etc.) que usan
 // la propiedad 'flutter' de la extensión 'android'. AGP 8.x ya no la expone
-// automáticamente; este snippet la reinyecta como property del root project.
-subprojects {
-    afterEvaluate { project ->
+// automáticamente. Inyectamos la property flutter.path en cada subproyecto
+// antes de que se evalúen.
+
+ext {
+    flutterPath = { ->
+        def properties = new Properties()
+        file("local.properties").withInputStream { properties.load(it) }
+        def flutterSdkPath = properties.getProperty("flutter.sdk")
+        return flutterSdkPath
+    }
+}
+
+subprojects { project ->
+    project.beforeEvaluate {
+        // nothing
+    }
+    project.afterEvaluate {
         if (project.hasProperty("android")) {
-            project.android {
-                if (project.android.metaClass.respondsTo(project.android, "getFlutter")) {
-                    def flutterProp = rootProject.findProperty('flutter.path') ?: project.findProperty('flutter.path')
-                    if (flutterProp) {
-                        project.ext.flutter = [path: flutterProp]
-                    }
-                }
+            try {
+                project.ext.flutter = [path: flutterPath()]
+            } catch (Exception e) {
+                // ignore
             }
         }
     }
