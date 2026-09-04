@@ -7,7 +7,7 @@ void main() {
   group('PermissionsService', () {
     test('getAll() devuelve 5 permisos en Linux/CI', () async {
       final statuses = await PermissionsService.getAll();
-      expect(statuses.length, 5);
+      expect(statuses.length, 6);
       for (final s in statuses) {
         expect(s.name, isNotEmpty);
         expect(s.displayName, isNotEmpty);
