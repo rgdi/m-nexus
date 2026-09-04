@@ -49,6 +49,7 @@ class _HomePageState extends State<HomePage> {
   String? _backendUrl;
   int _vaultsWithPlugin = 0;
   int _pendingRecordings = 0;
+  String? _lastNotifiedUpdateVersion;
 
   final _vaultDetector = VaultDetector();
   final _updater = Updater(
@@ -124,14 +125,21 @@ class _HomePageState extends State<HomePage> {
   void _onUpdaterChange() {
     if (!mounted) return;
     final r = _updater.lastResult;
+    // Solo notificar UNA VEZ por versión (no en cada notifyListeners)
     if (r?.hasUpdate ?? false) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('M-NEXUS v${r!.update!.latestVersion} disponible (tienes v${r.installedVersion})'),
-          action: SnackBarAction(label: 'Ver', onPressed: _showUpdateDialog),
-          duration: const Duration(seconds: 10),
-        ),
-      );
+      final v = r!.update!.latestVersion;
+      if (_lastNotifiedUpdateVersion != v) {
+        _lastNotifiedUpdateVersion = v;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('M-NEXUS v$v disponible (tienes v${r.installedVersion})'),
+            action: SnackBarAction(label: 'Ver', onPressed: _showUpdateDialog),
+            duration: const Duration(seconds: 10),
+          ),
+        );
+      }
+    } else {
+      _lastNotifiedUpdateVersion = null;
     }
     setState(() {});
   }
@@ -167,52 +175,66 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  /// v0.35: instala o actualiza el plugin en el vault seleccionado.
+  /// Funciona tanto si hay update detectado como si no (busca el último release).
   Future<void> _installPlugin(VaultInfo vault) async {
-    final r = _updater.lastResult;
-    final update = r?.update;
-    if (update == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Busca actualizaciones primero')),
-      );
-      return;
-    }
     if (!mounted) return;
+    // Mostrar loading
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
+      builder: (_) => const AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 12),
+            Text('Buscando última versión del plugin...'),
+          ],
+        ),
+      ),
     );
     PluginRelease? release;
     String? err;
     try {
-      release = await _fetchPluginRelease(update);
+      release = await _fetchPluginRelease();
     } catch (e) {
       err = e.toString();
     }
     if (!mounted) return;
-    Navigator.of(context).pop();
+    Navigator.of(context).pop();  // cerrar loading
     if (release == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(err != null
-              ? "Error obteniendo release: $err"
-              : "No se pudo obtener info del plugin"),
-          duration: const Duration(seconds: 4),
-        ),
-      );
+      _showInfo('Error: ${err ?? "No se pudo encontrar el release"}', error: true);
       return;
     }
+    // Navegar a InstallPage
+    final installedVer = vault.installedPluginVersion;
+    final hasUpdate = installedVer == null || _isNewer(release.latestVersion, installedVer);
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => InstallPage(
           vault: vault,
           release: release!,
-          installedVersion: vault.installedPluginVersion,
-          needsUpdate: r?.hasUpdate ?? false,
+          installedVersion: installedVer,
+          needsUpdate: hasUpdate,
         ),
       ),
     );
+  }
+
+  /// Compara versiones: true si a > b.
+  bool _isNewer(String a, String b) {
+    String norm(String v) => v.replaceFirst(RegExp(r'^v'), '').split('-').first.split('+').first;
+    final pa = norm(a).split('.').map(int.tryParse).toList();
+    final pb = norm(b).split('.').map(int.tryParse).toList();
+    for (int i = 0; i < 3; i++) {
+      final va = i < pa.length ? (pa[i] ?? 0) : 0;
+      final vb = i < pb.length ? (pb[i] ?? 0) : 0;
+      if (va > vb) return true;
+      if (va < vb) return false;
+    }
+    return false;
   }
 
   Future<PluginRelease> _fetchPluginRelease(dynamic update) async {
@@ -351,44 +373,96 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  /// v0.34: selector de calendario (escoge cuál usar)
+  /// v0.35: selector de calendario (escoge cuál usar).
+  /// Si no hay permiso, lo pide. Si no hay calendarios, muestra mensaje.
   Future<void> _showCalendarSelector() async {
     if (_calendar == null) return;
+    // Asegurar que tenemos el permiso
     if (!await _calendar!.isPermissionGranted()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Concede permiso de Calendar primero')),
-      );
-      return;
+      final ok = await _calendar!.requestPermission();
+      if (!ok) {
+        if (!mounted) return;
+        _showInfo('Concede el permiso de Calendar para escoger uno');
+        return;
+      }
     }
     final cals = await _calendar!.listCalendars();
+    if (!mounted) return;
     if (cals.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se encontraron calendarios')),
-      );
+      _showInfo('No se encontraron calendarios en el dispositivo');
       return;
     }
-    if (!mounted) return;
+    final initialId = _selectedCalendarId ?? cals.first.id;
     final selected = await showDialog<int>(
       context: context,
-      builder: (ctx) => SimpleDialog(
-        title: const Text('Escoge un calendario'),
-        children: cals.map((c) => RadioListTile<int>(
-          value: c.id,
-          groupValue: _selectedCalendarId,
-          onChanged: (v) => Navigator.pop(ctx, v),
-          title: Text(c.name),
-          subtitle: Text(c.account),
-          secondary: CircleAvatar(
-            backgroundColor: Color(c.color == 0 ? 0xFF2563EB : c.color),
-            radius: 12,
-          ),
-        )).toList(),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) {
+          int current = initialId;
+          return SimpleDialog(
+            title: Text('${cals.length} calendarios'),
+            children: cals.map((c) {
+              final isSelected = c.id == current;
+              return RadioListTile<int>(
+                value: c.id,
+                groupValue: current,
+                onChanged: (v) {
+                  if (v != null) {
+                    current = v;
+                    setLocal(() {});
+                  }
+                },
+                title: Text(c.name,
+                  style: TextStyle(
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+                subtitle: Text(c.account, style: const TextStyle(fontSize: 11)),
+                secondary: CircleAvatar(
+                  backgroundColor: Color(c.color == 0 ? 0xFF2563EB : c.color),
+                  radius: 14,
+                  child: Text(
+                    c.name.isNotEmpty ? c.name[0].toUpperCase() : '?',
+                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              );
+            }).toList()
+              ..add(
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('Cancelar'),
+                      ),
+                      const SizedBox(width: 8),
+                      FilledButton(
+                        onPressed: () => Navigator.pop(ctx, current),
+                        child: const Text('Seleccionar'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          );
+        },
       ),
     );
     if (selected != null) {
       await _calendar!.setSelectedCalendar(selected);
       await _load();
+      if (!mounted) return;
+      _showInfo('✓ Calendario actualizado');
     }
+  }
+
+  void _showInfo(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), duration: const Duration(seconds: 3)),
+    );
   }
 
   /// v0.34: lista los próximos eventos con tap-to-open

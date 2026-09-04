@@ -148,11 +148,25 @@ class MainActivity: FlutterActivity() {
                             val granted = packageManager.canRequestPackageInstalls()
                             result.success(granted)
                         } else {
-                            // En Android < 8 siempre está habilitado
                             result.success(true)
                         }
                     } catch (e: Exception) {
                         result.error("check_failed", e.message, null)
+                    }
+                }
+                "requestIgnoreBatteryOptimizations" -> {
+                    try {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+                            intent.data = Uri.parse("package:${applicationContext.packageName}")
+                            startActivity(intent)
+                            result.success(true)
+                        } else {
+                            // En Android < 6 no hay optimización de batería
+                            result.success(true)
+                        }
+                    } catch (e: Exception) {
+                        result.error("battery_failed", e.message, null)
                     }
                 }
                 else -> result.notImplemented()

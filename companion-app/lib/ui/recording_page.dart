@@ -167,7 +167,7 @@ class _RecordingPageState extends State<RecordingPage> {
         _state == RecorderState.paused) {
       final result = await _recorder.stop();
       if (result != null) {
-        // v0.34: encolar para sync (offline-first)
+        // v0.35: encolar para sync (offline-first)
         await _syncQueue.enqueue(SyncEntry(
           localPath: result.filePath,
           deviceId: 'auto',
@@ -176,15 +176,9 @@ class _RecordingPageState extends State<RecordingPage> {
         // Intentar subir inmediatamente
         unawaited(_trySyncOne(result.filePath));
         await _loadPreviousRecordings();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(result.className != null
-                  ? '✅ Grabación guardada: ${result.className}'
-                  : '✅ Grabación guardada (sin nombre)'),
-            ),
-          );
-        }
+        _notify(result.className != null
+            ? '✅ Grabación guardada: ${result.className}'
+            : '✅ Grabación guardada (sin nombre)');
       }
     }
   }
@@ -252,15 +246,7 @@ class _RecordingPageState extends State<RecordingPage> {
     } finally {
       if (mounted) setState(() => _isUploading = false);
       await _loadPreviousRecordings();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Sincronización: $synced OK, $failed con error',
-            ),
-          ),
-        );
-      }
+      _notify('Sincronización: $synced OK, $failed con error');
     }
   }
 
@@ -350,15 +336,11 @@ class _RecordingPageState extends State<RecordingPage> {
       await _syncQueue.updatePath(r.path, newPath);
       await _loadPreviousRecordings();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Renombrado a ${p.basename(newPath)}')),
-        );
+        _notify('Renombrado a ${p.basename(newPath)}');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error renombrando: $e')),
-        );
+        _notify('Error renombrando: $e', error: true);
       }
     }
   }
@@ -422,6 +404,20 @@ class _RecordingPageState extends State<RecordingPage> {
       case SyncStatus.failed: return '❌ Error de sincronización';
       case SyncStatus.manual: return '📁 Solo local';
     }
+  }
+
+  // Dedupe de SnackBars: solo uno a la vez
+  void _notify(String message, {bool error = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: error ? Colors.red.shade700 : null,
+          duration: const Duration(seconds: 3),
+        ),
+      );
   }
 
   @override
