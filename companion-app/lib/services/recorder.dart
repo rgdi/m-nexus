@@ -131,10 +131,14 @@ class AudioRecorderService {
             _transcriptController.add(r.recognizedWords);
           }
         },
-        listenFor: const Duration(hours: 4), // max
-        pauseFor: const Duration(days: 1),  // no auto-pause
-        partialResults: true,
-        localeId: 'es_ES',
+        listenOptions: SpeechListenOptions(
+          listenMode: ListenMode.dictation,
+          cancelOnError: true,
+          listenFor: const Duration(hours: 4),
+          pauseFor: const Duration(days: 1),
+          partialResults: true,
+          localeId: 'es_ES',
+        ),
       );
       _setState(RecorderState.recording);
       _startTicker();
@@ -168,10 +172,14 @@ class AudioRecorderService {
             _transcriptController.add(_transcript);
           }
         },
-        listenFor: const Duration(hours: 4),
-        pauseFor: const Duration(days: 1),
-        partialResults: true,
-        localeId: 'es_ES',
+        listenOptions: SpeechListenOptions(
+          listenMode: ListenMode.dictation,
+          cancelOnError: true,
+          listenFor: const Duration(hours: 4),
+          pauseFor: const Duration(days: 1),
+          partialResults: true,
+          localeId: 'es_ES',
+        ),
       );
       _setState(RecorderState.recording);
       _startTicker();
