@@ -1,32 +1,38 @@
 #!/bin/bash
-# fix-plugins.sh: parchea los build.gradle de plugins incompatibles con AGP 8.x
-# 
-# v0.32: speech_to_text 7.x, record 5.x, etc. usan la API vieja
-# `project.android.flutter` que AGP 8.x ya no expone automáticamente.
-# Las nuevas versiones de Flutter inyectan `project.android.flutter`
-# vía el plugin gradle, pero los paquetes viejos no se han actualizado.
-# 
-# Este script parchea el build.gradle de cada plugin problemático
-# para usar `project.ext.flutter` como fallback.
-
+# fix-plugins.sh: parchea los build.gradle de plugins incompatibles con AGP 8.x.
+# Se ejecuta DESPUÉS de flutter pub get.
 set -e
-PLUGIN_DIRS=(
-  "$HOME/.pub-cache/hosted/pub.dev/speech_to_text-*/android"
-  "$HOME/.pub-cache/hosted/pub.dev/record-*/android"
-  "$HOME/.pub-cache/hosted/pub.dev/record_android-*/android"
-)
 
-for pattern in "${PLUGIN_DIRS[@]}"; do
-  for dir in $pattern; do
-    if [ -d "$dir" ]; then
-      build_file="$dir/build.gradle"
-      if [ -f "$build_file" ]; then
-        # Sustituir 'project.android.flutter' por 'project.ext.flutter' si existe
-        if grep -q "android.flutter" "$build_file"; then
-          sed -i 's|project\.android\.flutter|project.ext.flutter|g' "$build_file"
-          echo "Patched: $build_file"
-        fi
-      fi
-    fi
-  done
+echo "════════════════════════════════════════════════════════════════"
+echo "fix-plugins.sh: patching plugin build.gradle files for AGP 8.3"
+echo "════════════════════════════════════════════════════════════════"
+
+# Buscar todos los build.gradle en el pub-cache
+CACHE_DIR="${PUB_CACHE:-$HOME/.pub-cache}/hosted/pub.dev"
+echo "Pub cache: $CACHE_DIR"
+if [ ! -d "$CACHE_DIR" ]; then
+  echo "WARNING: pub cache not found at $CACHE_DIR, skipping patch"
+  exit 0
+fi
+
+COUNT=0
+for build_file in $(find "$CACHE_DIR" -path "*/android/build.gradle" -not -path "*/build/*"); do
+  if grep -q "android.flutter" "$build_file" 2>/dev/null; then
+    sed -i 's|project\.android\.flutter|project.ext.flutter|g' "$build_file"
+    echo "  patched: $(basename $(dirname $(dirname $build_file)))/build.gradle"
+    COUNT=$((COUNT+1))
+  fi
 done
+echo "Patched $COUNT build.gradle files."
+
+# Si no se patcheó ninguno, mostrar un warning
+if [ "$COUNT" -eq 0 ]; then
+  echo "WARNING: no plugins needed patching (maybe they're already AGP 8.3 compatible)"
+fi
+
+# Verificación
+echo "════════════════════════════════════════════════════════════════"
+echo "Verifying no remaining 'project.android.flutter' references..."
+REMAINING=$(grep -r "project.android.flutter" "$CACHE_DIR" 2>/dev/null | wc -l)
+echo "  Remaining references: $REMAINING"
+echo "════════════════════════════════════════════════════════════════"
