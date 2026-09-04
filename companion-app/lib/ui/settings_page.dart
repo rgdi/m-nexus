@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/backend_client.dart';
 import '../services/calendar_service.dart';
+import '../services/app_info.dart';
 import '../services/device_id.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -346,20 +347,43 @@ class _SettingsPageState extends State<SettingsPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const _SectionHeader('Acerca de'),
-        const ListTile(
-          leading: Icon(Icons.info),
-          title: Text('Versión'),
-          subtitle: Text('0.30.0+10'),
-        ),
-        const ListTile(
-          leading: Icon(Icons.link),
-          title: Text('Repositorio'),
-          subtitle: Text('github.com/rgdi/m-nexus'),
-        ),
-        const ListTile(
-          leading: Icon(Icons.bug_report),
-          title: Text('Reportar problema'),
-          subtitle: Text('github.com/rgdi/m-nexus/issues'),
+        FutureBuilder<AppInfo>(
+          future: AppInfo.load(),
+          builder: (ctx, snap) {
+            final info = snap.data;
+            return Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.info),
+                  title: const Text('Versión'),
+                  subtitle: Text(info?.fullVersion ?? '...'),
+                  trailing: info != null && info.buildNumber.isNotEmpty
+                    ? Chip(label: Text('build ${info.buildNumber}'))
+                    : null,
+                ),
+                ListTile(
+                  leading: const Icon(Icons.phone_android),
+                  title: const Text('Dispositivo'),
+                  subtitle: Text(info?.model ?? '...'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.android),
+                  title: const Text('Sistema'),
+                  subtitle: Text(info?.osVersion ?? '...'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.link),
+                  title: const Text('Repositorio'),
+                  subtitle: const Text('github.com/rgdi/m-nexus'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.bug_report),
+                  title: const Text('Reportar problema'),
+                  subtitle: const Text('github.com/rgdi/m-nexus/issues'),
+                ),
+              ],
+            );
+          },
         ),
       ],
     );

@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/backend_client.dart';
 import '../services/calendar_service.dart';
+import '../services/permissions.dart';
 import '../services/device_id.dart';
 import '../services/vault_detector.dart';
 import 'home_page.dart';
@@ -259,43 +260,125 @@ class _SetupWizardState extends State<SetupWizard> {
     );
   }
 
+  List<PermissionStatus> _currentPerms = [];
+  bool _permsLoading = true;
+
+  Future<void> _refreshPerms() async {
+    setState(() => _permsLoading = true);
+    final list = await PermissionsService.getAll();
+    if (mounted) setState(() {
+      _currentPerms = list;
+      _permsLoading = false;
+    });
+  }
+
+  Future<void> _requestAllPerms() async {
+    setState(() => _permsLoading = true);
+    final list = await PermissionsService.requestAll();
+    if (mounted) setState(() {
+      _currentPerms = list;
+      _permsLoading = false;
+    });
+    final granted = list.where((p) => p.granted).length;
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$granted/${list.length} permisos concedidos')),
+      );
+    }
+  }
+
   Widget _buildPermissions() {
+    if (_permsLoading && _currentPerms.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    final granted = _currentPerms.where((p) => p.granted).length;
+    final total = _currentPerms.length;
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
         const Icon(Icons.security, size: 64),
         const SizedBox(height: 16),
         Text('Permisos', style: Theme.of(context).textTheme.headlineSmall, textAlign: TextAlign.center),
+        const SizedBox(height: 8),
+        Text(
+          'M-NEXUS necesita $granted/$total permisos para funcionar.
+'
+          'Toca "Pedir todos" para otorgarlos de una vez.',
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: Colors.grey),
+        ),
+        const SizedBox(height: 24),
+        ..._currentPerms.map((p) {
+          IconData icon;
+          switch (p.name) {
+            case 'storage': icon = Icons.folder; break;
+            case 'microphone': icon = Icons.mic; break;
+            case 'calendar': icon = Icons.calendar_month; break;
+            case 'notifications': icon = Icons.notifications; break;
+            case 'install_unknown': icon = Icons.install_mobile; break;
+            default: icon = Icons.help_outline;
+          }
+          return Card(
+            margin: const EdgeInsets.symmetric(vertical: 4),
+            child: ListTile(
+              leading: Icon(icon, color: p.granted ? Colors.green : Colors.orange),
+              title: Text(p.displayName),
+              subtitle: Text(
+                p.granted
+                    ? '✓ Concedido'
+                    : (p.permanentlyDenied
+                        ? '⚠ Denegado permanentemente — abre Settings del sistema'
+                        : p.description),
+                style: TextStyle(
+                  color: p.granted ? Colors.green : (p.permanentlyDenied ? Colors.red : null),
+                  fontSize: 12,
+                ),
+              ),
+              trailing: p.granted
+                  ? const Icon(Icons.check_circle, color: Colors.green)
+                  : IconButton(
+                      icon: const Icon(Icons.lock_open),
+                      tooltip: 'Pedir permiso',
+                      onPressed: () async {
+                        final result = await PermissionsService.request(p.name);
+                        if (mounted) {
+                          setState(() {
+                            final i = _currentPerms.indexWhere((x) => x.name == p.name);
+                            if (i >= 0) _currentPerms[i] = result;
+                          });
+                          if (result.permanentlyDenied) {
+                            await PermissionsService.openSettings();
+                          }
+                        }
+                      },
+                    ),
+            ),
+          );
+        }),
         const SizedBox(height: 16),
-        _PermTile(
-          icon: Icons.folder,
-          title: 'Almacenamiento',
-          subtitle: 'Para acceder a tu vault de Obsidian',
-          granted: true,
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _permsLoading ? null : _refreshPerms,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Verificar'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: FilledButton.icon(
+                onPressed: _permsLoading ? null : _requestAllPerms,
+                icon: const Icon(Icons.check),
+                label: const Text('Pedir todos'),
+              ),
+            ),
+          ],
         ),
-        _PermTile(
-          icon: Icons.calendar_month,
-          title: 'Google Calendar (opcional)',
-          subtitle: 'Para sugerir nombre de clase al grabar',
-          granted: _calendarGranted,
-          onRequest: _requestCalendar,
-        ),
-        _PermTile(
-          icon: Icons.mic,
-          title: 'Micrófono (opcional)',
-          subtitle: 'Para grabar clases',
-          granted: false,
-        ),
-        _PermTile(
-          icon: Icons.install_mobile,
-          title: 'Instalar apps',
-          subtitle: 'Para auto-actualizar el companion',
-          granted: true,
-        ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 8),
         const Text(
-          'Los permisos opcionales se pueden activar después en Configuración.',
-          style: TextStyle(fontSize: 12, color: Colors.grey),
+          'Si un permiso está "permanentemente denegado", tienes que ir a Settings del sistema para activarlo.',
+          style: TextStyle(fontSize: 11, color: Colors.grey),
           textAlign: TextAlign.center,
         ),
       ],

@@ -1,4 +1,21 @@
 # M-NEXUS Changelog
+## v0.32.0 (2026-09-04)
+
+### Added
+- Voice notes con flutter_sound (reemplaza record, compatible Flutter 3.24 + AGP 8.3+)
+- Setup wizard: pide TODOS los permisos con UI rica por permiso
+- PermissionsService: gestión unificada de storage/mic/calendar/notifications/install
+- AppInfo service: versión dinámica desde PackageManager (no más string hardcoded)
+- RecordingPage: pantalla dedicada con timer, VU meter, lista de grabaciones previas
+- Home rediseñado: stats diferenciados (vaults, próxima clase, update), chips de estado, banner de permisos pendientes
+- Settings: versión dinámica, device model, OS version
+
+### Fixed
+- Settings mostraba "0.30.0+10" hardcodeado — ahora usa AppInfo.load()
+- Setup wizard permisos no se solicitaban — ahora pide uno por uno con explicación
+- Home mostraba la misma info en todas las secciones — ahora cada una tiene contenido distinto
+- MainActivity: read_external_storage explícito para flutter_sound
+
 
 ## v0.30.0 (2026-09-03) - Auto-update system (backend + companion)
 

@@ -131,16 +131,53 @@ jobs:
       - run: cd companion-app && flutter test
       - name: Copy custom android files
         run: |
-          cp companion-app/android/build.gradle /tmp/build.gradle
+          # backup all custom android files
+          cp companion-app/android/build.gradle /tmp/build.gradle 2>/dev/null || true
           cp companion-app/android/settings.gradle /tmp/settings.gradle 2>/dev/null || true
           cp companion-app/android/gradle.properties /tmp/gradle.properties 2>/dev/null || true
+          cp companion-app/android/app/build.gradle.kts /tmp/app-build.gradle.kts 2>/dev/null || true
+          cp companion-app/android/app/build.gradle /tmp/app-build.gradle 2>/dev/null || true
+          cp companion-app/android/app/src/main/AndroidManifest.xml /tmp/AndroidManifest.xml
+          cp -r companion-app/android/app/src/main/kotlin /tmp/main-kotlin 2>/dev/null || true
+          cp -r companion-app/android/app/src/main/res/mipmap-anydpi-v26 /tmp/mipmap-anydpi-v26 2>/dev/null || true
+          cp -r companion-app/android/app/src/main/res/mipmap-mdpi /tmp/mipmap-mdpi 2>/dev/null || true
+          cp -r companion-app/android/app/src/main/res/mipmap-hdpi /tmp/mipmap-hdpi 2>/dev/null || true
+          cp -r companion-app/android/app/src/main/res/mipmap-xhdpi /tmp/mipmap-xhdpi 2>/dev/null || true
+          cp -r companion-app/android/app/src/main/res/mipmap-xxhdpi /tmp/mipmap-xxhdpi 2>/dev/null || true
+          cp -r companion-app/android/app/src/main/res/mipmap-xxxhdpi /tmp/mipmap-xxxhdpi 2>/dev/null || true
+          cp -r companion-app/android/app/src/main/res/drawable /tmp/drawable 2>/dev/null || true
+          cp companion-app/android/app/src/main/res/values/colors.xml /tmp/colors.xml 2>/dev/null || true
+          cp companion-app/android/app/src/main/res/xml/file_paths.xml /tmp/file_paths.xml 2>/dev/null || true
       - name: Regenerate Android platform files
         run: cd companion-app && flutter create --platforms=android --no-overwrite --project-name companion_app .
       - name: Restore custom android files
         run: |
-          cp /tmp/build.gradle companion-app/android/build.gradle
+          # restore the build configs
+          cp /tmp/build.gradle companion-app/android/build.gradle 2>/dev/null || true
           cp /tmp/settings.gradle companion-app/android/settings.gradle 2>/dev/null || true
           cp /tmp/gradle.properties companion-app/android/gradle.properties 2>/dev/null || true
+          # restore the app build config (kts preferred)
+          if [ -f /tmp/app-build.gradle.kts ]; then
+            cp /tmp/app-build.gradle.kts companion-app/android/app/build.gradle.kts
+          elif [ -f /tmp/app-build.gradle ]; then
+            cp /tmp/app-build.gradle companion-app/android/app/build.gradle
+          fi
+          # restore MainActivity.kt + AndroidManifest.xml (v0.30+ have 3 platform channels)
+          cp /tmp/AndroidManifest.xml companion-app/android/app/src/main/AndroidManifest.xml
+          if [ -d /tmp/main-kotlin ]; then
+            mkdir -p companion-app/android/app/src/main/kotlin
+            cp -r /tmp/main-kotlin/. companion-app/android/app/src/main/kotlin/ 2>/dev/null || true
+          fi
+          # restore the launcher icons
+          if [ -d /tmp/mipmap-anydpi-v26 ]; then cp -r /tmp/mipmap-anydpi-v26 companion-app/android/app/src/main/res/; fi
+          if [ -d /tmp/mipmap-mdpi ]; then cp -r /tmp/mipmap-mdpi companion-app/android/app/src/main/res/; fi
+          if [ -d /tmp/mipmap-hdpi ]; then cp -r /tmp/mipmap-hdpi companion-app/android/app/src/main/res/; fi
+          if [ -d /tmp/mipmap-xhdpi ]; then cp -r /tmp/mipmap-xhdpi companion-app/android/app/src/main/res/; fi
+          if [ -d /tmp/mipmap-xxhdpi ]; then cp -r /tmp/mipmap-xxhdpi companion-app/android/app/src/main/res/; fi
+          if [ -d /tmp/mipmap-xxxhdpi ]; then cp -r /tmp/mipmap-xxxhdpi companion-app/android/app/src/main/res/; fi
+          if [ -d /tmp/drawable ]; then cp -r /tmp/drawable companion-app/android/app/src/main/res/; fi
+          if [ -f /tmp/colors.xml ]; then cp /tmp/colors.xml companion-app/android/app/src/main/res/values/colors.xml; fi
+          if [ -f /tmp/file_paths.xml ]; then cp /tmp/file_paths.xml companion-app/android/app/src/main/res/xml/file_paths.xml; fi
       - name: Build APK
         continue-on-error: true
         run: cd companion-app && flutter build apk --release
