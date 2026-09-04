@@ -10,7 +10,6 @@
 //   - Stats cards rediseñadas (gradientes, mejor jerarquía)
 
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
