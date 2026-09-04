@@ -1,14 +1,12 @@
 // Tests del cliente de chunked upload (v0.33).
 // Incluyen fault-injection: conexión rota, chunks duplicados, etc.
 
-import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:mnexus/services/chunked_upload.dart';
+import 'package:mnexus_installer/services/chunked_upload.dart';
 
 class FakeUploadBackend {
   final Map<String, _Session> sessions = {};

@@ -43,7 +43,7 @@ export class DatabaseManager {
           const content = await this.app.vault.read(child);
           dbs.push(JSON.parse(content));
         } catch (err) {
-          console.warn(`[mnexus] failed to read db ${child.path}: ${err.message}`);
+          console.warn(`[mnexus] failed to read db ${child.path}: ${(err as Error).message}`);
         }
       }
     }
@@ -156,7 +156,7 @@ export class DatabaseManager {
           updatedAt: stat.mtime,
         });
       } catch (err) {
-        console.warn(`[mnexus] failed to read row ${child.path}: ${err.message}`);
+        console.warn(`[mnexus] failed to read row ${child.path}: ${(err as Error).message}`);
       }
     }
     return rows;

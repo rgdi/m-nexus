@@ -261,10 +261,10 @@ function evalAst(expr: Expr, row: Record<string, unknown>): unknown {
 }
 
 /** Aplica filtros a una lista de rows. */
-export function applyFilters(
-  rows: Array<{ properties: Record<string, unknown> }>,
+export function applyFilters<T extends { properties: Record<string, unknown> }>(
+  rows: T[],
   filters: Array<{ property: string; op: string; value: unknown }>
-): typeof rows {
+): T[] {
   if (!filters?.length) return rows;
   return rows.filter((row) =>
     filters.every((f) => {
