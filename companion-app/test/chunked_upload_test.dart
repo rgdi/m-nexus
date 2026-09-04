@@ -8,6 +8,12 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:mnexus_installer/services/chunked_upload.dart';
 
+int _totalChunks(Map<String, dynamic> body) {
+  final ts = body['totalSize'] as int;
+  final cs = body['chunkSize'] as int;
+  return (ts + cs - 1) ~/ cs;
+}
+
 class FakeUploadBackend {
   final Map<String, _Session> sessions = {};
   int initCalls = 0;
@@ -34,7 +40,7 @@ class FakeUploadBackend {
       return http.Response(
         jsonEncode({
           'uploadId': id,
-          'totalChunks': ((body['totalSize'] as int + (body['chunkSize'] as int) - 1) ~/ (body['chunkSize'] as int)),
+                    'totalChunks': _totalChunks(body),
           'chunkSize': body['chunkSize'] as int,
         }),
         200,
