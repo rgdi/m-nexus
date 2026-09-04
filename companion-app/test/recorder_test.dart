@@ -1,10 +1,22 @@
 // Tests del AudioRecorderService (state machine básico).
+//
+// El constructor AudioRecorder() de record 6.x invoca un platform channel
+// en su `init()`. Como no hay implementation nativa en tests Linux,
+// mockeamos el channel.
 
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mnexus_installer/services/recorder.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  // Mock del platform channel que record 6.x usa
+  const recordChannel = MethodChannel('com.llfbandit.record/messages');
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(recordChannel, (call) async {
+    return null;
+  });
 
   group('AudioRecorderService state', () {
     test('estado inicial es idle', () {
