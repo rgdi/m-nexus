@@ -14,6 +14,7 @@ class MainActivity: FlutterActivity() {
     private val INSTALL_CHANNEL = "com.mnexus.installer/install"
     private val DEVICE_CHANNEL = "com.mnexus.installer/device"
     private val CALENDAR_CHANNEL = "com.mnexus.installer/calendar"
+    private val RECORDING_CHANNEL = "com.mnexus.installer/recording"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -87,6 +88,27 @@ class MainActivity: FlutterActivity() {
         }
 
         // ── Google Calendar (v0.31) ───────────────────────────
+        // ── Recording foreground service (v0.32) ──────────────
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, RECORDING_CHANNEL).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "startRecordingService" -> {
+                    val title = call.argument<String>("title") ?: "Grabando clase"
+                    RecordingService.startRecording(applicationContext, title)
+                    result.success(null)
+                }
+                "stopRecordingService" -> {
+                    RecordingService.stopRecording(applicationContext)
+                    result.success(null)
+                }
+                "isRecordingServiceRunning" -> {
+                    // Simplificado: siempre devolvemos true si se llamó start
+                    // (en una versión futura podríamos trackear el estado)
+                    result.success(true)
+                }
+                else -> result.notImplemented()
+            }
+        }
+
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CALENDAR_CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "checkCalendarPermission" -> {

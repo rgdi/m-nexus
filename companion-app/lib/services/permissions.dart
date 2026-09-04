@@ -54,6 +54,11 @@ class PermissionsService {
       name: 'Instalar apps',
       description: 'Necesario para auto-actualizar el companion',
     ),
+    _PermSpec(
+      id: 'manage_storage',
+      name: 'Acceso total al almacenamiento',
+      description: 'Para acceder a vaults de Obsidian en /sdcard o USB (Android 11+). Solo si el detector automático no encuentra tu vault.',
+    ),
   ];
 
   /// Devuelve el estado actual de todos los permisos.
@@ -177,6 +182,7 @@ class PermissionsService {
       case 'calendar': return Permission.calendarFullAccess;
       case 'notifications': return Permission.notification;
       case 'install_unknown': return Permission.requestInstallPackages;
+      case 'manage_storage': return Permission.manageExternalStorage;
       default: return null;
     }
   }

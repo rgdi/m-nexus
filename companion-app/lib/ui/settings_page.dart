@@ -13,6 +13,7 @@ import 'package:flutter/services.dart';
 import '../services/backend_client.dart';
 import '../services/calendar_service.dart';
 import '../services/app_info.dart';
+import 'help_page.dart';
 import '../services/device_id.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -370,6 +371,18 @@ class _SettingsPageState extends State<SettingsPage> {
                   leading: const Icon(Icons.android),
                   title: const Text('Sistema'),
                   subtitle: Text(info?.osVersion ?? '...'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.help_outline, color: Colors.indigo),
+                  title: const Text('Guía de instalación'),
+                  subtitle: const Text('Quickstart, FAQ, troubleshooting, links'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const HelpPage()),
+                    );
+                  },
                 ),
                 ListTile(
                   leading: const Icon(Icons.link),

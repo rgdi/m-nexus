@@ -20,6 +20,11 @@
     <!-- v0.31: Google Calendar -->
     <uses-permission android:name="android.permission.READ_CALENDAR" />
     <uses-permission android:name="android.permission.WRITE_CALENDAR" />
+    <!-- v0.32: acceso a archivos avanzados (Android 11+ para SAF; Android 10 y menor con MANAGE_EXTERNAL_STORAGE) -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+    <!-- v0.32: foreground service para grabación en background (Android 14+) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
 
     <application
         android:label="M-NEXUS Installer"
@@ -47,6 +52,12 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- v0.32: foreground service para grabación de clases en background -->
+        <service
+            android:name=".RecordingService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
         <!-- v0.30: FileProvider para instalar APK descargado -->
         <provider
             android:name="androidx.core.content.FileProvider"
