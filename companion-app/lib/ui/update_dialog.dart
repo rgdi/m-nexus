@@ -1,13 +1,15 @@
 // UpdateDialog: muestra al usuario que hay una nueva versión disponible
 // con el changelog y los botones de acción.
 //
-// Uso:
-//   showDialog(context: ctx, builder: (_) => UpdateDialog(update: update, ...))
-//
-// v0.30: implementado con download + install via platform channel.
+// v0.34 (revisión):
+//   - Mejor manejo de errores (mostrar el código exacto)
+//   - Hint sobre permisos de instalación
+//   - Stepper visual (descargando → instalando → listo)
+//   - Reintento de instalación si el platform channel falla
 
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../services/updater.dart';
 
@@ -16,7 +18,7 @@ class UpdateDialog extends StatefulWidget {
   final String installedVersion;
   final Updater updater;
   final VoidCallback? onDismiss;
-  final bool autoDownload;       // si true, descarga e instala al abrir
+  final bool autoDownload;
 
   const UpdateDialog({
     super.key,
@@ -31,11 +33,14 @@ class UpdateDialog extends StatefulWidget {
   State<UpdateDialog> createState() => _UpdateDialogState();
 }
 
+enum _InstallStep { idle, downloading, downloaded, installing, installed, failed }
+
 class _UpdateDialogState extends State<UpdateDialog> {
   String? _downloadedPath;
   String? _error;
-  bool _downloading = false;
+  _InstallStep _step = _InstallStep.idle;
   double _progress = 0;
+  String? _errorCode;
 
   @override
   void initState() {
@@ -55,44 +60,77 @@ class _UpdateDialogState extends State<UpdateDialog> {
   void _onUpdaterChange() {
     if (!mounted) return;
     setState(() {
-      _downloading = widget.updater.isDownloading;
       _progress = widget.updater.downloadProgress;
     });
   }
 
   Future<void> _downloadAndInstall() async {
     setState(() {
-      _downloading = true;
+      _step = _InstallStep.downloading;
       _error = null;
+      _errorCode = null;
     });
     final file = await widget.updater.downloadApk(widget.update);
     if (!mounted) return;
     if (file == null) {
       setState(() {
-        _downloading = false;
-        _error = 'No se pudo descargar el APK. Revisa tu conexión.';
+        _step = _InstallStep.failed;
+        _error = 'No se pudo descargar el APK. Revisa tu conexión o intenta más tarde.';
+        _errorCode = 'DOWNLOAD_FAILED';
       });
       return;
     }
     setState(() {
-      _downloading = false;
       _downloadedPath = file.path;
+      _step = _InstallStep.downloaded;
     });
     // Intentar instalar
-    final ok = await widget.updater.installApk(file);
+    await _installDownloaded();
+  }
+
+  Future<void> _installDownloaded() async {
+    if (_downloadedPath == null) return;
+    setState(() {
+      _step = _InstallStep.installing;
+      _error = null;
+    });
+    final ok = await widget.updater.installApk(File(_downloadedPath!));
     if (!mounted) return;
-    if (!ok) {
+    if (ok) {
       setState(() {
-        _error = Platform.isAndroid
-            ? 'No se pudo abrir el instalador. Verifica que "Instalar apps de origen desconocido" esté habilitado para M-NEXUS.'
-            : 'La instalación automática solo está disponible en Android.';
+        _step = _InstallStep.installed;
+      });
+    } else {
+      // Diagnóstico: qué falta?
+      String hint = 'No se pudo abrir el instalador.';
+      String code = 'INSTALL_INVOKE_FAILED';
+      // Comprobar si el permiso de instalar está concedido
+      try {
+        final granted = await _isInstallPermissionGranted();
+        if (!granted) {
+          hint = 'Activa "Instalar apps de origen desconocido" para M-NEXUS en Settings → Apps → M-NEXUS → Instalar apps desconocidas.';
+          code = 'INSTALL_PERMISSION_DENIED';
+        }
+      } catch (_) {}
+      setState(() {
+        _step = _InstallStep.failed;
+        _error = hint;
+        _errorCode = code;
       });
     }
   }
 
-  void _openReleasePage() {
-    // Abre la página de GitHub Releases en el navegador del sistema
-    // (siempre funciona, incluso si el platform channel falla)
+  Future<bool> _isInstallPermissionGranted() async {
+    // El platform channel "com.mnexus.installer/permissions" puede consultar esto
+    try {
+      const channel = MethodChannel('com.mnexus.installer/permissions');
+      return await channel.invokeMethod<bool>('isInstallPermissionGranted') ?? true;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  Future<void> _openReleasePage() async {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -166,22 +204,20 @@ class _UpdateDialogState extends State<UpdateDialog> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('v${widget.installedVersion}',
-                          style: theme.textTheme.bodySmall),
+                      Text('v${widget.installedVersion}', style: theme.textTheme.bodySmall),
                       Text('v${widget.update.latestVersion}',
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            color: theme.colorScheme.primary,
-                            fontWeight: FontWeight.bold,
-                          )),
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ],
                   ),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      if (sizeStr.isNotEmpty)
-                        Text(sizeStr, style: theme.textTheme.bodySmall),
-                      if (dateStr.isNotEmpty)
-                        Text(dateStr, style: theme.textTheme.bodySmall),
+                      if (sizeStr.isNotEmpty) Text(sizeStr, style: theme.textTheme.bodySmall),
+                      if (dateStr.isNotEmpty) Text(dateStr, style: theme.textTheme.bodySmall),
                     ],
                   ),
                 ],
@@ -206,18 +242,8 @@ class _UpdateDialogState extends State<UpdateDialog> {
             ],
             const SizedBox(height: 8),
 
-            // Progreso de descarga
-            if (_downloading) ...[
-              const SizedBox(height: 8),
-              LinearProgressIndicator(value: _progress > 0 ? _progress : null),
-              const SizedBox(height: 4),
-              Text(
-                _progress > 0
-                    ? 'Descargando... ${(_progress * 100).toStringAsFixed(0)}%'
-                    : 'Descargando...',
-                style: theme.textTheme.bodySmall,
-              ),
-            ],
+            // Stepper visual
+            _buildStepper(),
 
             // Error
             if (_error != null) ...[
@@ -228,13 +254,29 @@ class _UpdateDialogState extends State<UpdateDialog> {
                   color: theme.colorScheme.errorContainer.withOpacity(0.5),
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.warning_amber, color: theme.colorScheme.error, size: 18),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(_error!, style: theme.textTheme.bodySmall),
+                    Row(
+                      children: [
+                        Icon(Icons.warning_amber, color: theme.colorScheme.error, size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(_error!,
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        ),
+                      ],
                     ),
+                    if (_errorCode != null) ...[
+                      const SizedBox(height: 4),
+                      Text('Código: $_errorCode',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontFamily: 'monospace',
+                          color: theme.colorScheme.onErrorContainer,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -244,21 +286,81 @@ class _UpdateDialogState extends State<UpdateDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: _downloading ? null : widget.onDismiss ?? () => Navigator.of(context).pop(),
+          onPressed: _step == _InstallStep.downloading || _step == _InstallStep.installing
+              ? null
+              : (widget.onDismiss ?? () => Navigator.of(context).pop()),
           child: const Text('Más tarde'),
         ),
-        if (_downloadedPath == null)
+        if (_step == _InstallStep.failed)
           FilledButton.icon(
-            onPressed: _downloading ? null : _downloadAndInstall,
-            icon: const Icon(Icons.download),
-            label: const Text('Descargar e instalar'),
+            onPressed: _installDownloaded,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Reintentar'),
+          )
+        else if (_step == _InstallStep.downloaded)
+          FilledButton.icon(
+            onPressed: _installDownloaded,
+            icon: const Icon(Icons.install_mobile),
+            label: const Text('Instalar'),
+          )
+        else if (_step == _InstallStep.installed)
+          FilledButton.icon(
+            onPressed: () => Navigator.of(context).pop(),
+            icon: const Icon(Icons.check),
+            label: const Text('Listo'),
           )
         else
           FilledButton.icon(
-            onPressed: _openReleasePage,
-            icon: const Icon(Icons.info_outline),
-            label: const Text('Ver descarga'),
+            onPressed: _step == _InstallStep.downloading ? null : _downloadAndInstall,
+            icon: const Icon(Icons.download),
+            label: const Text('Descargar e instalar'),
           ),
+      ],
+    );
+  }
+
+  Widget _buildStepper() {
+    Widget step(String label, bool active, bool done) {
+      return Row(
+        children: [
+          Container(
+            width: 24, height: 24,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: done ? Colors.green : (active ? Colors.blue : Colors.grey.shade300),
+            ),
+            child: Icon(
+              done ? Icons.check : Icons.circle,
+              size: 14,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(label,
+            style: TextStyle(
+              fontWeight: active ? FontWeight.bold : FontWeight.normal,
+              color: done || active ? Colors.black87 : Colors.grey,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      children: [
+        step('Descargar',
+          _step == _InstallStep.downloading,
+          _step == _InstallStep.downloaded || _step == _InstallStep.installing || _step == _InstallStep.installed,
+        ),
+        if (_step == _InstallStep.downloading) ...[
+          const SizedBox(height: 4),
+          LinearProgressIndicator(value: _progress > 0 ? _progress : null),
+        ],
+        const SizedBox(height: 6),
+        step('Instalar',
+          _step == _InstallStep.installing,
+          _step == _InstallStep.installed,
+        ),
       ],
     );
   }

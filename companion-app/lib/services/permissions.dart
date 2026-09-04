@@ -7,6 +7,7 @@
 // denegados permanentemente para mostrar UI explicativa.
 
 import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:permission_handler/permission_handler.dart' as ph show PermissionStatus;
 
@@ -107,6 +108,34 @@ class PermissionsService {
     if (!Platform.isAndroid) return false;
     try {
       return await openAppSettings();
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// v0.34: abre la pantalla de "Acceso a todos los archivos" (MANAGE_EXTERNAL_STORAGE)
+  /// que es distinta de la pantalla normal de Settings.
+  /// En Android 11+ este permiso debe otorgarse desde una pantalla especial.
+  static Future<bool> openManageStorageSettings() async {
+    if (!Platform.isAndroid) return false;
+    try {
+      const channel = MethodChannel('com.mnexus.installer/permissions');
+      final result = await channel.invokeMethod<bool>('openManageStorageSettings');
+      return result ?? false;
+    } catch (_) {
+      // Fallback al método estándar
+      return openAppSettings();
+    }
+  }
+
+  /// v0.34: comprueba si MANAGE_EXTERNAL_STORAGE está concedido (sin pedirlo).
+  /// Útil para mostrar UI explicativa.
+  static Future<bool> isManageStorageGranted() async {
+    if (!Platform.isAndroid) return true;
+    try {
+      const channel = MethodChannel('com.mnexus.installer/permissions');
+      final result = await channel.invokeMethod<bool>('isManageStorageGranted');
+      return result ?? false;
     } catch (_) {
       return false;
     }
