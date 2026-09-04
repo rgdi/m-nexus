@@ -1,14 +1,16 @@
-// Recorder: servicio de grabación de audio usando flutter_sound.
+// Recorder: servicio de grabación de audio usando `record` 5.2.0.
 //
-// v0.32: usa flutter_sound (compatible Flutter 3.24 + AGP 8.3+).
-// Antes: usaba record 5.1.2 que requiere AGP 8.12+.
+// v0.32: usa record 5.2.0 (compatible Flutter 3.24 + AGP 8.3+).
+// Antes: usaba record 5.1.2 que requiere AGP 8.12+ + Gradle 8.13+.
+//
+// API: AudioRecorder().start(RecordConfig(), path: ...)
 
 import 'dart:async';
 import 'dart:io';
-import 'package:flutter_sound/flutter_sound.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:permission_handler/permission_handler.dart';
+import 'package:record/record.dart';
 
 enum RecorderState { idle, recording, paused, stopped, error }
 
@@ -29,16 +31,14 @@ class RecordingResult {
 }
 
 class AudioRecorderService {
-  final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
-  final FlutterSoundPlayer _player = FlutterSoundPlayer();
-  bool _recorderInitialized = false;
-  bool _playerInitialized = false;
+  final AudioRecorder _recorder = AudioRecorder();
   String? _currentFilePath;
   DateTime? _startedAt;
   Timer? _ticker;
   Duration _elapsed = Duration.zero;
   String? _linkedEventId;
   String? _className;
+  bool _isPaused = false;
 
   final _stateController = StreamController<RecorderState>.broadcast();
   final _elapsedController = StreamController<Duration>.broadcast();
@@ -54,34 +54,6 @@ class AudioRecorderService {
   String? get linkedEventId => _linkedEventId;
   String? get className => _className;
 
-  /// Abre el recorder. Debe llamarse antes de start.
-  Future<void> open() async {
-    if (!_recorderInitialized) {
-      await _recorder.openRecorder();
-      _recorderInitialized = true;
-    }
-    if (!_playerInitialized) {
-      await _player.openPlayer();
-      _playerInitialized = true;
-    }
-  }
-
-  /// Cierra el recorder (libera recursos).
-  Future<void> close() async {
-    _ticker?.cancel();
-    if (_recorderInitialized) {
-      await _recorder.closeRecorder();
-      _recorderInitialized = false;
-    }
-    if (_playerInitialized) {
-      await _player.closePlayer();
-      _playerInitialized = false;
-    }
-    await _stateController.close();
-    await _elapsedController.close();
-    await _levelController.close();
-  }
-
   /// Verifica y solicita el permiso de micrófono.
   /// Devuelve true si se concedió.
   Future<bool> ensureMicrophonePermission() async {
@@ -92,7 +64,7 @@ class AudioRecorderService {
     return result.isGranted;
   }
 
-  /// Inicia una grabación. Devuelve el path del archivo.
+  /// Inicia una grabación. Devuelve el path del archivo o null.
   Future<String?> start({
     String? linkedCalendarEventId,
     String? className,
@@ -103,29 +75,31 @@ class AudioRecorderService {
       return null;
     }
 
-    await open();
-
     final dir = await getApplicationDocumentsDirectory();
     final recordingsDir = Directory(p.join(dir.path, 'voice_notes'));
     if (!await recordingsDir.exists()) {
       await recordingsDir.create(recursive: true);
     }
-    final ts = DateTime.now().toIso8601String().replaceAll(':', '-').split('.').first;
-    final filename = 'recording_$ts.aac';
+    final ts = DateTime.now().millisecondsSinceEpoch;
+    final filename = 'recording_$ts.m4a';
     final filePath = p.join(recordingsDir.path, filename);
 
     try {
-      await _recorder.startRecorder(
-        toFile: filePath,
-        codec: Codec.aacADTS,
-        sampleRate: 44100,
-        bitRate: 128000,
+      await _recorder.start(
+        const RecordConfig(
+          encoder: AudioEncoder.aacLc,
+          bitRate: 128000,
+          sampleRate: 44100,
+          numChannels: 2,
+        ),
+        path: filePath,
       );
       _currentFilePath = filePath;
       _startedAt = DateTime.now();
       _elapsed = Duration.zero;
       _linkedEventId = linkedCalendarEventId;
       _className = className;
+      _isPaused = false;
       _setState(RecorderState.recording);
       _startTicker();
       return filePath;
@@ -139,7 +113,8 @@ class AudioRecorderService {
   Future<void> pause() async {
     if (_state != RecorderState.recording) return;
     try {
-      await _recorder.pauseRecorder();
+      await _recorder.pause();
+      _isPaused = true;
       _setState(RecorderState.paused);
       _stopTicker();
     } catch (_) {}
@@ -149,7 +124,8 @@ class AudioRecorderService {
   Future<void> resume() async {
     if (_state != RecorderState.paused) return;
     try {
-      await _recorder.resumeRecorder();
+      await _recorder.resume();
+      _isPaused = false;
       _setState(RecorderState.recording);
       _startTicker();
     } catch (_) {}
@@ -161,7 +137,7 @@ class AudioRecorderService {
       return null;
     }
     try {
-      await _recorder.stopRecorder();
+      await _recorder.stop();
     } catch (_) {}
     _stopTicker();
     final result = RecordingResult(
@@ -176,24 +152,21 @@ class AudioRecorderService {
     return result;
   }
 
-  /// Reproduce una grabación existente.
-  Future<void> play(String filePath) async {
-    await open();
+  Future<bool> isRecording() async {
     try {
-      await _player.startPlayer(
-        fromURI: filePath,
-        codec: Codec.aacADTS,
-        whenFinished: () {
-          // nothing
-        },
-      );
-    } catch (_) {}
+      return await _recorder.isRecording();
+    } catch (_) {
+      return _state == RecorderState.recording;
+    }
   }
 
-  Future<void> stopPlayback() async {
+  Future<void> cancel() async {
     try {
-      await _player.stopPlayer();
+      await _recorder.cancel();
     } catch (_) {}
+    _stopTicker();
+    _setState(RecorderState.idle);
+    _reset();
   }
 
   void _setState(RecorderState s) {
@@ -221,9 +194,19 @@ class AudioRecorderService {
     _elapsed = Duration.zero;
     _linkedEventId = null;
     _className = null;
-    // Después de stop, vuelve a idle
+    _isPaused = false;
     Future.delayed(const Duration(milliseconds: 100), () {
       if (_state == RecorderState.stopped) _setState(RecorderState.idle);
     });
+  }
+
+  Future<void> dispose() async {
+    _stopTicker();
+    try {
+      await _recorder.dispose();
+    } catch (_) {}
+    await _stateController.close();
+    await _elapsedController.close();
+    await _levelController.close();
   }
 }

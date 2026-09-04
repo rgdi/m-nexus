@@ -21,8 +21,10 @@ dependencies:
   shared_preferences: ^2.3.2
   # v0.32: para solicitar permisos de manera nativa
   permission_handler: ^11.3.1
-  # v0.32: voice notes con flutter_sound (compatible Flutter 3.24)
-  flutter_sound: ^5.2.0
+  # v0.32: voice notes con record 5.2.0 (compatible Flutter 3.24 + AGP 8.3)
+  record: ^5.2.0
+  # v0.32: para reproducir grabaciones
+  audioplayers: ^6.1.0
   # v0.31: para generar device_id persistente
   uuid: ^4.5.1
   google_fonts: ^6.2.1
