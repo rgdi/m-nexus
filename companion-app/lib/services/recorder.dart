@@ -8,6 +8,7 @@
 // API: SpeechToText().initialize() + listen() + stop()
 
 import 'dart:async';
+import 'package:flutter/services.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
@@ -119,6 +120,18 @@ class AudioRecorderService {
     _transcript = '';
     _transcriptLines.clear();
 
+    // v0.32: arrancar el foreground service para que la grabación
+    // sobreviva cuando la app va a background
+    try {
+      const channel = MethodChannel('com.mnexus.installer/recording');
+      await channel.invokeMethod('startRecordingService', {
+        'title': className ?? 'Clase',
+      });
+    } catch (_) {
+      // si el service no inicia, no abortamos (la grabación sigue
+      // funcionando, solo no sobrevivirá al background)
+    }
+
     try {
       await _stt.listen(
         onResult: (SpeechRecognitionResult r) {
@@ -194,6 +207,11 @@ class AudioRecorderService {
     try {
       await _stt.stop();
     } catch (_) {}
+    // v0.32: parar el foreground service
+    try {
+      const channel = MethodChannel('com.mnexus.installer/recording');
+      await channel.invokeMethod('stopRecordingService');
+    } catch (_) {}
     _stopTicker();
     final result = RecordingResult(
       filePath: _currentFilePath ?? '',
@@ -218,6 +236,10 @@ class AudioRecorderService {
   Future<void> cancel() async {
     try {
       await _stt.cancel();
+    } catch (_) {}
+    try {
+      const channel = MethodChannel('com.mnexus.installer/recording');
+      await channel.invokeMethod('stopRecordingService');
     } catch (_) {}
     _stopTicker();
     _setState(RecorderState.idle);

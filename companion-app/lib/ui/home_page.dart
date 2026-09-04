@@ -5,6 +5,8 @@
 // Antes: misma info repetida en todas las tarjetas.
 
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/plugin_release.dart';
 import '../services/app_info.dart';
@@ -14,6 +16,7 @@ import '../services/permissions.dart';
 import '../services/updater.dart';
 import '../services/vault_detector.dart';
 import 'activate_plugin_page.dart';
+import 'help_page.dart';
 import 'install_page.dart';
 import 'recording_page.dart';
 import 'settings_page.dart';
@@ -143,24 +146,78 @@ class _HomePageState extends State<HomePage> {
       );
       return;
     }
-    final release = PluginRelease(
-      latestVersion: update.latestVersion,
-      minAppVersion: '1.5.0',
-      releaseNotes: update.body,
-      downloadUrl: '',
-      checksumSha256: '',
-    );
     if (!mounted) return;
+    // Muestra un loading mientras fetcheamos el release del plugin
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+    PluginRelease? release;
+    String? err;
+    try {
+      release = await _fetchPluginRelease(update);
+    } catch (e) {
+      err = e.toString();
+    }
+    if (!mounted) return;
+    Navigator.of(context).pop(); // close loading
+    if (release == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(err != null
+              ? "Error obteniendo release: $err"
+              : "No se pudo obtener info del plugin"),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => InstallPage(
           vault: vault,
-          release: release,
+          release: release!,
           installedVersion: vault.installedPluginVersion,
           needsUpdate: r?.hasUpdate ?? false,
         ),
       ),
+    );
+  }
+
+  /// Fetchea el release del plugin desde la API de GitHub.
+  /// Devuelve un PluginRelease con downloadUrl apuntando al ZIP del plugin.
+  Future<PluginRelease> _fetchPluginRelease(dynamic update) async {
+    // Llama a la misma API que el updater usa, pero parsea el asset del plugin
+    final response = await http.get(Uri.parse(
+      'https://api.github.com/repos/rgdi/m-nexus/releases/latest',
+    ));
+    if (response.statusCode != 200) {
+      throw Exception('GitHub release no disponible (HTTP ${response.statusCode})');
+    }
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    final tagName = json['tag_name'] as String? ?? 'v0.0.0';
+    final version = tagName.replaceFirst('v', '');
+    final body = json['body'] as String? ?? '';
+    final assets = (json['assets'] as List?) ?? [];
+    String downloadUrl = '';
+    for (final a in assets.cast<Map<String, dynamic>>()) {
+      final name = a['name'] as String? ?? '';
+      if (name.contains('plugin') && name.endsWith('.zip')) {
+        downloadUrl = a['browser_download_url'] as String? ?? '';
+        break;
+      }
+    }
+    if (downloadUrl.isEmpty) {
+      throw Exception("No se encontró el asset del plugin en el release $tagName");
+    }
+    return PluginRelease(
+      latestVersion: version,
+      minAppVersion: '1.5.0',
+      releaseNotes: body,
+      downloadUrl: downloadUrl,
+      checksumSha256: '',
     );
   }
 
@@ -283,6 +340,16 @@ class _HomePageState extends State<HomePage> {
             icon: const Icon(Icons.refresh),
             onPressed: _forceCheck,
             tooltip: 'Buscar actualizaciones',
+          ),
+          IconButton(
+            icon: const Icon(Icons.help_outline),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const HelpPage()),
+              );
+            },
+            tooltip: 'Ayuda',
           ),
           IconButton(
             icon: const Icon(Icons.settings),
