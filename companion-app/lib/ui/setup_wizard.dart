@@ -51,7 +51,7 @@ class _SetupWizardState extends State<SetupWizard> {
   VaultDetector _vaultDetector = VaultDetector();
   List<VaultInfo> _detectedVaults = [];
   bool _busy = false;
-  bool _calendarGranted = false;
+  
 
   @override
   void initState() {
@@ -94,13 +94,6 @@ class _SetupWizardState extends State<SetupWizard> {
       _detectedVaults = [];
     }
     setState(() => _busy = false);
-  }
-
-  Future<void> _requestCalendar() async {
-    final cal = CalendarService();
-    await cal.load();
-    final ok = await cal.setEnabled(true);
-    setState(() => _calendarGranted = ok);
   }
 
   Future<void> _finish() async {
@@ -260,6 +253,7 @@ class _SetupWizardState extends State<SetupWizard> {
     );
   }
 
+  bool _calendarGranted = false;
   List<PermissionStatus> _currentPerms = [];
   bool _permsLoading = true;
 
@@ -301,9 +295,7 @@ class _SetupWizardState extends State<SetupWizard> {
         Text('Permisos', style: Theme.of(context).textTheme.headlineSmall, textAlign: TextAlign.center),
         const SizedBox(height: 8),
         Text(
-          'M-NEXUS necesita $granted/$total permisos para funcionar.
-'
-          'Toca "Pedir todos" para otorgarlos de una vez.',
+          'M-NEXUS necesita $granted/$total permisos para funcionar.\nToca "Pedir todos" para otorgarlos de una vez.',
           textAlign: TextAlign.center,
           style: const TextStyle(color: Colors.grey),
         ),
@@ -558,36 +550,6 @@ class _Bullet extends StatelessWidget {
   }
 }
 
-class _PermTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final bool granted;
-  final VoidCallback? onRequest;
-
-  const _PermTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.granted,
-    this.onRequest,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: ListTile(
-        leading: Icon(icon, color: granted ? Colors.green : Colors.grey),
-        title: Text(title),
-        subtitle: Text(subtitle),
-        trailing: granted
-            ? const Icon(Icons.check_circle, color: Colors.green)
-            : (onRequest != null
-                ? TextButton(onPressed: onRequest, child: const Text('Pedir'))
-                : const Text('Opcional', style: TextStyle(fontSize: 11, color: Colors.grey))),
-      ),
-    );
-  }
 }
 
 class _SummaryRow extends StatelessWidget {

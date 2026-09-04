@@ -7,7 +7,6 @@
 // denegados permanentemente para mostrar UI explicativa.
 
 import 'dart:io';
-import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class PermissionStatus {
@@ -166,7 +165,7 @@ class PermissionsService {
       description: spec.description,
       granted: result.isGranted,
       permanentlyDenied: result.isPermanentlyDenied ||
-          (perm.status == PermissionStatus.permanentlyDenied),
+          (perm.status == _GlobalPermStatus.permanentlyDenied),
     );
   }
 
@@ -180,6 +179,11 @@ class PermissionsService {
       default: return null;
     }
   }
+}
+
+// permission_handler exports its own PermissionStatus enum; alias to avoid clash with ours.
+class _GlobalPermStatus {
+  static const permanentlyDenied = PermissionStatus.permanentlyDenied;
 }
 
 class _PermSpec {

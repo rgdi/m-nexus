@@ -808,7 +808,7 @@ class _HomePageState extends State<HomePage> {
               children: [
                 Expanded(
                   child: SelectableText(
-                    'ID: ${id.id}',
+                    'ID: ${id.deviceId}',
                     style: const TextStyle(fontSize: 11, color: Colors.grey, fontFamily: 'monospace'),
                   ),
                 ),

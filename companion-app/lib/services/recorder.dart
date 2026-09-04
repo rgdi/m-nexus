@@ -38,7 +38,6 @@ class AudioRecorderService {
   Duration _elapsed = Duration.zero;
   String? _linkedEventId;
   String? _className;
-  bool _isPaused = false;
 
   final _stateController = StreamController<RecorderState>.broadcast();
   final _elapsedController = StreamController<Duration>.broadcast();
@@ -99,7 +98,6 @@ class AudioRecorderService {
       _elapsed = Duration.zero;
       _linkedEventId = linkedCalendarEventId;
       _className = className;
-      _isPaused = false;
       _setState(RecorderState.recording);
       _startTicker();
       return filePath;
@@ -114,7 +112,6 @@ class AudioRecorderService {
     if (_state != RecorderState.recording) return;
     try {
       await _recorder.pause();
-      _isPaused = true;
       _setState(RecorderState.paused);
       _stopTicker();
     } catch (_) {}
@@ -125,7 +122,6 @@ class AudioRecorderService {
     if (_state != RecorderState.paused) return;
     try {
       await _recorder.resume();
-      _isPaused = false;
       _setState(RecorderState.recording);
       _startTicker();
     } catch (_) {}
@@ -194,7 +190,6 @@ class AudioRecorderService {
     _elapsed = Duration.zero;
     _linkedEventId = null;
     _className = null;
-    _isPaused = false;
     Future.delayed(const Duration(milliseconds: 100), () {
       if (_state == RecorderState.stopped) _setState(RecorderState.idle);
     });

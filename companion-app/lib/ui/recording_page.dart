@@ -25,13 +25,11 @@ class _RecordingPageState extends State<RecordingPage> {
   final _player = AudioPlayer();
   RecorderState _state = RecorderState.idle;
   Duration _elapsed = Duration.zero;
-  String? _currentFilePath;
   String? _suggestedClassName;
   String? _linkedEventId;
   List<_RecordingInfo> _previousRecordings = [];
   bool _loading = true;
   String? _playingPath;
-  PlayerState _playerState = PlayerState.stopped;
 
   @override
   void initState() {
@@ -43,13 +41,11 @@ class _RecordingPageState extends State<RecordingPage> {
       if (mounted) setState(() => _elapsed = e);
     });
     _player.onPlayerStateChanged.listen((ps) {
-      if (mounted) setState(() => _playerState = ps);
     });
     _player.onPlayerComplete.listen((_) {
       if (mounted) {
         setState(() {
           _playingPath = null;
-          _playerState = PlayerState.stopped;
         });
       }
     });
@@ -109,7 +105,6 @@ class _RecordingPageState extends State<RecordingPage> {
         className: _suggestedClassName,
       );
       if (path != null) {
-        _currentFilePath = path;
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -120,7 +115,6 @@ class _RecordingPageState extends State<RecordingPage> {
     } else if (_state == RecorderState.recording || _state == RecorderState.paused) {
       final result = await _recorder.stop();
       if (result != null) {
-        _currentFilePath = result.filePath;
         await _loadPreviousRecordings();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -240,7 +234,7 @@ class _RecordingPageState extends State<RecordingPage> {
     return Card(
       color: _suggestedClassName != null
           ? Theme.of(context).colorScheme.primaryContainer
-          : Theme.of(context).colorScheme.surfaceVariant,
+          : Theme.of(context).colorScheme.surfaceContainerHighest,
       child: ListTile(
         leading: Icon(
           _suggestedClassName != null ? Icons.event_available : Icons.event_note,
