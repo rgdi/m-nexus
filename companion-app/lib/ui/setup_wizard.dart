@@ -16,9 +16,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/backend_client.dart';
 import '../services/calendar_service.dart';
 import '../services/permissions.dart';
-import '../services/device_id.dart';
 import '../services/vault_detector.dart';
-import '../services/updater.dart';
 import '../services/plugin_installer.dart';
 import '../models/plugin_release.dart';
 import 'home_page.dart';
@@ -52,7 +50,6 @@ class _SetupWizardState extends State<SetupWizard> {
   List<VaultInfo> _detectedVaults = [];
   VaultInfo? _selectedVault;
   bool _busy = false;
-  DeviceIdentity? _identity;
   bool _calendarGranted = false;
   List<PermissionStatus> _currentPerms = [];
   bool _permsLoading = true;
@@ -101,7 +98,6 @@ class _SetupWizardState extends State<SetupWizard> {
       _availableCalendars = await cal.listCalendars();
       _selectedCalendarId = cal.selectedCalendarId ?? -1;
     }
-    _identity = await DeviceIdentity.load();
     await _refreshPerms();
     if (mounted) setState(() {});
   }
@@ -866,8 +862,8 @@ class _SetupWizardState extends State<SetupWizard> {
                 });
               },
             );
-          });
-        }),
+          }
+        ),
       ],
     );
   }
