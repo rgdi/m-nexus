@@ -165,7 +165,7 @@ class PermissionsService {
       description: spec.description,
       granted: result.isGranted,
       permanentlyDenied: result.isPermanentlyDenied ||
-          (perm.status == _GlobalPermStatus.permanentlyDenied),
+          (perm.status == PermissionStatus.permanentlyDenied),
     );
   }
 
@@ -179,11 +179,6 @@ class PermissionsService {
       default: return null;
     }
   }
-}
-
-// permission_handler exports its own PermissionStatus enum; alias to avoid clash with ours.
-class _GlobalPermStatus {
-  static const permanentlyDenied = PermissionStatus.permanentlyDenied;
 }
 
 class _PermSpec {

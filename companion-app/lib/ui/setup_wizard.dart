@@ -549,9 +549,6 @@ class _Bullet extends StatelessWidget {
     );
   }
 }
-
-}
-
 class _SummaryRow extends StatelessWidget {
   final String label;
   final String value;
