@@ -1,6 +1,5 @@
 // Tests básicos del HelpPage (compilación + acceso a datos).
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mnexus_installer/services/permissions.dart';
 
