@@ -229,7 +229,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
-      - name: Flatten artifact directories
+      - name: Flatten artifact directories + create quicklinks
         run: |
           if [ -d artifacts/plugin ]; then
             mv artifacts/plugin/*.zip artifacts/ 2>/dev/null || true
@@ -247,6 +247,19 @@ jobs:
             mv artifacts/installer/*.sh artifacts/ 2>/dev/null || true
             rm -rf artifacts/installer
           fi
+          # v0.31.0: also create quicklinks (no version) for each artifact
+          for f in artifacts/m-nexus-plugin-*.zip; do
+            [ -f "$f" ] && cp "$f" "artifacts/m-nexus-plugin.zip"
+          done
+          for f in artifacts/m-nexus-backend-*.zip; do
+            [ -f "$f" ] && cp "$f" "artifacts/m-nexus-backend.zip"
+          done
+          for f in artifacts/m-nexus-install-*.sh; do
+            [ -f "$f" ] && cp "$f" "artifacts/m-nexus-install.sh"
+          done
+          for f in artifacts/m-nexus-companion-*.apk; do
+            [ -f "$f" ] && cp "$f" "artifacts/m-nexus-companion.apk"
+          done
           ls -la artifacts/
       - name: Determine and push tag
         env:
@@ -278,8 +291,12 @@ jobs:
           fail_on_unmatched_files: false
           files: |
             artifacts/m-nexus-plugin-*.zip
+            artifacts/m-nexus-plugin.zip
             artifacts/m-nexus-backend-*.zip
+            artifacts/m-nexus-backend.zip
             artifacts/m-nexus-install-*.sh
+            artifacts/m-nexus-install.sh
             artifacts/m-nexus-companion-*.apk
+            artifacts/m-nexus-companion.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
