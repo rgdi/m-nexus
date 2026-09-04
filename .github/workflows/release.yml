@@ -68,6 +68,12 @@ jobs:
       - run: cd obsidian-plugin && npm install --no-audit --no-fund
       - name: Bundle plugin
         run: cd obsidian-plugin && npx esbuild src/main.ts --bundle --format=cjs --target=es2020 --platform=node --external:obsidian --external:electron --outfile=dist/main.js
+      - name: Copy static plugin files
+        run: |
+          # v0.35: copiar manifest.json y styles.css a dist/ (esbuild no los copia)
+          mkdir -p obsidian-plugin/dist
+          cp obsidian-plugin/manifest.json obsidian-plugin/dist/manifest.json
+          cp obsidian-plugin/styles.css obsidian-plugin/dist/styles.css 2>/dev/null || true
       - name: Package ZIP
         run: |
           mkdir -p artifacts
