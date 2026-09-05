@@ -9,6 +9,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:permission_handler/permission_handler.dart' as ph show PermissionStatus;
 
 /// v0.37: helper mockable para tests.
 bool get _isAndroid => defaultTargetPlatform == TargetPlatform.android;

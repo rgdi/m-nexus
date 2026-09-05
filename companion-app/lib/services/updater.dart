@@ -1,4 +1,5 @@
 // Updater: chequea la última versión del companion app en GitHub Releases,
+import 'dart:io';
 // y permite al usuario descargar el APK y abrir el instalador de Android.
 //
 // v0.30:
