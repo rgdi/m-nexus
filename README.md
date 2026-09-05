@@ -2,7 +2,7 @@
 
 [![Release](https://img.shields.io/github/v/release/rgdi/m-nexus)](https://github.com/rgdi/m-nexus/releases/latest)
 [![License](https://img.shields.io/github/license/rgdi/m-nexus)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-1447%20passing-brightgreen)]()
+[![Tests](https://img.shields.io/badge/tests-1460%20passing-brightgreen)]()
 [![Topic](https://img.shields.io/badge/topics-15-blue)]()
 
 > **v0.35.0** · Notion-style databases, Secret Manager, Conflict Resolution, Chunked Upload, Rollback, Web Clipper, FSRS async, Battery optimization, Setup wizard 8 pasos, Sync queue offline-first
