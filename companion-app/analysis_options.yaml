@@ -2,8 +2,11 @@ include: package:flutter_lints/flutter.yaml
 
 analyzer:
   errors:
-    # treat warnings as info (no falla el CI)
     unused_import: ignore
   exclude:
     - "**/*.g.dart"
     - "**/*.freezed.dart"
+linter:
+  rules:
+    prefer_const_constructors: false
+    prefer_const_literals_to_create_immutables: false
