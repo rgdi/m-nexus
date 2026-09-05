@@ -173,12 +173,65 @@ class _InstallPageState extends State<InstallPage> {
               children: [
                 Icon(Icons.check_circle, color: Colors.green.shade700),
                 const SizedBox(width: 8),
-                Text('M-NEXUS v${r.installedVersion ?? "?"} instalado', style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text('M-NEXUS v${r.installedVersion ?? "?"} instalado',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
               ],
             ),
             const SizedBox(height: 8),
             Text('${r.installedFiles.length} archivos instalados', style: const TextStyle(fontSize: 12)),
             Text('${r.createdFolders.length} carpetas creadas', style: const TextStyle(fontSize: 12)),
+            const SizedBox(height: 12),
+            // v0.36: activación automática
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: r.activated
+                    ? Colors.green.shade100
+                    : (r.alreadyEnabled ? Colors.blue.shade50 : Colors.orange.shade50),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    r.activated
+                        ? Icons.bolt
+                        : (r.alreadyEnabled ? Icons.check : Icons.warning_amber),
+                    color: r.activated
+                        ? Colors.green.shade700
+                        : (r.alreadyEnabled ? Colors.blue : Colors.orange),
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      r.activated
+                          ? '✅ Activado automáticamente en community-plugins.json'
+                          : (r.alreadyEnabled
+                              ? 'Ya estaba habilitado en community-plugins.json'
+                              : '⚠ No se pudo activar automáticamente'),
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (r.communityPluginsPath != null) ...[
+              const SizedBox(height: 4),
+              Text(r.communityPluginsPath!,
+                style: const TextStyle(fontSize: 10, fontFamily: 'monospace', color: Colors.grey),
+              ),
+            ],
+            const SizedBox(height: 12),
+            const Text('Siguiente paso:',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+            const Text(
+              '1. Cierra Obsidian si está abierto\n'
+              '2. Vuelve a abrir Obsidian\n'
+              '3. El plugin M-NEXUS aparecerá activo en Settings → Community plugins',
+              style: TextStyle(fontSize: 11),
+            ),
             const SizedBox(height: 8),
             const Text('Carpetas internas:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
             ...PluginInstaller.requiredFolders.map((f) => Text('  • $f', style: const TextStyle(fontSize: 11, fontFamily: 'monospace'))),
