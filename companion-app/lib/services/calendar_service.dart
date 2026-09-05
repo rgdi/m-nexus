@@ -173,7 +173,6 @@ class CalendarService {
       return null;
     }
   }
-  }
 
   /// Lista los eventos entre dos fechas.
   /// v0.37: filtra por el calendario seleccionado (si hay uno guardado).
