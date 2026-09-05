@@ -159,7 +159,7 @@ class AdvancedLogger {
   final int _maxBufferSize = 1000;
   final int _maxFileBytes = 5 * 1024 * 1024; // 5 MB
   bool _enableFile = true;
-  bool _enableAdb = true;
+  final bool _enableAdb = true;
 
   // ── State ──────────────────────────────────────────
   final List<LogEntry> _buffer = [];
