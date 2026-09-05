@@ -2,7 +2,7 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import '../services/vault_detector.dart' show VaultInfo;
+import '../services/vault_detector.dart';
 import '../ui/vault_browser_page.dart';
 
 class VaultListPage extends StatefulWidget {
