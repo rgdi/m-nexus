@@ -11,12 +11,15 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+/// v0.37: helper mockable para tests.
+bool get _isAndroid => defaultTargetPlatform == TargetPlatform.android;
+
 
 const String _repoOwner = 'rgdi';
 const String _repoName = 'm-nexus';
@@ -442,7 +445,7 @@ class Updater extends ChangeNotifier {
   /// v0.37: reintenta hasta 2 veces, y captura `ActivityNotFoundException`
   /// (suele pasar si el usuario desactivó el package installer).
   Future<bool> installApk(File apkFile) async {
-    if (!Platform.isAndroid) {
+    if (!_isAndroid) {
       throw UnsupportedError('installApk solo funciona en Android');
     }
     if (!await apkFile.exists()) {

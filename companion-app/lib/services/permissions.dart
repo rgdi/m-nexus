@@ -6,10 +6,13 @@
 // rechaza uno, sigue con el siguiente. Lleva registro de cuáles están
 // denegados permanentemente para mostrar UI explicativa.
 
-import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:permission_handler/permission_handler.dart' as ph show PermissionStatus;
+
+/// v0.37: helper mockable para tests.
+bool get _isAndroid => defaultTargetPlatform == TargetPlatform.android;
+
 
 class PermissionStatus {
   final String name;
@@ -105,7 +108,7 @@ class PermissionsService {
 
   /// Abre la app de Settings del sistema (cuando está permanentemente denegado).
   static Future<bool> openSettings() async {
-    if (!Platform.isAndroid) return false;
+    if (!_isAndroid) return false;
     try {
       return await openAppSettings();
     } catch (_) {
@@ -117,7 +120,7 @@ class PermissionsService {
   /// que es distinta de la pantalla normal de Settings.
   /// En Android 11+ este permiso debe otorgarse desde una pantalla especial.
   static Future<bool> openManageStorageSettings() async {
-    if (!Platform.isAndroid) return false;
+    if (!_isAndroid) return false;
     try {
       const channel = MethodChannel('com.mnexus.installer/permissions');
       final result = await channel.invokeMethod<bool>('openManageStorageSettings');
@@ -131,7 +134,7 @@ class PermissionsService {
   /// v0.34: comprueba si MANAGE_EXTERNAL_STORAGE está concedido (sin pedirlo).
   /// Útil para mostrar UI explicativa.
   static Future<bool> isManageStorageGranted() async {
-    if (!Platform.isAndroid) return true;
+    if (!_isAndroid) return true;
     try {
       const channel = MethodChannel('com.mnexus.installer/permissions');
       final result = await channel.invokeMethod<bool>('isManageStorageGranted');
@@ -144,7 +147,7 @@ class PermissionsService {
   // ── Internals ───────────────────────────────────────
 
   static Future<PermissionStatus> _checkOne(_PermSpec spec) async {
-    if (!Platform.isAndroid) {
+    if (!_isAndroid) {
       return PermissionStatus(
         name: spec.id,
         displayName: spec.name,
@@ -174,7 +177,7 @@ class PermissionsService {
   }
 
   static Future<PermissionStatus> _requestOne(_PermSpec spec) async {
-    if (!Platform.isAndroid) {
+    if (!_isAndroid) {
       return PermissionStatus(
         name: spec.id,
         displayName: spec.name,

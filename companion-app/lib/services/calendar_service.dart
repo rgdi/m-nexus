@@ -8,9 +8,14 @@
 // Usa el Calendar Provider nativo de Android (no requiere Google Sign-In
 // porque accede directamente al provider con READ_CALENDAR permission).
 
-import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+/// v0.37: helper que se puede mockear con debugDefaultTargetPlatformOverride.
+/// En código de producción, dart:io Platform.isAndroid siempre es true (Android).
+/// En tests, debugDefaultTargetPlatformOverride = TargetPlatform.android lo fuerza.
+bool get _isAndroid => defaultTargetPlatform == TargetPlatform.android;
 
 const _channel = MethodChannel('com.mnexus.installer/calendar');
 const _prefsKeyCalendarEnabled = 'mnexus.calendar.enabled';
@@ -105,7 +110,7 @@ class CalendarService {
 
   /// Verifica si el permiso READ_CALENDAR está concedido.
   Future<bool> isPermissionGranted() async {
-    if (!Platform.isAndroid) return false;
+    if (!_isAndroid) return false;
     try {
       return await _channel.invokeMethod<bool>('checkCalendarPermission') ?? false;
     } catch (_) {
@@ -115,7 +120,7 @@ class CalendarService {
 
   /// Pide el permiso al usuario (muestra el diálogo nativo).
   Future<bool> requestPermission() async {
-    if (!Platform.isAndroid) return false;
+    if (!_isAndroid) return false;
     try {
       await _channel.invokeMethod<bool>('requestCalendarPermission');
       return await isPermissionGranted();
@@ -138,7 +143,7 @@ class CalendarService {
 
   /// Lista los calendarios disponibles en el dispositivo.
   Future<List<CalendarInfo>> listCalendars() async {
-    if (!Platform.isAndroid) return [];
+    if (!_isAndroid) return [];
     if (!await isPermissionGranted()) return [];
     try {
       final raw = await _channel.invokeMethod<List<dynamic>>('listCalendars');
@@ -177,7 +182,7 @@ class CalendarService {
   /// Lista los eventos entre dos fechas.
   /// v0.37: filtra por el calendario seleccionado (si hay uno guardado).
   Future<List<CalendarEvent>> listEvents({DateTime? from, DateTime? to}) async {
-    if (!Platform.isAndroid) return [];
+    if (!_isAndroid) return [];
     if (!await isPermissionGranted()) return [];
     from ??= DateTime.now();
     to ??= DateTime.now().add(const Duration(days: 7));
@@ -219,7 +224,7 @@ class CalendarService {
 
   /// v0.34: lista los próximos N eventos (para mostrar en home).
   Future<List<CalendarEvent>> listUpcoming({int limit = 5, int daysAhead = 7}) async {
-    if (!Platform.isAndroid) return [];
+    if (!_isAndroid) return [];
     if (!await isPermissionGranted()) return [];
     final events = await listEvents(
       from: DateTime.now(),
@@ -231,7 +236,7 @@ class CalendarService {
 
   /// v0.34: abre el detalle de un evento en la app de Calendar del sistema.
   Future<bool> openEventDetail(int eventId) async {
-    if (!Platform.isAndroid) return false;
+    if (!_isAndroid) return false;
     try {
       return await _channel.invokeMethod<bool>('openEvent', {
         'eventId': eventId,
@@ -243,7 +248,7 @@ class CalendarService {
 
 /// Abre la app de Calendar del sistema (para que el usuario la configure).
   Future<bool> openCalendarApp() async {
-    if (!Platform.isAndroid) return false;
+    if (!_isAndroid) return false;
     try {
       await _channel.invokeMethod<bool>('openCalendarSettings');
       return true;
