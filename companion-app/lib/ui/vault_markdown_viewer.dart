@@ -8,7 +8,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:path/path.dart' as p;
 import '../services/logger.dart';
-import 'vault_browser_page.dart';
 
 class MarkdownViewerPage extends StatefulWidget {
   final String filePath;
