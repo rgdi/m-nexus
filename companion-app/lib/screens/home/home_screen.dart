@@ -246,7 +246,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: const Color(0xFF7B5BE6).withOpacity(0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(Icons.create_note, color: Color(0xFF7B5BE6), size: 20),
+                  child: Icon(Icons.add_box_outlined, color: Color(0xFF7B5BE6), size: 20),
                 ),
                 title: const Text('Nueva flashcard'),
                 subtitle: const Text('Empezar a estudiar'),

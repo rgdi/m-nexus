@@ -24,7 +24,7 @@ class _VaultBrowserState extends State<VaultBrowser> {
   bool _loading = true;
   String? _selectedRelPath;
   String _filter = '';
-  final _treeController = TreeViewController();
+  
 
   @override
   void initState() {
