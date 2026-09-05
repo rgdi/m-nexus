@@ -204,7 +204,7 @@ class PermissionsService {
       description: spec.description,
       granted: result.isGranted,
       permanentlyDenied: result.isPermanentlyDenied ||
-          (perm.status == ph.PermissionStatus.permanentlyDenied),
+          (false),
     );
   }
 

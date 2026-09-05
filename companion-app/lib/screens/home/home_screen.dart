@@ -110,9 +110,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _reviewDue() async {
     if (_fc == null) return;
     final due = await _fc!.dueCards();
+    if (!mounted) return;
     if (due.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('¡No hay tarjetas para repasar!')),
+        const SnackBar(content: Text('No hay tarjetas para repasar')),
       );
       return;
     }
