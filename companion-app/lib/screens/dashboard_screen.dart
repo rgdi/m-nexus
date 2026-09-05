@@ -18,6 +18,7 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import '../services/app_info.dart';
 import '../services/calendar_service.dart';
+import '../services/vault_detector.dart' show VaultInfo, VaultDetector;
 import '../services/updater.dart';
 import '../utils/theme.dart';
 import '../ui/vault_browser_page.dart';
