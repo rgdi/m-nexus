@@ -34,6 +34,9 @@ function lazy<T>(name: string, loader: () => Promise<T>): LazySubsystem<T> {
 
 // ── Subsistemas (lazy) ───────────────────────────────────
 
+// v0.37: device detector (eager, no lazy)
+export { device } from "./device/detector";
+
 export const loadWhisperInstaller = lazy("WhisperInstaller", () => import("./audio/whisperInstaller").then(m => m.WhisperInstaller));
 
 export const loadFlashcardGenerator = lazy("FlashcardGenerator", () => import("./flashcards/generator").then(m => m.FlashcardGenerator));

@@ -33,6 +33,9 @@ class AppUpdate {
   final String body;                 // changelog markdown
   final DateTime publishedAt;
   final bool isPrerelease;
+  // v0.37: campos adicionales para diagnóstico de fallos de update
+  final int? remoteVersionCode;      // versionCode del APK remoto (si está en el body o en un asset)
+  final String? sha256;              // hash del APK remoto (si está)
 
   const AppUpdate({
     required this.latestVersion,
@@ -44,6 +47,8 @@ class AppUpdate {
     required this.body,
     required this.publishedAt,
     required this.isPrerelease,
+    this.remoteVersionCode,
+    this.sha256,
   });
 
   factory AppUpdate.fromGithub(Map<String, dynamic> json) {
@@ -52,6 +57,10 @@ class AppUpdate {
       (a) => (a['name'] as String? ?? '').contains('companion') && (a['name'] as String? ?? '').endsWith('.apk'),
       orElse: () => <String, dynamic>{},
     );
+    final body = json['body'] as String? ?? '';
+    // v0.37: extraer versionCode del body si lo añadimos en la release
+    // (formato: "versionCode: 17" o "versionCode=17")
+    final vcMatch = RegExp(r'versionCode[:\s=]+(\d+)').firstMatch(body);
     return AppUpdate(
       latestVersion: (json['tag_name'] as String? ?? 'v0.0.0').replaceFirst('v', ''),
       tagName: json['tag_name'] as String? ?? 'v0.0.0',
@@ -59,9 +68,10 @@ class AppUpdate {
       apkDownloadUrl: apkAsset['browser_download_url'] as String? ?? '',
       apkFileName: apkAsset['name'] as String? ?? 'm-nexus-companion.apk',
       apkSize: (apkAsset['size'] as num?)?.toInt() ?? 0,
-      body: json['body'] as String? ?? '',
+      body: body,
       publishedAt: DateTime.tryParse(json['published_at'] as String? ?? '') ?? DateTime.now(),
       isPrerelease: json['prerelease'] as bool? ?? false,
+      remoteVersionCode: vcMatch != null ? int.tryParse(vcMatch.group(1)!) : null,
     );
   }
 
@@ -160,6 +170,18 @@ class Updater extends ChangeNotifier {
     final info = await PackageInfo.fromPlatform();
     _installedVersion = info.version;
     return info.version;
+  }
+
+  /// v0.37: lee el versionCode del APK instalado para compararlo
+  /// con el del APK remoto (necesario para diagnosticar fallos
+  /// "package already installed" o "version downgrade").
+  Future<int?> loadInstalledVersionCode() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      return int.tryParse(info.buildNumber);
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Realiza un chequeo puntual. Devuelve el resultado (puede estar en cache).
@@ -334,23 +356,61 @@ class Updater extends ChangeNotifier {
   }
 
   /// Descarga el APK y devuelve el path local. Notifica progreso.
+  /// v0.37: reintenta hasta 3 veces con backoff en caso de fallo de red
+  /// o HTTP 5xx. Para HTTP 4xx (excepto 408, 429) no reintenta.
   Future<File?> downloadApk(AppUpdate update) async {
     if (update.apkDownloadUrl.isEmpty) return null;
     if (_downloading) return null;
     _downloading = true;
     _downloadProgress = 0;
     notifyListeners();
-    try {
-      final req = http.Request('GET', Uri.parse(update.apkDownloadUrl));
-      final res = await _http.send(req).timeout(const Duration(minutes: 5));
-      if (res.statusCode != 200) {
-        throw Exception('Download failed: HTTP ${res.statusCode}');
+
+    const maxAttempts = 3;
+    const initialBackoff = Duration(seconds: 2);
+
+    for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        final file = await _doDownloadApk(update);
+        _downloading = false;
+        _downloadProgress = 1.0;
+        notifyListeners();
+        return file;
+      } catch (e) {
+        final isLast = attempt == maxAttempts;
+        final isRetryable = e.toString().contains('5') || // 5xx
+            e.toString().contains('TimeoutException') ||
+            e.toString().contains('SocketException') ||
+            e.toString().contains('Connection');
+        if (kDebugMode) {
+          // ignore: avoid_print
+          print('[Updater] downloadApk attempt $attempt/$maxAttempts failed: $e');
+        }
+        if (isLast || !isRetryable) {
+          _downloading = false;
+          notifyListeners();
+          return null;
+        }
+        // backoff: 2s, 4s
+        await Future.delayed(initialBackoff * attempt);
       }
-      final total = res.contentLength ?? update.apkSize;
-      final tmp = Directory.systemTemp.createTempSync('mnexus-update-');
-      final file = File('${tmp.path}/${update.apkFileName}');
-      final sink = file.openWrite();
-      int downloaded = 0;
+    }
+    _downloading = false;
+    notifyListeners();
+    return null;
+  }
+
+  Future<File> _doDownloadApk(AppUpdate update) async {
+    final req = http.Request('GET', Uri.parse(update.apkDownloadUrl));
+    final res = await _http.send(req).timeout(const Duration(minutes: 5));
+    if (res.statusCode != 200) {
+      throw Exception('Download failed: HTTP ${res.statusCode}');
+    }
+    final total = res.contentLength ?? update.apkSize;
+    final tmp = Directory.systemTemp.createTempSync('mnexus-update-');
+    final file = File('${tmp.path}/${update.apkFileName}');
+    final sink = file.openWrite();
+    int downloaded = 0;
+    try {
       await res.stream.listen((chunk) {
         downloaded += chunk.length;
         if (total > 0) {
@@ -361,51 +421,66 @@ class Updater extends ChangeNotifier {
       }).asFuture();
       await sink.flush();
       await sink.close();
-      _downloading = false;
-      _downloadProgress = 1.0;
-      notifyListeners();
-      return file;
     } catch (e) {
-      _downloading = false;
-      notifyListeners();
-      if (kDebugMode) {
-        // ignore: avoid_print
-        print('[Updater] downloadApk failed: $e');
-      }
-      return null;
+      await sink.close();
+      // Limpiar el archivo parcial
+      if (await file.exists()) await file.delete();
+      rethrow;
     }
+    // Verificar que el tamaño descargado coincide con el esperado (±2%)
+    if (total > 0 && (downloaded - total).abs() / total > 0.02) {
+      await file.delete();
+      throw Exception('Size mismatch: expected $total, got $downloaded');
+    }
+    return file;
   }
 
   /// Pide al sistema Android que instale el APK. En Android 8+ usa FileProvider
   /// (la app ya debe tener el provider configurado en AndroidManifest.xml).
   /// En iOS no funciona (necesitaría App Store).
+  ///
+  /// v0.37: reintenta hasta 2 veces, y captura `ActivityNotFoundException`
+  /// (suele pasar si el usuario desactivó el package installer).
   Future<bool> installApk(File apkFile) async {
     if (!Platform.isAndroid) {
       throw UnsupportedError('installApk solo funciona en Android');
     }
-    try {
-      // El companion ya tiene FileProvider configurado para vault paths.
-      // Reutilizamos el mismo authority para el APK descargado.
-      const channel = MethodChannel('com.mnexus.installer/install');
-      final result = await channel.invokeMethod<bool>('installApk', {
-        'filePath': apkFile.path,
-      });
-      return result ?? false;
-    } on PlatformException catch (e) {
+    if (!await apkFile.exists()) {
       if (kDebugMode) {
         // ignore: avoid_print
-        print('[Updater] installApk platform error: ${e.code} ${e.message}');
-      }
-      return false;
-    } on MissingPluginException {
-      // Si el platform channel no está implementado, fallback a abrir URL
-      // (esto NO instala automáticamente, pero muestra el diálogo del sistema)
-      if (kDebugMode) {
-        // ignore: avoid_print
-        print('[Updater] installApk: platform channel not implemented, using intent fallback');
+        print('[Updater] installApk: file does not exist at ${apkFile.path}');
       }
       return false;
     }
+    const maxAttempts = 2;
+    for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const channel = MethodChannel('com.mnexus.installer/install');
+        final result = await channel.invokeMethod<bool>('installApk', {
+          'filePath': apkFile.path,
+        });
+        if (result == true) return true;
+        // El platform channel devolvió false → no retry
+        return false;
+      } on PlatformException catch (e) {
+        if (kDebugMode) {
+          // ignore: avoid_print
+          print('[Updater] installApk attempt $attempt: ${e.code} ${e.message}');
+        }
+        if (e.code == 'install_failed' || e.code == 'file_not_found') {
+          return false; // no tiene sentido reintentar
+        }
+        if (attempt == maxAttempts) return false;
+        await Future.delayed(const Duration(seconds: 1));
+      } on MissingPluginException catch (e) {
+        if (kDebugMode) {
+          // ignore: avoid_print
+          print('[Updater] installApk: platform channel not implemented: $e');
+        }
+        return false;
+      }
+    }
+    return false;
   }
 
   Future<void> _safeCheck() async {

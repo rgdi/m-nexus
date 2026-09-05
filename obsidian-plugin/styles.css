@@ -682,3 +682,159 @@ button:active:not(:disabled) {
   color: var(--text-error) !important;
   border-color: var(--text-error) !important;
 }
+
+/* ──────────────────────────────────────────────────────────────────
+ * M-NEXUS — Device-aware styles (v0.37)
+ * 
+ * Se aplican clases al <body> vía `device/detector.ts`:
+ *   .mnexus-mobile    → phone (ancho < 600px)
+ *   .mnexus-tablet    → tablet (600-1024px, touch)
+ *   .mnexus-desktop   → PC (>= 1024px, mouse)
+ *   .mnexus-touch     → tiene touch
+ *   .mnexus-hover     → tiene hover (mouse)
+ *   .mnexus-landscape → está en landscape
+ * 
+ * La estrategia:
+ *   - Base: layout mobile (1 columna, botones grandes, padding amplio)
+ *   - Tablet: 2 columnas, espaciado medio
+ *   - Desktop: hasta 3 columnas, hover effects, modales anchos
+ * ────────────────────────────────────────────────────────────────── */
+
+/* Base: todo arranca en modo mobile-first */
+.mnexus-panel {
+  padding: 12px 14px;
+}
+
+/* Stats grid: 1 columna en mobile, 2 en tablet, 3-4 en desktop */
+.mnexus-stat-grid {
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+
+/* Botones: más grandes en mobile/tablet (touch-friendly) */
+.mnexus-btn,
+.mnexus-action {
+  min-height: 36px;
+  padding: 8px 12px;
+  font-size: 14px;
+}
+
+/* Modal: pantalla completa en mobile */
+.mnexus-modal {
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  max-height: 100%;
+  border-radius: 0;
+}
+
+/* Tabla: scroll horizontal en mobile */
+.mnexus-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Tablet (600-1024px) */
+@media (min-width: 600px) {
+  .mnexus-stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .mnexus-modal {
+    max-width: 90%;
+    max-height: 90%;
+    border-radius: 8px;
+  }
+  .mnexus-panel {
+    padding: 14px 18px;
+  }
+}
+
+/* Desktop (>= 1024px) */
+@media (min-width: 1024px) {
+  .mnexus-stat-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+  .mnexus-modal {
+    max-width: 720px;
+  }
+  /* Hover effects solo en desktop */
+  body.mnexus-hover .mnexus-card:hover {
+    background: var(--background-modifier-hover);
+    transform: translateY(-1px);
+    transition: all 0.15s ease;
+  }
+}
+
+/* Clases explícitas (ganan a media queries) */
+body.mnexus-mobile .mnexus-panel {
+  padding: 12px 10px;
+}
+body.mnexus-mobile .mnexus-stat-grid {
+  grid-template-columns: 1fr !important;
+}
+body.mnexus-mobile .mnexus-modal {
+  border-radius: 0 !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+}
+
+body.mnexus-tablet .mnexus-stat-grid {
+  grid-template-columns: repeat(2, 1fr) !important;
+}
+body.mnexus-tablet .mnexus-modal {
+  max-width: 90% !important;
+}
+
+body.mnexus-desktop .mnexus-stat-grid {
+  grid-template-columns: repeat(4, 1fr) !important;
+}
+body.mnexus-desktop .mnexus-modal {
+  max-width: 720px !important;
+}
+
+/* En touch: agrandar áreas tocables */
+body.mnexus-touch .mnexus-tap-target {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* En landscape + mobile: comprimir el header */
+body.mnexus-mobile.mnexus-landscape .mnexus-header {
+  padding: 4px 8px !important;
+}
+
+/* Stats card adaptativo */
+.mnexus-stat-card {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+body.mnexus-mobile .mnexus-stat-card {
+  padding: 10px 12px;
+  border-radius: 8px;
+}
+body.mnexus-desktop .mnexus-stat-card {
+  padding: 10px 14px;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+/* Row layout: columna en mobile, fila en desktop */
+.mnexus-row {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  padding: 6px 0;
+}
+body.mnexus-tablet .mnexus-row,
+body.mnexus-desktop .mnexus-row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+}
