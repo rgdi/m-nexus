@@ -52,7 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final detector = VaultDetector();
       final vaults = await detector.detectVaults();
       if (vaults.isEmpty) {
-        setState(() { _loading = false; _error = 'No hay vaults detectados' });
+        setState(() { _loading = false; _error = 'No hay vaults' });
         return;
       }
       _vault = VaultService(vaults.first.path);
