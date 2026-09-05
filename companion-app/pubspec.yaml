@@ -1,6 +1,6 @@
 name: mnexus_installer
 description: "Instalador y actualizador del plugin M-NEXUS para Obsidian. Crea las carpetas necesarias en el vault y mantiene el plugin al día."
-version: 0.38.0+19
+version: 0.40.0+21
 publish_to: "none"
 
 environment:

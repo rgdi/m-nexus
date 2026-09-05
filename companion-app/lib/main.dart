@@ -1,11 +1,13 @@
 // M-NEXUS companion app — entry point.
 //
 // v0.31: integracion con device identity + setup wizard.
+// v0.39: AdvancedLogger inicializado al arranque.
 
 import 'package:flutter/material.dart';
 import 'services/app_info.dart';
 import 'services/backend_client.dart';
 import 'services/device_id.dart';
+import 'services/logger.dart';
 import 'ui/home_page.dart';
 import 'ui/setup_wizard.dart';
 
@@ -15,6 +17,22 @@ void main() async {
   // Cargar identidad persistida
   final identity = await DeviceIdentity.load();
   final info = await AppInfo.load();
+
+  // v0.39: inicializar logger avanzado
+  final osVersion = info.platformDetails;
+  await AdvancedLogger.instance.init(
+    userId: 'me',
+    deviceId: identity.deviceId,
+    appVersion: info.fullVersion,
+    osVersion: osVersion,
+  );
+  AdvancedLogger.instance.info('app', 'M-NEXUS companion starting',
+    context: {
+      'version': info.fullVersion,
+      'device': identity.deviceId,
+      'os': osVersion,
+    });
+
   debugPrint('M-NEXUS companion ${info.fullVersion} | device=${identity.deviceId}');
 
   // Determinar si mostrar el wizard:
@@ -22,6 +40,8 @@ void main() async {
   //  - Normal: solo si no se completó
   final testMode = await AppInfo.isTestMode();
   final shouldShowWizard = testMode || !(await SetupWizard.isCompleted());
+  AdvancedLogger.instance.info('app', 'Setup state',
+    context: {'testMode': testMode, 'showWizard': shouldShowWizard});
   if (!shouldShowWizard) {
     // Setup ya completado → registrar en background
     _registerInBackground(identity);
@@ -31,13 +51,28 @@ void main() async {
 }
 
 void _registerInBackground(DeviceIdentity identity) async {
+  final log = AdvancedLogger.instance;
+  final stopwatch = Stopwatch()..start();
   try {
     final client = await BackendClient.create();
     final ok = await client.registerDevice(identity);
-    debugPrint('Device registration: ${ok ? "ok" : "skipped (offline?)"}');
+    stopwatch.stop();
+    log.info('app', 'Device registration result',
+      context: {
+        'success': ok,
+        'duration_ms': stopwatch.elapsedMilliseconds,
+      });
+    log.network(
+      method: 'POST',
+      url: '${client.baseUrl}/api/v1/devices/register',
+      durationMs: stopwatch.elapsedMilliseconds,
+    );
     client.close();
-  } catch (e) {
-    debugPrint('Device registration failed: $e');
+  } catch (e, s) {
+    stopwatch.stop();
+    log.error('app', 'Device registration failed',
+      context: {'duration_ms': stopwatch.elapsedMilliseconds},
+      error: e, stack: s);
   }
 }
 

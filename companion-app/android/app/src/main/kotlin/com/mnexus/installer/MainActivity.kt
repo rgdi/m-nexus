@@ -17,6 +17,7 @@ class MainActivity: FlutterActivity() {
     private val RECORDING_CHANNEL = "com.mnexus.installer/recording"
     private val PERMISSIONS_CHANNEL = "com.mnexus.installer/permissions"
     private val VAULT_CHANNEL = "com.mnexus.installer/vault"
+    private val LOGGER_CHANNEL = "com.mnexus.installer/logger"
     private val safPathPrefs = "mnexus_saf_path"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -331,6 +332,34 @@ class MainActivity: FlutterActivity() {
                         result.error("query_failed", e.message, null)
                     }
                 }
+                else -> result.notImplemented()
+            }
+        }
+
+        // ── Advanced Logger (v0.39) ────────────────────────────
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, LOGGER_CHANNEL).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "log" -> {
+                    val level = call.argument<Number>("level")?.toInt() ?: 2
+                    val tag = call.argument<String>("tag") ?: "mnexus"
+                    val message = call.argument<String>("message") ?: ""
+                    when (level) {
+                        0 -> android.util.Log.v(tag, message)
+                        1 -> android.util.Log.d(tag, message)
+                        2 -> android.util.Log.i(tag, message)
+                        3 -> android.util.Log.w(tag, message)
+                        4 -> android.util.Log.e(tag, message)
+                        5 -> android.util.Log.wtf(tag, message)
+                        else -> android.util.Log.i(tag, message)
+                    }
+                    result.success(null)
+                }
+                "setLevel" -> {
+                    // Level is set on the Dart side via SharedPreferences
+                    result.success(null)
+                }
+                "getRecent" -> result.success(listOf<Map<String, Any?>>())
+                "getStats" -> result.success(mapOf("level" to "INFO", "bufferSize" to 0))
                 else -> result.notImplemented()
             }
         }

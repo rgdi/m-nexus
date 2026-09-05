@@ -22,11 +22,13 @@ import '../services/sync_queue.dart';
 import '../services/updater.dart';
 import '../services/vault_detector.dart';
 import 'activate_plugin_page.dart';
+import 'flashcards_viewer.dart';
 import 'help_page.dart';
 import 'install_page.dart';
 import 'recording_page.dart';
 import 'settings_page.dart';
 import 'update_dialog.dart';
+import 'vault_browser_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -628,6 +630,12 @@ class _HomePageState extends State<HomePage> {
         ),
         foregroundColor: Colors.white,
         actions: [
+          if (_vaults.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.folder_open),
+              tooltip: 'Explorar vault',
+              onPressed: () => _openVaultBrowser(_vaults.first),
+            ),
           if (_pendingRecordings > 0)
             IconButton(
               icon: Badge(
@@ -1088,12 +1096,26 @@ class _HomePageState extends State<HomePage> {
           '${v.detectionMethod != null ? " · vía ${v.detectionMethod}" : ""}',
         ),
         isThreeLine: true,
+        // v0.40: tap abre el browser de vault, no el activate
+        onTap: () => _openVaultBrowser(v),
+        // v0.40: acciones en el popup menu incluyen browser + flashcards
         trailing: PopupMenuButton<String>(
           icon: const Icon(Icons.more_vert),
           onSelected: (action) async {
             switch (action) {
+              case 'browse':
+                await _openVaultBrowser(v);
+                break;
+              case 'flashcards':
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => FlashcardsViewerPage(vaultPath: v.path),
+                  ),
+                );
+                break;
               case 'install':
-                await _installPlugin(v);
+                if (!hasPlugin) await _installPlugin(v);
                 break;
               case 'activate':
                 await _showActivateInstructions();
@@ -1104,11 +1126,24 @@ class _HomePageState extends State<HomePage> {
             }
           },
           itemBuilder: (_) => [
-            if (!hasPlugin) const PopupMenuItem(value: 'install', child: Text('Instalar plugin')),
-            if (!hasPlugin) const PopupMenuItem(value: 'activate', child: Text('Cómo activar')),
-            const PopupMenuItem(value: 'copy', child: Text('Copiar path')),
+            const PopupMenuItem(value: 'browse', child: Row(children: [Icon(Icons.folder_open, size: 18), SizedBox(width: 8), Text('Explorar')])),
+            const PopupMenuItem(value: 'flashcards', child: Row(children: [Icon(Icons.style, size: 18), SizedBox(width: 8), Text('Flashcards')])),
+            if (!hasPlugin) const PopupMenuItem(value: 'install', child: Row(children: [Icon(Icons.download, size: 18), SizedBox(width: 8), Text('Instalar plugin')])),
+            const PopupMenuItem(value: 'activate', child: Row(children: [Icon(Icons.extension, size: 18), SizedBox(width: 8), Text('Activar plugin')])),
+            const PopupMenuItem(value: 'copy', child: Row(children: [Icon(Icons.copy, size: 18), SizedBox(width: 8), Text('Copiar ruta')])),
           ],
         ),
+      ),
+    );
+  }
+
+  /// v0.40: abre el browser del vault (standalone, sin Obsidian).
+  Future<void> _openVaultBrowser(VaultInfo v) async {
+    if (!mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => VaultBrowserPage(vaultPath: v.path),
       ),
     );
   }
