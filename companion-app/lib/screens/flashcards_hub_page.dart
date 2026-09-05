@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import '../services/vault_detector.dart' show VaultInfo;
-import '../services/vault_detector.dart';
 import '../ui/flashcards_viewer.dart';
 
 class FlashcardsHubPage extends StatefulWidget {
