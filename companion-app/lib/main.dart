@@ -19,12 +19,12 @@ void main() async {
   final info = await AppInfo.load();
 
   // v0.39: inicializar logger avanzado
-  final osVersion = info.platformDetails;
+  final osVersion = '${info.model} (${info.osVersion})';
   await AdvancedLogger.instance.init(
     userId: 'me',
     deviceId: identity.deviceId,
     appVersion: info.fullVersion,
-    osVersion: osVersion,
+    osVersion: info.model.isNotEmpty ? "${info.model} (${info.osVersion})" : (info.osVersion.isNotEmpty ? info.osVersion : "unknown"),
   );
   AdvancedLogger.instance.info('app', 'M-NEXUS companion starting',
     context: {
@@ -62,11 +62,6 @@ void _registerInBackground(DeviceIdentity identity) async {
         'success': ok,
         'duration_ms': stopwatch.elapsedMilliseconds,
       });
-    log.network(
-      method: 'POST',
-      url: '${client.baseUrl}/api/v1/devices/register',
-      durationMs: stopwatch.elapsedMilliseconds,
-    );
     client.close();
   } catch (e, s) {
     stopwatch.stop();
