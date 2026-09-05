@@ -7,10 +7,10 @@ import 'package:flutter/widgets.dart';
 
 class K {
   // Global
-  static const cmd = SingleActivator(LogicalKeyboardKey.meta);
-  static const ctrl = SingleActivator(LogicalKeyboardKey.control);
-  static const escape = SingleActivator(LogicalKeyboardKey.escape);
-  static const slash = SingleActivator(LogicalKeyboardKey.slash);
+  static final cmd = SingleActivator(LogicalKeyboardKey.meta);
+  static final ctrl = SingleActivator(LogicalKeyboardKey.control);
+  static final escape = SingleActivator(LogicalKeyboardKey.escape);
+  static final slash = SingleActivator(LogicalKeyboardKey.slash);
 
   // Navigation
   static final openVault = CharacterActivator('o', control: true); // Ctrl+O
