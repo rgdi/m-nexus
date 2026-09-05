@@ -1,6 +1,6 @@
-name: mnexus_installer
-description: "Instalador y actualizador del plugin M-NEXUS para Obsidian. Crea las carpetas necesarias en el vault y mantiene el plugin al día."
-version: 0.40.0+21
+name: mnexus
+description: "M-NEXUS — Tu segundo cerebro digital. Notas, flashcards, calendar. Standalone (Android + Web)."
+version: 0.41.0+22
 publish_to: "none"
 
 environment:
