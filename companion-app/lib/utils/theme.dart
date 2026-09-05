@@ -41,7 +41,6 @@ class MnexusTheme {
   }
 
   static ThemeData _build(ColorScheme scheme, Brightness brightness) {
-    final isDark = brightness == Brightness.dark;
     return ThemeData(
       colorScheme: scheme,
       useMaterial3: true,
