@@ -326,7 +326,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 TextButton.icon(
                   onPressed: _showAllCalendarsSheet,
                   icon: const Icon(Icons.list, size: 16),
-                  label: const Text('Ver todos (${_calendars.length})'),
+                  label: Text('Ver todos (${_calendars.length})'),
                 ),
               ],
             ),
@@ -460,7 +460,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           title: const Text('Todos los calendarios',
                             style: TextStyle(fontWeight: FontWeight.w600),
                           ),
-                          subtitle: const Text('Mostrar eventos de cualquier calendario'),
+                          subtitle: Text('Mostrar eventos de cualquier calendario'),
                           trailing: _calendar!.selectedCalendarId == null
                               ? const Icon(Icons.check_circle, color: Colors.green)
                               : null,
