@@ -30,21 +30,16 @@ class _MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
-    return CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.digit1, control: true):
-            const _GoToIntent(0),
-        const SingleActivator(LogicalKeyboardKey.digit2, control: true):
-            const _GoToIntent(1),
-        const SingleActivator(LogicalKeyboardKey.digit3, control: true):
-            const _GoToIntent(2),
-        const SingleActivator(LogicalKeyboardKey.digit4, control: true):
-            const _GoToIntent(3),
-        const SingleActivator(LogicalKeyboardKey.comma, control: true):
-            const _GoToIntent(0),
+    return Shortcuts(
+      shortcuts: const {
+        SingleActivator(LogicalKeyboardKey.digit1, control: true): _GoToIntent(0),
+        SingleActivator(LogicalKeyboardKey.digit2, control: true): _GoToIntent(1),
+        SingleActivator(LogicalKeyboardKey.digit3, control: true): _GoToIntent(2),
+        SingleActivator(LogicalKeyboardKey.digit4, control: true): _GoToIntent(3),
+        SingleActivator(LogicalKeyboardKey.comma, control: true): _GoToIntent(0),
       },
       child: Actions(
-        actions: {
+        actions: <Type, Action<Intent>>{
           _GoToIntent: CallbackAction<_GoToIntent>(
             onInvoke: (i) {
               setState(() { _index = i.target; });
