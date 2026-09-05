@@ -805,7 +805,7 @@ class _HomePageState extends State<HomePage> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              color: Color(_selectedCalendarInfo!.color).withValues(alpha: 0.15),
+              color: Color(_selectedCalendarInfo!.color).withOpacity(0.15),
               child: Row(
                 children: [
                   Container(
