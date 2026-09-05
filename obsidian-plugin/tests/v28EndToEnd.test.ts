@@ -115,19 +115,20 @@ describe("E2E: Día completo de estudio médico", () => {
 
   it("E2E.3 flujo: grabación → match horario → snooze por overlap", () => {
     // 1) Horario del estudiante: clase de anatomía ahora
-    const now = new Date();
-    const day = now.getDay();
-    const startMin = now.getHours() * 60 + now.getMinutes();
+    // Usamos un día fijo (miércoles) y hora fija (10:00) para determinismo
+    const baseDate = new Date("2026-09-02T10:00:00");  // miércoles
+    const day = baseDate.getDay() as 0 | 1 | 2 | 3 | 4 | 5 | 6;
+    const startMin = 10 * 60;  // 10:00
     const schedules = [{
       subject: "anatomia",
-      dayOfWeek: day as 0 | 1 | 2 | 3 | 4 | 5 | 6,
-      startMinute: startMin - 15, // empezó hace 15 min
+      dayOfWeek: day,
+      startMinute: startMin - 15, // empezó hace 15 min (09:45)
       durationMinutes: 90,
     }];
     const matcher = new ScheduleMatcher(schedules);
 
-    // 2) Grabación: empieza ahora, dura 30 min
-    const match = matcher.match(now.getTime(), 30 * 60_000);
+    // 2) Grabación: empieza a las 10:00, dura 30 min
+    const match = matcher.match(baseDate.getTime(), 30 * 60_000);
     expect(match).not.toBeNull();
     expect(match!.schedule.subject).toBe("anatomia");
 
@@ -137,7 +138,7 @@ describe("E2E: Día completo de estudio médico", () => {
       { subject: "fisiologia", dayOfWeek: day as 0 | 1 | 2 | 3 | 4 | 5 | 6, startMinute: startMin, durationMinutes: 90 },
     ];
     const matcher2 = new ScheduleMatcher(schedulesOverlap);
-    const all = matcher2.matchAll(now.getTime(), 30 * 60_000);
+    const all = matcher2.matchAll(baseDate.getTime(), 30 * 60_000);
     expect(all.length).toBe(2);
     // Anatomía tiene mejor score porque empezó antes (más cerca de la grabación)
     expect(all[0].confidence).toBeGreaterThanOrEqual(all[1].confidence);

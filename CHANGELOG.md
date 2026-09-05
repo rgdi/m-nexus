@@ -1,4 +1,44 @@
 # M-NEXUS Changelog
+## v0.35.0 (2026-09-05) - Stability + UX fixes
+
+### Added
+- **Setup wizard 8 pasos** (antes 5): Bienvenida → Permisos → Batería → Backend → Calendario → Vault → Plugin → Listo
+  - Cada paso es su propio widget con `SingleChildScrollView` (no overflow)
+  - AppBar muestra contador "1/8, 2/8..."
+  - Battery optimization step con `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (Android 6+)
+  - Calendar selection con UI rica (RadioListTile + color avatar)
+  - Plugin setup integrado (descarga + instala en el wizard, no requiere check previo)
+  - Final step con resumen completo
+- **Calendar selector robusto** (home page):
+  - `StatefulBuilder` para state interno del diálogo
+  - Auto-pide el permiso si falta
+  - Avatar con inicial y color del calendario
+  - Botón "Seleccionar" explícito
+- **Battery optimization** (Android 6+): `Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` channel
+- **Plugin install sin update check**: `_fetchPluginRelease()` no necesita `update`, funciona siempre
+- **Helper `_notify()`**: SnackBars con dedupe (`hideCurrentSnackBar` antes)
+- **Helper `_onUpdaterChange` dedupe**: solo notifica una vez por versión
+- **`isInstallPermissionGranted`**: checkea REQUEST_INSTALL_PACKAGES en Android 8+
+- **Plugin ZIP fix**: `manifest.json` + `styles.css` ahora se copian al dist/ antes de zippear (CI)
+
+### Fixed
+- **Setup wizard crash** con `Iterable<RadioListTile<int>>` no casteable a `List<Widget>` — fixed con `collection-for`
+- **Card/ListTile closing brackets** en _buildVault — fix sintaxis
+- **Unused imports** (updater, device_id) en setup_wizard
+- **DeviceIdentity undefined** en _finish (re-import)
+- **Plugin manifest**: el ZIP ahora incluye los 3 archivos (main.js + manifest.json + styles.css)
+
+### Changed
+- Home page: `_installPlugin` ya no requiere que se haya hecho check de updates
+- Calendar selector: usa `collection-for` en vez de `.map()` para evitar problemas de tipo
+- Plugin ZIP build step: añade "Copy static plugin files" en CI
+
+### Tests
+- Plugin: 1162 tests (+1 determinista fix: E2E.3 ahora usa fecha fija en vez de `new Date()`)
+- Backend: 245 tests (sin cambios)
+- Companion: 40 tests (sin cambios)
+- **Total: 1484 tests passing**
+
 ## v0.33.0 (2026-09-04) - Notion-style + resilience
 
 ### Added
