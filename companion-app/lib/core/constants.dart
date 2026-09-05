@@ -19,13 +19,13 @@ class AppConstants {
 
   /// Carpetas internas del plugin
   static const String internalFolder = '_M-NEXUS';
-  static const String flashcardsFolder = '$_internalFolder/Flashcards';
-  static const String flashcardsApproved = '$flashcardsFolder/Approved';
-  static const String flashcardsDrafts = '$flashcardsFolder/Drafts';
-  static const String inboxFolder = '$_internalFolder/Inbox';
-  static const String photosFolder = '$_internalFolder/Photos';
-  static const String pdfsFolder = '$_internalFolder/PDFs';
-  static const String backupsFolder = '$_internalFolder/backups';
+  static const String flashcardsFolder = '_M-NEXUS/Flashcards';
+  static const String flashcardsApproved = '_M-NEXUS/Flashcards/Approved';
+  static const String flashcardsDrafts = '_M-NEXUS/Flashcards/Drafts';
+  static const String inboxFolder = '_M-NEXUS/Inbox';
+  static const String photosFolder = '_M-NEXUS/Photos';
+  static const String pdfsFolder = '_M-NEXUS/PDFs';
+  static const String backupsFolder = '_M-NEXUS/backups';
 }
 
 /// Branding

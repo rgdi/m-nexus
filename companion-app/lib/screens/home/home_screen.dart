@@ -113,7 +113,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => FlashcardReview(cards: due)),
+      MaterialPageRoute(builder: (_) => FlashcardReview(cards: due, service: _fc!)),
     );
     _load();
   }
@@ -210,7 +210,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: const Color(0xFF4F6BED).withOpacity(0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.add, color: Color(0xFF4F6BED), size: 20),
+                  child: Icon(Icons.add, color: Color(0xFF4F6BED), size: 20),
                 ),
                 title: const Text('Nueva nota'),
                 subtitle: const Text('Ctrl+N'),
@@ -225,7 +225,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: const Color(0xFFEF6C00).withOpacity(0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.psychology, color: Color(0xFFEF6C00), size: 20),
+                  child: Icon(Icons.psychology, color: Color(0xFFEF6C00), size: 20),
                 ),
                 title: Text(_dueCount > 0
                     ? 'Repasar $_dueCount tarjetas'
@@ -235,7 +235,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     : 'Andá a la pestaña Tarjetas'),
                 trailing: _dueCount > 0
                     ? const ShortcutChip(label: 'Ctrl+R')
-                    : const Icon(Icons.check, color: Colors.green),
+                    : Icon(Icons.check, color: Colors.green),
                 onTap: _reviewDue,
               ),
               const Divider(height: 1),
@@ -246,7 +246,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: const Color(0xFF7B5BE6).withOpacity(0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.create_note, color: Color(0xFF7B5BE6), size: 20),
+                  child: Icon(Icons.create_note, color: Color(0xFF7B5BE6), size: 20),
                 ),
                 title: const Text('Nueva flashcard'),
                 subtitle: const Text('Empezar a estudiar'),
@@ -269,7 +269,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: const Color(0xFF2E7D32).withOpacity(0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.folder_open, color: Color(0xFF2E7D32), size: 20),
+                  child: Icon(Icons.folder_open, color: Color(0xFF2E7D32), size: 20),
                 ),
                 title: const Text('Explorar vault'),
                 subtitle: const Text('Ctrl+2'),
@@ -301,7 +301,7 @@ class _HomeScreenState extends State<HomeScreen> {
               return Column(
                 children: [
                   ListTile(
-                    leading: const Icon(Icons.description_outlined),
+                    leading: Icon(Icons.description_outlined),
                     title: Text(n.title ?? n.name, maxLines: 1, overflow: TextOverflow.ellipsis),
                     subtitle: Text(n.preview, maxLines: 1, overflow: TextOverflow.ellipsis),
                     trailing: Text(_timeAgo(n.modified),

@@ -124,21 +124,16 @@ $body''';
   @override
   Widget build(BuildContext context) {
     final isMobile = AppTheme.isMobile(context);
-    return CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.keyS, control: true):
-            const _SaveIntent(),
-        const SingleActivator(LogicalKeyboardKey.keyE, control: true):
-            const _TogglePreviewIntent(),
-        const SingleActivator(LogicalKeyboardKey.keyB, control: true):
-            const _BoldIntent(),
-        const SingleActivator(LogicalKeyboardKey.keyI, control: true):
-            const _ItalicIntent(),
-        const SingleActivator(LogicalKeyboardKey.escape):
-            const _EscapeIntent(),
+    return Shortcuts(
+      shortcuts: const {
+        SingleActivator(LogicalKeyboardKey.keyS, control: true): _SaveIntent(),
+        SingleActivator(LogicalKeyboardKey.keyE, control: true): _TogglePreviewIntent(),
+        SingleActivator(LogicalKeyboardKey.keyB, control: true): _BoldIntent(),
+        SingleActivator(LogicalKeyboardKey.keyI, control: true): _ItalicIntent(),
+        SingleActivator(LogicalKeyboardKey.escape): _EscapeIntent(),
       },
       child: Actions(
-        actions: {
+        actions: <Type, Action<Intent>>{
           _SaveIntent: CallbackAction<_SaveIntent>(
             onInvoke: (i) { _save(); return null; },
           ),

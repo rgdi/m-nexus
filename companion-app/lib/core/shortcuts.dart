@@ -1,6 +1,7 @@
 // Shortcuts de teclado estilo Obsidian.
 // Centralizados para fácil customización.
 
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
@@ -13,7 +14,7 @@ class K {
 
   // Navigation
   static final openVault = CharacterActivator('o', control: true); // Ctrl+O
-  static final openSearch = CharacterActivator('p', control: true, shift: true); // Ctrl+Shift+P
+  static final openSearch = SingleActivator(LogicalKeyboardKey.keyP, control: true, shift: true); // Ctrl+Shift+P
   static final newNote = CharacterActivator('n', control: true); // Ctrl+N
   static final newNoteAlt = CharacterActivator('n', meta: true); // Cmd+N (Mac)
   static final home = CharacterActivator('h', control: true); // Ctrl+H (home)
@@ -24,11 +25,11 @@ class K {
   static final togglePreview = CharacterActivator('e', control: true); // Ctrl+E
   static final toggleSidebar = CharacterActivator('\\', control: true); // Ctrl+\
   static final search = CharacterActivator('f', control: true); // Ctrl+F
-  static final replace = CharacterActivator('h', control: true, shift: true); // Ctrl+Shift+H
+  static final replace = SingleActivator(LogicalKeyboardKey.keyH, control: true, shift: true); // Ctrl+Shift+H
   static final goLine = CharacterActivator('g', control: true); // Ctrl+G
   static final toggleBold = CharacterActivator('b', control: true); // Ctrl+B
   static final toggleItalic = CharacterActivator('i', control: true); // Ctrl+I
-  static final toggleCode = CharacterActivator('e', control: true, shift: true); // Ctrl+Shift+E
+  static final toggleCode = SingleActivator(LogicalKeyboardKey.keyE, control: true, shift: true); // Ctrl+Shift+E
   static final insertLink = CharacterActivator('k', control: true); // Ctrl+K
 
   // Flashcards
