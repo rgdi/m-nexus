@@ -215,6 +215,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen>
     final isDesktop = MnexusTheme.isDesktop(context);
     return PopScope(
       canPop: !_isDirty,
+      // ignore: deprecated_member_use
       onPopInvoked: (didPop) async {
         if (!didPop) {
           final canPop = await _onWillPop();
