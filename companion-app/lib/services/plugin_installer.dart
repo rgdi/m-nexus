@@ -1,10 +1,26 @@
 // PluginInstaller: descarga el ZIP del plugin, lo extrae a
-// {vault}/.obsidian/plugins/m-nexus/ y crea las carpetas internas
-// necesarias para el funcionamiento (_M-NEXUS/...).
+// {vault}/.obsidian/plugins/m-nexus/, crea las carpetas internas
+// necesarias, y ACTIVA el plugin editando community-plugins.json.
 //
-// v0.8: extrae los 3 archivos obligatorios (main.js, manifest.json, styles.css)
-// y crea la estructura de carpetas para M-NEXUS v0.8.
+// v0.36 (auto-activate):
+//   Antes: solo creaba las carpetas y copiaba los archivos
+//          → Obsidian no reconocía el plugin hasta que el usuario
+//            lo activaba manualmente
+//   Ahora: edita .obsidian/community-plugins.json para añadir
+//          "m-nexus" a la lista, de forma que al próximo launch
+//          de Obsidian el plugin ya está activado.
+//
+// Pasos del installTo():
+//   1) Asegurar .obsidian/plugins/m-nexus/ existe
+//   2) Extraer ZIP (main.js, manifest.json, styles.css)
+//   3) Crear carpetas internas (_M-NEXUS/...)
+//   4) Verificar manifest.json
+//   5) **NUEVO**: leer .obsidian/community-plugins.json
+//   6) **NUEVO**: añadir "m-nexus" a la lista (si no está)
+//   7) **NUEVO**: escribir el JSON de vuelta
+//   8) Verificar resultado
 
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:archive/archive.dart';
@@ -56,13 +72,13 @@ class PluginInstaller {
     return bytes;
   }
 
-  /// Extrae el ZIP a {vault}/.obsidian/plugins/m-nexus/.
-  /// Crea todas las carpetas necesarias para M-NEXUS.
+  /// Extrae el ZIP a {vault}/.obsidian/plugins/m-nexus/, crea las
+  /// carpetas internas, y ACTIVA el plugin en community-plugins.json.
   Future<InstallResult> installTo(String vaultPath, Uint8List zipBytes) async {
     final createdFolders = <String>[];
     final installedFiles = <String>[];
 
-    // 1) Asegurar .obsidian/plugins/
+    // 1) Asegurar .obsidian/plugins/m-nexus/
     final pluginsRoot = p.join(vaultPath, '.obsidian', 'plugins', pluginFolderName);
     await _ensureDir(pluginsRoot, createdFolders);
 
@@ -71,10 +87,9 @@ class PluginInstaller {
     for (final file in archive) {
       final name = file.name;
       if (!file.isFile) continue;
-      // Limpiar prefijos comunes del ZIP
       final cleanName = _stripPrefixes(name);
       if (cleanName == null) continue;
-      // Solo los archivos esenciales del plugin van a plugins/m-nexus/
+      // Solo los archivos esenciales van a plugins/m-nexus/
       if (cleanName == 'main.js' ||
           cleanName == 'manifest.json' ||
           cleanName == 'styles.css' ||
@@ -111,12 +126,97 @@ class PluginInstaller {
     final versionMatch = RegExp(r'"version"\s*:\s*"([^"]+)"').firstMatch(manifestContent);
     final version = versionMatch?.group(1);
 
+    // 5) v0.36: ACTIVAR el plugin en community-plugins.json
+    final activateResult = await activatePluginInCommunityFile(vaultPath);
+    if (activateResult.error != null) {
+      // No es fatal (los archivos ya están copiados), pero avisamos
+      return InstallResult(
+        status: InstallStatus.success,
+        installedVersion: version,
+        createdFolders: createdFolders,
+        installedFiles: installedFiles,
+        activated: false,
+        errorMessage: 'Plugin instalado, pero no se pudo activar automáticamente: ${activateResult.error}',
+        communityPluginsPath: activateResult.filePath,
+      );
+    }
+
     return InstallResult(
       status: InstallStatus.success,
       installedVersion: version,
       createdFolders: createdFolders,
       installedFiles: installedFiles,
+      activated: activateResult.added,
+      alreadyEnabled: activateResult.alreadyEnabled,
+      communityPluginsPath: activateResult.filePath,
     );
+  }
+
+  /// Activa el plugin en .obsidian/community-plugins.json.
+  ///
+  /// Lee el JSON (que es una lista de strings con los IDs de plugins
+  /// habilitados), añade "m-nexus" si no está, y lo escribe de vuelta.
+  ///
+  /// Si el archivo no existe, lo crea con ["m-nexus"].
+  /// Si la carpeta .obsidian no existe, la crea.
+  /// Si el JSON está corrupto, hace backup y crea uno nuevo.
+  Future<CommunityPluginsResult> activatePluginInCommunityFile(String vaultPath) async {
+    final obsidianDir = p.join(vaultPath, '.obsidian');
+    final filePath = p.join(obsidianDir, 'community-plugins.json');
+
+    try {
+      // 1) Asegurar que .obsidian/ existe
+      await Directory(obsidianDir).create(recursive: true);
+
+      // 2) Leer archivo actual (o crear uno nuevo)
+      List<String> plugins = [];
+      final file = File(filePath);
+      if (await file.exists()) {
+        try {
+          final content = await file.readAsString();
+          if (content.trim().isNotEmpty) {
+            final decoded = jsonDecode(content);
+            if (decoded is List) {
+              plugins = decoded.map((e) => e.toString()).toList();
+            }
+          }
+        } catch (e) {
+          // JSON corrupto: hacer backup y crear uno nuevo
+          final backupPath = '$filePath.bak.${DateTime.now().millisecondsSinceEpoch}';
+          await file.copy(backupPath);
+          plugins = [];
+        }
+      }
+
+      // 3) Verificar si ya está habilitado
+      if (plugins.contains(pluginFolderName)) {
+        return CommunityPluginsResult(
+          added: false,
+          alreadyEnabled: true,
+          filePath: filePath,
+        );
+      }
+
+      // 4) Añadir "m-nexus" a la lista
+      plugins.add(pluginFolderName);
+
+      // 5) Escribir de vuelta (formato pretty para que sea legible)
+      final encoder = JsonEncoder.withIndent('  ');
+      await file.writeAsString(encoder.convert(plugins));
+
+      return CommunityPluginsResult(
+        added: true,
+        alreadyEnabled: false,
+        filePath: filePath,
+      );
+    } catch (e) {
+      return CommunityPluginsResult(
+        added: false,
+        alreadyEnabled: false,
+        filePath: filePath,
+        error: e.toString(),
+      );
+    }
   }
 
   /// Helper: asegura que un directorio existe (recursivo).
@@ -131,7 +231,6 @@ class PluginInstaller {
   String? _stripPrefixes(String name) {
     if (name.contains('..')) return null;
     final parts = name.split('/');
-    // Quitar el primer segmento si parece raíz del repo
     if (parts[0].startsWith('m-nexus') || parts[0] == 'm-nexus-obsidian') {
       return parts.sublist(1).join('/');
     }
@@ -141,4 +240,21 @@ class PluginInstaller {
   void dispose() {
     _http.close();
   }
+}
+
+/// Resultado de activar el plugin en community-plugins.json.
+class CommunityPluginsResult {
+  final bool added;
+  final bool alreadyEnabled;
+  final String filePath;
+  final String? error;
+
+  const CommunityPluginsResult({
+    required this.added,
+    required this.alreadyEnabled,
+    required this.filePath,
+    this.error,
+  });
+
+  bool get ok => error == null;
 }

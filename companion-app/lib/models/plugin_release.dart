@@ -42,6 +42,12 @@ class InstallResult {
   final String? errorMessage;
   final List<String> createdFolders;
   final List<String> installedFiles;
+  /// v0.36: si fue añadido a community-plugins.json
+  final bool activated;
+  /// v0.36: si ya estaba habilitado
+  final bool alreadyEnabled;
+  /// v0.36: path del community-plugins.json
+  final String? communityPluginsPath;
 
   const InstallResult({
     required this.status,
@@ -49,5 +55,8 @@ class InstallResult {
     this.errorMessage,
     this.createdFolders = const [],
     this.installedFiles = const [],
+    this.activated = false,
+    this.alreadyEnabled = false,
+    this.communityPluginsPath,
   });
 }
