@@ -16,7 +16,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
-import '../models/vault_info.dart';
+import '../services/vault_detector.dart' show VaultInfo;
 import '../models/plugin_release.dart';
 import '../services/app_info.dart';
 import '../services/calendar_service.dart';
