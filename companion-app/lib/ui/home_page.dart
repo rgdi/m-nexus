@@ -69,6 +69,14 @@ class _HomePageState extends State<HomePage> {
     _syncQueue.stream.listen((_) {
       if (mounted) _updatePendingCount();
     });
+    // v0.38: forzar check de update al iniciar (no usar cache).
+    // Sin esto, el home muestra "Update OK" engañoso en el primer launch
+    // después de instalar v0.37+ cuando en realidad hay v0.37+ disponible.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        await _updater.check(force: true);
+      } catch (_) {}
+    });
   }
 
   @override
@@ -288,6 +296,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _showPermissionsDialog(List<PermissionStatus> denied) {
+    final hasManageStorage = denied.any((p) => p.name == 'manage_storage' && !p.granted);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -296,23 +305,66 @@ class _HomePageState extends State<HomePage> {
           width: double.maxFinite,
           child: ListView(
             shrinkWrap: true,
-            children: denied.map((p) {
-              // Si es manage_storage y no está concedido, ofrecer la pantalla especial
-              final isManageStorage = p.name == 'manage_storage';
-              return ListTile(
-                leading: Icon(
-                  p.permanentlyDenied ? Icons.lock : Icons.warning,
-                  color: Colors.orange,
+            children: [
+              ...denied.map((p) {
+                final isManageStorage = p.name == 'manage_storage';
+                return ListTile(
+                  leading: Icon(
+                    p.permanentlyDenied ? Icons.lock : Icons.warning,
+                    color: Colors.orange,
+                  ),
+                  title: Text(p.displayName),
+                  subtitle: Text(p.description),
+                  trailing: p.permanentlyDenied
+                      ? const Chip(label: Text('Ir a Settings'), backgroundColor: Colors.red)
+                      : isManageStorage
+                          ? const Chip(label: Text('Especial'))
+                          : null,
+                );
+              }),
+              // v0.38: alternativa SAF para Android 15+
+              if (hasManageStorage) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: const [
+                          Icon(Icons.info_outline, size: 18, color: Colors.blue),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text('Android 15+ restringe el acceso total al almacenamiento.',
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Alternativa: elegí manualmente la carpeta de tu vault con SAF. '
+                        'Funciona en todas las versiones de Android sin permisos especiales.',
+                        style: TextStyle(fontSize: 11),
+                      ),
+                      const SizedBox(height: 8),
+                      OutlinedButton.icon(
+                        onPressed: () async {
+                          Navigator.pop(ctx);
+                          await _showManualPathInput();
+                        },
+                        icon: const Icon(Icons.folder_open, size: 16),
+                        label: const Text('Elegir carpeta manualmente', style: TextStyle(fontSize: 12)),
+                      ),
+                    ],
+                  ),
                 ),
-                title: Text(p.displayName),
-                subtitle: Text(p.description),
-                trailing: p.permanentlyDenied
-                    ? const Chip(label: Text('Ir a Settings'), backgroundColor: Colors.red)
-                    : isManageStorage
-                        ? const Chip(label: Text('Especial'))
-                        : null,
-              );
-            }).toList(),
+              ],
+            ],
           ),
         ),
         actions: [
@@ -320,7 +372,6 @@ class _HomePageState extends State<HomePage> {
           FilledButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              // Si hay manage_storage denegado, abrir pantalla especial
               if (denied.any((p) => p.name == 'manage_storage' && !p.granted)) {
                 await PermissionsService.openManageStorageSettings();
               } else if (denied.any((p) => p.permanentlyDenied)) {
@@ -920,6 +971,7 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildActivateButton() {
     final without = _vaults.where((v) => v.installedPluginVersion == null).toList();
+    if (without.isEmpty) return const SizedBox.shrink();
     return Card(
       color: Colors.blue.shade50,
       child: ListTile(
@@ -929,7 +981,37 @@ class _HomePageState extends State<HomePage> {
         ),
         subtitle: Text('${without.length} vault(s) sin plugin instalado'),
         trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-        onTap: _showActivateInstructions,
+        // v0.38: si hay UN vault, instala directo. Si hay varios, muestra selector.
+        onTap: () async {
+          if (without.length == 1) {
+            await _installPlugin(without.first);
+          } else {
+            // Mostrar selector de vault
+            final picked = await showModalBottomSheet<VaultInfo>(
+              context: context,
+              builder: (ctx) => Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text('¿En qué vault instalar el plugin?',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  ...without.map((v) => ListTile(
+                    leading: const Icon(Icons.folder),
+                    title: Text(v.path.split('/').last),
+                    subtitle: Text(v.path, style: const TextStyle(fontSize: 11)),
+                    onTap: () => Navigator.of(ctx).pop(v),
+                  )),
+                ],
+              ),
+            );
+            if (picked != null) {
+              await _installPlugin(picked);
+            }
+          }
+        },
       ),
     );
   }
