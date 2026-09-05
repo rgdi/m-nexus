@@ -23,10 +23,10 @@ import '../services/calendar_service.dart';
 import '../services/vault_detector.dart';
 import '../services/updater.dart';
 import '../utils/theme.dart';
-import 'vault_browser_page.dart';
-import 'flashcards_viewer.dart';
+import '../ui/vault_browser_page.dart';
+import '../ui/flashcards_viewer.dart';
 import 'note_editor_screen.dart';
-import 'recording_screen.dart';
+import '../ui/recording_page.dart';
 import 'settings_screen.dart';
 import 'help_screen.dart';
 
@@ -173,7 +173,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         },
         onRecord: () async {
           await Navigator.push(context, MaterialPageRoute(
-            builder: (_) => const RecordingScreen(),
+            builder: (_) => const RecordingPage(),
           ));
           _load();
         },

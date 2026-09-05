@@ -87,7 +87,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen>
       _contentController.text = parsed.body;
       _frontmatter
         ..clear()
-        ..addAll(parsed.frontmatter);
+        ..addAll(parsed.fm);
       if (_frontmatter.containsKey('title')) {
         _titleController.text = _frontmatter['title']!;
       }
