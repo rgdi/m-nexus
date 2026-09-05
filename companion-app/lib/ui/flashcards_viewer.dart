@@ -19,7 +19,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
-import 'services/logger.dart';
+import '../services/logger.dart';
 
 class FlashcardsViewerPage extends StatefulWidget {
   final String vaultPath;

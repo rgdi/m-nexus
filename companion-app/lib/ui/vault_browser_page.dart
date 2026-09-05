@@ -14,7 +14,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'vault_markdown_viewer.dart';
 import 'flashcards_viewer.dart';
-import 'services/logger.dart';
+import '../services/logger.dart';
 
 class VaultBrowserPage extends StatefulWidget {
   /// Ruta raíz del vault (ej: /storage/emulated/0/Documents/MiVault)
