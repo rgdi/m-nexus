@@ -281,6 +281,7 @@ class MainActivity: FlutterActivity() {
                 "listEvents" -> {
                     val startMs = call.argument<Number>("startMs")?.toLong() ?: 0L
                     val endMs = call.argument<Number>("endMs")?.toLong() ?: 0L
+                    val calendarId = call.argument<Number>("calendarId")?.toLong()
                     try {
                         val events = mutableListOf<Map<String, Any?>>()
                         val projection = arrayOf(
@@ -292,12 +293,22 @@ class MainActivity: FlutterActivity() {
                             android.provider.CalendarContract.Events.EVENT_LOCATION,
                             android.provider.CalendarContract.Events.CALENDAR_ID
                         )
-                        val selection = "${android.provider.CalendarContract.Events.DTSTART} >= ? AND ${android.provider.CalendarContract.Events.DTEND} <= ?"
-                        val args = arrayOf(startMs.toString(), endMs.toString())
+                        // v0.37: si calendarId se pasa, filtrar la query nativa
+                        val selection = buildString {
+                            append("${android.provider.CalendarContract.Events.DTSTART} >= ? AND ")
+                            append("${android.provider.CalendarContract.Events.DTEND} <= ?")
+                            if (calendarId != null) {
+                                append(" AND ${android.provider.CalendarContract.Events.CALENDAR_ID} = ?")
+                            }
+                        }
+                        val args = mutableListOf<String>(startMs.toString(), endMs.toString())
+                        if (calendarId != null) {
+                            args.add(calendarId.toString())
+                        }
                         val cursor = contentResolver.query(
                             android.provider.CalendarContract.Events.CONTENT_URI,
                             projection,
-                            selection, args,
+                            selection, args.toTypedArray(),
                             "${android.provider.CalendarContract.Events.DTSTART} ASC"
                         )
                         cursor?.use { c ->

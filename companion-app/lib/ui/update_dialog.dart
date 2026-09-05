@@ -70,6 +70,16 @@ class _UpdateDialogState extends State<UpdateDialog> {
       _error = null;
       _errorCode = null;
     });
+    // v0.37: si no podemos asegurar que es más nuevo, no perdamos tiempo
+    final isNewer = await _isActuallyNewer();
+    if (!isNewer) {
+      setState(() {
+        _step = _InstallStep.failed;
+        _error = 'Esta versión (${widget.update.latestVersion}) no es más nueva que la instalada (${widget.installedVersion}). ¿Seguro que es un update?';
+        _errorCode = 'NOT_NEWER_THAN_INSTALLED';
+      });
+      return;
+    }
     final file = await widget.updater.downloadApk(widget.update);
     if (!mounted) return;
     if (file == null) {
@@ -130,6 +140,15 @@ class _UpdateDialogState extends State<UpdateDialog> {
     }
   }
 
+  /// v0.37: comprueba si la versión remota es mayor que la instalada.
+  /// Útil para evitar el caso "version downgrade" que Android rechaza.
+  Future<bool> _isActuallyNewer() async {
+    if (widget.update.remoteVersionCode == null) return true; // no podemos saber
+    final current = await widget.updater.loadInstalledVersionCode();
+    if (current == null) return true; // no podemos saber
+    return widget.update.remoteVersionCode! > current;
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -182,6 +201,15 @@ class _UpdateDialogState extends State<UpdateDialog> {
                     children: [
                       if (sizeStr.isNotEmpty) Text(sizeStr, style: theme.textTheme.bodySmall),
                       if (dateStr.isNotEmpty) Text(dateStr, style: theme.textTheme.bodySmall),
+                      if (widget.update.remoteVersionCode != null) ...[
+                        const SizedBox(height: 2),
+                        Text('build ${widget.update.remoteVersionCode}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontFamily: 'monospace',
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ],

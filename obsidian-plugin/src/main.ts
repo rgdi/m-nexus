@@ -17,6 +17,7 @@ import type { MNexusSettings } from "./types";
 import { DEFAULT_SETTINGS, VIEW_TYPE_CHAT, VIEW_TYPE_DASHBOARD, VIEW_TYPE_INBOX } from "./constants";
 import { MNexusSettingTab } from "./settings";
 import { Logger } from "./utils/logger";
+import { device } from "./device/detector";
 import { AudioRouter } from "./audio/router";
 import { AudioRegistry } from "./audio/registry";
 import { Transcriber } from "./audio/transcriber";
@@ -46,6 +47,7 @@ export default class MNexusPlugin extends Plugin {
 
   async onload() {
     this.log = new Logger("mnexus");
+    this.log.info(`Device profile: ${device.type().toUpperCase()} (${device.profile().width}x${device.profile().height}, touch=${device.profile().isTouch})`);
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
 
     // 1) Suscripción settings

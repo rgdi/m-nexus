@@ -160,19 +160,42 @@ class CalendarService {
     _selectedCalendarId = id;
   }
 
+  /// v0.37: devuelve el CalendarInfo del calendario seleccionado,
+  /// cacheando la lista para no pegarle al sistema cada vez.
+  Future<CalendarInfo?> getSelectedCalendarInfo() async {
+    if (_selectedCalendarId == null) return null;
+    final cals = await listCalendars();
+    try {
+      return cals.firstWhere((c) => c.id == _selectedCalendarId);
+    } catch (_) {
+      // El calendario seleccionado ya no existe
+      await setSelectedCalendar(null);
+      return null;
+    }
+  }
+  }
+
   /// Lista los eventos entre dos fechas.
+  /// v0.37: filtra por el calendario seleccionado (si hay uno guardado).
   Future<List<CalendarEvent>> listEvents({DateTime? from, DateTime? to}) async {
     if (!Platform.isAndroid) return [];
     if (!await isPermissionGranted()) return [];
     from ??= DateTime.now();
     to ??= DateTime.now().add(const Duration(days: 7));
     try {
+      // v0.37: pasar el calendarId seleccionado para filtrar en la query
       final raw = await _channel.invokeMethod<List<dynamic>>('listEvents', {
         'startMs': from.millisecondsSinceEpoch,
         'endMs': to.millisecondsSinceEpoch,
+        if (_selectedCalendarId != null) 'calendarId': _selectedCalendarId,
       });
       if (raw == null) return [];
-      return raw.map((e) => CalendarEvent.fromMap(e as Map)).toList();
+      var events = raw.map((e) => CalendarEvent.fromMap(e as Map)).toList();
+      // Filtro defensivo en cliente por si el sistema devuelve varios
+      if (_selectedCalendarId != null) {
+        events = events.where((e) => e.calendarId == _selectedCalendarId).toList();
+      }
+      return events;
     } catch (_) {
       return [];
     }

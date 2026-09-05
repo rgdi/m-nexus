@@ -1,7 +1,7 @@
 {
   "id": "m-nexus",
   "name": "M-NEXUS",
-  "version": "0.36.0",
+  "version": "0.37.0",
   "minAppVersion": "1.5.0",
   "description": "M-NEXUS v0.33.0 — Notion-style databases (typed properties, table/kanban/calendar views) + Secret Manager (AES-256-GCM) + Conflict Resolution (vector clocks per-field) + Chunked Upload resumable + Rollback con backups automáticos + FSRS async worker queue + Web Clipper (Chrome MV3) + Voice notes (speech_to_text 7.x) + Help page + Foreground recording service. 1162 tests plugin + 245 tests backend (1407 total). 0 errores TypeScript.",
   "author": "Rodrigo",
