@@ -3,6 +3,7 @@
 // v0.37: listEvents() ahora filtra por el calendario seleccionado
 // (tanto en el lado Dart como en el platform channel).
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mnexus_installer/services/calendar_service.dart';
@@ -12,6 +13,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
+    // Forzar Android platform (sino listEvents retorna [] por check de Platform)
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
     SharedPreferences.setMockInitialValues({});
     // Clear mock handler
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -19,6 +22,10 @@ void main() {
       const MethodChannel('com.mnexus.installer/calendar'),
       null,
     );
+  });
+
+  tearDown(() {
+    debugDefaultTargetPlatformOverride = null;
   });
 
   group('CalendarService.listEvents con calendarId', () {
