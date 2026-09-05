@@ -374,11 +374,12 @@ class AdvancedLogger {
       // Llamada directa al platform channel
       try {
         const channel = MethodChannel('com.mnexus.installer/logger');
-        Future.value().then((_) async { try { await channel.invokeMethod('log', {
+        // Fire-and-forget con catchError para evitar unhandled exceptions
+        channel.invokeMethod('log', {
           'level': entry.level.value,
           'tag': 'mnexus',
-            'message': line,
-        });
+          'message': line,
+        }).catchError((_) {});
       } catch (_) {
         // fallback
       }
