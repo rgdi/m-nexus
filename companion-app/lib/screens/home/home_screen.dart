@@ -45,14 +45,20 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _load() async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     final log = AdvancedLogger.instance;
     try {
       // Detectar vault
       final detector = VaultDetector();
       final vaults = await detector.detectVaults();
       if (vaults.isEmpty) {
-        setState(() { _loading = false; _error = 'No hay vaults' });
+        setState(() {
+          _loading = false;
+          _error = 'No hay vault';
+        });
         return;
       }
       _vault = VaultService(vaults.first.path);
