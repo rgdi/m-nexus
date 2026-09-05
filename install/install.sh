@@ -44,7 +44,7 @@ set -euo pipefail
 
 # ─── Constantes ───────────────────────────────────────────────────
 readonly SCRIPT_NAME="M-NEXUS Installer"
-readonly SCRIPT_VERSION="0.33.0"
+readonly SCRIPT_VERSION="0.35.0"
 readonly REPO_OWNER="rgdi"
 readonly REPO_NAME="m-nexus"
 readonly GITHUB_API="https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}"
