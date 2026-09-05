@@ -15,8 +15,8 @@ import 'services/logger.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/vault_list_page.dart';
 import 'screens/flashcards_hub_page.dart';
-import 'screens/settings_screen.dart';
-import 'screens/help_screen.dart';
+
+
 import 'utils/theme.dart';
 // Re-uso la home original (que tiene todos los features de settings/update/etc)
 // en un alias para evitar conflicto de nombre con esta MnexusApp
