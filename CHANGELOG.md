@@ -1,4 +1,38 @@
 # M-NEXUS Changelog
+## v0.37.0 (2026-09-05) - Update fix + Calendar select + Device-aware
+
+### Fixed
+- **Update dialog**: ya no se queda en "no puedo actualizar". Ahora:
+  - `AppUpdate.remoteVersionCode` (parseado del body de la release)
+  - `_isActuallyNewer()` previene downgrades (`NOT_NEWER_THAN_INSTALLED`)
+  - `downloadApk` con 3 reintentos + backoff + verificación de tamaño
+  - `installApk` con 2 reintentos + captura `install_failed`/`file_not_found`
+  - UI muestra `build N` en la card de versión
+- **Calendar**: ya no trae eventos de todos los calendarios
+  - `CalendarService.listEvents()` filtra por `calendarId` seleccionado
+  - `MainActivity.kt`: query nativa `CALENDAR_ID = ?`
+  - Filtro defensivo en cliente
+  - `getSelectedCalendarInfo()` muestra info del calendario activo
+
+### Added
+- **Plugin device-aware (mobile/tablet/PC)**:
+  - `src/device/detector.ts` detecta el tipo con:
+    - `Platform.isAndroidApp/isIosApp`
+    - `window.innerWidth` (mobile <600, tablet 600-1024, desktop >=1024)
+    - `matchMedia('(hover: hover)')` y `'(pointer: coarse)'`
+  - Reacciona a `resize` y `orientationchange` (debounce 150ms)
+  - Clases CSS en `<body>`: `mnexus-mobile`, `mnexus-tablet`, `mnexus-desktop`
+  - `styles.css`: layout adaptativo (1→2→4 columnas, modal 100%→90%→720px, tap targets 44px, hover solo en desktop)
+- `home_page.dart`: muestra calendario activo en el card con su color
+- Refactor: `Platform.isAndroid` → `_isAndroid` (mockable en tests)
+- Mock de `permission_handler` en tests pre-existentes
+
+### Tests
+- Plugin: 1162 → 1171 (+9 device detector)
+- Backend: 245 (sin cambios)
+- Companion: 40 → 44 (+4 calendar filter, +2 setSelectedCalendar, +2 getSelectedCalendarInfo)
+- **Total: 1460 pasando**
+
 ## v0.35.0 (2026-09-05) - Stability + UX fixes
 
 ### Added
