@@ -158,8 +158,8 @@ class AdvancedLogger {
   String _logDirPath = '';
   final int _maxBufferSize = 1000;
   final int _maxFileBytes = 5 * 1024 * 1024; // 5 MB
-  final bool _enableFile = true;
-  final bool _enableAdb = true;
+  bool _enableFile = true;
+  bool _enableAdb = true;
 
   // ── State ──────────────────────────────────────────
   final List<LogEntry> _buffer = [];
