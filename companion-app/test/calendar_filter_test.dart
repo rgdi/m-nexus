@@ -12,6 +12,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
+    // Reset prefs Y mock handler antes de cada test
     SharedPreferences.setMockInitialValues({});
   });
 
@@ -59,9 +60,13 @@ void main() {
         return null;
       });
 
+      // Primero seteo la prefs con el calendarId seleccionado
+      SharedPreferences.setMockInitialValues({
+        'mnexus.calendar.selected_id': 5,
+      });
+
       final service = CalendarService();
-      // Forzar calendarId = 5
-      await service.setSelectedCalendar(5);
+      await service.load(); // carga _selectedCalendarId = 5
 
       final events = await service.listEvents();
 
@@ -72,7 +77,8 @@ void main() {
 
       // Verificar que se pasó calendarId al platform channel
       final listCall = receivedCalls.firstWhere((c) => c.method == 'listEvents');
-      final args = listCall.arguments as Map; expect(args['calendarId'], 5);
+      final args = listCall.arguments as Map;
+      expect(args['calendarId'], 5);
     });
 
     test('no pasa calendarId si no hay calendario seleccionado', () async {
@@ -87,13 +93,15 @@ void main() {
         return null;
       });
 
+      // NO hay calendarId seleccionado
       final service = CalendarService();
-      // NO seleccionamos calendario
+      await service.load();
 
       await service.listEvents();
 
       final listCall = receivedCalls.firstWhere((c) => c.method == 'listEvents');
-      final args = listCall.arguments as Map; expect(args.containsKey('calendarId'), false);
+      final args = listCall.arguments as Map;
+      expect(args.containsKey('calendarId'), false);
     });
 
     test('filtra en cliente por si el sistema devuelve varios calendarios', () async {
@@ -128,8 +136,13 @@ void main() {
         return null;
       });
 
+      // Setear calendarId 5 en prefs antes
+      SharedPreferences.setMockInitialValues({
+        'mnexus.calendar.selected_id': 5,
+      });
+
       final service = CalendarService();
-      await service.setSelectedCalendar(5);
+      await service.load();
 
       final events = await service.listEvents();
 
@@ -147,17 +160,63 @@ void main() {
         return null;
       });
 
+      SharedPreferences.setMockInitialValues({
+        'mnexus.calendar.selected_id': 5,
+      });
+
       final service = CalendarService();
-      await service.setSelectedCalendar(5);
+      await service.load();
 
       final events = await service.listEvents();
       expect(events, isEmpty);
     });
   });
 
-  group('CalendarService.setSelectedCalendar', () {
-    test('persiste en SharedPreferences', () async {
-      // ... ya cubierto por setSelectedCalendar en el primer test
+  group('CalendarService.getSelectedCalendarInfo', () {
+    test('devuelve null si no hay calendario seleccionado', () async {
+      const channel = MethodChannel('com.mnexus.installer/calendar');
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
+        if (call.method == 'checkCalendarPermission') return true;
+        return [];
+      });
+
+      final service = CalendarService();
+      await service.load();
+      final info = await service.getSelectedCalendarInfo();
+      expect(info, isNull);
+    });
+
+    test('resetea selección si el calendario ya no existe', () async {
+      const channel = MethodChannel('com.mnexus.installer/calendar');
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
+        if (call.method == 'checkCalendarPermission') return true;
+        if (call.method == 'listCalendars') {
+          return [
+            {
+              'id': 99,
+              'name': 'Otro calendario',
+              'account': 'user@gmail.com',
+              'owner': 'user',
+              'color': 0xFF0000FF,
+              'visible': true,
+            },
+          ];
+        }
+        return [];
+      });
+
+      SharedPreferences.setMockInitialValues({
+        'mnexus.calendar.selected_id': 5, // no está en la lista devuelta
+      });
+
+      final service = CalendarService();
+      await service.load();
+      final info = await service.getSelectedCalendarInfo();
+      expect(info, isNull);
+      // La prefs debe haberse reseteado
+      expect(service.selectedCalendarId, isNull);
     });
   });
 }
