@@ -1,11 +1,13 @@
 // Tests para VaultService.
 
 import 'dart:io';
+import 'package:flutter/foundation.dart' show debugDefaultTargetPlatformOverride, TargetPlatform;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mnexus_installer/services/vault_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  debugDefaultTargetPlatformOverride = TargetPlatform.android;
 
   late Directory tmpDir;
 

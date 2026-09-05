@@ -1,6 +1,7 @@
 // Tests para FlashcardService.
 
 import 'dart:io';
+import 'package:flutter/foundation.dart' show debugDefaultTargetPlatformOverride, TargetPlatform;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mnexus_installer/services/flashcard_service.dart';
 import 'package:mnexus_installer/core/constants.dart';
@@ -8,6 +9,7 @@ import 'package:path/path.dart' as p;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  debugDefaultTargetPlatformOverride = TargetPlatform.android;
 
   late Directory tmpDir;
 
