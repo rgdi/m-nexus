@@ -314,7 +314,67 @@ install_plugin() {
         warn "No se pudo descargar el plugin. Encontrá la URL de instalación en https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/tag/v${version}"
         return 0
     fi
-    cat > "$plugin_dir/INSTALL.md" <<EOF
+
+    # v0.36: intentar instalar el plugin directamente en un vault de Obsidian
+    # si el usuario pasa --vault=/ruta/al/vault
+    local vault_path=""
+    for arg in "${CLI_ARGS[@]}"; do
+        if [[ "$arg" == --vault=* ]]; then
+            vault_path="${arg#--vault=}"
+            break
+        fi
+    done
+
+    # Si no, intentar detectar el vault por defecto (~/.obsidian, ~/Documents, etc.)
+    if [[ -z "$vault_path" ]]; then
+        local candidate
+        for candidate in \
+            "$HOME/Documents" \
+            "$HOME/Documents/ObsidianVault" \
+            "$HOME/ObsidianVault" \
+            "$HOME/obsidian" \
+            "$HOME/Documents/Notes"; do
+            if [[ -d "$candidate" && -d "$candidate/.obsidian" ]]; then
+                vault_path="$candidate"
+                break
+            fi
+        done
+    fi
+
+    # Si encontramos vault, instalamos directo + activamos
+    if [[ -n "$vault_path" && -d "$vault_path" ]]; then
+        log "Vault detectado: $vault_path"
+        local obsidian_dir="$vault_path/.obsidian"
+        local plugins_root="$obsidian_dir/plugins/m-nexus"
+        mkdir -p "$plugins_root"
+        unzip -oq "$plugin_dir/m-nexus-plugin-v${version}.zip" -d "$plugins_root"
+
+        # v0.36: ACTIVAR el plugin en community-plugins.json
+        local comm_file="$obsidian_dir/community-plugins.json"
+        if [[ ! -f "$comm_file" ]]; then
+            echo '[]' > "$comm_file"
+        fi
+        # Añadir "m-nexus" si no está
+        if command -v jq &>/dev/null; then
+            tmp=$(mktemp)
+            jq --arg p "m-nexus" '. + [$p] | unique' "$comm_file" > "$tmp" && mv "$tmp" "$comm_file"
+        else
+            # Fallback sin jq
+            if ! grep -q '"m-nexus"' "$comm_file" 2>/dev/null; then
+                local content
+                content=$(cat "$comm_file")
+                if [[ "$content" == "[]" ]]; then
+                    echo '["m-nexus"]' > "$comm_file"
+                else
+                    # Insertar antes del ]
+                    sed -i 's/]$/,"m-nexus"]/' "$comm_file"
+                fi
+            fi
+        fi
+        ok "Plugin instalado y ACTIVADO en $vault_path"
+        ok "Reiniciá Obsidian para que tome el plugin."
+    else
+        cat > "$plugin_dir/INSTALL.md" <<EOF
 # Instalar el plugin v${version} en Obsidian
 
 1. Abrí Obsidian
@@ -326,8 +386,10 @@ install_plugin() {
 7. Reiniciá Obsidian
 8. Habilitá M-NEXUS en Community plugins
 EOF
-    ok "Plugin guardado en $plugin_dir/m-nexus-plugin-v${version}.zip"
-    ok "Instrucciones en $plugin_dir/INSTALL.md"
+        ok "Plugin guardado en $plugin_dir/m-nexus-plugin-v${version}.zip"
+        ok "Instrucciones en $plugin_dir/INSTALL.md"
+        log "💡 Tip: pasá --vault=/ruta/al/vault para que lo instale y active automáticamente"
+    fi
 }
 
 # ─── Instalar companion (solo descargar APK) ───────────────────
