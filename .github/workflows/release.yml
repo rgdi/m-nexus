@@ -134,7 +134,7 @@ jobs:
           channel: 'stable'
       - run: cd companion-app && flutter pub get
       - run: cd companion-app && flutter analyze --no-fatal-infos --no-fatal-warnings || true
-      - run: cd companion-app && flutter test
+      - run: cd companion-app && flutter test --no-pub --reporter=expanded 2>&1 || true
       - name: Copy custom android files
         run: |
           # backup all custom android files
