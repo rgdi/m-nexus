@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import '../models/vault_info.dart';
 import '../services/vault_detector.dart';
-import 'flashcards_viewer.dart';
+import '../ui/flashcards_viewer.dart';
 
 class FlashcardsHubPage extends StatefulWidget {
   const FlashcardsHubPage({super.key});

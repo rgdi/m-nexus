@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import '../models/vault_info.dart';
 import '../services/vault_detector.dart';
-import 'vault_browser_page.dart';
+import '../ui/vault_browser_page.dart';
 
 class VaultListPage extends StatefulWidget {
   const VaultListPage({super.key});
