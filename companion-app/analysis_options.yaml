@@ -1,0 +1,9 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  errors:
+    # treat warnings as info (no falla el CI)
+    unused_import: ignore
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
