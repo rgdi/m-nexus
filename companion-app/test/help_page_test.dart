@@ -11,7 +11,7 @@ void main() {
       .setMockMethodCallHandler(
     const MethodChannel('flutter.baseflow.com/permissions/methods'),
     (call) async {
-      if (call.method == 'checkPermissionStatus') return {'permission': 0, 'status': 0};
+      if (call.method == 'checkPermissionStatus') return 0;
       if (call.method == 'requestPermissions') return {0: 0};
       return null;
     },
