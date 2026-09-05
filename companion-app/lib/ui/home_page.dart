@@ -43,6 +43,7 @@ class _HomePageState extends State<HomePage> {
   CalendarEvent? _upcomingClass;
   List<CalendarEvent> _upcomingEvents = [];
   List<CalendarInfo> _availableCalendars = [];
+  CalendarInfo? _selectedCalendarInfo;
   int? _selectedCalendarId;
   List<PermissionStatus> _permissions = [];
   AppInfo? _appInfo;
@@ -95,6 +96,8 @@ class _HomePageState extends State<HomePage> {
           _selectedCalendarId = _availableCalendars.first.id;
           await _calendar!.setSelectedCalendar(_selectedCalendarId);
         }
+        // v0.37: obtener info del calendario activo (para mostrar en UI)
+        _selectedCalendarInfo = await _calendar!.getSelectedCalendarInfo();
         _upcomingClass = await _calendar!.suggestCurrentEvent();
         _upcomingEvents = await _calendar!.listUpcoming(limit: 5);
       }
@@ -797,6 +800,42 @@ class _HomePageState extends State<HomePage> {
       color: isHappening ? Colors.green.shade50 : theme.colorScheme.primaryContainer,
       child: Column(
         children: [
+          // v0.37: muestra el calendario activo si hay uno
+          if (_selectedCalendarInfo != null)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              color: Color(_selectedCalendarInfo!.color).withOpacity(0.15),
+              child: Row(
+                children: [
+                  Container(
+                    width: 12, height: 12,
+                    decoration: BoxDecoration(
+                      color: Color(_selectedCalendarInfo!.color),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Calendario: ${_selectedCalendarInfo!.name}',
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (_availableCalendars.length > 1)
+                    TextButton.icon(
+                      icon: const Icon(Icons.swap_horiz, size: 14),
+                      label: const Text('Cambiar', style: TextStyle(fontSize: 11)),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        minimumSize: const Size(0, 28),
+                      ),
+                      onPressed: _showCalendarSelector,
+                    ),
+                ],
+              ),
+            ),
           ListTile(
             leading: Icon(
               isHappening ? Icons.event_available : Icons.event,
