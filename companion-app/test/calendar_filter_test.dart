@@ -72,7 +72,7 @@ void main() {
 
       // Verificar que se pasó calendarId al platform channel
       final listCall = receivedCalls.firstWhere((c) => c.method == 'listEvents');
-      expect(listCall.arguments, containsPair('calendarId', 5));
+      final args = listCall.arguments as Map; expect(args['calendarId'], 5);
     });
 
     test('no pasa calendarId si no hay calendario seleccionado', () async {
@@ -93,7 +93,7 @@ void main() {
       await service.listEvents();
 
       final listCall = receivedCalls.firstWhere((c) => c.method == 'listEvents');
-      expect(listCall.arguments, isNot(contains('calendarId')));
+      final args = listCall.arguments as Map; expect(args.containsKey('calendarId'), false);
     });
 
     test('filtra en cliente por si el sistema devuelve varios calendarios', () async {
