@@ -155,7 +155,6 @@ jobs:
       - name: Patch plugin build.gradle for AGP 8.3 compat
         run: bash app/android/fix-plugins.sh
       - name: Build APK
-        continue-on-error: true
         run: |
           cd app
           flutter build apk --release --verbose 2>&1 | tee /tmp/build.log
