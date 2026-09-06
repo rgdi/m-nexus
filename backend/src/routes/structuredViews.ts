@@ -4,6 +4,9 @@ import type { FastifyInstance } from "fastify";
 import type { ViewSchema } from "../services/structuredNotes.js";
 import { vaultDatabases, vaultViews } from "./structuredStore.js";
 
+export async function registerViewRoutes(app: FastifyInstance): Promise<void> {
+
+  app.get<{ Params: { id: string } }>("/api/v1/databases/:id/views", async (req, reply) => {
     for (const [, byDb] of vaultViews) {
       const dbViews = byDb.get(req.params.id);
       if (dbViews) {
@@ -13,8 +16,6 @@ import { vaultDatabases, vaultViews } from "./structuredStore.js";
     return reply.send({ views: [] });
   });
 
-
-export async function registerViewRoutes(app: FastifyInstance): Promise<void> {
   app.post<{ Params: { id: string }; Body: Partial<ViewSchema> }>(
     "/api/v1/databases/:id/views",
     async (req, reply) => {

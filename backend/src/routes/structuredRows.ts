@@ -1,9 +1,12 @@
 // Structured routes: rows CRUD.
 
 import type { FastifyInstance } from "fastify";
-import type { NoteRow } from "../services/structuredNotes.js";
+import type { NoteRow, DatabaseSchema } from "../services/structuredNotes.js";
 import { vaultDatabases, vaultRows } from "./structuredStore.js";
 
+export async function registerRowRoutes(app: FastifyInstance): Promise<void> {
+
+  app.get<{
     Params: { id: string };
     Querystring: { filters?: string; sort?: string; limit?: number; offset?: number };
   }>("/api/v1/databases/:id/rows", async (req, reply) => {
@@ -32,8 +35,6 @@ import { vaultDatabases, vaultRows } from "./structuredStore.js";
     return reply.send({ rows: paged, total: rows.length, offset, limit });
   });
 
-
-export async function registerRowRoutes(app: FastifyInstance): Promise<void> {
   app.post<{ Params: { id: string }; Body: Partial<NoteRow> & { path: string } }>(
     "/api/v1/databases/:id/rows",
     async (req, reply) => {
@@ -153,6 +154,3 @@ export async function registerRowRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(404).send({ code: "NOT_FOUND" });
     }
   );
-
-
-  app.get<{ Params: { id: string } }>("/api/v1/databases/:id/views", async (req, reply) => {

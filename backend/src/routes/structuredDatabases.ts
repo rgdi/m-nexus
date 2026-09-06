@@ -4,9 +4,8 @@ import type { FastifyInstance } from "fastify";
 import type { DatabaseSchema } from "../services/structuredNotes.js";
 import { vaultDatabases, getOrCreate } from "./structuredStore.js";
 
-
-
 export async function registerDatabaseRoutes(app: FastifyInstance): Promise<void> {
+
   app.get("/api/v1/databases", async (req, reply) => {
     const vaultId = (req.query as { vaultId?: string }).vaultId ?? "default";
     const dbs = Array.from((vaultDatabases.get(vaultId) ?? new Map()).values());
@@ -84,6 +83,3 @@ export async function registerDatabaseRoutes(app: FastifyInstance): Promise<void
     }
     return reply.code(404).send({ code: "NOT_FOUND" });
   });
-
-
-  app.get<{
