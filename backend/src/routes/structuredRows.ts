@@ -1,9 +1,19 @@
 // Structured routes: rows CRUD.
 
 import type { FastifyInstance } from "fastify";
-import type { NoteRow, DatabaseSchema } from "../services/structuredNotes.js";
-import { vaultDatabases, vaultRows } from "./structuredStore.js";
-import { genId } from "../services/structuredNotes.js";
+import {
+  type NoteRow,
+  type DatabaseSchema,
+  type Filter,
+  type SortRule,
+  applyFilters,
+  applySorts,
+  validatePropertyValue,
+  hashContent,
+  genId,
+} from "../services/structuredNotes.js";
+import { vaultDatabases, vaultRows, resolver, getOrCreate } from "./structuredStore.js";
+import { logger } from "../utils/log.js";
 
 export async function registerRowRoutes(app: FastifyInstance): Promise<void> {
 
