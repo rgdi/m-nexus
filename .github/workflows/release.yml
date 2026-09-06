@@ -160,10 +160,16 @@ jobs:
       - name: Copy APK
         run: |
           mkdir -p $GITHUB_WORKSPACE/artifacts
-          if [ -f app/build/app/outputs/flutter-apk/app-release.apk ]; then
-            cp app/build/app/outputs/flutter-apk/app-release.apk $GITHUB_WORKSPACE/artifacts/m-nexus-app-${{ needs.set-version.outputs.ref_name }}.apk
-            cp $GITHUB_WORKSPACE/artifacts/m-nexus-app-${{ needs.set-version.outputs.ref_name }}.apk $GITHUB_WORKSPACE/artifacts/m-nexus-app.apk
+          if [ ! -f app/build/app/outputs/flutter-apk/app-release.apk ]; then
+            echo "::error::APK not found at app/build/app/outputs/flutter-apk/app-release.apk"
+            ls -la app/build/app/outputs/flutter-apk/ 2>/dev/null || true
+            find app/build -name "*.apk" 2>/dev/null || true
+            exit 1
           fi
+          cp app/build/app/outputs/flutter-apk/app-release.apk $GITHUB_WORKSPACE/artifacts/m-nexus-app-${{ needs.set-version.outputs.ref_name }}.apk
+          cp $GITHUB_WORKSPACE/artifacts/m-nexus-app-${{ needs.set-version.outputs.ref_name }}.apk $GITHUB_WORKSPACE/artifacts/m-nexus-app.apk
+          echo "APK copied successfully:"
+          ls -la $GITHUB_WORKSPACE/artifacts/
       - uses: actions/upload-artifact@v4
         with:
           name: app
