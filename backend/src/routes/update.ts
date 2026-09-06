@@ -1,10 +1,5 @@
 // v0.30: Endpoints de auto-actualización del backend.
-//
-// - GET  /api/v1/update           -> info (usa cache 5 min)
-// - POST /api/v1/update/check     -> fuerza check (limpia cache)
-// - POST /api/v1/update/apply     -> descarga + extrae + reinicia
-//
-// Proteger con auth de admin (mismo que /api/v1/auth/devices o similar)
+// v0.45: error codes estructurados con AppError.
 
 import { FastifyInstance } from "fastify";
 import {
@@ -14,79 +9,85 @@ import {
   applyUpdate,
   detectRestartCommand,
 } from "../utils/updateChecker.js";
-import { logger } from "../utils/log.js";
+import { logger, logLifecycle, logOp } from "../utils/log.js";
+import { E } from "../utils/errorCodes.js";
+import { safeCallAsync } from "../utils/safeCall.js";
 import { join } from "node:path";
 import { homedir } from "node:os";
 
 const REPO_ROOT = process.env.MNEXUS_REPO_ROOT ?? join(homedir(), ".mnexus");
 
 export async function updateRoutes(app: FastifyInstance): Promise<void> {
-  /**
-   * GET /api/v1/update
-   * Público: solo info, sin daño.
-   * Devuelve { currentVersion, latestVersion, hasUpdate, downloadUrl, ... }
-   * Usa cache de 5 min para no martillar la API de GitHub.
-   */
+  // GET /api/v1/update
   app.get("/api/v1/update", async (req, reply) => {
-    try {
-      const allowPrerelease = (req.query as { prerelease?: string }).prerelease === "1" || (req.query as { prerelease?: string }).prerelease === "true";
-      const info = await getUpdateInfoCached(allowPrerelease);
-      return info;
-    } catch (e) {
-      reply.code(500);
-      return { error: "update_check_failed", message: (e as Error).message };
-    }
+    const r = await safeCallAsync({
+      component: "up",
+      code: "EC-UP-010",
+      message: "update info check failed",
+      context: { allowPrerelease: req.query },
+      op: async () => {
+        const allowPrerelease = (req.query as { prerelease?: string }).prerelease === "1" ||
+                                  (req.query as { prerelease?: string }).prerelease === "true";
+        const info = await getUpdateInfoCached(allowPrerelease);
+        logOp("up", "check", true, { hasUpdate: info.hasUpdate, latest: info.latestVersion });
+        return info;
+      },
+    });
+    if (!r.success || !r.value) throw r.error!;
+    return r.value;
   });
 
-  /**
-   * POST /api/v1/update/check
-   * Fuerza un check (limpia cache y vuelve a consultar).
-   */
+  // POST /api/v1/update/check
   app.post("/api/v1/update/check", async (req, reply) => {
-    try {
-      clearUpdateCache();
-      const allowPrerelease = (req.body as { prerelease?: boolean })?.prerelease === true;
-      const info = await getUpdateInfo(allowPrerelease);
-      return info;
-    } catch (e) {
-      reply.code(500);
-      return { error: "update_check_failed", message: (e as Error).message };
-    }
+    const r = await safeCallAsync({
+      component: "up",
+      code: "EC-UP-011",
+      message: "update force check failed",
+      context: { allowPrerelease: (req.body as { prerelease?: boolean })?.prerelease },
+      op: async () => {
+        clearUpdateCache();
+        const allowPrerelease = (req.body as { prerelease?: boolean })?.prerelease === true;
+        const info = await getUpdateInfo(allowPrerelease);
+        logOp("up", "force check", true, { hasUpdate: info.hasUpdate, latest: info.latestVersion });
+        return info;
+      },
+    });
+    if (!r.success || !r.value) throw r.error!;
+    return r.value;
   });
 
-  /**
-   * POST /api/v1/update/apply
-   * Descarga, respalda, extrae y reinicia.
-   * OJO: esto REEMPLAZA los archivos del backend en producción.
-   */
+  // POST /api/v1/update/apply
   app.post("/api/v1/update/apply", async (req, reply) => {
-    try {
-      const allowPrerelease = (req.body as { prerelease?: boolean })?.prerelease === true;
-      const info = await getUpdateInfo(allowPrerelease);
-      if (!info.hasUpdate) {
-        reply.code(400);
-        return { error: "no_update_available", info };
-      }
-      const targetDir = process.env.MNEXUS_BACKEND_DIR ?? REPO_ROOT;
-      const backupDir = join(targetDir, "..", "mnexus-backups");
-      const workDir = join(targetDir, "..", "mnexus-staging");
-      const restartCmd = detectRestartCommand();
-
-      logger.info(`[update] applying v${info.latestVersion} (from v${info.currentVersion})`);
-      const result = await applyUpdate(info, {
-        targetDir,
-        backupDir,
-        workDir,
-        restartCmd,
-      });
-      if (!result.ok) {
-        reply.code(500);
-        return { error: "apply_failed", ...result };
-      }
-      return result;
-    } catch (e) {
-      reply.code(500);
-      return { error: "apply_failed", message: (e as Error).message };
-    }
+    const r = await safeCallAsync({
+      component: "up",
+      code: "EC-UP-012",
+      message: "update apply failed",
+      context: { allowPrerelease: (req.body as { prerelease?: boolean })?.prerelease },
+      op: async () => {
+        const allowPrerelease = (req.body as { prerelease?: boolean })?.prerelease === true;
+        const info = await getUpdateInfo(allowPrerelease);
+        if (!info.hasUpdate) {
+          throw E.val("EC-UP-013", "no update available", {
+            context: { current: info.currentVersion, latest: info.latestVersion },
+            hint: "Already on the latest version",
+          });
+        }
+        const targetDir = process.env.MNEXUS_BACKEND_DIR ?? REPO_ROOT;
+        const backupDir = join(targetDir, "..", "mnexus-backups");
+        const workDir = join(targetDir, "..", "mnexus-staging");
+        const restartCmd = detectRestartCommand();
+        logLifecycle("up", "applying update", { from: info.currentVersion, to: info.latestVersion });
+        const result = await applyUpdate(info, { targetDir, backupDir, workDir, restartCmd });
+        if (!result.ok) {
+          throw E.up("EC-UP-014", "apply failed", {
+            context: { result },
+            hint: "Check logs and disk space",
+          });
+        }
+        return result;
+      },
+    });
+    if (!r.success || !r.value) throw r.error!;
+    return r.value;
   });
 }

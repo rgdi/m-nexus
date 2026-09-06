@@ -3,7 +3,7 @@
 // Recibe la evaluación del vault y los snapshots, devuelve proposals estructurados.
 
 import { E } from "../utils/errorCodes.js";
-import { safeCallAsync, safeCallOrNull } from "../utils/safeCall.js";
+import { safeCall } from "../utils/safeCall.js";
 import { logOp, logError } from "../utils/log.js";
 import type { VaultEvaluationResult, NoteSnapshotInput } from "./vaultEval.js";
 import { genProposalId, type Proposal } from "./proposalsTypes.js";
@@ -119,6 +119,20 @@ export interface GenerateProposalsResult {
 }
 
 export function generateProposals(input: GenerateProposalsInput): GenerateProposalsResult {
+  return safeCall<GenerateProposalsResult>({
+    component: "prop",
+    code: "EC-PROP-001",
+    message: "generateProposals failed",
+    context: { snapshotCount: input.snapshots?.length ?? 0 },
+    op: () => {
+      return generateProposalsInner(input) as GenerateProposalsResult;
+    },
+  }).value as GenerateProposalsResult ?? {
+    study: [], flashcards: [], tags: [], links: [], gaps: [], stats: { total: 0, byType: {} },
+  } as unknown as GenerateProposalsResult;
+}
+
+function generateProposalsInner(input: GenerateProposalsInput): GenerateProposalsResult {
   const { evaluation, snapshots, config } = input;
   const proposals: Proposal[] = [];
   const byType: Record<string, number> = {};

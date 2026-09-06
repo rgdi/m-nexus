@@ -12,7 +12,9 @@ import {
   type AnswerResult, type SessionResult, type KnowledgeLayer,
   type KnowledgeConcept, createConcept,
 } from "../services/adaptiveQuiz.js";
-import { logger } from "../utils/log.js";
+import { logger, logOp } from "../utils/log.js";
+import { E } from "../utils/errorCodes.js";
+import { safeCallAsync } from "../utils/safeCall.js";
 
 // Store en memoria de sesiones y graphs por usuario
 // En producción, esto debería estar en Redis o similar para multi-instancia
@@ -30,12 +32,29 @@ function getOrCreateGraph(userId: string): KnowledgeGraph {
 
 export async function aiRoutes(app: FastifyInstance): Promise<void> {
   // ── Vault evaluation ────────────────────────────────
-  app.post<{ Body: { snapshots: NoteSnapshotInput[] } }>(
+  app.post<{ Body: { snapshots?: NoteSnapshotInput[] } }>(
     "/api/v1/ai/vault/eval",
     async (req) => {
       const { snapshots } = req.body;
-      const result = evaluateVault(snapshots);
-      return result;
+      const r = await safeCallAsync({
+        component: "eval",
+        code: "EC-EVAL-010",
+        message: "vault eval endpoint failed",
+        context: { snapshotCount: snapshots?.length ?? 0 },
+        op: async () => {
+          if (!snapshots) {
+            throw E.val("EC-EVAL-011", "snapshots requerido", {
+              context: { bodyKeys: Object.keys(req.body ?? {}) },
+              hint: "Send { snapshots: [...] }",
+            });
+          }
+          const result = evaluateVault(snapshots);
+          logOp("eval", "vault eval", true, { snapshotCount: snapshots.length, totalNotes: result.totalNotes });
+          return result;
+        },
+      });
+      if (!r.success || !r.value) throw r.error!;
+      return r.value;
     },
   );
 
@@ -43,8 +62,19 @@ export async function aiRoutes(app: FastifyInstance): Promise<void> {
   app.post<{ Body: GenerateProposalsInput }>(
     "/api/v1/ai/proposals/generate",
     async (req) => {
-      const result = generateProposals(req.body);
-      return result;
+      const r = await safeCallAsync({
+        component: "prop",
+        code: "EC-PROP-010",
+        message: "proposals generate failed",
+        context: { snapshotCount: req.body?.snapshots?.length ?? 0 },
+        op: async () => {
+          const result = generateProposals(req.body);
+          logOp("prop", "generate", true, { total: result.stats.generated });
+          return result;
+        },
+      });
+      if (!r.success || !r.value) throw r.error!;
+      return r.value;
     },
   );
 

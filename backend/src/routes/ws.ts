@@ -9,6 +9,9 @@ import { verifyAccessToken } from "../auth/jwt.js";
 import { isDeviceRegistered } from "../auth/devices.js";
 import { audit } from "../auth/audit.js";
 import { getMetrics } from "../utils/metrics.js";
+import { E } from "../utils/errorCodes.js";
+import { safeCallAsync, safeCallOrNull } from "../utils/safeCall.js";
+import { logOp, logError } from "../utils/log.js";
 
 interface ClientMessage {
   type: "start" | "audio" | "end";
@@ -21,20 +24,33 @@ interface ClientMessage {
 export async function wsRoutes(app: FastifyInstance): Promise<void> {
   const whisper = new WhisperService();
 
-  app.get("/api/v1/audio/transcribe/stream", { websocket: true }, (socket, req) => {
+  app.get("/api/v1/audio/transcribe/stream", { websocket: true }, async (socket, req) => {
     const url = new URL(req.url, `http://${req.headers.host ?? "localhost"}`);
     const token = url.searchParams.get("token") ?? (req.headers["sec-websocket-protocol"] as string);
     let deviceId: string;
-    try {
-      const payload = verifyAccessToken(token);
-      if (!isDeviceRegistered(payload.sub)) throw new Error("not registered");
-      deviceId = payload.sub;
-    } catch {
-      audit({ deviceId: "(unknown)", action: "ws.error", allowed: false, meta: { reason: "auth_failed" } });
-      socket.send(JSON.stringify({ type: "error", message: "Unauthorized" }));
+    const authR = await safeCallAsync({
+      component: "auth",
+      code: "EC-WS-001",
+      message: "ws auth failed",
+      context: { hasToken: !!token },
+      op: async () => {
+        const payload = verifyAccessToken(token);
+        if (!isDeviceRegistered(payload.sub)) {
+          throw E.auth("EC-WS-002", "Device not registered", {
+            context: { deviceId: payload.sub },
+            hint: "POST /api/v1/register first",
+          });
+        }
+        return payload.sub;
+      },
+    });
+    if (!authR.success || !authR.value) {
+      audit({ deviceId: "(unknown)", action: "ws.error", allowed: false, meta: { reason: "auth_failed", code: authR.error?.code } });
+      socket.send(JSON.stringify({ type: "error", code: authR.error?.code, message: authR.error?.message ?? "Unauthorized" }));
       socket.close();
       return;
     }
+    deviceId = authR.value;
     audit({ deviceId, action: "ws.connect", allowed: true });
     getMetrics().incCounter("mnexus_ws_connections_total", { device: deviceId });
 
