@@ -38,11 +38,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       final s = await SettingsService().load();
       if (!mounted) return;
-      log.debug('settings', 'settings loaded', context: {
-        'themeMode': s.themeMode.name,
-        'fontScale': s.fontScale,
-        'hasBackend': s.backendUrl != null,
-      });
+      log.debug('settings', 'settings loaded', context: s.toJson());
       setState(() {
         _settings = s;
         _loading = false;
@@ -57,12 +53,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _save() async {
     try {
       await SettingsService().save(_settings);
-      AdvancedLogger.instance.info('settings', 'settings saved', context: {
-        'themeMode': _settings.themeMode.name,
-        'fontScale': _settings.fontScale,
-        'hasBackend': _settings.backendUrl != null,
-        'haptics': _settings.enableHaptics,
-      });
+      AdvancedLogger.instance.info('settings', 'settings saved', context: _settings.toJson());
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Guardado'), duration: Duration(seconds: 1)),
