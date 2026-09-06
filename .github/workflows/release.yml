@@ -244,7 +244,7 @@ jobs:
             echo "Tag $TAG not found locally, creating and pushing"
             git config user.email "actions@github.com"
             git config user.name "GitHub Actions"
-            git tag "$TAG"
+            git tag -f "$TAG" HEAD
             git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$TAG" || true
           fi
           # Set it for later steps
@@ -263,8 +263,8 @@ jobs:
       - name: Recreate tag pointing to current commit
         run: |
           TAG="${{ env.TAG }}"
-          git tag "$TAG" HEAD
-          git push "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" "$TAG"
+          git tag -f "$TAG" HEAD
+          git push "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" -f "$TAG"
       - name: Create Release with assets (gh CLI)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
