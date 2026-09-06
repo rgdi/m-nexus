@@ -1,6 +1,6 @@
 // Adaptive widgets: typography, padding, grids según dispositivo.
 import 'package:flutter/material.dart';
-import '../services/device_info.dart';
+import '../../services/device_info.dart';
 
 /// Tipografía que se adapta al form factor y perf tier.
 class AdaptiveText extends StatelessWidget {
