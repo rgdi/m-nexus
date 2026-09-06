@@ -4,7 +4,7 @@ export * from "./adaptiveQuizTypes.js";
 
 import type { KnowledgeLayer } from "./adaptiveQuizTypes.js";
 import { LAYER_ORDER } from "./adaptiveQuizTypes.js";
-import type { KnowledgeConcept, ConceptLayer, KnowledgeGraph, KnowledgeGap } from "./adaptiveQuizTypes.js";
+import type { KnowledgeConcept, ConceptLayer, KnowledgeGraph } from "./adaptiveQuizTypes.js";
 
 /** Crea un concept vacío. */
 export function createConcept(id: string, term: string, opts: Partial<KnowledgeConcept> = {}): KnowledgeConcept {

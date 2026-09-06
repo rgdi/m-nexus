@@ -1,5 +1,13 @@
 // Cross-relevance: main analyzer.
 
+import type {
+  NoteDocument,
+  CrossMatch,
+  FactCheckIssue,
+  CrossRelevanceOptions,
+} from "./crossRelevanceTypes.js";
+import { DEFAULT_OPTIONS } from "./crossRelevanceTypes.js";
+
 // v0.25: Sistema de relevancia cruzada.
 // Conecta notas, audios de clase, y PDFs/libros del temario.
 // Detecta qué información se repite entre fuentes y la enlaza.
