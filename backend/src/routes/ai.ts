@@ -58,9 +58,9 @@ export async function aiRoutes(app: FastifyInstance): Promise<void> {
         stats: {
           total: allConcepts(g).length,
           byMastery: {
-            low: allConcepts(g).filter((c) => Object.values(c.layers).some((l: { mastery: number }) => l.mastery < 0.4)).length,
-            mid: allConcepts(g).filter((c) => Object.values(c.layers).some((l: { mastery: number }) => l.mastery >= 0.4 && l.mastery < 0.8)).length,
-            high: allConcepts(g).filter((c) => Object.values(c.layers).every((l: { mastery: number }) => l.mastery >= 0.8)).length,
+            low: allConcepts(g).filter((c) => (Object.values(c.layers) as Array<{ mastery: number }>).some((l) => l.mastery < 0.4)).length,
+            mid: allConcepts(g).filter((c) => (Object.values(c.layers) as Array<{ mastery: number }>).some((l) => l.mastery >= 0.4 && l.mastery < 0.8)).length,
+            high: allConcepts(g).filter((c) => (Object.values(c.layers) as Array<{ mastery: number }>).every((l) => l.mastery >= 0.8)).length,
           },
         },
       };
