@@ -1,4 +1,4 @@
-// Structured routes: databases + rows + views (orchestrator).
+// Structured routes orchestrator: databases + rows + views.
 
 import type { FastifyInstance } from "fastify";
 import { registerDatabaseRoutes } from "./structuredDatabases.js";
