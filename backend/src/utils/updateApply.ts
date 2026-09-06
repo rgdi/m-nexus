@@ -1,6 +1,6 @@
 // Apply updates: backup, download, replace.
 
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, statSync, createWriteStream, rmSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { execSync } from "node:child_process";
 import { logger } from "./log.js";
