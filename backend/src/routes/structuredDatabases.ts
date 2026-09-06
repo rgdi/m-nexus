@@ -83,3 +83,4 @@ export async function registerDatabaseRoutes(app: FastifyInstance): Promise<void
     }
     return reply.code(404).send({ code: "NOT_FOUND" });
   });
+}

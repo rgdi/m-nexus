@@ -1,5 +1,12 @@
 // Apply updates: backup, download, replace.
 
+import { existsSync, mkdirSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { execSync } from "node:child_process";
+import { logger } from "./log.js";
+import type { UpdateCheckResult } from "./updateChecker.js";
+
+export interface ApplyUpdateOptions {
   targetDir: string;        // donde está el backend instalado (process.cwd() por defecto)
   backupDir: string;        // donde guardar el backup (targetDir/../backups)
   workDir: string;          // donde descargar el ZIP temporal

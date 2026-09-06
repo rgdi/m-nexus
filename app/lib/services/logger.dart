@@ -11,6 +11,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'logger_models.dart';
 
+class AdvancedLogger {
   static AdvancedLogger? _instance;
   static AdvancedLogger get instance {
     _instance ??= AdvancedLogger._();
@@ -306,4 +307,6 @@ import 'logger_models.dart';
       return false;
     }
   }
+}
+
 }
