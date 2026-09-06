@@ -6,7 +6,12 @@ import type {
   FactCheckIssue,
   CrossRelevanceOptions,
 } from "./crossRelevanceTypes.js";
-import { DEFAULT_OPTIONS } from "./crossRelevanceTypes.js";
+import {
+  DEFAULT_OPTIONS,
+  textSimilarity,
+  findSharedPhrases,
+  detectContradiction,
+} from "./crossRelevanceTypes.js";
 
 // v0.25: Sistema de relevancia cruzada.
 // Conecta notas, audios de clase, y PDFs/libros del temario.
