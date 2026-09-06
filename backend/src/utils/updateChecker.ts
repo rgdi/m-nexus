@@ -220,9 +220,3 @@ export async function checkForUpdatesOnStartup(): Promise<void> {
     logger.info(`Versión actual v${VERSION} es la última estable`);
   }
 }
-
-// ──────────────────────────────────────────────────────────────────
-// Apply update (download + extract + restart)
-// ──────────────────────────────────────────────────────────────────
-
-export interface ApplyUpdateOptions {
