@@ -5,7 +5,7 @@
 [![Tests](https://img.shields.io/badge/tests-300%2B%20passing-brightgreen)]()
 [![Topic](https://img.shields.io/badge/topics-15-blue)]()
 
-> **v0.43.0** · App standalone (sin Obsidian), Material 3, AdaptiveScaffold, atajos de teclado estilo Obsidian, búsqueda full-text, FSRS spaced repetition, voice notes, multi-dispositivo (Android + Web)
+> **v0.45.0** · App standalone (sin Obsidian), Material 3, AdaptiveScaffold, atajos de teclado estilo Obsidian, búsqueda full-text, FSRS spaced repetition, voice notes, multi-dispositivo (Android + Web)
 
 **M-NEXUS** = backend Node.js + app standalone Flutter
 para estudio médico con IA en el loop. App 100% independiente: vault local en Android (SAF), markdown viewer, flashcards con FSRS, voice notes, calendar, dashboard adaptativo, atajos de teclado.
@@ -19,7 +19,7 @@ Diseñado para ser **humano en el loop**: la IA propone, tú decides.
 ```
 ┌─────────────────┐         ┌──────────────────────────┐
 │  Backend Node   │  ←───→  │  M-NEXUS App (standalone)│
-│  (v0.43)        │  HTTP   │  (v0.43)                 │
+│  (v0.45)        │  HTTP   │  (v0.45)                 │
 │  TypeScript     │  /JSON  │  Android + Web           │
 │  Fastify 5      │         │  Flutter 3.24            │
 └─────────────────┘         └──────────────────────────┘
@@ -148,14 +148,55 @@ Cubriendo:
 
 ---
 
+## 🆔 Sistema de error codes (v0.45)
+
+M-NEXUS usa un **sistema unificado de códigos de error** `EC-{CATEGORÍA}-{NNN}` en frontend y backend, con logging estructurado, redacción automática de secretos, y correlación via `requestId`.
+
+**Categorías compartidas**: `NET`, `FS`, `DB`, `AUTH`, `CFG`, `LIFECYCLE`, `INTERNAL`
+
+**Solo frontend**: `CAL`, `PLAT`, `VAULT`, `CARD`, `NOTE`, `UP`, `UI`
+
+**Solo backend**: `VAL`, `EXT`, `LLM`, `OCR`, `AUD`, `EMB`, `SEC`, `BK`, `CONFL`, `PUSH`, `QUIZ`, `STR`, `REL`, `WS`, `RATE`, `EVAL`
+
+**Ejemplo frontend (Dart):**
+
+```dart
+throw AppError.vault(
+  code: 'EC-VAULT-003',
+  message: 'No se pudo leer la nota',
+  context: { 'path': notePath, 'size': fileSize },
+  hint: 'Verifica permisos en Settings',
+);
+```
+
+**Ejemplo backend (TypeScript):**
+
+```typescript
+throw E.llm('EC-LLM-005', 'Ollama API error', {
+  cause: originalError,
+  context: { status: 500, model: 'llama3' },
+  hint: 'Check Ollama is running and model is available',
+});
+```
+
+El backend mapea automáticamente cada categoría a un HTTP status code (`AUTH`→401, `VAL`→400, `RATE`→429, `DB`/`SEC`→403, `NET`/`EXT`/`LLM`/`OCR`/`AUD`/`EMB`→502, resto→500).
+
+📚 Ver [`docs/ERROR_CODES.md`](docs/ERROR_CODES.md) para la lista completa de ~100 códigos.
+
+📚 Ver [`docs/LOGGING.md`](docs/LOGGING.md) para cómo ver logs (adb logcat, journalctl, pino-pretty, Loki).
+
+---
+
 ## 🏗️ Estructura del repo
 
 ```
 m-nexus/
-├── backend/                  # Backend Node.js (Fastify 5)
-├── companion-app/            # Companion Android (Flutter)
+├── backend/                  # Backend Node.js (Fastify 5) + error codes
+├── app/                      # App standalone Flutter (sin Obsidian)
 ├── install/                  # Scripts de instalación (install.sh)
 ├── docs/                     # Documentación extendida
+│   ├── ERROR_CODES.md        # 🆕 v0.45: ~100 códigos EC-XXX-NNN
+│   ├── LOGGING.md            # 🆕 v0.45: guía de logging estructurado
 │   ├── API.md                # 73+ endpoints documentados
 │   ├── AUTO_UPDATE.md
 │   ├── BACKUP_*.md           # Backup admin, docker, install, etc
