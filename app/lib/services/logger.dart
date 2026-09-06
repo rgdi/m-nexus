@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../utils/error_codes.dart';
 import 'logger_models.dart';
 
 class AdvancedLogger {
@@ -142,6 +143,54 @@ class AdvancedLogger {
   void fatal(String component, String message, {Map<String, dynamic>? context, Object? error, StackTrace? stack}) =>
     _log(LogLevel.fatal, component, message, context: context, error: error, stack: stack);
 
+  /// Loguea un AppError (estructurado con código).
+  void logAppError(AppError err, {String? componentOverride}) {
+    final component = componentOverride ?? err.category.code.toLowerCase();
+    _log(
+      LogLevel.error,
+      component,
+      '[${err.code}] ${err.message}',
+      context: err.toJson(),
+      error: err.cause,
+      stack: err.stack,
+    );
+  }
+
+  /// Helper para log de platform channels.
+  void logPlatform(String component, String channel, String method,
+      {Map<String, dynamic>? args, Object? error, StackTrace? stack, int? durationMs}) {
+    final ctx = <String, dynamic>{
+      'channel': channel,
+      'method': method,
+      if (args != null) 'args': args,
+      if (durationMs != null) 'duration_ms': durationMs,
+    };
+    if (error != null) {
+      _log(LogLevel.error, component, 'PLAT $channel.$method failed',
+        context: ctx, error: error, stack: stack);
+    } else {
+      _log(LogLevel.debug, component, 'PLAT $channel.$method ok', context: ctx);
+    }
+  }
+
+  /// Helper para log de lifecycle events (init/dispose).
+  void logLifecycle(String service, String event, {Map<String, dynamic>? context}) {
+    _log(LogLevel.info, 'lifecycle', '$service.$event', context: {
+      'service': service,
+      'event': event,
+      ...?context,
+    });
+  }
+
+  /// Helper para log de business logic / data ops.
+  void logOp(String component, String op, {Map<String, dynamic>? context, bool success = true, Object? error, StackTrace? stack}) {
+    if (success) {
+      _log(LogLevel.debug, component, 'op: $op', context: context);
+    } else {
+      _log(LogLevel.error, component, 'op: $op FAILED', context: context, error: error, stack: stack);
+    }
+  }
+
   // ── Time / duration helpers ───────────────────────
   void timeStart(String component, String op) {
     _timers['$component:$op'] = DateTime.now();
@@ -252,6 +301,9 @@ class AdvancedLogger {
         }).catchError((_) {});
       } catch (_) {}
     } else {
+      // ignore: avoid_print
+      // En Web/chrome://inspect usamos developer.log que se ve en la
+      // consola del navegador con el "name" como filtro.
       // ignore: avoid_print
       print('[mnexus] $line');
     }

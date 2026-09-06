@@ -20,6 +20,8 @@
 //   - XLARGE: > 9"
 
 import 'dart:io' show Platform;
+import '../utils/safe_call.dart';
+import 'logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';

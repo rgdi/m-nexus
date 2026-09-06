@@ -5,6 +5,8 @@
 import 'dart:io';
 import 'package:path/path.dart' as p;
 import '../core/constants.dart';
+import '../utils/error_codes.dart';
+import '../utils/safe_call.dart';
 import 'logger.dart';
 
 class Note {
@@ -73,14 +75,30 @@ class VaultService {
 
   /// Carga el árbol completo (excluye _M-NEXUS y archivos ocultos).
   Future<VaultNode> loadTree() async {
-    log.timeStart('vault', 'loadTree');
-    final root = Directory(vaultPath);
-    final node = await _buildNode(root, '');
-    log.timeEnd('vault', 'loadTree');
-    return node;
+    final r = await safeCallAsync<VaultNode>(
+      component: 'vault',
+      code: 'EC-VAULT-001',
+      message: 'loadTree failed',
+      category: ErrorCategory.vault,
+      context: {'vaultPath': vaultPath},
+      hint: 'Check vault path exists and is readable',
+      op: () async {
+        log.timeStart('vault', 'loadTree');
+        final root = Directory(vaultPath);
+        final node = await _buildNode(root, '');
+        log.timeEnd('vault', 'loadTree');
+        return node;
+      },
+    );
+    if (r.success) return r.value!;
+    // En error, devolvemos un nodo vacío para no romper la UI
+    return VaultNode(name: p.basename(vaultPath), relPath: '', isDir: true, children: []);
   }
 
   Future<VaultNode> _buildNode(Directory dir, String relPath) async {
+    // Las excepciones de I/O se loguean pero no detienen el tree
+    return await guardAsync<VaultNode>('vault', 'EC-VAULT-002',
+      'buildNode failed', () async {
     final entries = await dir.list().toList();
     final children = <VaultNode>[];
     for (final e in entries) {
@@ -109,42 +127,68 @@ class VaultService {
       isDir: true,
       children: children,
     );
+  }, context: {'dir': dir.path, 'rel': relPath}) ?? VaultNode(name: p.basename(dir.path), relPath: relPath, isDir: true, children: []);
   }
 
   // ── Read / Write ────────────────────────────────────
 
   /// Lee una nota por path absoluto.
   Future<Note?> readNote(String absPath) async {
-    log.timeStart('vault', 'readNote');
-    final file = File(absPath);
-    if (!await file.exists()) {
-      log.warn('vault', 'Note not found', context: {'path': absPath});
-      return null;
-    }
-    final stat = await file.stat();
-    final raw = await file.readAsString();
-    final parsed = parseFrontmatter(raw);
-    final note = Note(
-      path: absPath,
-      relPath: p.relative(absPath, from: vaultPath),
-      name: p.basenameWithoutExtension(absPath),
-      content: parsed.body,
-      frontmatter: parsed.frontmatter,
-      modified: stat.modified,
-      sizeBytes: stat.size,
-      tags: _extractTags(parsed.body, parsed.frontmatter),
-      links: _extractLinks(parsed.body),
-      title: parsed.frontmatter['title'] ?? p.basenameWithoutExtension(absPath),
+    final r = await safeCallAsync<Note?>(
+      component: 'vault',
+      code: 'EC-VAULT-003',
+      message: 'readNote failed',
+      category: ErrorCategory.vault,
+      context: {'path': absPath, 'vault': vaultPath},
+      hint: 'Check file permissions, encoding (UTF-8), or corruption',
+      op: () async {
+        log.timeStart('vault', 'readNote');
+        final file = File(absPath);
+        if (!await file.exists()) {
+          log.warn('vault', 'Note not found', context: {'path': absPath});
+          return null;
+        }
+        final stat = await file.stat();
+        final raw = await file.readAsString();
+        final parsed = parseFrontmatter(raw);
+        final note = Note(
+          path: absPath,
+          relPath: p.relative(absPath, from: vaultPath),
+          name: p.basenameWithoutExtension(absPath),
+          content: parsed.body,
+          frontmatter: parsed.frontmatter,
+          modified: stat.modified,
+          sizeBytes: stat.size,
+          tags: _extractTags(parsed.body, parsed.frontmatter),
+          links: _extractLinks(parsed.body),
+          title: parsed.frontmatter['title'] ?? p.basenameWithoutExtension(absPath),
+        );
+        log.timeEnd('vault', 'readNote',
+            extra: {'path': absPath, 'words': note.wordCount});
+        return note;
+      },
     );
-    log.timeEnd('vault', 'readNote',
-        extra: {'path': absPath, 'words': note.wordCount});
-    return note;
+    return r.value;
   }
 
   /// Escribe (sobrescribe) una nota.
   Future<void> writeNote(String absPath, String content) async {
-    log.info('vault', 'Write note', context: {'path': absPath, 'size': content.length});
-    await File(absPath).writeAsString(content);
+    final r = await safeCallAsync<void>(
+      component: 'vault',
+      code: 'EC-VAULT-004',
+      message: 'writeNote failed',
+      category: ErrorCategory.vault,
+      context: {'path': absPath, 'size': content.length, 'vault': vaultPath},
+      hint: 'Check disk space, write permissions, parent dir exists',
+      op: () async {
+        log.info('vault', 'Write note', context: {'path': absPath, 'size': content.length});
+        await File(absPath).writeAsString(content);
+      },
+    );
+    if (!r.success) {
+      // Re-throw para que el caller pueda mostrar un error al usuario
+      throw r.error!;
+    }
   }
 
   /// Crea una nota nueva con frontmatter.
@@ -154,65 +198,90 @@ class VaultService {
     required String content,
     Map<String, String>? frontmatter,
   }) async {
-    final stamp = DateTime.now().toIso8601String().substring(0, 10);
-    final slug = title
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9\s-]'), '')
-        .replaceAll(RegExp(r'\s+'), '-');
-    final filename = '$stamp-$slug.md';
-    final relPath = folder.isEmpty ? filename : p.join(folder, filename);
-    final absPath = p.join(vaultPath, relPath);
-    final fm = {
-      'title': title,
-      'date': stamp,
-      'created': DateTime.now().toIso8601String(),
-      ...?frontmatter,
-    };
-    final buffer = StringBuffer()
-      ..writeln('---')
-      ..writeln('title: ${fm['title']}')
-      ..writeln('date: ${fm['date']}')
-      ..writeln('created: ${fm['created']}');
-    for (final e in fm.entries) {
-      if (e.key == 'title' || e.key == 'date' || e.key == 'created') continue;
-      buffer.writeln('${e.key}: ${e.value}');
-    }
-    buffer
-      ..writeln('---')
-      ..writeln('')
-      ..writeln(content);
-    await File(absPath).create(recursive: true);
-    await File(absPath).writeAsString(buffer.toString());
-    log.info('vault', 'Created note', context: {'path': absPath});
-    return absPath;
+    final r = await safeCallAsync<String>(
+      component: 'vault',
+      code: 'EC-VAULT-005',
+      message: 'createNote failed',
+      category: ErrorCategory.vault,
+      context: {'vault': vaultPath, 'folder': folder, 'title': title, 'hasContent': content.isNotEmpty, 'fmKeys': frontmatter?.keys.toList() ?? []},
+      hint: 'Check vault path exists, write permissions, title slug valid',
+      op: () async {
+        final stamp = DateTime.now().toIso8601String().substring(0, 10);
+        final slug = title
+            .toLowerCase()
+            .replaceAll(RegExp(r'[^a-z0-9\s-]'), '')
+            .replaceAll(RegExp(r'\s+'), '-');
+        final filename = '$stamp-$slug.md';
+        final relPath = folder.isEmpty ? filename : p.join(folder, filename);
+        final absPath = p.join(vaultPath, relPath);
+        final fm = {
+          'title': title,
+          'date': stamp,
+          'created': DateTime.now().toIso8601String(),
+          ...?frontmatter,
+        };
+        final buffer = StringBuffer()
+          ..writeln('---')
+          ..writeln('title: ${fm['title']}')
+          ..writeln('date: ${fm['date']}')
+          ..writeln('created: ${fm['created']}');
+        for (final e in fm.entries) {
+          if (e.key == 'title' || e.key == 'date' || e.key == 'created') continue;
+          buffer.writeln('${e.key}: ${e.value}');
+        }
+        buffer
+          ..writeln('---')
+          ..writeln('')
+          ..writeln(content);
+        await File(absPath).create(recursive: true);
+        await File(absPath).writeAsString(buffer.toString());
+        log.info('vault', 'Created note', context: {'path': absPath});
+        return absPath;
+      },
+    );
+    if (!r.success) throw r.error!;
+    return r.value!;
   }
-
-  // ── Search ──────────────────────────────────────────
 
   /// Búsqueda full-text en todas las notas del vault.
   Future<List<Note>> search(String query, {int limit = 50}) async {
     if (query.trim().isEmpty) return [];
-    log.info('vault', 'Search', context: {'query': query});
-    final results = <Note>[];
-    final q = query.toLowerCase();
-    await for (final f in Directory(vaultPath).list(recursive: true)) {
-      if (f is! File) continue;
-      if (!AppConstants.mdExtensions.contains(p.extension(f.path))) continue;
-      try {
-        final note = await readNote(f.path);
-        if (note == null) continue;
-        if (note.content.toLowerCase().contains(q) ||
-            note.name.toLowerCase().contains(q) ||
-            note.tags.any((t) => t.toLowerCase().contains(q))) {
-          results.add(note);
-          if (results.length >= limit) break;
+    final r = await safeCallAsync<List<Note>>(
+      component: 'vault',
+      code: 'EC-VAULT-006',
+      message: 'search failed',
+      category: ErrorCategory.vault,
+      context: {'vault': vaultPath, 'query': query, 'limit': limit},
+      hint: 'Check vault path is readable',
+      op: () async {
+        log.info('vault', 'Search', context: {'query': query, 'limit': limit});
+        final results = <Note>[];
+        final q = query.toLowerCase();
+        var scanned = 0;
+        var skipped = 0;
+        await for (final f in Directory(vaultPath).list(recursive: true)) {
+          if (f is! File) continue;
+          if (!AppConstants.mdExtensions.contains(p.extension(f.path))) continue;
+          scanned++;
+          // Para search, errores en archivos individuales NO deben matar la búsqueda
+          final note = await guardAsync<Note?>('vault', 'EC-VAULT-007',
+            'skip file in search', () => readNote(f.path),
+            context: {'file': f.path});
+          if (note == null) { skipped++; continue; }
+          if (note.content.toLowerCase().contains(q) ||
+              note.name.toLowerCase().contains(q) ||
+              note.tags.any((t) => t.toLowerCase().contains(q))) {
+            results.add(note);
+            if (results.length >= limit) break;
+          }
         }
-      } catch (_) {
-        // skip
-      }
-    }
-    log.info('vault', 'Search done', context: {'results': results.length});
-    return results;
+        log.info('vault', 'Search done', context: {
+          'results': results.length, 'scanned': scanned, 'skipped': skipped,
+        });
+        return results;
+      },
+    );
+    return r.value ?? <Note>[];
   }
 
   /// Devuelve las notas que enlazan a `targetRelPath` (backlinks).
@@ -225,13 +294,25 @@ class VaultService {
   // ── Stats ───────────────────────────────────────────
 
   Future<int> countNotes() async {
-    var count = 0;
-    await for (final f in Directory(vaultPath).list(recursive: true)) {
-      if (f is File && AppConstants.mdExtensions.contains(p.extension(f.path))) {
-        count++;
-      }
-    }
-    return count;
+    final r = await safeCallAsync<int>(
+      component: 'vault',
+      code: 'EC-VAULT-008',
+      message: 'countNotes failed',
+      category: ErrorCategory.vault,
+      context: {'vault': vaultPath},
+      hint: 'Check vault path readable',
+      op: () async {
+        var count = 0;
+        await for (final f in Directory(vaultPath).list(recursive: true)) {
+          if (f is File && AppConstants.mdExtensions.contains(p.extension(f.path))) {
+            count++;
+          }
+        }
+        log.info('vault', 'countNotes', context: {'count': count});
+        return count;
+      },
+    );
+    return r.value ?? 0;
   }
 
   // ── Helpers ─────────────────────────────────────────

@@ -7,7 +7,9 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:path/path.dart' as p;
 import '../../core/shortcuts.dart';
 import '../../core/theme.dart';
+import '../../services/logger.dart';
 import '../../services/vault_service.dart';
+import '../../utils/safe_call.dart';
 import '../../widgets/empty_state.dart';
 import 'note_editor.dart';
 
@@ -40,14 +42,19 @@ class _NoteViewState extends State<NoteView> {
 
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
+    final log = AdvancedLogger.instance;
+    log.debug('note_view', '_load start', context: {'path': widget.notePath, 'vault': widget.vaultPath});
     try {
       final service = VaultService(widget.vaultPath);
       _note = await service.readNote(widget.notePath);
       if (!mounted) return;
       if (_note != null) {
         _backlinks = await service.backlinks(_note!.relPath);
+        log.debug('note_view', 'backlinks loaded', context: {'count': _backlinks.length});
       }
-    } catch (e) {
+    } catch (e, s) {
+      log.error('note_view', '[EC-NOTE-001] Load note failed',
+        context: {'path': widget.notePath, 'vault': widget.vaultPath}, error: e, stack: s);
       if (!mounted) return;
       _error = e.toString();
     }

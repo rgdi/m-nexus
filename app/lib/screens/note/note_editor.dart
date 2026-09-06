@@ -10,6 +10,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/shortcuts.dart';
 import '../../core/theme.dart';
 import '../../services/vault_service.dart';
+import '../../services/logger.dart';
+import '../../utils/safe_call.dart';
 import 'note_view.dart';
 
 class NoteEditor extends StatefulWidget {
@@ -71,9 +73,13 @@ class _NoteEditorState extends State<NoteEditor> {
 
   Future<void> _autoSavePersist() async {
     if (!_isDirty) return;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('$_autosaveKey.body', _bodyController.text);
-    await prefs.setString('$_autosaveKey.title', _titleController.text);
+    await guardAsync<void>('note_editor', 'EC-NOTE-002',
+      'autosave failed', () async {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('$_autosaveKey.body', _bodyController.text);
+        await prefs.setString('$_autosaveKey.title', _titleController.text);
+        AdvancedLogger.instance.debug('note_editor', 'autosave ok', context: {'key': _autosaveKey});
+      }, context: {'key': _autosaveKey, 'bodyLen': _bodyController.text.length});
   }
 
   Future<void> _save() async {
@@ -90,15 +96,26 @@ modified: ${DateTime.now().toIso8601String()}
 ---
 
 $body''';
-    await _vault!.writeNote(widget.notePath, content);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('$_autosaveKey.body');
-    await prefs.remove('$_autosaveKey.title');
-    if (!mounted) return;
-    setState(() { _saving = false; _isDirty = false; });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Guardado')),
-    );
+    try {
+      await _vault!.writeNote(widget.notePath, content);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('$_autosaveKey.body');
+      await prefs.remove('$_autosaveKey.title');
+      if (!mounted) return;
+      setState(() { _saving = false; _isDirty = false; });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Guardado')),
+      );
+    } catch (e, s) {
+      AdvancedLogger.instance.error('note_editor', '[EC-NOTE-003] Save failed',
+        context: {'path': widget.notePath, 'title': title, 'bodyLen': body.length},
+        error: e, stack: s);
+      if (!mounted) return;
+      setState(() { _saving = false; });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al guardar: $e')),
+      );
+    }
   }
 
   void _insertFormat(String before, String after) {

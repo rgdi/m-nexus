@@ -15,6 +15,9 @@
 import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
+import '../utils/error_codes.dart';
+import '../utils/safe_call.dart';
+import 'logger.dart';
 import 'package:path_provider/path_provider.dart';
 
 class VaultInfo {
@@ -34,6 +37,9 @@ class VaultInfo {
 class VaultDetector {
   /// Devuelve los vaults candidatos detectados en el dispositivo.
   Future<List<VaultInfo>> detectVaults() async {
+    return await guardAsync<List<VaultInfo>>('vault_detector', 'EC-VAULT-DETECT-001',
+      'detectVaults failed', () async {
+    AdvancedLogger.instance.debug('vault_detector', 'scan start');
     final candidates = <String>[];
     final methods = <String, String>{};  // path -> method
 

@@ -14,7 +14,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../utils/error_codes.dart';
+import '../utils/safe_call.dart';
 import 'device_id.dart';
+import 'logger.dart';
 
 const String _prefsKeyBackendUrl = 'mnexus.backend.url';
 const String _prefsKeyAuthToken = 'mnexus.auth.token';
@@ -102,35 +105,48 @@ class BackendClient {
 
   /// Verifica la conexión con el backend.
   static Future<BackendConnection> testConnection(String url) async {
+    final log = AdvancedLogger.instance;
     final base = url.trim().replaceAll(RegExp(r'/+$'), '');
     final stopwatch = Stopwatch()..start();
-    try {
-      final res = await http.get(Uri.parse('$base/api/v1/health')).timeout(_timeout);
-      stopwatch.stop();
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body) as Map<String, dynamic>;
+    return await guardAsync<BackendConnection>('net', 'EC-NET-001',
+      'testConnection failed', () async {
+      try {
+        log.network(method: 'GET', url: '$base/api/v1/health');
+        final res = await http.get(Uri.parse('$base/api/v1/health')).timeout(_timeout);
+        stopwatch.stop();
+        if (res.statusCode == 200) {
+          final data = jsonDecode(res.body) as Map<String, dynamic>;
+          log.network(method: 'GET', url: '$base/api/v1/health',
+            statusCode: res.statusCode, durationMs: stopwatch.elapsed.inMilliseconds);
+          return BackendConnection(
+            url: base,
+            isReachable: true,
+            version: data['version'] as String?,
+            latency: stopwatch.elapsed,
+          );
+        }
+        log.warn('net', 'Backend health check non-200',
+          context: {'url': base, 'status': res.statusCode, 'durationMs': stopwatch.elapsed.inMilliseconds});
         return BackendConnection(
           url: base,
-          isReachable: true,
-          version: data['version'] as String?,
+          isReachable: false,
+          error: 'HTTP ${res.statusCode}',
+          latency: stopwatch.elapsed,
+        );
+      } catch (e) {
+        stopwatch.stop();
+        log.error('net', 'Backend health check exception',
+          context: {'url': base, 'durationMs': stopwatch.elapsed.inMilliseconds, 'error': e.toString()},
+          error: e);
+        return BackendConnection(
+          url: base,
+          isReachable: false,
+          error: e.toString(),
           latency: stopwatch.elapsed,
         );
       }
-      return BackendConnection(
-        url: base,
-        isReachable: false,
-        error: 'HTTP ${res.statusCode}',
-        latency: stopwatch.elapsed,
-      );
-    } catch (e) {
-      stopwatch.stop();
-      return BackendConnection(
-        url: base,
-        isReachable: false,
-        error: e.toString(),
-        latency: stopwatch.elapsed,
-      );
-    }
+    }, context: {'url': base}, category: ErrorCategory.net) ??
+      BackendConnection(url: base, isReachable: false, error: 'unexpected', latency: stopwatch.elapsed);
   }
 
   Map<String, String> _headers([Map<String, String>? extra]) {
@@ -163,40 +179,59 @@ class BackendClient {
 
   /// Registra el device en el backend (idempotente; si ya está, devuelve ok).
   Future<bool> registerDevice(DeviceIdentity identity) async {
-    try {
-      final res = await post('/api/v1/register', body: jsonEncode(identity.toRegistrationPayload()));
-      if (res.statusCode == 200 || res.statusCode == 201) {
-        // Guardar token si viene
-        final data = jsonDecode(res.body) as Map<String, dynamic>?;
-        if (data?['accessToken'] != null) {
-          await setAuthToken(data!['accessToken'] as String);
+    final log = AdvancedLogger.instance;
+    return await guardAsync<bool>('net', 'EC-NET-002',
+      'registerDevice failed', () async {
+      try {
+        log.info('net', 'registerDevice', context: {'url': _url, 'deviceId': identity.deviceId});
+        final res = await post('/api/v1/register', body: jsonEncode(identity.toRegistrationPayload()));
+        log.network(method: 'POST', url: '$_url/api/v1/register', statusCode: res.statusCode);
+        if (res.statusCode == 200 || res.statusCode == 201) {
+          // Guardar token si viene
+          final data = jsonDecode(res.body) as Map<String, dynamic>?;
+          if (data?['accessToken'] != null) {
+            await setAuthToken(data!['accessToken'] as String);
+            log.debug('net', 'Auth token received and stored');
+          }
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(_prefsKeyLastConnected, DateTime.now().toIso8601String());
+          return true;
         }
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString(_prefsKeyLastConnected, DateTime.now().toIso8601String());
-        return true;
+        log.warn('net', 'registerDevice non-2xx', context: {'status': res.statusCode, 'body': res.body.substring(0, 200)});
+        return false;
+      } catch (e) {
+        log.error('net', 'registerDevice exception',
+          context: {'url': _url, 'deviceId': identity.deviceId}, error: e);
+        return false;
       }
-      return false;
-    } catch (_) {
-      return false;
-    }
+    }, context: {'url': _url, 'deviceId': identity.deviceId}, category: ErrorCategory.net) ?? false;
   }
 
   /// Refresca el token (si está expirado).
   Future<String?> refreshToken(String refreshToken) async {
-    try {
-      final res = await post('/api/v1/auth/refresh', body: jsonEncode({'refreshToken': refreshToken}));
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body) as Map<String, dynamic>;
-        final newToken = data['accessToken'] as String?;
-        if (newToken != null) {
-          await setAuthToken(newToken);
-          return newToken;
+    final log = AdvancedLogger.instance;
+    return await guardAsync<String?>('net', 'EC-NET-003',
+      'refreshToken failed', () async {
+      try {
+        log.info('net', 'refreshToken', context: {'url': _url});
+        final res = await post('/api/v1/auth/refresh', body: jsonEncode({'refreshToken': refreshToken}));
+        log.network(method: 'POST', url: '$_url/api/v1/auth/refresh', statusCode: res.statusCode);
+        if (res.statusCode == 200) {
+          final data = jsonDecode(res.body) as Map<String, dynamic>;
+          final newToken = data['accessToken'] as String?;
+          if (newToken != null) {
+            await setAuthToken(newToken);
+            log.debug('net', 'Auth token refreshed and stored');
+            return newToken;
+          }
         }
+        log.warn('net', 'refreshToken non-2xx', context: {'status': res.statusCode});
+        return null;
+      } catch (e) {
+        log.error('net', 'refreshToken exception', context: {'url': _url}, error: e);
+        return null;
       }
-      return null;
-    } catch (_) {
-      return null;
-    }
+    }, context: {'url': _url}, category: ErrorCategory.net);
   }
 
   /// HTTP GET helper estático (no requiere crear un BackendClient).
