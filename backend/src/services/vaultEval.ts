@@ -2,6 +2,9 @@
 // Encapsula la heurística que antes vivía en el plugin (vaultEvaluator.ts).
 // Recibe los snapshots ya extraídos y devuelve VaultEvaluation.
 
+import { E } from "../utils/errorCodes.js";
+import { safeCallAsync, safeCallOrNull } from "../utils/safeCall.js";
+import { logOp, logError } from "../utils/log.js";
 export interface NoteSnapshotInput {
   path: string;
   basename: string;

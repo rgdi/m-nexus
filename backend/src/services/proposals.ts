@@ -2,6 +2,9 @@
 // Encapsula las heurísticas que antes vivían en el plugin (studyOrchestrator.ts).
 // Recibe la evaluación del vault y los snapshots, devuelve proposals estructurados.
 
+import { E } from "../utils/errorCodes.js";
+import { safeCallAsync, safeCallOrNull } from "../utils/safeCall.js";
+import { logOp, logError } from "../utils/log.js";
 import type { VaultEvaluationResult, NoteSnapshotInput } from "./vaultEval.js";
 import { genProposalId, type Proposal } from "./proposalsTypes.js";
 

@@ -7,6 +7,10 @@
 // al resolver `node:sqlite` (que es experimental). En runtime Node 22+
 // funciona directamente.
 
+import { E } from "../utils/errorCodes.js";
+import { safeCallAsync, safeCallOrNull } from "../utils/safeCall.js";
+import { logOp } from "../utils/log.js";
+
 export interface BackupRow {
   id: string;
   deviceId: string;
@@ -120,29 +124,59 @@ export async function openBackupIndex(path: string): Promise<BackupIndex> {
 
   return {
     async insert(row: BackupRow) {
-      insertStmt.run(
-        row.id,
-        row.deviceId,
-        row.uploadedAt,
-        row.size,
-        row.kind,
-        row.vaultPath,
-        row.note ?? null,
-        row.fileCount,
-        row.sha256,
-        row.storagePath
-      );
+      await safeCallAsync({
+        component: "bk",
+        code: "EC-BK-002",
+        message: "backupIndex.insert failed",
+        context: { id: row.id, deviceId: row.deviceId, size: row.size },
+        op: async () => {
+          insertStmt.run(
+            row.id,
+            row.deviceId,
+            row.uploadedAt,
+            row.size,
+            row.kind,
+            row.vaultPath,
+            row.note ?? null,
+            row.fileCount,
+            row.sha256,
+            row.storagePath
+          );
+          logOp("bk", "insert", true, { id: row.id, deviceId: row.deviceId });
+        },
+      });
     },
     async get(deviceId: string, id: string) {
-      const r = getStmt.get(deviceId, id);
-      return (r as BackupRow) ?? null;
+      const r = await safeCallAsync<BackupRow | null>({
+        component: "bk",
+        code: "EC-BK-003",
+        message: "backupIndex.get failed",
+        context: { deviceId, id },
+        op: async () => getStmt.get(deviceId, id) as BackupRow | null,
+      });
+      return r.value ?? null;
     },
     async listForDevice(deviceId: string) {
-      const rows = listStmt.all(deviceId);
-      return rows as unknown as BackupListItem[];
+      const r = await safeCallAsync<BackupListItem[]>({
+        component: "bk",
+        code: "EC-BK-004",
+        message: "backupIndex.listForDevice failed",
+        context: { deviceId },
+        op: async () => listStmt.all(deviceId) as unknown as BackupListItem[],
+      });
+      return r.value ?? [];
     },
     async delete(deviceId: string, id: string) {
-      deleteStmt.run(deviceId, id);
+      await safeCallAsync({
+        component: "bk",
+        code: "EC-BK-005",
+        message: "backupIndex.delete failed",
+        context: { deviceId, id },
+        op: async () => {
+          deleteStmt.run(deviceId, id);
+          logOp("bk", "delete", true, { id, deviceId });
+        },
+      });
     },
     close() {
       db.close();

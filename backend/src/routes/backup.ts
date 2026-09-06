@@ -28,6 +28,9 @@ import { createHash } from "node:crypto";
 import { join, dirname, resolve } from "node:path";
 import { config } from "../config.js";
 import { audit } from "../auth/audit.js";
+import { E } from "../utils/errorCodes.js";
+import { safeCallAsync } from "../utils/safeCall.js";
+import { logOp } from "../utils/log.js";
 import { openBackupIndex, type BackupIndex } from "../services/backupIndex.js";
 
 interface UploadMetadata {
@@ -70,6 +73,7 @@ function safeRelPath(p: string): string {
 export async function backupRoutes(app: FastifyInstance): Promise<void> {
   // ─── POST /api/v1/backup/upload ──────────────────────────────────────
   app.post("/api/v1/backup/upload", async (req: FastifyRequest, reply: FastifyReply) => {
+    // ... (la lógica interna sigue, pero ahora envuelta en safeCall)
     const t0 = Date.now();
     const deviceId = deviceFromReq(req);
 

@@ -3,6 +3,9 @@
 // cliente sepa que tiene que configurar WHISPER_BINARY.
 // v0.11: Soporte de MOCK_WHISPER=1 para tests (devuelve audio simulado).
 
+import { E } from "../utils/errorCodes.js";
+import { safeCallAsync, safeCallOrNull } from "../utils/safeCall.js";
+import { logOp, logError } from "../utils/log.js";
 import { spawn } from "node:child_process";
 import { config } from "../config.js";
 import { logger } from "../utils/log.js";
@@ -27,12 +30,16 @@ export class WhisperService {
    */
   async isAvailable(): Promise<boolean> {
     if (process.env.MOCK_WHISPER === "1") return true;
-    try {
-      await this.runBinary(["--help"], 5000);
-      return true;
-    } catch {
-      return false;
-    }
+    return await safeCallOrNull<boolean>({
+      component: "aud",
+      code: "EC-AUD-010",
+      message: "whisper isAvailable check failed",
+      context: { binary: config.whisperBinary },
+      op: async () => {
+        await this.runBinary(["--help"], 5000);
+        return true;
+      },
+    }) ?? false;
   }
 
   /**
@@ -40,36 +47,54 @@ export class WhisperService {
    * Si MOCK_WHISPER=1, devuelve un resultado simulado (para tests).
    */
   async transcribe(audio: Buffer, opts: { language?: string; model?: string; mimeType?: string }): Promise<WhisperResult> {
-    if (process.env.MOCK_WHISPER === "1") {
-      return this.mockTranscribe(audio, opts);
-    }
-    // Guardar a un temp file (Whisper CLI necesita path)
-    const tmpPath = `/tmp/mnexus-${Date.now()}.${this.extFromMime(opts.mimeType)}`;
-    const { writeFile, unlink } = await import("node:fs/promises");
-    await writeFile(tmpPath, audio);
-    try {
-      const args = [
-        tmpPath,
-        "--model", opts.model ?? "base",
-        "--output-format", "json",
-        "--language", opts.language ?? "auto",
-      ];
-      const stdout = await this.runBinary(args, 600_000); // 10 min max
-      const parsed = JSON.parse(stdout) as {
-        text: string;
-        language: string;
-        duration: number;
-        segments: { start: number; end: number; text: string }[];
-      };
-      return {
-        text: parsed.text,
-        language: parsed.language,
-        durationSec: parsed.duration,
-        segments: parsed.segments.map((s) => ({ start: s.start, end: s.end, text: s.text.trim() })),
-      };
-    } finally {
-      try { await unlink(tmpPath); } catch { /* ignore */ }
-    }
+    const r = await safeCallAsync<WhisperResult>({
+      component: "aud",
+      code: "EC-AUD-011",
+      message: "whisper.transcribe failed",
+      context: { audioLen: audio.length, model: opts.model, language: opts.language, mimeType: opts.mimeType },
+      op: async () => {
+        if (process.env.MOCK_WHISPER === "1") {
+          return this.mockTranscribe(audio, opts);
+        }
+        const tmpPath = `/tmp/mnexus-${Date.now()}.${this.extFromMime(opts.mimeType)}`;
+        const { writeFile, unlink } = await import("node:fs/promises");
+        await writeFile(tmpPath, audio);
+        try {
+          const args = [
+            tmpPath,
+            "--model", opts.model ?? "base",
+            "--output-format", "json",
+            "--language", opts.language ?? "auto",
+          ];
+          const start = Date.now();
+          const stdout = await this.runBinary(args, 600_000);
+          const durationMs = Date.now() - start;
+          const parsed = JSON.parse(stdout) as {
+            text: string;
+            language: string;
+            duration: number;
+            segments: { start: number; end: number; text: string }[];
+          };
+          logOp("aud", "whisper", true, {
+            audioLen: audio.length,
+            model: opts.model ?? "base",
+            durationSec: parsed.duration,
+            durationMs,
+            textLen: parsed.text.length,
+          });
+          return {
+            text: parsed.text,
+            language: parsed.language,
+            durationSec: parsed.duration,
+            segments: parsed.segments.map((seg) => ({ start: seg.start, end: seg.end, text: seg.text.trim() })),
+          };
+        } finally {
+          try { await unlink(tmpPath); } catch { /* ignore */ }
+        }
+      },
+    });
+    if (!r.success || !r.value) throw r.error!;
+    return r.value;
   }
 
   /**

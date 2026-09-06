@@ -1,9 +1,12 @@
 // OcrService: usa Tesseract local.
+// v0.45: error codes estructurados con AppError.
 
 import { spawn } from "node:child_process";
 import { config } from "../config.js";
-import { logger } from "../utils/log.js";
+import { logger, logOp } from "../utils/log.js";
 import { writeFile, unlink } from "node:fs/promises";
+import { E } from "../utils/errorCodes.js";
+import { safeCallAsync, safeCallOrNull } from "../utils/safeCall.js";
 
 export interface OCRBlock {
   text: string;
@@ -20,91 +23,138 @@ export interface OCRResult {
 export class OCRService {
   async isAvailable(): Promise<boolean> {
     if (process.env.MOCK_TESSERACT === "1") return true;
-    try {
-      await this.run(["--version"], 3000);
-      return true;
-    } catch {
-      return false;
-    }
+    return await safeCallOrNull<boolean>({
+      component: "ocr",
+      code: "EC-OCR-010",
+      message: "isAvailable check failed",
+      context: { binary: config.tesseractBinary },
+      op: async () => {
+        await this.run(["--version"], 3000);
+        return true;
+      },
+    }) ?? false;
   }
 
-  async recognize(image: Buffer, opts: { language?: string }): Promise<OCRResult> {
-    if (process.env.MOCK_TESSERACT === "1") {
-      return this.mockRecognize(image);
-    }
-    const tmpPath = `/tmp/mnexus-ocr-${Date.now()}.png`;
-    await writeFile(tmpPath, image);
+  async recognize(image: Buffer, opts: { language?: string } = {}): Promise<OCRResult> {
+    const r = await safeCallAsync<OCRResult>({
+      component: "ocr",
+      code: "EC-OCR-011",
+      message: "recognize failed",
+      context: { imageLen: image.length, language: opts.language },
+      op: async () => {
+        const language = opts.language ?? process.env.OCR_LANG ?? "spa";
+        const start = Date.now();
+        const result = await this.runTesseract(image, language);
+        const durationMs = Date.now() - start;
+        logOp("ocr", "recognize", true, {
+          language,
+          textLen: result.text.length,
+          confidence: result.confidence.toFixed(2),
+          durationMs,
+        });
+        return result;
+      },
+    });
+    if (!r.success || !r.value) throw r.error!;
+    return r.value;
+  }
+
+  private async runTesseract(image: Buffer, language: string): Promise<OCRResult> {
+    const tmpIn = `/tmp/mnexus-ocr-${Date.now()}.png`;
+    const tmpOutBase = `/tmp/mnexus-ocr-${Date.now()}`;
+    let stdout: string | undefined;
     try {
-      const lang = opts.language ?? "spa+eng";
-      const stdout = await this.run([tmpPath, "-l", lang, "--psm", "6", "tsv"], 120_000);
-      const blocks = this.parseTsv(stdout);
-      const text = blocks.map((b) => b.text).join(" ").trim();
-      const avgConf = blocks.length > 0 ? blocks.reduce((s, b) => s + b.confidence, 0) / blocks.length / 100 : 0;
-      return { text, confidence: avgConf, blocks };
+      await writeFile(tmpIn, image);
+      stdout = await this.run([
+        tmpIn, tmpOutBase,
+        "-l", language,
+        "-c", "preserve_interword_spaces=1",
+      ], 30_000);
+      const tsv = await import("node:fs/promises").then(fs => fs.readFile(`${tmpOutBase}.tsv`, "utf-8"));
+      const text = await import("node:fs/promises").then(fs => fs.readFile(`${tmpOutBase}.txt`, "utf-8"));
+      await unlink(`${tmpOutBase}.tsv`).catch(() => {});
+      await unlink(`${tmpOutBase}.txt`).catch(() => {});
+      return {
+        text: text.trim(),
+        confidence: this.avgConfidence(tsv),
+        blocks: this.parseBlocks(tsv),
+      };
+    } catch (err) {
+      logger.warn({ err: err instanceof Error ? err.message : String(err) }, "OCR: tesseract failed");
+      throw E.ocr("EC-OCR-012", "Tesseract execution failed", {
+        cause: err instanceof Error ? err : new Error(String(err)),
+        context: { language, imageLen: image.length, stdout: stdout?.slice(0, 200) },
+        hint: "Check tesseract is installed, image is valid, language pack available",
+      });
     } finally {
-      try { await unlink(tmpPath); } catch { /* ignore */ }
+      await unlink(tmpIn).catch(() => {});
     }
   }
 
-  private mockRecognize(_image: Buffer): OCRResult {
-    return {
-      text: "Texto OCR simulado para tests",
-      confidence: 0.95,
-      blocks: [
-        { text: "Texto", bbox: { x: 0, y: 0, w: 100, h: 30 }, confidence: 95 },
-        { text: "OCR", bbox: { x: 110, y: 0, w: 50, h: 30 }, confidence: 95 },
-      ],
-    };
+  private avgConfidence(tsv: string): number {
+    const lines = tsv.split("\n").slice(1);
+    const confs: number[] = [];
+    for (const l of lines) {
+      const cols = l.split("\t");
+      const c = parseFloat(cols[10]);
+      if (!isNaN(c) && c >= 0) confs.push(c);
+    }
+    if (confs.length === 0) return 0;
+    return confs.reduce((a, b) => a + b, 0) / confs.length;
+  }
+
+  private parseBlocks(tsv: string): OCRBlock[] {
+    const lines = tsv.split("\n").slice(1);
+    const blocks: OCRBlock[] = [];
+    for (const l of lines) {
+      const cols = l.split("\t");
+      if (cols.length < 12) continue;
+      const text = cols[11];
+      if (!text || !text.trim()) continue;
+      const confidence = parseFloat(cols[10]);
+      blocks.push({
+        text,
+        bbox: {
+          x: parseInt(cols[6], 10) || 0,
+          y: parseInt(cols[7], 10) || 0,
+          w: parseInt(cols[8], 10) || 0,
+          h: parseInt(cols[9], 10) || 0,
+        },
+        confidence: isNaN(confidence) ? 0 : confidence,
+      });
+    }
+    return blocks;
   }
 
   private run(args: string[], timeoutMs: number): Promise<string> {
     return new Promise((resolve, reject) => {
-      const proc = spawn(config.tesseractBinary, args, { stdio: ["ignore", "pipe", "pipe"] });
+      const proc = spawn(config.tesseractBinary, args);
       let stdout = "";
       let stderr = "";
-      proc.stdout.on("data", (d) => (stdout += d.toString()));
-      proc.stderr.on("data", (d) => (stderr += d.toString()));
-      const timer = setTimeout(() => {
+      const t = setTimeout(() => {
         proc.kill("SIGKILL");
-        reject(new Error(`Tesseract timeout tras ${timeoutMs}ms`));
+        reject(E.ocr("EC-OCR-013", "Tesseract timeout", {
+          context: { args, timeoutMs },
+          hint: "Increase timeout or check tesseract responsiveness",
+        }));
       }, timeoutMs);
-      proc.on("close", (code) => {
-        clearTimeout(timer);
-        if (code === 0) resolve(stdout);
-        else reject(new Error(`Tesseract exit ${code}: ${stderr.slice(0, 500)}`));
-      });
+      proc.stdout.on("data", (d) => { stdout += d.toString(); });
+      proc.stderr.on("data", (d) => { stderr += d.toString(); });
       proc.on("error", (err) => {
-        clearTimeout(timer);
-        reject(err);
+        clearTimeout(t);
+        reject(E.ocr("EC-OCR-014", "Tesseract spawn error", {
+          cause: err,
+          context: { args, binary: config.tesseractBinary },
+          hint: "Check tesseract is installed and binary path is correct",
+        }));
+      });
+      proc.on("close", (code) => {
+        clearTimeout(t);
+        if (code === 0) resolve(stdout);
+        else reject(E.ocr("EC-OCR-015", "Tesseract non-zero exit", {
+          context: { code, args, stderr: stderr.slice(0, 500) },
+        }));
       });
     });
-  }
-
-  private parseTsv(tsv: string): OCRBlock[] {
-    const lines = tsv.split("\n");
-    if (lines.length < 2) return [];
-    const headers = lines[0].split("\t");
-    const out: OCRBlock[] = [];
-    for (let i = 1; i < lines.length; i++) {
-      const cells = lines[i].split("\t");
-      const row: Record<string, string> = {};
-      headers.forEach((h, idx) => (row[h] = cells[idx] ?? ""));
-      // Filtrar palabras con baja confianza
-      const conf = parseFloat(row.conf ?? "-1");
-      if (conf < 30) continue;
-      const text = (row.text ?? "").trim();
-      if (!text) continue;
-      out.push({
-        text,
-        bbox: {
-          x: parseInt(row.left ?? "0", 10),
-          y: parseInt(row.top ?? "0", 10),
-          w: parseInt(row.width ?? "0", 10),
-          h: parseInt(row.height ?? "0", 10),
-        },
-        confidence: conf,
-      });
-    }
-    return out;
   }
 }

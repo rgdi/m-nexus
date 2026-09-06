@@ -1,5 +1,8 @@
 // Cross-relevance: main analyzer.
 
+import { E } from "../utils/errorCodes.js";
+import { safeCallAsync, safeCallOrNull } from "../utils/safeCall.js";
+import { logOp, logError } from "../utils/log.js";
 import type {
   NoteDocument,
   CrossMatch,

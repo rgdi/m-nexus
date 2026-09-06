@@ -1,6 +1,9 @@
 // v0.22: Transcripción en tiempo real (streaming).
 // Recibe chunks de audio (WebSocket o SSE) y devuelve transcripción incremental.
 
+import { E } from "../utils/errorCodes.js";
+import { safeCallAsync, safeCallOrNull } from "../utils/safeCall.js";
+import { logOp, logError } from "../utils/log.js";
 import type { IncomingMessage, ServerResponse } from "http";
 
 export interface StreamChunk {

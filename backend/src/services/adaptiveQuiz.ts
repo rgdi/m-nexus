@@ -1,6 +1,9 @@
 // Adaptive quiz: sessions + re-exports for backward compat.
 
 
+import { E } from "../utils/errorCodes.js";
+import { safeCallAsync, safeCallOrNull } from "../utils/safeCall.js";
+import { logOp, logError } from "../utils/log.js";
 import type { KnowledgeLayer, KnowledgeGraph, KnowledgeConcept } from "./adaptiveQuizTypes.js";
 import { LAYER_LABELS, findGaps, markShown, updateMastery, buildQuestionForGap, checkAnswer, getConcept, suggestNextLayer } from "./adaptiveQuizEngine.js";
 import type { KnowledgeGap } from "./adaptiveQuizEngine.js";
