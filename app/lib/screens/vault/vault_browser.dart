@@ -38,6 +38,7 @@ class _VaultBrowserState extends State<VaultBrowser> {
     try {
       final detector = VaultDetector();
       final vaults = await detector.detectVaults();
+      if (!mounted) return;
       if (vaults.isEmpty) {
         setState(() { _loading = false; });
         return;
@@ -47,6 +48,7 @@ class _VaultBrowserState extends State<VaultBrowser> {
     } catch (e, s) {
       log.error('vault', 'Load failed', error: e, stack: s);
     }
+    if (!mounted) return;
     setState(() { _loading = false; });
   }
 

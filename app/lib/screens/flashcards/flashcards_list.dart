@@ -31,12 +31,14 @@ class _FlashcardsListState extends State<FlashcardsList> {
     setState(() { _loading = true; });
     final detector = VaultDetector();
     final vaults = await detector.detectVaults();
+    if (!mounted) return;
     if (vaults.isEmpty) {
       setState(() { _loading = false; });
       return;
     }
     _service = FlashcardService(vaults.first.path);
     _all = await _service!.listAll();
+    if (!mounted) return;
     _applyFilter();
     setState(() { _loading = false; });
   }

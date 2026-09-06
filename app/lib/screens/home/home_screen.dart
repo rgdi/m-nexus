@@ -54,6 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
       // Detectar vault
       final detector = VaultDetector();
       final vaults = await detector.detectVaults();
+      if (!mounted) return;
       if (vaults.isEmpty) {
         setState(() {
           _loading = false;
@@ -65,6 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _fc = FlashcardService(vaults.first.path);
 
       _noteCount = await _vault!.countNotes();
+      if (!mounted) return;
       final allCards = await _fc!.listAll();
       _flashcardCount = allCards.length;
       _dueCount = allCards.where((c) => c.isDue).length;
@@ -85,9 +87,11 @@ class _HomeScreenState extends State<HomeScreen> {
       notes.sort((a, b) => b.modified.compareTo(a.modified));
       _recent = notes.take(5).toList();
 
+      if (!mounted) return;
       setState(() { _loading = false; });
     } catch (e, s) {
       log.error('home', 'Load failed', error: e, stack: s);
+      if (!mounted) return;
       setState(() { _loading = false; _error = e.toString(); });
     }
   }

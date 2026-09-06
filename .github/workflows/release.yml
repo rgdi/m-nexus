@@ -1,6 +1,6 @@
 # GitHub Actions: Release
 # Se ejecuta cuando se pushea un tag v*.*.* (ej. v0.28.0).
-# Construye el backend y la app Android companion (standalone).
+# Construye el backend y la app Android M-NEXUS (standalone).
 # Sube los ZIPs/APK a una release de GitHub.
 
 name: "M-NEXUS Release"
