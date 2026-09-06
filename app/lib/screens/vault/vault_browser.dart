@@ -8,6 +8,7 @@ import '../../core/theme.dart';
 import '../../services/vault_detector.dart';
 import '../../services/vault_service.dart';
 import '../../services/logger.dart';
+import '../../utils/safe_call.dart';
 import '../../widgets/empty_state.dart';
 import '../note/note_view.dart';
 import '../note/note_editor.dart';
@@ -36,17 +37,23 @@ class _VaultBrowserState extends State<VaultBrowser> {
     setState(() { _loading = true; });
     final log = AdvancedLogger.instance;
     try {
+      log.debug('vault_browser', '_load start');
       final detector = VaultDetector();
       final vaults = await detector.detectVaults();
       if (!mounted) return;
+      log.debug('vault_browser', 'vaults detected', context: {'count': vaults.length});
       if (vaults.isEmpty) {
         setState(() { _loading = false; });
         return;
       }
       _vault = VaultService(vaults.first.path);
       _tree = await _vault!.loadTree();
+      log.debug('vault_browser', 'tree loaded', context: {
+        'vault': vaults.first.path,
+        'children': _tree?.children.length ?? 0,
+      });
     } catch (e, s) {
-      log.error('vault', 'Load failed', error: e, stack: s);
+      log.error('vault_browser', '[EC-UI-002] Load vault tree failed', error: e, stack: s);
     }
     if (!mounted) return;
     setState(() { _loading = false; });

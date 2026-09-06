@@ -32,13 +32,15 @@ void main() async {
     appVersion: info.fullVersion,
     osVersion: osVersion,
   );
-  AdvancedLogger.instance.info('app', '${AppConstants.name} starting',
+  AdvancedLogger.instance.info('app', '[EC-LIFECYCLE-002] ${AppConstants.name} starting',
     context: {
       'version': info.fullVersion,
       'device': identity.deviceId,
       'os': osVersion,
       'platform': kIsWeb ? 'web' : 'native',
       'deviceInfo': DeviceInfo.current.toJson(),
+      'themeMode': settings.materialThemeMode.name,
+      'fontScale': settings.fontScale,
     });
 
   runApp(const MnexusApp());

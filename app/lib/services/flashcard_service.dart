@@ -5,6 +5,8 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import '../core/constants.dart';
 import 'vault_service.dart';
+import '../utils/error_codes.dart';
+import '../utils/safe_call.dart';
 import 'logger.dart';
 
 class Flashcard {
@@ -52,19 +54,32 @@ class FlashcardService {
 
   /// Lista todas las flashcards (approved + drafts).
   Future<List<Flashcard>> listAll() async {
-    log.timeStart('fc', 'listAll');
-    final cards = <Flashcard>[];
-    for (final sub in [AppConstants.flashcardsApproved, AppConstants.flashcardsDrafts]) {
-      final dir = Directory(p.join(vaultPath, sub));
-      if (!await dir.exists()) continue;
-      await for (final f in dir.list()) {
-        if (f is! File || !AppConstants.mdExtensions.contains(p.extension(f.path))) continue;
-        final card = await _parseCard(f, approved: sub == AppConstants.flashcardsApproved);
-        if (card != null) cards.add(card);
-      }
-    }
-    log.timeEnd('fc', 'listAll', extra: {'count': cards.length});
-    return cards;
+    final r = await safeCallAsync<List<Flashcard>>(
+      component: 'fc',
+      code: 'EC-CARD-001',
+      message: 'listAll failed',
+      category: ErrorCategory.card,
+      context: {'vault': vaultPath},
+      hint: 'Check vault path readable',
+      op: () async {
+        log.timeStart('fc', 'listAll');
+        final cards = <Flashcard>[];
+        var parsed = 0;
+        var skipped = 0;
+        for (final sub in [AppConstants.flashcardsApproved, AppConstants.flashcardsDrafts]) {
+          final dir = Directory(p.join(vaultPath, sub));
+          if (!await dir.exists()) continue;
+          await for (final f in dir.list()) {
+            if (f is! File || !AppConstants.mdExtensions.contains(p.extension(f.path))) continue;
+            final card = await _parseCard(f, approved: sub == AppConstants.flashcardsApproved);
+            if (card != null) { cards.add(card); parsed++; } else { skipped++; }
+          }
+        }
+        log.timeEnd('fc', 'listAll', extra: {'count': cards.length, 'parsed': parsed, 'skipped': skipped});
+        return cards;
+      },
+    );
+    return r.value ?? <Flashcard>[];
   }
 
   /// Cards que hay que repasar hoy.
@@ -79,12 +94,20 @@ class FlashcardService {
     required String answer,
     int difficulty = 3,
   }) async {
-    final id = 'fc-${DateTime.now().millisecondsSinceEpoch}';
-    final filename = '$id.md';
-    final dir = Directory(p.join(vaultPath, AppConstants.flashcardsDrafts));
-    if (!await dir.exists()) await dir.create(recursive: true);
-    final path = p.join(dir.path, filename);
-    final body = '''---
+    final r = await safeCallAsync<Flashcard>(
+      component: 'fc',
+      code: 'EC-CARD-002',
+      message: 'create failed',
+      category: ErrorCategory.card,
+      context: {'vault': vaultPath, 'difficulty': difficulty, 'qLen': question.length, 'aLen': answer.length},
+      hint: 'Check vault path writable, Drafts dir can be created',
+      op: () async {
+        final id = 'fc-${DateTime.now().millisecondsSinceEpoch}';
+        final filename = '$id.md';
+        final dir = Directory(p.join(vaultPath, AppConstants.flashcardsDrafts));
+        if (!await dir.exists()) await dir.create(recursive: true);
+        final path = p.join(dir.path, filename);
+        final body = '''---
 id: $id
 question: $question
 answer: $answer
@@ -97,27 +120,42 @@ created: ${DateTime.now().toIso8601String()}
 
 $answer
 ''';
-    await File(path).writeAsString(body);
-    log.info('fc', 'Created', context: {'id': id});
-    return Flashcard(
-      id: id,
-      path: path,
-      question: question,
-      answer: answer,
-      difficulty: difficulty,
-      nextReview: DateTime.now(),
-      approved: false,
+        await File(path).writeAsString(body);
+        log.info('fc', 'Created', context: {'id': id, 'path': path});
+        return Flashcard(
+          id: id,
+          path: path,
+          question: question,
+          answer: answer,
+          difficulty: difficulty,
+          nextReview: DateTime.now(),
+          approved: false,
+        );
+      },
     );
+    if (!r.success) throw r.error!;
+    return r.value!;
   }
 
   /// Aprueba una flashcard (la mueve de Drafts a Approved).
   Future<void> approve(Flashcard card) async {
     if (card.approved) return;
-    final newDir = Directory(p.join(vaultPath, AppConstants.flashcardsApproved));
-    if (!await newDir.exists()) await newDir.create(recursive: true);
-    final newPath = p.join(newDir.path, p.basename(card.path));
-    await File(card.path).rename(newPath);
-    log.info('fc', 'Approved', context: {'id': card.id});
+    final r = await safeCallAsync<void>(
+      component: 'fc',
+      code: 'EC-CARD-003',
+      message: 'approve failed',
+      category: ErrorCategory.card,
+      context: {'vault': vaultPath, 'id': card.id, 'fromPath': card.path},
+      hint: 'Check Approved dir can be created, file not locked',
+      op: () async {
+        final newDir = Directory(p.join(vaultPath, AppConstants.flashcardsApproved));
+        if (!await newDir.exists()) await newDir.create(recursive: true);
+        final newPath = p.join(newDir.path, p.basename(card.path));
+        await File(card.path).rename(newPath);
+        log.info('fc', 'Approved', context: {'id': card.id, 'toPath': newPath});
+      },
+    );
+    if (!r.success) throw r.error!;
   }
 
   /// Actualiza la dificultad y nextReview de una flashcard.
@@ -127,26 +165,34 @@ $answer
     required int difficulty,
     required DateTime nextReview,
   }) async {
-    final now = DateTime.now();
-    // Busca el archivo actual por id
-    String? currentPath;
-    for (final sub in [AppConstants.flashcardsApproved, AppConstants.flashcardsDrafts]) {
-      final dir = Directory(p.join(vaultPath, sub));
-      if (!await dir.exists()) continue;
-      await for (final f in dir.list()) {
-        if (f is! File) continue;
-        if (p.basenameWithoutExtension(f.path) == card.id) {
-          currentPath = f.path;
-          break;
+    final r = await safeCallAsync<void>(
+      component: 'fc',
+      code: 'EC-CARD-004',
+      message: 'updateMetadata failed',
+      category: ErrorCategory.card,
+      context: {'vault': vaultPath, 'id': card.id, 'difficulty': difficulty, 'nextReview': nextReview.toIso8601String()},
+      hint: 'Check card id exists in Approved or Drafts dir, file writable',
+      op: () async {
+        final now = DateTime.now();
+        // Busca el archivo actual por id
+        String? currentPath;
+        for (final sub in [AppConstants.flashcardsApproved, AppConstants.flashcardsDrafts]) {
+          final dir = Directory(p.join(vaultPath, sub));
+          if (!await dir.exists()) continue;
+          await for (final f in dir.list()) {
+            if (f is! File) continue;
+            if (p.basenameWithoutExtension(f.path) == card.id) {
+              currentPath = f.path;
+              break;
+            }
+          }
+          if (currentPath != null) break;
         }
-      }
-      if (currentPath != null) break;
-    }
-    if (currentPath == null) {
-      log.warn('fc', 'Card not found for update', context: {'id': card.id});
-      return;
-    }
-    final body = '''---
+        if (currentPath == null) {
+          log.warn('fc', 'Card not found for update', context: {'id': card.id});
+          return;
+        }
+        final body = '''---
 id: ${card.id}
 question: ${card.question}
 answer: ${card.answer}
@@ -159,15 +205,29 @@ reviewed: ${now.toIso8601String()}
 
 ${card.answer}
 ''';
-    await File(currentPath).writeAsString(body);
-    log.info('fc', 'Updated', context: {'id': card.id, 'difficulty': difficulty});
+        await File(currentPath).writeAsString(body);
+        log.info('fc', 'Updated', context: {'id': card.id, 'difficulty': difficulty, 'path': currentPath});
+      },
+    );
+    if (!r.success) throw r.error!;
   }
 
   /// Borra una flashcard.
   Future<void> delete(Flashcard card) async {
-    final f = File(card.path);
-    if (await f.exists()) await f.delete();
-    log.info('fc', 'Deleted', context: {'id': card.id});
+    final r = await safeCallAsync<void>(
+      component: 'fc',
+      code: 'EC-CARD-005',
+      message: 'delete failed',
+      category: ErrorCategory.card,
+      context: {'id': card.id, 'path': card.path},
+      hint: 'Check file exists and is not locked',
+      op: () async {
+        final f = File(card.path);
+        if (await f.exists()) await f.delete();
+        log.info('fc', 'Deleted', context: {'id': card.id});
+      },
+    );
+    if (!r.success) throw r.error!;
   }
 
   /// Parsea un archivo de flashcard.

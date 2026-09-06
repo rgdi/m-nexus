@@ -11,6 +11,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../utils/error_codes.dart';
+import '../utils/safe_call.dart';
+import 'logger.dart';
 
 /// v0.37: helper que se puede mockear con debugDefaultTargetPlatformOverride.
 /// En código de producción, dart:io Platform.isAndroid siempre es true (Android).
@@ -101,88 +104,154 @@ class CalendarEvent {
 
 class CalendarService {
   bool _enabled = false;
+  final log = AdvancedLogger.instance;
 
   bool get enabled => _enabled;
 
   /// Carga el estado persistido.
   Future<void> load() async {
-    final prefs = await SharedPreferences.getInstance();
-    _enabled = prefs.getBool(_prefsKeyCalendarEnabled) ?? false;
-    // El ID seleccionado se lee de prefs en cada llamada (getSelectedCalendarId)
+    await safeCallAsync<void>(
+      component: 'cal',
+      code: 'EC-CAL-001',
+      message: 'load state failed',
+      category: ErrorCategory.cal,
+      op: () async {
+        final prefs = await SharedPreferences.getInstance();
+        _enabled = prefs.getBool(_prefsKeyCalendarEnabled) ?? false;
+        log.logLifecycle('CalendarService', 'loaded', context: {'enabled': _enabled});
+        // El ID seleccionado se lee de prefs en cada llamada (getSelectedCalendarId)
+      },
+    );
   }
 
   /// Verifica si el permiso READ_CALENDAR está concedido.
   Future<bool> isPermissionGranted() async {
     if (!_isAndroid) return false;
-    try {
-      return await _channel.invokeMethod<bool>('checkCalendarPermission') ?? false;
-    } catch (_) {
-      return false;
-    }
+    final r = await safeCallAsync<bool>(
+      component: 'cal',
+      code: 'EC-CAL-002',
+      message: 'checkCalendarPermission failed',
+      category: ErrorCategory.cal,
+      context: {'channel': 'com.mnexus.app/calendar', 'method': 'checkCalendarPermission'},
+      hint: 'Permission plugin may not be installed',
+      op: () async {
+        final result = await _channel.invokeMethod<bool>('checkCalendarPermission') ?? false;
+        log.logPlatform('cal', 'com.mnexus.app/calendar', 'checkCalendarPermission', args: {}, durationMs: 0);
+        return result;
+      },
+    );
+    return r.value ?? false;
   }
 
   /// Pide el permiso al usuario (muestra el diálogo nativo).
   Future<bool> requestPermission() async {
     if (!_isAndroid) return false;
-    try {
-      await _channel.invokeMethod<bool>('requestCalendarPermission');
-      return await isPermissionGranted();
-    } catch (_) {
-      return false;
-    }
+    final r = await safeCallAsync<bool>(
+      component: 'cal',
+      code: 'EC-CAL-003',
+      message: 'requestCalendarPermission failed',
+      category: ErrorCategory.auth,
+      context: {'channel': 'com.mnexus.app/calendar', 'method': 'requestCalendarPermission'},
+      hint: 'User denied or system blocked the request',
+      op: () async {
+        log.logPlatform('cal', 'com.mnexus.app/calendar', 'requestCalendarPermission');
+        await _channel.invokeMethod<bool>('requestCalendarPermission');
+        return await isPermissionGranted();
+      },
+    );
+    return r.value ?? false;
   }
 
   /// Habilita o deshabilita la integración con Calendar.
   Future<bool> setEnabled(bool enabled) async {
-    if (enabled && !await isPermissionGranted()) {
-      final granted = await requestPermission();
-      if (!granted) return false;
-    }
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_prefsKeyCalendarEnabled, enabled);
-    _enabled = enabled;
-    return enabled;
+    final r = await safeCallAsync<bool>(
+      component: 'cal',
+      code: 'EC-CAL-004',
+      message: 'setEnabled failed',
+      category: ErrorCategory.cal,
+      context: {'enabled': enabled},
+      op: () async {
+        if (enabled && !await isPermissionGranted()) {
+          final granted = await requestPermission();
+          if (!granted) return false;
+        }
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool(_prefsKeyCalendarEnabled, enabled);
+        _enabled = enabled;
+        log.info('cal', 'setEnabled', context: {'enabled': enabled});
+        return enabled;
+      },
+    );
+    return r.value ?? false;
   }
 
   /// Lista los calendarios disponibles en el dispositivo.
   Future<List<CalendarInfo>> listCalendars() async {
     if (!_isAndroid) return [];
     if (!await isPermissionGranted()) return [];
-    try {
-      final raw = await _channel.invokeMethod<List<dynamic>>('listCalendars');
-      if (raw == null) return [];
-      final selected = await getSelectedCalendarId();
-      return raw.map((e) {
-        final c = CalendarInfo.fromMap(e as Map);
-        return CalendarInfo(
-          id: c.id,
-          name: c.name,
-          account: c.account,
-          accountName: c.accountName,
-          owner: c.owner,
-          color: c.color,
-          visible: c.visible,
-          isSelected: c.id == selected,
-        );
-      }).toList();
-    } catch (_) {
-      return [];
-    }
+    final r = await safeCallAsync<List<CalendarInfo>>(
+      component: 'cal',
+      code: 'EC-CAL-005',
+      message: 'listCalendars failed',
+      category: ErrorCategory.cal,
+      context: {'channel': 'com.mnexus.app/calendar', 'method': 'listCalendars'},
+      op: () async {
+        log.logPlatform('cal', 'com.mnexus.app/calendar', 'listCalendars');
+        final raw = await _channel.invokeMethod<List<dynamic>>('listCalendars');
+        if (raw == null) return <CalendarInfo>[];
+        final selected = await getSelectedCalendarId();
+        final result = raw.map((e) {
+          final c = CalendarInfo.fromMap(e as Map);
+          return CalendarInfo(
+            id: c.id,
+            name: c.name,
+            account: c.account,
+            accountName: c.accountName,
+            owner: c.owner,
+            color: c.color,
+            visible: c.visible,
+            isSelected: c.id == selected,
+          );
+        }).toList();
+        log.info('cal', 'listCalendars ok', context: {'count': result.length, 'selectedId': selected});
+        return result;
+      },
+    );
+    return r.value ?? <CalendarInfo>[];
   }
 
   /// Devuelve el ID del calendario seleccionado (o null).
   Future<int?> getSelectedCalendarId() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt(_prefsKeySelectedCalendarId);
+    final r = await safeCallAsync<int?>(
+      component: 'cal',
+      code: 'EC-CAL-006',
+      message: 'getSelectedCalendarId failed',
+      category: ErrorCategory.cal,
+      op: () async {
+        final prefs = await SharedPreferences.getInstance();
+        return prefs.getInt(_prefsKeySelectedCalendarId);
+      },
+    );
+    return r.value;
   }
 
   Future<void> _setSelectedId(int? id) async {
-    final prefs = await SharedPreferences.getInstance();
-    if (id == null) {
-      await prefs.remove(_prefsKeySelectedCalendarId);
-    } else {
-      await prefs.setInt(_prefsKeySelectedCalendarId, id);
-    }
+    await safeCallAsync<void>(
+      component: 'cal',
+      code: 'EC-CAL-007',
+      message: '_setSelectedId failed',
+      category: ErrorCategory.cal,
+      context: {'id': id},
+      op: () async {
+        final prefs = await SharedPreferences.getInstance();
+        if (id == null) {
+          await prefs.remove(_prefsKeySelectedCalendarId);
+        } else {
+          await prefs.setInt(_prefsKeySelectedCalendarId, id);
+        }
+        log.debug('cal', 'selected id changed', context: {'id': id});
+      },
+    );
   }
 
   /// Establece el calendario por defecto (sugerir eventos de este).
@@ -234,19 +303,26 @@ class CalendarService {
 
   /// Sugiere el evento más probable para "ahora" (dentro de ±30 min).
   Future<CalendarEvent?> suggestCurrentEvent() async {
-    final now = DateTime.now();
-    final events = await listEvents(
-      from: now.subtract(const Duration(minutes: 30)),
-      to: now.add(const Duration(minutes: 30)),
-    );
-    if (events.isEmpty) return null;
-    // Ordenar por cercanía al momento actual
-    events.sort((a, b) {
-      final aDist = (a.start.difference(now).inMinutes).abs();
-      final bDist = (b.start.difference(now).inMinutes).abs();
-      return aDist.compareTo(bDist);
-    });
-    return events.first;
+    return await guardAsync<CalendarEvent?>('cal', 'EC-CAL-009',
+      'suggestCurrentEvent failed', () async {
+        final now = DateTime.now();
+        final events = await listEvents(
+          from: now.subtract(const Duration(minutes: 30)),
+          to: now.add(const Duration(minutes: 30)),
+        );
+        if (events.isEmpty) return null;
+        // Ordenar por cercanía al momento actual
+        events.sort((a, b) {
+          final aDist = (a.start.difference(now).inMinutes).abs();
+          final bDist = (b.start.difference(now).inMinutes).abs();
+          return aDist.compareTo(bDist);
+        });
+        log.debug('cal', 'suggestCurrentEvent', context: {
+          'eventId': events.first.id,
+          'title': events.first.title,
+        });
+        return events.first;
+      }, context: {'now': now.toIso8601String()});
   }
 
   /// v0.34: lista los próximos N eventos (para mostrar en home).

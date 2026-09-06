@@ -9,6 +9,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../utils/error_codes.dart';
+import '../utils/safe_call.dart';
+import 'logger.dart';
 import 'package:permission_handler/permission_handler.dart' as ph show PermissionStatus;
 
 /// v0.37: helper mockable para tests.
@@ -122,27 +125,45 @@ class PermissionsService {
   /// En Android 11+ este permiso debe otorgarse desde una pantalla especial.
   static Future<bool> openManageStorageSettings() async {
     if (!_isAndroid) return false;
-    try {
-      const channel = MethodChannel('com.mnexus.app/permissions');
-      final result = await channel.invokeMethod<bool>('openManageStorageSettings');
-      return result ?? false;
-    } catch (_) {
+    final log = AdvancedLogger.instance;
+    final r = await safeCallAsync<bool>(
+      component: 'auth',
+      code: 'EC-AUTH-001',
+      message: 'openManageStorageSettings failed',
+      category: ErrorCategory.auth,
+      context: {'channel': 'com.mnexus.app/permissions', 'method': 'openManageStorageSettings'},
+      op: () async {
+        log.logPlatform('auth', 'com.mnexus.app/permissions', 'openManageStorageSettings');
+        const channel = MethodChannel('com.mnexus.app/permissions');
+        final result = await channel.invokeMethod<bool>('openManageStorageSettings');
+        return result ?? false;
+      },
+    );
+    if (r.value == null || r.value == false) {
       // Fallback al método estándar
+      log.debug('auth', 'Falling back to openAppSettings');
       return openAppSettings();
     }
+    return r.value!;
   }
 
   /// v0.34: comprueba si MANAGE_EXTERNAL_STORAGE está concedido (sin pedirlo).
   /// Útil para mostrar UI explicativa.
   static Future<bool> isManageStorageGranted() async {
     if (!_isAndroid) return true;
-    try {
-      const channel = MethodChannel('com.mnexus.app/permissions');
-      final result = await channel.invokeMethod<bool>('isManageStorageGranted');
-      return result ?? false;
-    } catch (_) {
-      return false;
-    }
+    final r = await safeCallAsync<bool>(
+      component: 'auth',
+      code: 'EC-AUTH-002',
+      message: 'isManageStorageGranted failed',
+      category: ErrorCategory.auth,
+      context: {'channel': 'com.mnexus.app/permissions', 'method': 'isManageStorageGranted'},
+      op: () async {
+        const channel = MethodChannel('com.mnexus.app/permissions');
+        final result = await channel.invokeMethod<bool>('isManageStorageGranted');
+        return result ?? false;
+      },
+    );
+    return r.value ?? false;
   }
 
   // ── Internals ───────────────────────────────────────

@@ -12,6 +12,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../utils/error_codes.dart';
+import '../utils/safe_call.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'updater_io.dart';
@@ -72,31 +74,40 @@ class Updater extends ChangeNotifier {
   Future<UpdateCheckResult> check({bool force = false}) async {
     _checking = true;
     notifyListeners();
-    try {
-      await loadInstalledVersion();
-      await loadInstalledVersionCode();
-      if (!force) {
-        final cached = await _readCache();
-        if (cached != null) {
-          _lastResult = cached;
-          return cached;
+    final r = await safeCallAsync<UpdateCheckResult>(
+      component: 'updater',
+      code: 'EC-UP-001',
+      message: 'check for updates failed',
+      category: ErrorCategory.up,
+      context: {'force': force, 'repo': config.repo},
+      hint: 'Check network connectivity, GitHub API accessible',
+      op: () async {
+        await loadInstalledVersion();
+        await loadInstalledVersionCode();
+        if (!force) {
+          final cached = await _readCache();
+          if (cached != null) {
+            AdvancedLogger.instance.debug('updater', 'using cached result',
+              context: {'version': cached.latestVersion});
+            _lastResult = cached;
+            return cached;
+          }
         }
-      }
-      _lastResult = await _checkViaGithub();
-      await _writeCache(_lastResult!);
-      return _lastResult!;
-    } catch (e) {
-      final result = UpdateCheckResult(
+        _lastResult = await _checkViaGithub();
+        await _writeCache(_lastResult!);
+        return _lastResult!;
+      },
+    );
+    if (!r.success) {
+      _lastResult = UpdateCheckResult(
         installedVersion: _installedVersion ?? '0.0.0',
         checkedAt: DateTime.now(),
-        error: e.toString(),
+        error: r.error?.message ?? 'unknown',
       );
-      _lastResult = result;
-      return result;
-    } finally {
-      _checking = false;
-      notifyListeners();
     }
+    _checking = false;
+    notifyListeners();
+    return _lastResult!;
   }
 
   /// Descarga el APK. Reintenta 3 veces con backoff.

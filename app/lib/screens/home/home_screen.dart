@@ -90,7 +90,9 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!mounted) return;
       setState(() { _loading = false; });
     } catch (e, s) {
-      log.error('home', 'Load failed', error: e, stack: s);
+      log.error('home', '[EC-UI-001] Load home screen failed',
+        context: {'hasVault': _vault != null, 'hasFC': _fc != null},
+        error: e, stack: s);
       if (!mounted) return;
       setState(() { _loading = false; _error = e.toString(); });
     }

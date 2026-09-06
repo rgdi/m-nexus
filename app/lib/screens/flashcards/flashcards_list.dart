@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import '../../services/flashcard_service.dart';
+import '../../services/logger.dart';
+import '../../utils/safe_call.dart';
 import '../../services/vault_detector.dart';
 import '../../widgets/empty_state.dart';
 import 'flashcard_review.dart';
@@ -29,17 +31,25 @@ class _FlashcardsListState extends State<FlashcardsList> {
 
   Future<void> _load() async {
     setState(() { _loading = true; });
-    final detector = VaultDetector();
-    final vaults = await detector.detectVaults();
-    if (!mounted) return;
-    if (vaults.isEmpty) {
-      setState(() { _loading = false; });
-      return;
+    final log = AdvancedLogger.instance;
+    try {
+      final detector = VaultDetector();
+      final vaults = await detector.detectVaults();
+      if (!mounted) return;
+      if (vaults.isEmpty) {
+        log.warn('flashcards_list', 'No vault detected', context: {'screen': 'flashcards_list'});
+        setState(() { _loading = false; });
+        return;
+      }
+      _service = FlashcardService(vaults.first.path);
+      _all = await _service!.listAll();
+      if (!mounted) return;
+      _applyFilter();
+      log.debug('flashcards_list', 'loaded', context: {'count': _all.length, 'filtered': _filtered.length});
+    } catch (e, s) {
+      log.error('flashcards_list', '[EC-UI-003] Load flashcards failed', error: e, stack: s);
     }
-    _service = FlashcardService(vaults.first.path);
-    _all = await _service!.listAll();
     if (!mounted) return;
-    _applyFilter();
     setState(() { _loading = false; });
   }
 

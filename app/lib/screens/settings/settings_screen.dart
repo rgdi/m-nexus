@@ -12,6 +12,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants.dart';
 import '../../services/app_info.dart';
 import '../../services/calendar_service.dart';
+import '../../services/logger.dart';
 import '../../services/settings_service.dart';
 import '../../services/vault_detector.dart';
 import 'changelog_view.dart';
@@ -33,20 +34,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _load() async {
-    final s = await SettingsService().load();
-    if (!mounted) return;
-    setState(() {
-      _settings = s;
-      _loading = false;
-    });
+    final log = AdvancedLogger.instance;
+    try {
+      final s = await SettingsService().load();
+      if (!mounted) return;
+      log.debug('settings', 'settings loaded', context: {
+        'themeMode': s.themeMode.name,
+        'fontScale': s.fontScale,
+        'hasBackend': s.backendUrl != null,
+      });
+      setState(() {
+        _settings = s;
+        _loading = false;
+      });
+    } catch (e, s) {
+      log.error('settings', '[EC-CFG-011] Load settings failed', error: e, stack: s);
+      if (!mounted) return;
+      setState(() { _loading = false; });
+    }
   }
 
   Future<void> _save() async {
-    await SettingsService().save(_settings);
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Guardado'), duration: Duration(seconds: 1)),
-    );
+    try {
+      await SettingsService().save(_settings);
+      AdvancedLogger.instance.info('settings', 'settings saved', context: {
+        'themeMode': _settings.themeMode.name,
+        'fontScale': _settings.fontScale,
+        'hasBackend': _settings.backendUrl != null,
+        'haptics': _settings.enableHaptics,
+      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Guardado'), duration: Duration(seconds: 1)),
+      );
+    } catch (e, s) {
+      AdvancedLogger.instance.error('settings', '[EC-CFG-010] Save settings failed',
+        error: e, stack: s);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    }
   }
 
   @override
