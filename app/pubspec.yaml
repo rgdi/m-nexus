@@ -1,6 +1,6 @@
 name: mnexus_app
 description: "M-NEXUS — Tu segundo cerebro digital. Notas, flashcards, calendar. Standalone (Android + Web)."
-version: 0.44.15+45
+version: 0.44.16+46
 publish_to: "none"
 
 environment:

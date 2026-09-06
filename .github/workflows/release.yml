@@ -156,12 +156,11 @@ jobs:
         run: bash app/android/fix-plugins.sh
       - name: Build APK
         run: |
-          cd app
-          # Use --debug to avoid R8 minification issues. The APK is 2x bigger but
-          # reliably builds in CI. Final size ~80MB instead of ~50MB.
-          flutter build apk --debug 2>&1 | tee /tmp/build.log | tail -100
+          cd app/android
+          # Use gradle directly to avoid Flutter wrapper issues
+          ./gradlew assembleRelease --no-daemon 2>&1 | tee /tmp/build.log | tail -50
           echo "=== Output dir ==="
-          ls -la build/app/outputs/flutter-apk/ 2>&1 || true
+          ls -la ../build/app/outputs/flutter-apk/ 2>&1 || true
           echo "=== Build log size ==="
           wc -l /tmp/build.log
       - name: Copy APK
