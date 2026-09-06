@@ -264,7 +264,7 @@ class VaultService {
       });
     }
     // # inline tags
-    final inlineRe = RegExp(r'#([a-zA-Z0-9_/-]+)');
+    final inlineRe = RegExp(r'#([\p{L}0-9_/-]+)', unicode: true);
     for (final m in inlineRe.allMatches(body)) {
       tags.add(m.group(1)!);
     }
