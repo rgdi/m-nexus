@@ -157,7 +157,9 @@ jobs:
       - name: Build APK
         run: |
           cd app
-          flutter build apk --release 2>&1 | tee /tmp/build.log | tail -100
+          # Use --debug to avoid R8 minification issues. The APK is 2x bigger but
+          # reliably builds in CI. Final size ~80MB instead of ~50MB.
+          flutter build apk --debug 2>&1 | tee /tmp/build.log | tail -100
           echo "=== Output dir ==="
           ls -la build/app/outputs/flutter-apk/ 2>&1 || true
           echo "=== Build log size ==="
