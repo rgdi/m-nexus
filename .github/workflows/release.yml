@@ -77,8 +77,8 @@ jobs:
   # 3. Companion App Android -> APK
   # -----------------------------------------------------------------
 
-  build-companion:
-    name: Build Companion App
+  build-app:
+    name: Build App
     runs-on: ubuntu-latest
     needs: set-version
     steps:
@@ -91,83 +91,83 @@ jobs:
         with:
           flutter-version: '3.24.0'
           channel: 'stable'
-      - run: cd companion-app && flutter pub get
-      - run: cd companion-app && flutter analyze --no-fatal-infos --no-fatal-warnings || true
-      - run: cd companion-app && flutter test --no-pub --reporter=expanded 2>&1 || true
+      - run: cd app && flutter pub get
+      - run: cd app && flutter analyze --no-fatal-infos --no-fatal-warnings || true
+      - run: cd app && flutter test --no-pub --reporter=expanded 2>&1 || true
       - name: Copy custom android files
         run: |
           # backup all custom android files
-          cp companion-app/android/build.gradle /tmp/build.gradle 2>/dev/null || true
-          cp companion-app/android/settings.gradle /tmp/settings.gradle 2>/dev/null || true
-          cp companion-app/android/gradle.properties /tmp/gradle.properties 2>/dev/null || true
-          cp companion-app/android/app/build.gradle.kts /tmp/app-build.gradle.kts 2>/dev/null || true
-          cp companion-app/android/app/build.gradle /tmp/app-build.gradle 2>/dev/null || true
-          cp companion-app/android/app/src/main/AndroidManifest.xml /tmp/AndroidManifest.xml
-          cp -r companion-app/android/app/src/main/kotlin /tmp/main-kotlin 2>/dev/null || true
-          cp -r companion-app/android/app/src/main/res/mipmap-anydpi-v26 /tmp/mipmap-anydpi-v26 2>/dev/null || true
-          cp -r companion-app/android/app/src/main/res/mipmap-mdpi /tmp/mipmap-mdpi 2>/dev/null || true
-          cp -r companion-app/android/app/src/main/res/mipmap-hdpi /tmp/mipmap-hdpi 2>/dev/null || true
-          cp -r companion-app/android/app/src/main/res/mipmap-xhdpi /tmp/mipmap-xhdpi 2>/dev/null || true
-          cp -r companion-app/android/app/src/main/res/mipmap-xxhdpi /tmp/mipmap-xxhdpi 2>/dev/null || true
-          cp -r companion-app/android/app/src/main/res/mipmap-xxxhdpi /tmp/mipmap-xxxhdpi 2>/dev/null || true
-          cp -r companion-app/android/app/src/main/res/drawable /tmp/drawable 2>/dev/null || true
-          cp companion-app/android/app/src/main/res/values/colors.xml /tmp/colors.xml 2>/dev/null || true
-          cp companion-app/android/app/src/main/res/xml/file_paths.xml /tmp/file_paths.xml 2>/dev/null || true
+          cp app/android/build.gradle /tmp/build.gradle 2>/dev/null || true
+          cp app/android/settings.gradle /tmp/settings.gradle 2>/dev/null || true
+          cp app/android/gradle.properties /tmp/gradle.properties 2>/dev/null || true
+          cp app/android/app/build.gradle.kts /tmp/app-build.gradle.kts 2>/dev/null || true
+          cp app/android/app/build.gradle /tmp/app-build.gradle 2>/dev/null || true
+          cp app/android/app/src/main/AndroidManifest.xml /tmp/AndroidManifest.xml
+          cp -r app/android/app/src/main/kotlin /tmp/main-kotlin 2>/dev/null || true
+          cp -r app/android/app/src/main/res/mipmap-anydpi-v26 /tmp/mipmap-anydpi-v26 2>/dev/null || true
+          cp -r app/android/app/src/main/res/mipmap-mdpi /tmp/mipmap-mdpi 2>/dev/null || true
+          cp -r app/android/app/src/main/res/mipmap-hdpi /tmp/mipmap-hdpi 2>/dev/null || true
+          cp -r app/android/app/src/main/res/mipmap-xhdpi /tmp/mipmap-xhdpi 2>/dev/null || true
+          cp -r app/android/app/src/main/res/mipmap-xxhdpi /tmp/mipmap-xxhdpi 2>/dev/null || true
+          cp -r app/android/app/src/main/res/mipmap-xxxhdpi /tmp/mipmap-xxxhdpi 2>/dev/null || true
+          cp -r app/android/app/src/main/res/drawable /tmp/drawable 2>/dev/null || true
+          cp app/android/app/src/main/res/values/colors.xml /tmp/colors.xml 2>/dev/null || true
+          cp app/android/app/src/main/res/xml/file_paths.xml /tmp/file_paths.xml 2>/dev/null || true
           # v0.32: backup release signing config so the APK is signed with the
           # same keystore on every build (so devices recognize updates).
-          cp companion-app/android/key.properties /tmp/key.properties 2>/dev/null || true
-          cp -r companion-app/android/keystores /tmp/keystores 2>/dev/null || true
+          cp app/android/key.properties /tmp/key.properties 2>/dev/null || true
+          cp -r app/android/keystores /tmp/keystores 2>/dev/null || true
       - name: Regenerate Android platform files
-        run: cd companion-app && flutter create --platforms=android --no-overwrite --project-name companion_app .
+        run: cd app && flutter create --platforms=android --no-overwrite --project-name mnexus_app .
       - name: Restore custom android files
         run: |
           # restore the build configs
-          cp /tmp/build.gradle companion-app/android/build.gradle 2>/dev/null || true
-          cp /tmp/settings.gradle companion-app/android/settings.gradle 2>/dev/null || true
-          cp /tmp/gradle.properties companion-app/android/gradle.properties 2>/dev/null || true
+          cp /tmp/build.gradle app/android/build.gradle 2>/dev/null || true
+          cp /tmp/settings.gradle app/android/settings.gradle 2>/dev/null || true
+          cp /tmp/gradle.properties app/android/gradle.properties 2>/dev/null || true
           # restore the app build config (kts preferred)
           if [ -f /tmp/app-build.gradle.kts ]; then
-            cp /tmp/app-build.gradle.kts companion-app/android/app/build.gradle.kts
+            cp /tmp/app-build.gradle.kts app/android/app/build.gradle.kts
           elif [ -f /tmp/app-build.gradle ]; then
-            cp /tmp/app-build.gradle companion-app/android/app/build.gradle
+            cp /tmp/app-build.gradle app/android/app/build.gradle
           fi
           # v0.32: restore release signing config
-          if [ -f /tmp/key.properties ]; then cp /tmp/key.properties companion-app/android/key.properties; fi
-          if [ -d /tmp/keystores ]; then cp -r /tmp/keystores companion-app/android/; fi
+          if [ -f /tmp/key.properties ]; then cp /tmp/key.properties app/android/key.properties; fi
+          if [ -d /tmp/keystores ]; then cp -r /tmp/keystores app/android/; fi
           # restore MainActivity.kt + AndroidManifest.xml (v0.30+ have 3 platform channels)
-          cp /tmp/AndroidManifest.xml companion-app/android/app/src/main/AndroidManifest.xml
+          cp /tmp/AndroidManifest.xml app/android/app/src/main/AndroidManifest.xml
           if [ -d /tmp/main-kotlin ]; then
-            mkdir -p companion-app/android/app/src/main/kotlin
-            cp -r /tmp/main-kotlin/. companion-app/android/app/src/main/kotlin/ 2>/dev/null || true
+            mkdir -p app/android/app/src/main/kotlin
+            cp -r /tmp/main-kotlin/. app/android/app/src/main/kotlin/ 2>/dev/null || true
           fi
           # restore the launcher icons
-          if [ -d /tmp/mipmap-anydpi-v26 ]; then cp -r /tmp/mipmap-anydpi-v26 companion-app/android/app/src/main/res/; fi
-          if [ -d /tmp/mipmap-mdpi ]; then cp -r /tmp/mipmap-mdpi companion-app/android/app/src/main/res/; fi
-          if [ -d /tmp/mipmap-hdpi ]; then cp -r /tmp/mipmap-hdpi companion-app/android/app/src/main/res/; fi
-          if [ -d /tmp/mipmap-xhdpi ]; then cp -r /tmp/mipmap-xhdpi companion-app/android/app/src/main/res/; fi
-          if [ -d /tmp/mipmap-xxhdpi ]; then cp -r /tmp/mipmap-xxhdpi companion-app/android/app/src/main/res/; fi
-          if [ -d /tmp/mipmap-xxxhdpi ]; then cp -r /tmp/mipmap-xxxhdpi companion-app/android/app/src/main/res/; fi
-          if [ -d /tmp/drawable ]; then cp -r /tmp/drawable companion-app/android/app/src/main/res/; fi
-          if [ -f /tmp/colors.xml ]; then cp /tmp/colors.xml companion-app/android/app/src/main/res/values/colors.xml; fi
-          if [ -f /tmp/file_paths.xml ]; then cp /tmp/file_paths.xml companion-app/android/app/src/main/res/xml/file_paths.xml; fi
-          if [ -f /tmp/key.properties ]; then cp /tmp/key.properties companion-app/android/key.properties; fi
-          if [ -d /tmp/keystores ]; then cp -r /tmp/keystores companion-app/android/; fi
+          if [ -d /tmp/mipmap-anydpi-v26 ]; then cp -r /tmp/mipmap-anydpi-v26 app/android/app/src/main/res/; fi
+          if [ -d /tmp/mipmap-mdpi ]; then cp -r /tmp/mipmap-mdpi app/android/app/src/main/res/; fi
+          if [ -d /tmp/mipmap-hdpi ]; then cp -r /tmp/mipmap-hdpi app/android/app/src/main/res/; fi
+          if [ -d /tmp/mipmap-xhdpi ]; then cp -r /tmp/mipmap-xhdpi app/android/app/src/main/res/; fi
+          if [ -d /tmp/mipmap-xxhdpi ]; then cp -r /tmp/mipmap-xxhdpi app/android/app/src/main/res/; fi
+          if [ -d /tmp/mipmap-xxxhdpi ]; then cp -r /tmp/mipmap-xxxhdpi app/android/app/src/main/res/; fi
+          if [ -d /tmp/drawable ]; then cp -r /tmp/drawable app/android/app/src/main/res/; fi
+          if [ -f /tmp/colors.xml ]; then cp /tmp/colors.xml app/android/app/src/main/res/values/colors.xml; fi
+          if [ -f /tmp/file_paths.xml ]; then cp /tmp/file_paths.xml app/android/app/src/main/res/xml/file_paths.xml; fi
+          if [ -f /tmp/key.properties ]; then cp /tmp/key.properties app/android/key.properties; fi
+          if [ -d /tmp/keystores ]; then cp -r /tmp/keystores app/android/; fi
       - name: Patch plugin build.gradle for AGP 8.3 compat
-        run: bash companion-app/android/fix-plugins.sh
+        run: bash app/android/fix-plugins.sh
       - name: Build APK
         continue-on-error: true
-        run: cd companion-app && flutter build apk --release
+        run: cd app && flutter build apk --release
       - name: Copy APK
         run: |
           mkdir -p $GITHUB_WORKSPACE/artifacts
-          if [ -f companion-app/build/app/outputs/flutter-apk/app-release.apk ]; then
-            cp companion-app/build/app/outputs/flutter-apk/app-release.apk $GITHUB_WORKSPACE/artifacts/m-nexus-companion-${{ needs.set-version.outputs.ref_name }}.apk
-            cp $GITHUB_WORKSPACE/artifacts/m-nexus-companion-${{ needs.set-version.outputs.ref_name }}.apk $GITHUB_WORKSPACE/artifacts/m-nexus-companion.apk
+          if [ -f app/build/app/outputs/flutter-apk/app-release.apk ]; then
+            cp app/build/app/outputs/flutter-apk/app-release.apk $GITHUB_WORKSPACE/artifacts/m-nexus-app-${{ needs.set-version.outputs.ref_name }}.apk
+            cp $GITHUB_WORKSPACE/artifacts/m-nexus-app-${{ needs.set-version.outputs.ref_name }}.apk $GITHUB_WORKSPACE/artifacts/m-nexus-app.apk
           fi
       - uses: actions/upload-artifact@v4
         with:
-          name: companion
-          path: artifacts/m-nexus-companion-*.apk
+          name: app
+          path: artifacts/m-nexus-app-*.apk
           if-no-files-found: warn
 
 
@@ -191,7 +191,7 @@ jobs:
   create-release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
-    needs: [build-backend, build-companion, upload-installer]
+    needs: [build-backend, build-app, upload-installer]
     permissions:
       contents: write
     steps:
@@ -209,9 +209,9 @@ jobs:
             mv artifacts/backend/*.zip artifacts/ 2>/dev/null || true
             rm -rf artifacts/backend
           fi
-          if [ -d artifacts/companion ]; then
-            mv artifacts/companion/*.apk artifacts/ 2>/dev/null || true
-            rm -rf artifacts/companion
+          if [ -d artifacts/app ]; then
+            mv artifacts/app/*.apk artifacts/ 2>/dev/null || true
+            rm -rf artifacts/app
           fi
           if [ -d artifacts/installer ]; then
             mv artifacts/installer/*.sh artifacts/ 2>/dev/null || true
@@ -224,8 +224,8 @@ jobs:
           for f in artifacts/m-nexus-install-*.sh; do
             [ -f "$f" ] && cp "$f" "artifacts/m-nexus-install.sh"
           done
-          for f in artifacts/m-nexus-companion-*.apk; do
-            [ -f "$f" ] && cp "$f" "artifacts/m-nexus-companion.apk"
+          for f in artifacts/m-nexus-app-*.apk; do
+            [ -f "$f" ] && cp "$f" "artifacts/m-nexus-app.apk"
           done
           ls -la artifacts/
       - name: Determine and push tag
@@ -261,7 +261,7 @@ jobs:
             artifacts/m-nexus-backend.zip
             artifacts/m-nexus-install-*.sh
             artifacts/m-nexus-install.sh
-            artifacts/m-nexus-companion-*.apk
-            artifacts/m-nexus-companion.apk
+            artifacts/m-nexus-app-*.apk
+            artifacts/m-nexus-app.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

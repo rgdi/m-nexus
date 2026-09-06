@@ -218,7 +218,7 @@ async function sendAPNs(
     });
     const note = new apnModule.Notification();
     (note as unknown as { alert: unknown }).alert = { title: payload.title, body: payload.body };
-    (note as unknown as { topic: string }).topic = process.env.APNS_BUNDLE_ID ?? "com.mnexus.obsidian";
+    (note as unknown as { topic: string }).topic = process.env.APNS_BUNDLE_ID ?? "com.mnexus.app";
     (note as unknown as { sound: string }).sound = payload.sound ?? "default";
     (note as unknown as { badge?: number }).badge = payload.badge;
     (note as unknown as { category?: string }).category = payload.category;
