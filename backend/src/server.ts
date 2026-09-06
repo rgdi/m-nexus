@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { config } from "./config.js";
 import { logger, logLifecycle, logError, logOp } from "./utils/log.js";
-import { AppError, ErrorCategory } from "./utils/errorCodes.js";
+import { AppError, ErrorCategory, E } from "./utils/errorCodes.js";
 import { getMetrics } from "./utils/metrics.js";
 import { healthRoutes } from "./routes/health.js";
 import { audioRoutes } from "./routes/audio.js";
@@ -118,10 +118,7 @@ export async function buildServer(): Promise<FastifyInstance> {
 
     // Fastify validation errors
     if (err.validation) {
-      const appErr = new AppError({
-        category: ErrorCategory.VAL,
-        code: "EC-VAL-001",
-        message: "Validation failed",
+      const appErr = E.val("EC-VAL-001", "Validation failed", {
         cause: err,
         context: {
           requestId: req.id,

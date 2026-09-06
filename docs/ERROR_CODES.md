@@ -524,8 +524,45 @@ git commit -m "feat(llm): add EC-LLM-008 for token limit exceeded"
 
 ---
 
+**Estado actual (v0.45.0):** ~200 códigos repartidos en 28 categorías, ambos lados sincronizados.
+
+| Categoría | Backend | Frontend | Total | Descripción |
+|-----------|---------|----------|-------|-------------|
+| `NET` | 0 | 3 | 3 | Network/HTTP |
+| `FS` | 2 | 1 | 3 | Filesystem |
+| `DB` | 0 | 0 | 0 | (reservada) |
+| `AUTH` | 28 | 2 | 30 | JWT, devices, permisos |
+| `VAL` | 1 | 0 | 1 | Validation |
+| `EXT` | 0 | 0 | 0 | (reservada) |
+| `LLM` | 9 | 0 | 9 | LLM (Ollama, OpenRouter) |
+| `OCR` | 9 | 0 | 9 | OCR (Tesseract, Deepseek) |
+| `AUD` | 7 | 0 | 7 | Audio/Whisper |
+| `EMB` | 9 | 0 | 9 | Embeddings |
+| `SEC` | 28 | 0 | 28 | Secrets/encryption |
+| `BK` | 11 | 0 | 11 | Backup/restore |
+| `SYNC` | 0 | 0 | 0 | (categoría definida, sin códigos aún) |
+| `CONFL` | 0 | 0 | 0 | (categoría definida, sin códigos aún) |
+| `PROP` | 2 | 0 | 2 | Proposals |
+| `PUSH` | 17 | 0 | 17 | Push notifications |
+| `QUIZ` | 1 | 0 | 1 | Adaptive quiz |
+| `STR` | 1 | 0 | 1 | Structured notes |
+| `REL` | 3 | 0 | 3 | Cross-relevance |
+| `WS` | 2 | 0 | 2 | WebSocket |
+| `RATE` | 2 | 0 | 2 | Rate limit |
+| `CFG` | 0 | 4 | 4 | Configuration |
+| `EVAL` | 3 | 0 | 3 | Vault evaluation |
+| `CAL` | 0 | 8 | 8 | Calendar (frontend only) |
+| `PLAT` | 0 | 3 | 3 | Platform channels (frontend only) |
+| `VAULT` | 0 | 8 | 8 | Vault (frontend only) |
+| `CARD` | 10 | 5 | 15 | Flashcards |
+| `NOTE` | 0 | 3 | 3 | Notes (frontend only) |
+| `UP` | 5 | 6 | 11 | Update/upgrade |
+| `UI` | 0 | 3 | 3 | UI (frontend only) |
+| `LIFECYCLE` | 3 | 2 | 5 | Service init/dispose |
+| `INTERNAL` | 2 | 0 | 2 | Internal bugs |
+
 **Próximas versiones:**
 
 - [ ] v0.46: i18n de los mensajes (separar `code` de `message`)
-- [ ] v0.47: códigos para `SYNC`, `CONFL`, `PROP`, `PUSH`, `QUIZ`, `STR`, `REL`, `EVAL` (aún solo categorías definidas)
+- [ ] v0.47: añadir códigos a `SYNC` y `CONFL` cuando se implemente multi-device sync
 - [ ] v0.48: dashboard web para visualizar frecuencia de códigos en producción
