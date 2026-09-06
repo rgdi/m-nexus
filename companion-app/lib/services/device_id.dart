@@ -122,7 +122,7 @@ class DeviceIdentity {
         'androidId': androidId,
         'model': model,
         'osVersion': osVersion,
-        'pluginVersion': '0.30.0', // sincronizado con la versión del plugin
+        'appVersion': '0.43.0', // versión de la app standalone
         'appVersion': '0.30.0',     // versión del companion
         'createdAt': createdAt.toIso8601String(),
       };

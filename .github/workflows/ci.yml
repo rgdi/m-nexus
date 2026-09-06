@@ -9,20 +9,6 @@ on:
     branches: [main, develop]
 
 jobs:
-  test-obsidian-plugin:
-    name: Test Obsidian Plugin
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - run: cd obsidian-plugin && npm install --no-audit --no-fund
-      - run: cd obsidian-plugin && npx tsc --noEmit
-      - run: cd obsidian-plugin && npm test
-      - name: Build plugin
-        run: cd obsidian-plugin && npx esbuild src/main.ts --bundle --format=cjs --target=es2020 --platform=node --external:obsidian --external:electron --outfile=dist/main.js
-
   test-backend:
     name: Test Backend
     runs-on: ubuntu-latest

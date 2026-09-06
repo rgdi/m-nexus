@@ -40,7 +40,6 @@ companion-app/
 ├── lib/
 │   ├── main.dart                       # Entry point + splash + test mode
 │   ├── models/                         # Modelos
-│   │   └── plugin_release.dart
 │   ├── services/                       # Servicios
 │   │   ├── app_info.dart               # Versión, device, OS (via PackageManager)
 │   │   ├── backend_client.dart         # HTTP client (X-Device-Id, retries)
@@ -48,18 +47,14 @@ companion-app/
 │   │   ├── chunked_upload.dart         # Upload por chunks (resumable)
 │   │   ├── device_id.dart              # UUID v4 + ANDROID_ID
 │   │   ├── permissions.dart            # Permisos unificados
-│   │   ├── plugin_installer.dart       # Extrae plugin ZIP al vault
 │   │   ├── recorder.dart               # Audio recorder (speech_to_text 7.x)
 │   │   ├── sync_queue.dart             # Cola de sync offline-first (v0.34+)
-│   │   ├── update_checker.dart         # Chequea updates del plugin
 │   │   ├── updater.dart                # Auto-update de la app
 │   │   └── vault_detector.dart         # Detector de vaults (5 rutas + SAF)
 │   └── ui/                             # Pantallas
 │       ├── home_page.dart              # Home con stats, calendar, vaults
 │       ├── setup_wizard.dart           # Wizard de 8 pasos (v0.35+)
 │       ├── recording_page.dart         # Grabar + lista de recordings
-│       ├── install_page.dart           # Instalar plugin en vault
-│       ├── activate_plugin_page.dart   # Instrucciones para activar
 │       ├── settings_page.dart          # Configuración completa
 │       ├── help_page.dart              # Help + FAQ
 │       └── update_dialog.dart          # Diálogo de updates
@@ -76,9 +71,7 @@ companion-app/
     ├── hash_test.dart
     ├── help_page_test.dart
     ├── home_install_test.dart
-    ├── install_page_test.dart
     ├── permissions_test.dart
-    ├── plugin_installer_test.dart
     ├── recorder_test.dart
     ├── updater_test.dart
     └── vault_detector_test.dart
@@ -124,15 +117,6 @@ companion-app/
 - Device ID + nombre
 - Calendar (toggle, lista)
 - Acerca de (versión, links)
-
-### 6. Install (`install_page.dart`)
-- Progreso de descarga
-- Extracción al vault
-- Resultado
-
-### 7. Activate (`activate_plugin_page.dart`)
-- 6 pasos con PageView
-- Instrucciones para activar en Obsidian
 
 ## Permisos
 
@@ -224,9 +208,7 @@ flutter test
 - `device_id_test.dart` (6) — UUID, persistencia
 - `help_page_test.dart` (3) — render
 - `home_install_test.dart` (2) — mock GitHub API
-- `install_page_test.dart` (5) — PluginRelease model
 - `permissions_test.dart` (4) — getAll(), request()
-- `plugin_installer_test.dart` (8) — model + constants
 - `recorder_test.dart` (1) — mock platform channel
 - `updater_test.dart` (10) — version compare, cache
 - `vault_detector_test.dart` (1)
@@ -267,7 +249,7 @@ El keystore está commiteado en `android/keystores/mnexus-release.keystore`:
 - Settings → Apps → M-NEXUS → Permissions → Microphone
 
 ### No se detecta el vault
-- Verifica que existe `/storage/emulated/0/Documents/TuVault/.obsidian/`
+- Vault local: el usuario selecciona carpeta con SAF
 - O usa "Elegir manualmente" (SAF picker)
 
 ### Battery optimization mata la grabación

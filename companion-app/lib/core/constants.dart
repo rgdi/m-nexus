@@ -17,7 +17,7 @@ class AppConstants {
   static const List<String> pdfExtensions = ['.pdf'];
   static const List<String> flashcardExtensions = ['.apkg'];
 
-  /// Carpetas internas del plugin
+  /// Carpetas internas de la app
   static const String internalFolder = '_M-NEXUS';
   static const String flashcardsFolder = '_M-NEXUS/Flashcards';
   static const String flashcardsApproved = '_M-NEXUS/Flashcards/Approved';
