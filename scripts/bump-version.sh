@@ -6,9 +6,6 @@
 # Uso: ./scripts/bump-version.sh 0.29.0
 #
 # Actualiza:
-#   - obsidian-plugin/manifest.json
-#   - obsidian-plugin/package.json
-#   - obsidian-plugin/versions.json
 #   - backend/package.json
 #   - backend/src/version.ts
 #   - companion-app/pubspec.yaml
@@ -39,32 +36,7 @@ fi
 echo "🔄 Bumping version a $NEW_VERSION"
 echo ""
 
-# 1. Obsidian plugin manifest.json
-if [[ -f "$REPO_ROOT/obsidian-plugin/manifest.json" ]]; then
-    sed -i.bak "s/\"version\": \"[0-9.]*[-a-zA-Z0-9.]*\"/\"version\": \"$NEW_VERSION\"/" \
-        "$REPO_ROOT/obsidian-plugin/manifest.json"
-    rm -f "$REPO_ROOT/obsidian-plugin/manifest.json.bak"
-    echo "  ✅ obsidian-plugin/manifest.json"
-fi
-
-# 2. Obsidian plugin package.json
-if [[ -f "$REPO_ROOT/obsidian-plugin/package.json" ]]; then
-    sed -i.bak "s/\"version\": \"[0-9.]*[-a-zA-Z0-9.]*\"/\"version\": \"$NEW_VERSION\"/" \
-        "$REPO_ROOT/obsidian-plugin/package.json"
-    rm -f "$REPO_ROOT/obsidian-plugin/package.json.bak"
-    echo "  ✅ obsidian-plugin/package.json"
-fi
-
-# 3. Obsidian versions.json
-if [[ -f "$REPO_ROOT/obsidian-plugin/versions.json" ]]; then
-    MIN_APP_VER=$(grep -o '"[0-9.]*":' "$REPO_ROOT/obsidian-plugin/versions.json" | head -1 | tr -d '":')
-    if [[ -n "$MIN_APP_VER" ]]; then
-        echo "{\"$MIN_APP_VER\": \"$NEW_VERSION\"}" > "$REPO_ROOT/obsidian-plugin/versions.json"
-        echo "  ✅ obsidian-plugin/versions.json"
-    fi
-fi
-
-# 4. Backend package.json
+# 1. Backend package.json
 if [[ -f "$REPO_ROOT/backend/package.json" ]]; then
     sed -i.bak "s/\"version\": \"[0-9.]*[-a-zA-Z0-9.]*\"/\"version\": \"$NEW_VERSION\"/" \
         "$REPO_ROOT/backend/package.json"
@@ -72,7 +44,7 @@ if [[ -f "$REPO_ROOT/backend/package.json" ]]; then
     echo "  ✅ backend/package.json"
 fi
 
-# 5. Backend src/version.ts
+# 2. Backend src/version.ts
 if [[ -f "$REPO_ROOT/backend/src/version.ts" ]]; then
     sed -i.bak "s/VERSION = \"[0-9.]*[-a-zA-Z0-9.]*\"/VERSION = \"$NEW_VERSION\"/" \
         "$REPO_ROOT/backend/src/version.ts"
@@ -80,7 +52,7 @@ if [[ -f "$REPO_ROOT/backend/src/version.ts" ]]; then
     echo "  ✅ backend/src/version.ts"
 fi
 
-# 6. Companion pubspec.yaml
+# 3. Companion pubspec.yaml
 if [[ -f "$REPO_ROOT/companion-app/pubspec.yaml" ]]; then
     # Bump build number
     CURRENT_BUILD=$(grep -o '+[0-9]*' "$REPO_ROOT/companion-app/pubspec.yaml" | head -1 | tr -d '+')

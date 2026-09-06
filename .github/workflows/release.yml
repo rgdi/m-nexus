@@ -1,6 +1,6 @@
 # GitHub Actions: Release
 # Se ejecuta cuando se pushea un tag v*.*.* (ej. v0.28.0).
-# Construye el plugin, el backend, y la app Android companion.
+# Construye el backend y la app Android companion (standalone).
 # Sube los ZIPs/APK a una release de GitHub.
 
 name: "M-NEXUS Release"
@@ -47,47 +47,6 @@ jobs:
 
   # -----------------------------------------------------------------
   # 1. Plugin de Obsidian -> ZIP con 4 archivos
-  # -----------------------------------------------------------------
-  build-plugin:
-    name: Build Obsidian Plugin
-    runs-on: ubuntu-latest
-    needs: set-version
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Verify working directory and files
-        run: |
-          pwd
-          ls -la
-          echo "---"
-          ls -la obsidian-plugin/src/coverage/ 2>&1
-          echo "---"
-          head -3 obsidian-plugin/src/coverage/auditor.ts
-      - run: cd obsidian-plugin && npm install --no-audit --no-fund
-      - name: Bundle plugin
-        run: cd obsidian-plugin && npx esbuild src/main.ts --bundle --format=cjs --target=es2020 --platform=node --external:obsidian --external:electron --outfile=dist/main.js
-      - name: Copy static plugin files
-        run: |
-          # v0.35: copiar manifest.json y styles.css a dist/ (esbuild no los copia)
-          mkdir -p obsidian-plugin/dist
-          cp obsidian-plugin/manifest.json obsidian-plugin/dist/manifest.json
-          cp obsidian-plugin/styles.css obsidian-plugin/dist/styles.css 2>/dev/null || true
-      - name: Package ZIP
-        run: |
-          mkdir -p artifacts
-          cd obsidian-plugin/dist
-          zip ../../artifacts/m-nexus-plugin-${{ needs.set-version.outputs.ref_name }}.zip \
-            main.js manifest.json styles.css versions.json
-      - uses: actions/upload-artifact@v4
-        with:
-          name: plugin
-          path: artifacts/m-nexus-plugin-*.zip
-          if-no-files-found: error
-
-  # -----------------------------------------------------------------
-  # 2. Backend Node.js -> ZIP con dist/ + package.json
   # -----------------------------------------------------------------
   build-backend:
     name: Build Backend
@@ -232,7 +191,7 @@ jobs:
   create-release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
-    needs: [build-plugin, build-backend, build-companion, upload-installer]
+    needs: [build-backend, build-companion, upload-installer]
     permissions:
       contents: write
     steps:
@@ -246,10 +205,6 @@ jobs:
           path: artifacts
       - name: Flatten artifact directories + create quicklinks
         run: |
-          if [ -d artifacts/plugin ]; then
-            mv artifacts/plugin/*.zip artifacts/ 2>/dev/null || true
-            rm -rf artifacts/plugin
-          fi
           if [ -d artifacts/backend ]; then
             mv artifacts/backend/*.zip artifacts/ 2>/dev/null || true
             rm -rf artifacts/backend
@@ -263,9 +218,6 @@ jobs:
             rm -rf artifacts/installer
           fi
           # v0.31.0: also create quicklinks (no version) for each artifact
-          for f in artifacts/m-nexus-plugin-*.zip; do
-            [ -f "$f" ] && cp "$f" "artifacts/m-nexus-plugin.zip"
-          done
           for f in artifacts/m-nexus-backend-*.zip; do
             [ -f "$f" ] && cp "$f" "artifacts/m-nexus-backend.zip"
           done
@@ -305,8 +257,6 @@ jobs:
           generate_release_notes: true
           fail_on_unmatched_files: false
           files: |
-            artifacts/m-nexus-plugin-*.zip
-            artifacts/m-nexus-plugin.zip
             artifacts/m-nexus-backend-*.zip
             artifacts/m-nexus-backend.zip
             artifacts/m-nexus-install-*.sh

@@ -1,4 +1,21 @@
 # M-NEXUS Changelog
+## v0.43.0 (2026-09-06) - SINGLE APP ✅
+
+### Major refactor
+- **Killed `obsidian-plugin/` (1107 TS files, 99 MB)** - the app is now 100% standalone
+- **Killed `companion-app/lib/services/plugin_installer.dart`** (260 lines)
+- **Killed `companion-app/lib/models/plugin_release.dart`**
+- **Deleted** all references to "plugin de Obsidian" from README, install.sh, release.yml, ci.yml, update-version.yml, bump-version.sh
+- **Release workflow** now builds only: companion APK + backend ZIP + install.sh
+- **CI workflow** now tests only: backend + companion app (no plugin tests)
+- **install.sh** simplified: `--component=backend|companion|all` (no more plugin)
+
+### Result
+- M-NEXUS = **backend Node.js + standalone Flutter app** (Android + Web)
+- No more `PluginInstaller` button in home, no more `install_plugin()` in install.sh
+- App is fully independent: vault local (SAF on Android, IndexedDB on Web), markdown viewer, FSRS flashcards, voice notes, calendar, dashboard, atajos de teclado
+- Plugin de Obsidian ya no se desarrolla, se conserva solo en git history
+
 ## v0.42.0 (2026-09-05) - UNIFIED ARCHITECTURE ✅
 
 ### Major refactor
@@ -208,7 +225,7 @@
 ## v0.29.0 (2026-09-02) - Auto-update system (plugin)
 
 ### Added
-- 3-component auto-update: plugin (obsidian-plugin), backend, companion app
+- 2-component auto-update: backend + companion app
 - `bump-version.sh` script for unified version management
 - `push-to-github.sh` for one-command release
 

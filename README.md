@@ -2,16 +2,13 @@
 
 [![Release](https://img.shields.io/github/v/release/rgdi/m-nexus)](https://github.com/rgdi/m-nexus/releases/latest)
 [![License](https://img.shields.io/github/license/rgdi/m-nexus)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-1460%20passing-brightgreen)]()
+[![Tests](https://img.shields.io/badge/tests-300%2B%20passing-brightgreen)]()
 [![Topic](https://img.shields.io/badge/topics-15-blue)]()
 
-> **v0.35.0** · Notion-style databases, Secret Manager, Conflict Resolution, Chunked Upload, Rollback, Web Clipper, FSRS async, Battery optimization, Setup wizard 8 pasos, Sync queue offline-first
+> **v0.43.0** · App standalone (sin Obsidian), Material 3, AdaptiveScaffold, atajos de teclado estilo Obsidian, búsqueda full-text, FSRS spaced repetition, voice notes, multi-dispositivo (Android + Web)
 
-**M-NEXUS** = plugin de Obsidian + backend Node.js + companion app Android
-para estudio médico con IA en el loop (FSRS spaced repetition, voice notes,
-Notion-style databases con typed properties, conflict resolution por vector
-clocks, chunked upload resumable, secret manager AES-256-GCM, rollback
-automático antes de updates).
+**M-NEXUS** = backend Node.js + app standalone Flutter
+para estudio médico con IA en el loop. App 100% independiente: vault local en Android (SAF), markdown viewer, flashcards con FSRS, voice notes, calendar, dashboard adaptativo, atajos de teclado.
 
 Diseñado para ser **humano en el loop**: la IA propone, tú decides.
 
@@ -20,26 +17,34 @@ Diseñado para ser **humano en el loop**: la IA propone, tú decides.
 ## 🏗️ Arquitectura
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│ Obsidian plugin │ ←→ │  Backend Node   │ ←→ │ Companion app   │
-│ (v0.35)         │    │  (v0.35)        │    │ Android (v0.35) │
-│ TypeScript      │    │  TypeScript     │    │ Flutter/Dart    │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-        ↓                      ↓                       ↓
-   Vault notes            SQLite + DB             Recordings,
-   + frontmatter         Secret manager          Calendar,
-   + Notion DBs          FSRS async              Plugin install
+┌─────────────────┐         ┌──────────────────────────┐
+│  Backend Node   │  ←───→  │  M-NEXUS App (standalone)│
+│  (v0.43)        │  HTTP   │  (v0.43)                 │
+│  TypeScript     │  /JSON  │  Android + Web           │
+│  Fastify 5      │         │  Flutter 3.24            │
+└─────────────────┘         └──────────────────────────┘
+        ↓                              ↓
+   Vault notes,                  Vault local (SAF en Android,
+   FSRS, secret                  IndexedDB en Web),
+   manager,                      Markdown viewer,
+   chunked upload                Flashcards (FSRS),
+                                 Voice notes, Calendar,
+                                 Dashboard adaptativo
 ```
 
-3 componentes independientes que se comunican por HTTP/JSON.
-Cualquiera puede estar offline; el plugin queuea cambios.
+2 componentes: backend opcional + app standalone. La app funciona
+100% offline-first y se sincroniza con el backend cuando está disponible.
 
 ---
 
 ## 🎯 ¿Qué hace M-NEXUS?
 
-### v0.35.0 — Stability + UX
-- **🧙 Setup wizard 8 pasos** — Bienvenida → Permisos → Batería → Backend → Calendario → Vault → Plugin → Listo
+### v0.43.0 — App standalone
+- **📦 UNIFIED ARCHITECTURE** — Sin Obsidian, sin plugin: la app es todo
+- **🎨 Material 3 + AdaptiveScaffold** — Bottom nav mobile / rail desktop
+- **⌨️ Atajos estilo Obsidian** — `Ctrl+1/2/3/4` (nav), `Ctrl+N/S/E/B/I` (formato), `Ctrl+R` (repasar), `Ctrl+/` (buscar)
+- **📱 Flutter Web** — PWA con splash + manifest
+- **🧙 Setup wizard simplificado** — 6 pasos: Bienvenida → Permisos → Batería → Backend → Vault → Listo
 - **🔋 Battery optimization** — desactivación guiada desde el wizard (Android 6+)
 - **📅 Calendar selector robusto** — diálogo con StatefulBuilder, color avatar, auto-permiso
 - **🔄 Sync queue offline-first** — cada recording tiene badge de estado (pending/uploading/synced/failed)
@@ -90,9 +95,8 @@ Más opciones: `--update`, `--rollback`, `--uninstall`, `--list-versions`, `--ve
 
 | Componente | Pasos |
 |---|---|
-| **Plugin Obsidian** | Settings → Community plugins → Browse → "M-NEXUS" → Install → Enable |
 | **Backend** | `cd backend && npm install && npm run build && npm start` |
-| **Companion Android** | Descarga APK desde [Releases](https://github.com/rgdi/m-nexus/releases/latest) |
+| **App Android** | Descarga APK desde [Releases](https://github.com/rgdi/m-nexus/releases/latest) |
 
 ---
 
@@ -100,7 +104,6 @@ Más opciones: `--update`, `--rollback`, `--uninstall`, `--list-versions`, `--ve
 
 Cada componente tiene su README detallado:
 
-- **[Plugin de Obsidian](obsidian-plugin/README.md)** — TypeScript, 18+ subsistemas, 1162 tests
 - **[Backend](backend/README.md)** — Fastify 5, 245 tests, 73+ endpoints
 - **[Companion App](companion-app/README.md)** — Flutter, 4 platform channels, 40 tests
 
@@ -120,7 +123,6 @@ Otros docs:
 cd backend && npm test              # 245 tests
 
 # Plugin
-cd obsidian-plugin && npm test      # 1162 tests
 
 # Companion
 cd companion-app && flutter test    # 40 tests
@@ -139,9 +141,8 @@ Cubriendo:
 
 | Componente | Stack |
 |---|---|
-| **Plugin** | TypeScript 5.3, Obsidian API 1.5+, esbuild 0.25, vitest 2.1, jsdom 24 |
 | **Backend** | Node.js 22+, Fastify 5, TypeScript 5.3, better-sqlite3, AES-256-GCM |
-| **Companion** | Flutter 3.24, Dart 3.5, Android 14+, AGP 8.3, vitest-equivalent |
+| **App (Android + Web)** | Flutter 3.24, Dart 3.5, Material 3, AdaptiveScaffold, Android 14+, AGP 8.3 |
 | **Install** | Bash, systemd, OpenSSL, rsync |
 | **CI/CD** | GitHub Actions (release + CI workflows) |
 
@@ -151,7 +152,6 @@ Cubriendo:
 
 ```
 m-nexus/
-├── obsidian-plugin/          # Plugin de Obsidian (TypeScript)
 ├── backend/                  # Backend Node.js (Fastify 5)
 ├── companion-app/            # Companion Android (Flutter)
 ├── install/                  # Scripts de instalación (install.sh)

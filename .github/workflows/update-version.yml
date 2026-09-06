@@ -25,19 +25,6 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Update Obsidian plugin version
-        run: |
-          VERSION="${{ inputs.version }}"
-          # manifest.json
-          sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" obsidian-plugin/manifest.json
-          sed -i "s/\"minAppVersion\": \".*\"/\"minAppVersion\": \"1.5.0\"/" obsidian-plugin/manifest.json
-          # versions.json
-          echo "{\"1.5.0\": \"$VERSION\"}" > obsidian-plugin/versions.json
-          # package.json
-          sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" obsidian-plugin/package.json
-          # main.ts version references
-          sed -i "s/m-nexus-plugin-v.*\.zip/m-nexus-plugin-v$VERSION.zip/g" install/install.sh || true
-
       - name: Update Backend version
         run: |
           VERSION="${{ inputs.version }}"

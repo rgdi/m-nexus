@@ -3,7 +3,7 @@ import 'dart:io';
 // y permite al usuario descargar el APK y abrir el instalador de Android.
 //
 // v0.30:
-//   - Consulta directa a GitHub API (misma fuente que el plugin y el backend)
+//   - Consulta directa a GitHub API (misma fuente que el backend y la app)
 //   - Diálogo con changelog y botón "Descargar e instalar"
 //   - Usa DownloadManager-style download + intent INSTALL_PACKAGE
 //     (Android reemplaza el APK sin desinstalar)
