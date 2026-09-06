@@ -1,5 +1,9 @@
 // Adaptive quiz engine: knowledge graph + gaps.
 
+import type { KnowledgeLayer } from "./adaptiveQuizTypes.js";
+import { LAYER_ORDER } from "./adaptiveQuizTypes.js";
+import type { KnowledgeConcept, ConceptLayer, KnowledgeGraph, KnowledgeGap } from "./adaptiveQuizTypes.js";
+
 /** Crea un concept vacío. */
 export function createConcept(id: string, term: string, opts: Partial<KnowledgeConcept> = {}): KnowledgeConcept {
   const layers = {} as Record<KnowledgeLayer, ConceptLayer>;
