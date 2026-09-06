@@ -7,8 +7,10 @@
 //   3. Si miss, llamar al provider y cachear el resultado.
 
 import { config } from "../config.js";
-import { logger } from "../utils/log.js";
+import { logger, logNetwork, logOp, logError } from "../utils/log.js";
 import { EmbeddingCache } from "./embeddingCache.js";
+import { E } from "../utils/errorCodes.js";
+import { safeCallAsync } from "../utils/safeCall.js";
 
 export interface EmbeddingResponse {
   embeddings: number[][];
@@ -37,12 +39,18 @@ export class EmbeddingsService {
 
   async isAvailable(): Promise<boolean> {
     if (process.env.MOCK_OLLAMA === "1") return true;
-    try {
-      const res = await fetch(`${config.ollamaBaseUrl}/api/tags`, { signal: AbortSignal.timeout(3000) });
-      return res.ok;
-    } catch {
-      return false;
-    }
+    const r = await safeCallAsync<boolean>({
+      component: "emb",
+      code: "EC-EMB-001",
+      message: "embeddings isAvailable check failed",
+      context: { baseUrl: config.ollamaBaseUrl },
+      op: async () => {
+        const res = await fetch(`${config.ollamaBaseUrl}/api/tags`, { signal: AbortSignal.timeout(3000) });
+        logNetwork("GET", `${config.ollamaBaseUrl}/api/tags`, { statusCode: res.status });
+        return res.ok;
+      },
+    });
+    return r.value ?? false;
   }
 
   /** Permite a tests resetear el cache entre casos. */
@@ -64,63 +72,94 @@ export class EmbeddingsService {
   }
 
   async embed(texts: string[], model?: string): Promise<EmbeddingResponse> {
-    const useModel = model ?? config.embeddingModel;
-    const cache = this.cache;
+    const r = await safeCallAsync<EmbeddingResponse>({
+      component: "emb",
+      code: "EC-EMB-002",
+      message: "embed failed",
+      context: { count: texts.length, model: model ?? config.embeddingModel },
+      op: async () => {
+        const useModel = model ?? config.embeddingModel;
+        const cache = this.cache;
 
-    // 1) Buscar en cache
-    const result: (number[] | null)[] = new Array(texts.length);
-    const misses: number[] = [];
-    for (let i = 0; i < texts.length; i++) {
-      const hit = cache.get(texts[i], useModel);
-      result[i] = hit;
-      if (!hit) misses.push(i);
-    }
+        // 1) Buscar en cache
+        const result: (number[] | null)[] = new Array(texts.length);
+        const misses: number[] = [];
+        for (let i = 0; i < texts.length; i++) {
+          const hit = cache.get(texts[i], useModel);
+          result[i] = hit;
+          if (!hit) misses.push(i);
+        }
+        const hits = texts.length - misses.length;
+        const initialMisses = misses.length;
 
-    let hits = texts.length - misses.length;
-    const initialMisses = misses.length;
+        // 2) Calcular los misses en batch
+        if (misses.length > 0) {
+          const textsToEmbed = misses.map((i) => texts[i]);
+          const computed = process.env.MOCK_OLLAMA === "1"
+            ? this.mockEmbed(textsToEmbed, useModel)
+            : await this.realEmbed(textsToEmbed, useModel);
+          for (let j = 0; j < misses.length; j++) {
+            const idx = misses[j];
+            const emb = computed.embeddings[j];
+            result[idx] = emb;
+            cache.set(texts[idx], useModel, emb);
+          }
+        }
 
-    // 2) Calcular los misses en batch
-    if (misses.length > 0) {
-      const textsToEmbed = misses.map((i) => texts[i]);
-      const computed = process.env.MOCK_OLLAMA === "1"
-        ? this.mockEmbed(textsToEmbed, useModel)
-        : await this.realEmbed(textsToEmbed, useModel);
-      // Asignar resultados y cachear
-      for (let j = 0; j < misses.length; j++) {
-        const idx = misses[j];
-        const emb = computed.embeddings[j];
-        result[idx] = emb;
-        cache.set(texts[idx], useModel, emb);
-      }
-    }
-
-    const embeddings = result.map((r) => r ?? []);
-    const dim = embeddings[0]?.length ?? 0;
-
-    return {
-      embeddings,
-      model: useModel,
-      dim,
-      cacheStats: { hits, misses: initialMisses, cached: cache.stats().size },
-    };
+        const embeddings = result.map((r) => r ?? []);
+        const dim = embeddings[0]?.length ?? 0;
+        logOp("emb", "embed", true, { count: texts.length, hits, misses: initialMisses, dim });
+        return {
+          embeddings,
+          model: useModel,
+          dim,
+          cacheStats: { hits, misses: initialMisses, cached: cache.stats().size },
+        };
+      },
+    });
+    if (!r.success || !r.value) throw r.error ?? new Error("embed failed");
+    return r.value;
   }
 
   private async realEmbed(texts: string[], model: string): Promise<EmbeddingResponse> {
-    const res = await fetch(`${config.ollamaBaseUrl}/api/embeddings`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model, prompt: texts }),
+    const r = await safeCallAsync<EmbeddingResponse>({
+      component: "emb",
+      code: "EC-EMB-003",
+      message: "realEmbed failed",
+      context: { model, count: texts.length, baseUrl: config.ollamaBaseUrl },
+      op: async () => {
+        const start = Date.now();
+        const res = await fetch(`${config.ollamaBaseUrl}/api/embeddings`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ model, prompt: texts }),
+        });
+        const durationMs = Date.now() - start;
+        logNetwork("POST", `${config.ollamaBaseUrl}/api/embeddings`, {
+          statusCode: res.status, durationMs,
+        });
+        if (!res.ok) {
+          throw E.emb("EC-EMB-004", "Ollama embeddings error", {
+            context: { status: res.status, model, body: (await res.text()).substring(0, 500), durationMs },
+            hint: "Check Ollama is running and model is available",
+          });
+        }
+        const data = (await res.json()) as { embeddings: number[][] };
+        if (!data.embeddings || data.embeddings.length === 0) {
+          throw E.emb("EC-EMB-005", "Embeddings empty response", {
+            context: { model, count: texts.length },
+            hint: "Model returned no embeddings; check input text",
+          });
+        }
+        return {
+          embeddings: data.embeddings,
+          model,
+          dim: data.embeddings[0].length,
+        };
+      },
     });
-    if (!res.ok) throw new Error(`Ollama embeddings error: ${res.status} ${await res.text()}`);
-    const data = (await res.json()) as { embeddings: number[][] };
-    if (!data.embeddings || data.embeddings.length === 0) {
-      throw new Error("Embeddings vacíos");
-    }
-    return {
-      embeddings: data.embeddings,
-      model,
-      dim: data.embeddings[0].length,
-    };
+    if (!r.success || !r.value) throw r.error ?? new Error("realEmbed failed");
+    return r.value;
   }
 
   private mockEmbed(texts: string[], model: string): EmbeddingResponse {

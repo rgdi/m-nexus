@@ -5,6 +5,9 @@
 
 import { FastifyInstance } from "fastify";
 import { LLMService } from "../services/llm.js";
+import { E } from "../utils/errorCodes.js";
+import { safeCallAsync } from "../utils/safeCall.js";
+import { logOp } from "../utils/log.js";
 
 const STYLE_INSTRUCTIONS: Record<string, string> = {
   generic: `Genera flashcards variadas: basic, cloze (usa {{c1::término}}), reversed, list según el contenido.`,
@@ -55,25 +58,38 @@ export async function flashcardsRoutes(app: FastifyInstance): Promise<void> {
   const llm = new LLMService();
 
   app.post("/api/v1/flashcards/generate", async (req, reply) => {
-    const body = req.body as FlashcardsRequest;
-    if (!body?.noteContent) {
-      reply.code(400).send({ code: "BAD_REQUEST", message: "noteContent requerido" });
-      return;
-    }
-    const style = body.style ?? "generic";
-    const level = body.level ?? "1_MED";
-    const maxCards = body.maxCards ?? 10;
-    const styleInstr = STYLE_INSTRUCTIONS[style] ?? STYLE_INSTRUCTIONS.generic;
-    const levelInstr = LEVEL_INSTRUCTIONS[level] ?? "";
+    const body = (req.body ?? {}) as FlashcardsRequest;
+    const r = await safeCallAsync({
+      component: "card",
+      code: "EC-CARD-010",
+      message: "flashcards.generate failed",
+      context: {
+        style: body.style,
+        level: body.level,
+        maxCards: body.maxCards,
+        noteLen: body.noteContent?.length ?? 0,
+      },
+      op: async () => {
+        if (!body.noteContent) {
+          throw E.val("EC-CARD-011", "noteContent requerido", {
+            context: { bodyKeys: Object.keys(body) },
+            hint: "Send { noteTitle, noteContent, style, level, maxCards, frontmatter }",
+          });
+        }
+        const style = body.style ?? "generic";
+        const level = body.level ?? "1_MED";
+        const maxCards = body.maxCards ?? 10;
+        const styleInstr = STYLE_INSTRUCTIONS[style] ?? STYLE_INSTRUCTIONS.generic;
+        const levelInstr = LEVEL_INSTRUCTIONS[level] ?? "";
 
-    const systemPrompt = `Eres un generador de flashcards de medicina.
+        const systemPrompt = `Eres un generador de flashcards de medicina.
 ${styleInstr}
 ${levelInstr}
 Responde SOLO un JSON array con la forma:
 [{ "front": "...", "back": "...", "cardType": "basic|cloze|reversed|list|freeform", "tags": ["..."] }]
 Sin texto extra fuera del JSON.`;
 
-    const userPrompt = `Nota: ${body.noteTitle}
+        const userPrompt = `Nota: ${body.noteTitle}
 Frontmatter: ${JSON.stringify(body.frontmatter ?? {})}
 
 Contenido:
@@ -81,24 +97,25 @@ ${body.noteContent.slice(0, 8000)}
 
 Genera hasta ${maxCards} flashcards.`;
 
-    try {
-      const res = await llm.chat({
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        responseFormat: "json",
-        temperature: 0.7,
-      });
-      const cards = parseFlashcards(res.content, maxCards);
-      return {
-        cards,
-        model: res.model,
-        tokens: res.usage ?? { prompt: 0, completion: 0 },
-      };
-    } catch (e) {
-      reply.code(502).send({ code: "FLASHCARDS_ERROR", message: (e as Error).message });
-    }
+        const res = await llm.chat({
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          responseFormat: "json",
+          temperature: 0.7,
+        });
+        const cards = parseFlashcards(res.content, maxCards);
+        logOp("card", "generate", true, { style, level, count: cards.length, model: res.model });
+        return {
+          cards,
+          model: res.model,
+          tokens: res.usage ?? { prompt: 0, completion: 0 },
+        };
+      },
+    });
+    if (!r.success || !r.value) throw r.error!;
+    return r.value;
   });
 }
 

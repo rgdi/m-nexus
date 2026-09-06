@@ -23,6 +23,9 @@
 // queda con la versión del vault. Sin perder nada.
 
 import { createHash } from "node:crypto";
+import { E } from "../utils/errorCodes.js";
+import { safeCallAsync } from "../utils/safeCall.js";
+import { logOp } from "../utils/log.js";
 
 export type DeviceClock = Record<string, number>;
 

@@ -2,8 +2,9 @@
 // para los plugins de los dispositivos (thin client).
 //
 // v0.13: caché de embeddings (LRU + hash), métricas Prometheus, compresión WS.
+// v0.45: error handler centralizado con códigos EC-XXX-NNN.
 
-import Fastify, { FastifyInstance } from "fastify";
+import Fastify, { type FastifyInstance, type FastifyError, type FastifyRequest, type FastifyReply } from "fastify";
 import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
 import websocket from "@fastify/websocket";
@@ -12,7 +13,8 @@ import compression from "@fastify/compress";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { config } from "./config.js";
-import { logger } from "./utils/log.js";
+import { logger, logLifecycle, logError, logOp } from "./utils/log.js";
+import { AppError, ErrorCategory } from "./utils/errorCodes.js";
 import { getMetrics } from "./utils/metrics.js";
 import { healthRoutes } from "./routes/health.js";
 import { audioRoutes } from "./routes/audio.js";
@@ -27,165 +29,261 @@ import { authMiddleware } from "./middleware/auth.js";
 import { dashboardRoutes } from "./routes/dashboard.js";
 import { pushRoutes } from "./routes/push.js";
 import { aiRoutes } from "./routes/ai.js";
-import { backupRoutes } from "./routes/backup.js"; // v0.28: backups ultrarrápidos (ZIP binario)
-import { updateRoutes } from "./routes/update.js"; // v0.30: auto-update del backend
-import { secretsRoutes } from "./routes/secrets.js"; // v0.33: secret manager (API keys cifradas)
-import { structuredRoutes } from "./routes/structured.js"; // v0.33: Notion-style databases
-import { uploadRoutes } from "./routes/upload.js"; // v0.33: chunked upload
-import { rollbackRoutes } from "./routes/rollback.js"; // v0.33: backup + rollback
-import { fsrsQueueRoutes } from "./routes/fsrsQueue.js"; // v0.33: FSRS async worker queue
-import { audit } from "./auth/audit.js";
-import { VERSION } from "./version.js";
-export { VERSION };
+import { backupRoutes } from "./routes/backup.js";
+import { rollbackRoutes } from "./routes/rollback.js";
+import { structuredRoutes } from "./routes/structured.js";
+import { secretsRoutes } from "./routes/secrets.js";
 
-/** Crea la app Fastify (sin listen). Usado tanto por main como por tests. */
-export async function buildApp(): Promise<FastifyInstance> {
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+export async function buildServer(): Promise<FastifyInstance> {
   const app = Fastify({
-    logger: false,
-    bodyLimit: 100 * 1024 * 1024,
-    trustProxy: true,
+    logger: logger as any,
+    disableRequestLogging: true, // lo manejamos nosotros
+    genReqId: () => `req_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    bodyLimit: 100 * 1024 * 1024, // 100MB para uploads
   });
 
-  // CORS estricto: solo orígenes permitidos
-  const allowedOrigins = (process.env.CORS_ORIGINS ?? "app://mnexus.app,capacitor://localhost,http://localhost").split(",");
-  await app.register(cors, {
-    origin: (origin, cb) => {
-      // Same-origin / herramientas locales
-      if (!origin) return cb(null, true);
-      if (allowedOrigins.includes(origin)) return cb(null, true);
-      return cb(null, false);
-    },
-    credentials: true,
-  });
-  // v0.28: aceptar application/zip y application/octet-stream sin parsear.
-  // Por defecto Fastify solo parsea application/json.
-  app.addContentTypeParser(
-    ["application/zip", "application/octet-stream", "application/x-zip-compressed"],
-    { parseAs: "buffer" },
-    (_req, body: Buffer, done) => done(null, body)
-  );
-  await app.register(rateLimit, {
-    max: config.rateLimitPerMinute,
+  // ── Plugins ──────────────────────────────────────
+  await app.register(cors, { origin: true, credentials: true });
+  await app.register(compression);
+  await app.register(rateLimit, { 
+    max: 300, 
     timeWindow: "1 minute",
-    keyGenerator: (req) => (req as { auth?: { sub?: string } }).auth?.sub ?? req.ip,
+    errorResponseBuilder: (req, ctx) => ({
+      code: "EC-RATE-001",
+      category: "RATE",
+      message: "Rate limit exceeded",
+      context: { limit: ctx.max, after: ctx.after },
+      hint: "Reduce request frequency",
+      statusCode: 429,
+    }),
   });
   await app.register(websocket);
-  // v0.13: compresión gzip/deflate/br para HTTP (selectiva: solo para >1KB y si el cliente lo acepta)
-  await app.register(compression, {
-    global: false, // solo lo aplicamos en rutas grandes explícitamente
-    threshold: 1024,
-    encodings: ["gzip", "deflate", "br"],
-  });
-
-  // Headers de seguridad
-  app.addHook("onSend", async (_req, reply) => {
-    reply.header("X-Content-Type-Options", "nosniff");
-    reply.header("X-Frame-Options", "DENY");
-    reply.header("Referrer-Policy", "no-referrer");
-    reply.header("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
-    // CSP para el dashboard
-    if (_req.url === "/" || _req.url.endsWith(".html")) {
-      reply.header("Content-Security-Policy", "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'");
-    }
-  });
-
-  // Servir dashboard estático (después de /metrics para que no intercepte)
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = dirname(__filename);
   await app.register(staticPlugin, {
-    root: join(__dirname, "..", "public"),
+    root: join(__dirname, "../public"),
     prefix: "/",
   });
 
-  // Audit log de cada request
-  app.addHook("onResponse", async (req, reply) => {
-    if (req.url.startsWith("/api/v1/") && req.method !== "GET") {
-      const deviceId = (req as { auth?: { sub?: string } }).auth?.sub ?? "(unknown)";
-      audit({
-        deviceId,
-        action: req.url.includes("auth") ? ("auth.refresh" as never) : ("sync.push" as never),
-        allowed: reply.statusCode < 400,
-        meta: { method: req.method, url: req.url, status: reply.statusCode },
-      });
-    }
-    // v0.13: métricas Prometheus
-    const m = getMetrics();
-    const path = req.routeOptions?.url ?? req.url.split("?")[0];
-    const labels = { path, method: req.method };
-    m.incCounter("mnexus_http_requests_total", { ...labels, status: String(reply.statusCode) });
-    const startTime = (req as unknown as { startTime?: number }).startTime;
-    if (startTime) {
-      const duration = (Date.now() - startTime) / 1000;
-      m.observeHistogram("mnexus_http_request_duration_seconds", labels, duration);
-    }
-  });
-
-  // Capturar timestamp de inicio para el histograma
+  // ── Request logging middleware ─────────────────
   app.addHook("onRequest", async (req) => {
-    (req as unknown as { startTime?: number }).startTime = Date.now();
+    (req as any).startTime = Date.now();
+    logger.debug({
+      component: "http",
+      requestId: req.id,
+      method: req.method,
+      url: req.url,
+    }, `→ ${req.method} ${req.url}`);
   });
 
-  app.addHook("onRequest", async (req, reply) => {
+  app.addHook("onResponse", async (req, reply) => {
+    const durationMs = Date.now() - ((req as any).startTime ?? Date.now());
+    logger.info({
+      component: "http",
+      requestId: req.id,
+      method: req.method,
+      url: req.url,
+      statusCode: reply.statusCode,
+      durationMs,
+    }, `← ${req.method} ${req.url} ${reply.statusCode} (${durationMs}ms)`);
+  });
+
+  // ── Error handler centralizado ─────────────────
+  app.setErrorHandler((err: FastifyError, req: FastifyRequest, reply: FastifyReply) => {
+    const startTime = (req as any).startTime ?? Date.now();
+    const durationMs = Date.now() - startTime;
+    
+    // AppError: error estructurado
+    if (err instanceof AppError) {
+      logError(err.category.toLowerCase(), {
+        code: err.code,
+        category: err.category,
+        message: err.message,
+        cause: err.cause?.message,
+        context: { ...err.context, requestId: req.id, url: req.url, method: req.method },
+        hint: err.hint,
+        durationMs,
+        stack: err.stack,
+      });
+      reply.status(err.statusCode).send({
+        error: err.message,
+        code: err.code,
+        category: err.category,
+        hint: err.hint,
+        requestId: req.id,
+      });
+      return;
+    }
+
+    // Fastify validation errors
+    if (err.validation) {
+      const appErr = new AppError({
+        category: ErrorCategory.VAL,
+        code: "EC-VAL-001",
+        message: "Validation failed",
+        cause: err,
+        context: {
+          requestId: req.id,
+          url: req.url,
+          method: req.method,
+          errors: err.validation,
+        },
+        hint: "Check request body/query against the schema",
+        statusCode: 400,
+      });
+      logError("val", {
+        code: appErr.code, category: appErr.category, message: appErr.message,
+        context: appErr.context, hint: appErr.hint, durationMs,
+      });
+      reply.status(400).send({
+        error: appErr.message,
+        code: appErr.code,
+        category: appErr.category,
+        details: err.validation,
+        requestId: req.id,
+      });
+      return;
+    }
+
+    // Rate limit error (catches de @fastify/rate-limit)
+    if (err.statusCode === 429) {
+      const appErr = new AppError({
+        category: ErrorCategory.RATE,
+        code: "EC-RATE-002",
+        message: err.message || "Too many requests",
+        cause: err,
+        context: { requestId: req.id, url: req.url },
+        statusCode: 429,
+      });
+      logError("rate", {
+        code: appErr.code, category: appErr.category, message: appErr.message,
+        context: appErr.context, durationMs,
+      });
+      reply.status(429).send({
+        error: appErr.message,
+        code: appErr.code,
+        requestId: req.id,
+      });
+      return;
+    }
+
+    // 404
+    if (err.statusCode === 404) {
+      logger.warn({
+        component: "http",
+        requestId: req.id,
+        url: req.url,
+        method: req.method,
+        durationMs,
+      }, `404 ${req.method} ${req.url}`);
+      reply.status(404).send({
+        error: "Not found",
+        code: "EC-INTERNAL-001",
+        requestId: req.id,
+      });
+      return;
+    }
+
+    // Error genérico no manejado
+    const appErr = new AppError({
+      category: ErrorCategory.INTERNAL,
+      code: "EC-INTERNAL-002",
+      message: err.message || "Internal server error",
+      cause: err,
+      context: {
+        requestId: req.id,
+        url: req.url,
+        method: req.method,
+        statusCode: err.statusCode,
+      },
+      hint: "This is an unhandled error. Please report it with the requestId.",
+      statusCode: err.statusCode ?? 500,
+    });
+    logError("internal", {
+      code: appErr.code, category: appErr.category, message: appErr.message,
+      cause: err.message, context: appErr.context, durationMs, stack: err.stack,
+    });
+    reply.status(appErr.statusCode).send({
+      error: "Internal server error",
+      code: appErr.code,
+      requestId: req.id,
+    });
+  });
+
+  app.setNotFoundHandler((req, reply) => {
+    logger.warn({
+      component: "http",
+      requestId: req.id,
+      url: req.url,
+      method: req.method,
+    }, `404 ${req.method} ${req.url}`);
+    reply.status(404).send({
+      error: "Not found",
+      code: "EC-INTERNAL-001",
+      requestId: req.id,
+      url: req.url,
+    });
+  });
+
+  // ── Auth middleware (excepto /health y /metrics) ─
+  app.addHook("preHandler", async (req, reply) => {
+    if (req.url.startsWith("/health") || req.url.startsWith("/metrics") || req.url === "/") {
+      return;
+    }
     await authMiddleware(req, reply);
   });
 
-  // Rutas
+  // ── Routes ──────────────────────────────────────
   await app.register(healthRoutes);
-  await app.register(metricsRoutes); // v0.13: antes de static
-  await app.register(authRoutes);
-  await app.register(audioRoutes);
-  await app.register(llmRoutes);
-  await app.register(ocrRoutes);
-  await app.register(flashcardsRoutes);
-  await app.register(pdfRoutes);
-  await app.register(wsRoutes);
-  await app.register(dashboardRoutes);
-  await app.register(pushRoutes); // v0.21: push notifications
-  await app.register(aiRoutes); // v0.28: AI routes (vault eval, proposals, knowledge, quiz, cross-relevance, fsrs)
-  await app.register(backupRoutes); // v0.28: backup ultrarrápido (ZIP binario, SQLite index)
-  await app.register(updateRoutes); // v0.30: auto-update del backend (info, check, apply)
-  await app.register(secretsRoutes); // v0.33: secret manager
-  await app.register(structuredRoutes); // v0.33: Notion-style structured notes
-  await app.register(uploadRoutes); // v0.33: chunked audio upload
-  await app.register(rollbackRoutes); // v0.33: backup + rollback
-  await app.register(fsrsQueueRoutes); // v0.33: FSRS async worker queue
+  await app.register(metricsRoutes);
+  await app.register(audioRoutes, { prefix: "/api/v1/audio" });
+  await app.register(llmRoutes, { prefix: "/api/v1/llm" });
+  await app.register(ocrRoutes, { prefix: "/api/v1/ocr" });
+  await app.register(flashcardsRoutes, { prefix: "/api/v1/flashcards" });
+  await app.register(pdfRoutes, { prefix: "/api/v1/pdf" });
+  await app.register(wsRoutes, { prefix: "/ws" });
+  await app.register(authRoutes, { prefix: "/api/v1/auth" });
+  await app.register(dashboardRoutes, { prefix: "/api/v1/dashboard" });
+  await app.register(pushRoutes, { prefix: "/api/v1/push" });
+  await app.register(aiRoutes, { prefix: "/api/v1/ai" });
+  await app.register(backupRoutes, { prefix: "/api/v1/backup" });
+  await app.register(rollbackRoutes, { prefix: "/api/v1/rollback" });
+  await app.register(structuredRoutes, { prefix: "/api/v1/structured" });
+  await app.register(secretsRoutes, { prefix: "/api/v1/secrets" });
 
-  app.setErrorHandler((err, _req, reply) => {
-    logger.error({ err: { msg: err.message, code: err.code } }, "Request error");
-    reply.code(err.statusCode ?? 500).send({
-      code: err.code ?? "INTERNAL",
-      message: err.message,
-    });
+  logLifecycle("server", "routes registered", {
+    routes: [
+      "health", "metrics", "audio", "llm", "ocr", "flashcards", "pdf",
+      "ws", "auth", "dashboard", "push", "ai", "backup", "rollback",
+      "structured", "secrets",
+    ].length,
   });
 
   return app;
 }
 
-async function main() {
-  const app = await buildApp();
+export async function start(): Promise<void> {
   try {
+    logLifecycle("server", "starting", { port: config.port, host: config.host });
+    const app = await buildServer();
     await app.listen({ port: config.port, host: config.host });
-    logger.info(`M-NEXUS Backend v${VERSION} escuchando en http://${config.host}:${config.port}`);
-
-    // v0.33: inicializa secret manager (carga master key, descifra store)
-    const { getSecretManager } = await import("./services/secretManager.js");
-    const sm = getSecretManager();
-    sm.initialize();
-    sm.load();
-    logger.info(`SecretManager: ${sm.list().length} secrets cargados`);
-
-    // v0.28: chequea updates en background (no bloquea el arranque)
-    if (process.env.MNEXUS_SKIP_UPDATE_CHECK !== "1") {
-      const { checkForUpdatesOnStartup } = await import("./utils/updateChecker.js");
-      checkForUpdatesOnStartup().catch(() => undefined);
-    }
+    logLifecycle("server", "listening", { url: `http://${config.host}:${config.port}` });
   } catch (err) {
-    logger.error({ err }, "No se pudo iniciar el servidor");
+    logError("lifecycle", {
+      code: "EC-LIFECYCLE-001",
+      category: "LIFECYCLE",
+      message: "Failed to start server",
+      cause: err instanceof Error ? err.message : String(err),
+      hint: "Check port availability, env vars, and database connections",
+    });
     process.exit(1);
   }
 }
 
-// Solo arrancar si se ejecuta directamente (no en tests)
-if (import.meta.url === `file://${process.argv[1]}`) {
-  main();
+const isMain = process.argv[1] === __filename;
+if (isMain) {
+  start();
 }
+import { VERSION } from "./version.js";
+export { VERSION };

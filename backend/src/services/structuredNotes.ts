@@ -23,6 +23,9 @@
 // tiene su propia DB local). El plugin es la fuente de verdad;
 // el backend es la fuente de verdad compartida entre devices.
 
+import { E } from "../utils/errorCodes.js";
+import { safeCallAsync, safeCallOrNull } from "../utils/safeCall.js";
+import { logOp, logError } from "../utils/log.js";
 import { createHash, randomUUID } from "node:crypto";
 
 export type PropertyType =

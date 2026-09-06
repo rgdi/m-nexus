@@ -1,6 +1,9 @@
 // v0.25: DeepSeek OCR para PowerPoint y PDFs.
 // Preserva tablas y diseño — convierte a Markdown con estructura.
 
+import { E } from "../utils/errorCodes.js";
+import { safeCallAsync, safeCallOrNull } from "../utils/safeCall.js";
+import { logOp, logError } from "../utils/log.js";
 import * as fs from "fs/promises";
 import * as path from "path";
 
