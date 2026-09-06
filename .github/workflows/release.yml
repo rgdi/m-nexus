@@ -249,6 +249,18 @@ jobs:
           fi
           # Set it for later steps
           echo "TAG=${TAG}" >> $GITHUB_ENV
+      - name: Delete existing release if present (so we can re-upload assets)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ env.TAG }}
+        run: |
+          # If a release already exists for this tag, delete it so the next step creates a fresh one.
+          # This is needed because softprops/action-gh-release does not re-upload files to existing releases.
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Deleting existing release $TAG to re-create with assets"
+            gh release delete "$TAG" --yes || true
+            git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" :refs/tags/"$TAG" || true
+          fi
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
