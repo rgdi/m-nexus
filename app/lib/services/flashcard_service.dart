@@ -113,11 +113,9 @@ $answer
   /// Aprueba una flashcard (la mueve de Drafts a Approved).
   Future<void> approve(Flashcard card) async {
     if (card.approved) return;
-    final newPath = p.join(
-      vaultPath,
-      AppConstants.flashcardsApproved,
-      p.basename(card.path),
-    );
+    final newDir = Directory(p.join(vaultPath, AppConstants.flashcardsApproved));
+    if (!await newDir.exists()) await newDir.create(recursive: true);
+    final newPath = p.join(newDir.path, p.basename(card.path));
     await File(card.path).rename(newPath);
     log.info('fc', 'Approved', context: {'id': card.id});
   }
