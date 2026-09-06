@@ -58,7 +58,7 @@ class BackendClient {
         _baseHeaders = {
           'X-Device-Id': deviceId,
           'X-Client-Version': '0.30.0',
-          'X-Client-Platform': 'companion-android',
+          'X-Client-Platform': 'mnexus-android',
         };
 
   String get url => _url;
@@ -203,7 +203,7 @@ class BackendClient {
   static Future<http.Response> httpGet(String url) async {
     return await http.get(Uri.parse(url), headers: {
       'Accept': 'application/json',
-      'User-Agent': 'mnexus-companion',
+      'User-Agent': 'mnexus-app',
     }).timeout(const Duration(seconds: 15));
   }
 

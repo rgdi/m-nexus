@@ -156,7 +156,7 @@ class _VaultBrowserState extends State<VaultBrowser> {
   Widget _buildMain() {
     if (_selectedRelPath != null) {
       final absPath = p.join(_vault!.vaultPath, _selectedRelPath!);
-      return NoteView(notePath: absPath, embedded: true);
+      return NoteView(notePath: absPath, vaultPath: _vault!.vaultPath, embedded: true);
     }
     return Center(
       child: Padding(
@@ -228,7 +228,7 @@ class _VaultBrowserState extends State<VaultBrowser> {
     if (AppTheme.isMobile(context)) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => NoteView(notePath: absPath)),
+        MaterialPageRoute(builder: (_) => NoteView(notePath: absPath, vaultPath: _vault!.vaultPath)),
       );
     } else {
       setState(() { _selectedRelPath = n.relPath; });
@@ -245,7 +245,7 @@ class _VaultBrowserState extends State<VaultBrowser> {
     if (!mounted) return;
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => NoteEditor(notePath: path)),
+      MaterialPageRoute(builder: (_) => NoteEditor(notePath: path, vaultPath: _vault!.vaultPath)),
     );
     _load();
   }

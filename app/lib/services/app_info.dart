@@ -1,4 +1,4 @@
-// AppInfo: información dinámica sobre la app companion (versión, build, etc).
+// AppInfo: información dinámica sobre la app (versión, build, etc).
 //
 // v0.32: usa package_info_plus para obtener la versión real en runtime.
 // Antes: hardcodeada en strings, se quedaba obsoleta con cada release.

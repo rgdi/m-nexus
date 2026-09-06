@@ -14,7 +14,12 @@ import 'note_view.dart';
 
 class NoteEditor extends StatefulWidget {
   final String notePath;
-  const NoteEditor({super.key, required this.notePath});
+  final String vaultPath;
+  const NoteEditor({
+    super.key,
+    required this.notePath,
+    required this.vaultPath,
+  });
 
   @override
   State<NoteEditor> createState() => _NoteEditorState();
@@ -44,9 +49,7 @@ class _NoteEditorState extends State<NoteEditor> {
   }
 
   Future<void> _load() async {
-    final vaultPath = p.dirname(widget.notePath).split('/').sublist(
-      0, p.dirname(widget.notePath).split('/').length - 1).join('/');
-    _vault = VaultService(vaultPath);
+    _vault = VaultService(widget.vaultPath);
     _original = await _vault!.readNote(widget.notePath);
     if (_original == null) return;
     final parsed = VaultService.parseFrontmatter(_original!.content);

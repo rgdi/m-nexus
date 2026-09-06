@@ -102,7 +102,10 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => NoteEditor(notePath: path)),
+      MaterialPageRoute(builder: (_) => NoteEditor(
+        notePath: path,
+        vaultPath: _vault!.vaultPath,
+      )),
     );
     _load();
   }
@@ -315,7 +318,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       style: Theme.of(context).textTheme.bodySmall),
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => NoteView(notePath: n.path)),
+                      MaterialPageRoute(builder: (_) => NoteView(notePath: n.path, vaultPath: _vault!.vaultPath)),
                     ),
                   ),
                   if (n != _recent.last) const Divider(height: 1),

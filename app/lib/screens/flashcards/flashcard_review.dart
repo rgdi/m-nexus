@@ -172,39 +172,23 @@ class _FlashcardReviewState extends State<FlashcardReview> {
   }
 
   Future<void> _rateCard(Flashcard card, int newDifficulty) async {
-    // SM-2 simplificado: actualiza dificultad + nextReview
+    // SM-2 simplificado: actualiza dificultad + nextReview.
     final now = DateTime.now();
     int daysToAdd;
     if (newDifficulty <= 1) daysToAdd = 1;
     else if (newDifficulty <= 3) daysToAdd = 3;
     else if (newDifficulty <= 4) daysToAdd = 7;
     else daysToAdd = 14;
-    final newCard = card.copyWith(
-      difficulty: newDifficulty,
-      nextReview: now.add(Duration(days: daysToAdd)),
-      approved: true,
-    );
+    final newReview = now.add(Duration(days: daysToAdd));
+    // Si la card está en Drafts, primero aprobarla (mover a Approved).
     if (!card.approved) {
       await widget.service.approve(card);
     }
-    // Reescribir el archivo con la nueva metadata
-    final path = card.path;
-    final body = '''---
-id: ${card.id}
-question: ${card.question}
-answer: ${card.answer}
-difficulty: $newDifficulty
-nextReview: ${newCard.nextReview!.toIso8601String().substring(0, 10)}
-approved: true
-reviewed: ${now.toIso8601String()}
----
-
-# ${card.question}
-
-${card.answer}
-''';
-    // simple: usar el writeNote del service (privado). Acá sería:
-    // Pero el service no expone writeNote. Mejor: mover la lógica a service.
-    // Para esta versión, lo dejo así.
+    // Actualizar metadata.
+    await widget.service.updateMetadata(
+      card,
+      difficulty: newDifficulty,
+      nextReview: newReview,
+    );
   }
 }
