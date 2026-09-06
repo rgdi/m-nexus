@@ -25,9 +25,11 @@ class CalendarInfo {
   final int id;
   final String name;
   final String account;
+  final String accountName;
   final String owner;
   final int color;
   final bool visible;
+  final bool isSelected;
 
   const CalendarInfo({
     required this.id,
@@ -36,12 +38,15 @@ class CalendarInfo {
     required this.owner,
     required this.color,
     required this.visible,
+    this.accountName = '',
+    this.isSelected = false,
   });
 
   factory CalendarInfo.fromMap(Map<dynamic, dynamic> m) => CalendarInfo(
         id: (m['id'] as num).toInt(),
         name: m['name'] as String? ?? '',
         account: m['account'] as String? ?? '',
+        accountName: m['accountName'] as String? ?? m['account'] as String? ?? '',
         owner: m['owner'] as String? ?? '',
         color: (m['color'] as num?)?.toInt() ?? 0,
         visible: m['visible'] as bool? ?? true,
@@ -96,16 +101,14 @@ class CalendarEvent {
 
 class CalendarService {
   bool _enabled = false;
-  int? _selectedCalendarId;
 
   bool get enabled => _enabled;
-  int? get selectedCalendarId => _selectedCalendarId;
 
   /// Carga el estado persistido.
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     _enabled = prefs.getBool(_prefsKeyCalendarEnabled) ?? false;
-    _selectedCalendarId = prefs.getInt(_prefsKeySelectedCalendarId);
+    // El ID seleccionado se lee de prefs en cada llamada (getSelectedCalendarId)
   }
 
   /// Verifica si el permiso READ_CALENDAR está concedido.
@@ -148,30 +151,53 @@ class CalendarService {
     try {
       final raw = await _channel.invokeMethod<List<dynamic>>('listCalendars');
       if (raw == null) return [];
-      return raw.map((e) => CalendarInfo.fromMap(e as Map)).toList();
+      final selected = await getSelectedCalendarId();
+      return raw.map((e) {
+        final c = CalendarInfo.fromMap(e as Map);
+        return CalendarInfo(
+          id: c.id,
+          name: c.name,
+          account: c.account,
+          accountName: c.accountName,
+          owner: c.owner,
+          color: c.color,
+          visible: c.visible,
+          isSelected: c.id == selected,
+        );
+      }).toList();
     } catch (_) {
       return [];
     }
   }
 
-  /// Establece el calendario por defecto (sugerir eventos de este).
-  Future<void> setSelectedCalendar(int? id) async {
+  /// Devuelve el ID del calendario seleccionado (o null).
+  Future<int?> getSelectedCalendarId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_prefsKeySelectedCalendarId);
+  }
+
+  Future<void> _setSelectedId(int? id) async {
     final prefs = await SharedPreferences.getInstance();
     if (id == null) {
       await prefs.remove(_prefsKeySelectedCalendarId);
     } else {
       await prefs.setInt(_prefsKeySelectedCalendarId, id);
     }
-    _selectedCalendarId = id;
+  }
+
+  /// Establece el calendario por defecto (sugerir eventos de este).
+  Future<void> setSelectedCalendar(int? id) async {
+    await _setSelectedId(id);
   }
 
   /// v0.37: devuelve el CalendarInfo del calendario seleccionado,
   /// cacheando la lista para no pegarle al sistema cada vez.
   Future<CalendarInfo?> getSelectedCalendarInfo() async {
-    if (_selectedCalendarId == null) return null;
+    final id = await getSelectedCalendarId();
+    if (id == null) return null;
     final cals = await listCalendars();
     try {
-      return cals.firstWhere((c) => c.id == _selectedCalendarId);
+      return cals.firstWhere((c) => c.id == id);
     } catch (_) {
       // El calendario seleccionado ya no existe
       await setSelectedCalendar(null);
@@ -191,13 +217,14 @@ class CalendarService {
       final raw = await _channel.invokeMethod<List<dynamic>>('listEvents', {
         'startMs': from.millisecondsSinceEpoch,
         'endMs': to.millisecondsSinceEpoch,
-        if (_selectedCalendarId != null) 'calendarId': _selectedCalendarId,
+        'calendarId': await getSelectedCalendarId(),
       });
       if (raw == null) return [];
       var events = raw.map((e) => CalendarEvent.fromMap(e as Map)).toList();
       // Filtro defensivo en cliente por si el sistema devuelve varios
-      if (_selectedCalendarId != null) {
-        events = events.where((e) => e.calendarId == _selectedCalendarId).toList();
+      final sel = await getSelectedCalendarId();
+      if (sel != null) {
+        events = events.where((e) => e.calendarId == sel).toList();
       }
       return events;
     } catch (_) {

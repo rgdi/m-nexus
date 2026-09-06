@@ -43,10 +43,12 @@ class _NoteViewState extends State<NoteView> {
     try {
       final service = VaultService(widget.vaultPath);
       _note = await service.readNote(widget.notePath);
+      if (!mounted) return;
       if (_note != null) {
         _backlinks = await service.backlinks(_note!.relPath);
       }
     } catch (e) {
+      if (!mounted) return;
       _error = e.toString();
     }
     if (!mounted) return;

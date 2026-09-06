@@ -52,6 +52,7 @@ class _NoteEditorState extends State<NoteEditor> {
     _vault = VaultService(widget.vaultPath);
     _original = await _vault!.readNote(widget.notePath);
     if (_original == null) return;
+    if (!mounted) return;
     final parsed = VaultService.parseFrontmatter(_original!.content);
     final bodyOnly = parsed.body;
     final titleFromFm = parsed.frontmatter['title'];
