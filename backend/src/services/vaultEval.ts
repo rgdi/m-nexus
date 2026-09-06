@@ -3,7 +3,7 @@
 // Recibe los snapshots ya extraídos y devuelve VaultEvaluation.
 
 import { E } from "../utils/errorCodes.js";
-import { safeCallAsync, safeCallOrNull } from "../utils/safeCall.js";
+import { safeCall } from "../utils/safeCall.js";
 import { logOp, logError } from "../utils/log.js";
 export interface NoteSnapshotInput {
   path: string;
@@ -51,6 +51,22 @@ export interface VaultEvaluationResult {
 
 /** Evalúa un conjunto de notas y devuelve el resultado estructurado. */
 export function evaluateVault(snapshots: NoteSnapshotInput[]): VaultEvaluationResult {
+  return safeCall<VaultEvaluationResult>({
+    component: "eval",
+    code: "EC-EVAL-001",
+    message: "evaluateVault failed",
+    context: { snapshotCount: snapshots.length },
+    op: () => {
+      return evaluateVaultInner(snapshots);
+    },
+  }).value ?? {
+    totalNotes: 0, totalWords: 0, totalFlashcards: 0, totalAudio: 0, totalPdf: 0,
+    averageQuality: 0, untagged: [], orphaned: [], shortNotes: [],
+    notesWithoutFlashcards: [], topics: [], subjects: [], gaps: [],
+  };
+}
+
+function evaluateVaultInner(snapshots: NoteSnapshotInput[]): VaultEvaluationResult {
   const totalWords = snapshots.reduce((s, n) => s + (n.wordCount || 0), 0);
   const totalFlashcards = snapshots.reduce(
     (s, n) => s + ((n.content.match(/##\s*Card\s/g) ?? []).length),

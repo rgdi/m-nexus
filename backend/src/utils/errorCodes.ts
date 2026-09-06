@@ -14,6 +14,7 @@ export enum ErrorCategory {
   FS = "FS",              // Filesystem
   DB = "DB",              // Database
   AUTH = "AUTH",          // Auth/permissions
+  CARD = "CARD",          // Flashcards
   VAL = "VAL",            // Validation (input)
   EXT = "EXT",            // External service (Ollama, OpenRouter, Whisper, etc)
   LLM = "LLM",            // LLM-specific
@@ -32,6 +33,7 @@ export enum ErrorCategory {
   WS = "WS",              // WebSocket
   RATE = "RATE",          // Rate limiting
   CFG = "CFG",            // Configuration
+  UP = "UP",              // Update/upgrade
   EVAL = "EVAL",          // Vault eval (search)
   LIFECYCLE = "LIFECYCLE",// Service init/dispose
   INTERNAL = "INTERNAL",  // Internal bugs/asserts
@@ -42,6 +44,7 @@ export const ErrorCategoryDescriptions: Record<ErrorCategory, string> = {
   [ErrorCategory.FS]: "Filesystem errors (read, write, delete)",
   [ErrorCategory.DB]: "Database errors (sqlite, queries)",
   [ErrorCategory.AUTH]: "Auth/permission errors (jwt, devices)",
+  [ErrorCategory.CARD]: "Flashcard errors (create, delete, FSRS)",
   [ErrorCategory.VAL]: "Validation errors (input, schema)",
   [ErrorCategory.EXT]: "External service errors (any upstream)",
   [ErrorCategory.LLM]: "LLM-specific errors (Ollama, OpenRouter)",
@@ -60,6 +63,7 @@ export const ErrorCategoryDescriptions: Record<ErrorCategory, string> = {
   [ErrorCategory.WS]: "WebSocket errors",
   [ErrorCategory.RATE]: "Rate limiting errors",
   [ErrorCategory.CFG]: "Configuration errors",
+  [ErrorCategory.UP]: "Update/upgrade errors",
   [ErrorCategory.EVAL]: "Vault evaluation (search) errors",
   [ErrorCategory.LIFECYCLE]: "Service init/dispose errors",
   [ErrorCategory.INTERNAL]: "Internal bugs/asserts",
@@ -161,6 +165,9 @@ export const E = {
   auth: (code: string, message: string, opts: ErrorOptions = {}) =>
     new AppError({ category: ErrorCategory.AUTH, code, message, ...opts }),
 
+  card: (code: string, message: string, opts: ErrorOptions = {}) =>
+    new AppError({ category: ErrorCategory.CARD, code, message, ...opts }),
+
   val: (code: string, message: string, opts: ErrorOptions = {}) =>
     new AppError({ category: ErrorCategory.VAL, code, message, ...opts }),
 
@@ -214,6 +221,9 @@ export const E = {
 
   cfg: (code: string, message: string, opts: ErrorOptions = {}) =>
     new AppError({ category: ErrorCategory.CFG, code, message, ...opts }),
+
+  up: (code: string, message: string, opts: ErrorOptions = {}) =>
+    new AppError({ category: ErrorCategory.UP, code, message, ...opts }),
 
   eval: (code: string, message: string, opts: ErrorOptions = {}) =>
     new AppError({ category: ErrorCategory.EVAL, code, message, ...opts }),

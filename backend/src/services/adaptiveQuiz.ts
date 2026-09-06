@@ -94,7 +94,12 @@ export function answerQuestion(
   timeMs: number = 0,
 ): AnswerResult {
   const q = session.questions[session.currentIndex];
-  if (!q) throw new Error("No current question");
+  if (!q) {
+    throw E.quiz("EC-QUIZ-001", "No current question", {
+      context: { sessionId: session.id, currentIndex: session.currentIndex, questions: session.questions.length },
+      hint: "Session may be completed or in invalid state; reset and start a new session",
+    });
+  }
   const isCorrect = checkAnswer(q.correctAnswer, answer, q.acceptedAnswers);
   session.responses.push({ questionId: q.id, answer, correct: isCorrect, timeMs, confidence });
   updateMastery(graph, q.conceptId, q.layer, isCorrect, confidence);

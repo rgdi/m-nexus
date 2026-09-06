@@ -1,7 +1,7 @@
 // Cross-relevance: main analyzer.
 
 import { E } from "../utils/errorCodes.js";
-import { safeCallAsync, safeCallOrNull } from "../utils/safeCall.js";
+import { safeCall, safeCallOrNull } from "../utils/safeCall.js";
 import { logOp, logError } from "../utils/log.js";
 import type {
   NoteDocument,
@@ -32,45 +32,61 @@ export class CrossRelevanceAnalyzer {
    * Combina Jaccard con bonus por frases compartidas.
    */
   findMatches(target: NoteDocument, corpus: NoteDocument[]): CrossMatch[] {
-    const matches: CrossMatch[] = [];
-    for (const doc of corpus) {
-      if (doc.id === target.id) continue;
-      const baseSim = textSimilarity(target.content, doc.content);
-      const sharedPhrases = findSharedPhrases(target.content, doc.content);
-      // Boost: cada frase compartida añade 0.1 al score (cap 0.3)
-      const boost = Math.min(0.3, sharedPhrases.length * 0.1);
-      const sim = Math.min(1, baseSim + boost);
-      if (sim < this.options.minSimilarity) continue;
-      const contradiction = this.options.detectContradictions && detectContradiction(target.content, doc.content);
-      matches.push({
-        sourceA: target,
-        sourceB: doc,
-        similarity: sim,
-        sharedPhrases,
-        relation: contradiction ? "contradiction" : sim > 0.85 ? "duplicate" : sim > 0.75 ? "extension" : "complement",
-        recommendation: this.recommend(contradiction, sim, target, doc),
-        confidence: Math.min(1, sim + sharedPhrases.length * 0.05),
-      });
-    }
-    matches.sort((a, b) => b.similarity - a.similarity);
-    return matches.slice(0, this.options.maxMatches);
+    return safeCall<CrossMatch[]>({
+      component: "rel",
+      code: "EC-REL-001",
+      message: "findMatches failed",
+      context: { targetId: target.id, corpusLen: corpus.length, minSimilarity: this.options.minSimilarity },
+      op: () => {
+        const matches: CrossMatch[] = [];
+        for (const doc of corpus) {
+          if (doc.id === target.id) continue;
+          const baseSim = textSimilarity(target.content, doc.content);
+          const sharedPhrases = findSharedPhrases(target.content, doc.content);
+          // Boost: cada frase compartida añade 0.1 al score (cap 0.3)
+          const boost = Math.min(0.3, sharedPhrases.length * 0.1);
+          const sim = Math.min(1, baseSim + boost);
+          if (sim < this.options.minSimilarity) continue;
+          const contradiction = this.options.detectContradictions && detectContradiction(target.content, doc.content);
+          matches.push({
+            sourceA: target,
+            sourceB: doc,
+            similarity: sim,
+            sharedPhrases,
+            relation: contradiction ? "contradiction" : sim > 0.85 ? "duplicate" : sim > 0.75 ? "extension" : "complement",
+            recommendation: this.recommend(contradiction, sim, target, doc),
+            confidence: Math.min(1, sim + sharedPhrases.length * 0.05),
+          });
+        }
+        matches.sort((a, b) => b.similarity - a.similarity);
+        return matches.slice(0, this.options.maxMatches);
+      },
+    }).value ?? [];
   }
 
   /**
    * Encuentra todas las relaciones en un corpus (matriz NxN).
    */
   findAllRelations(corpus: NoteDocument[]): CrossMatch[] {
-    const all: CrossMatch[] = [];
-    for (let i = 0; i < corpus.length; i++) {
-      const matches = this.findMatches(corpus[i], corpus);
-      // Evitar duplicados
-      for (const m of matches) {
-        if (!all.some((x) => (x.sourceA.id === m.sourceA.id && x.sourceB.id === m.sourceB.id))) {
-          all.push(m);
+    return safeCall<CrossMatch[]>({
+      component: "rel",
+      code: "EC-REL-002",
+      message: "findAllRelations failed",
+      context: { corpusLen: corpus.length },
+      op: () => {
+        const all: CrossMatch[] = [];
+        for (let i = 0; i < corpus.length; i++) {
+          const matches = this.findMatches(corpus[i], corpus);
+          // Evitar duplicados
+          for (const m of matches) {
+            if (!all.some((x) => (x.sourceA.id === m.sourceA.id && x.sourceB.id === m.sourceB.id))) {
+              all.push(m);
+            }
+          }
         }
-      }
-    }
-    return all;
+        return all;
+      },
+    }).value ?? [];
   }
 
   /**
@@ -78,6 +94,18 @@ export class CrossRelevanceAnalyzer {
    * Compara las notas contra fuentes "autorizadas" (PDFs del temario, transcripciones de clase).
    */
   factCheck(target: NoteDocument, trustedSources: NoteDocument[]): FactCheckIssue[] {
+    return safeCall<FactCheckIssue[]>({
+      component: "rel",
+      code: "EC-REL-003",
+      message: "factCheck failed",
+      context: { targetId: target.id, trustedSourcesLen: trustedSources.length, enabled: this.options.factCheck },
+      op: () => {
+        return this.factCheckInner(target, trustedSources);
+      },
+    }).value ?? [];
+  }
+
+  private factCheckInner(target: NoteDocument, trustedSources: NoteDocument[]): FactCheckIssue[] {
     const issues: FactCheckIssue[] = [];
     if (!this.options.factCheck) return issues;
 

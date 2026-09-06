@@ -82,22 +82,35 @@ export async function sendPush(
   deviceId: string,
   payload: PushPayload
 ): Promise<PushResult> {
-  const token = tokenStore.get(deviceId);
-  if (!token) {
-    return { success: false, platform: "ios", deviceId, error: "Token not found" };
-  }
-
-  // Actualizar lastSeen
-  token.lastSeenAt = Date.now();
-  tokenStore.set(deviceId, token);
-
-  if (token.platform === "android") {
-    return await sendFCM(token.token, payload, deviceId);
-  } else if (token.platform === "ios") {
-    return await sendAPNs(token.token, payload, deviceId);
-  }
-
-  return { success: false, platform: token.platform, deviceId, error: "Unknown platform" };
+  const r = await safeCallAsync<PushResult>({
+    component: "push",
+    code: "EC-PUSH-001",
+    message: "sendPush failed",
+    context: { deviceId: deviceId.slice(0, 8), title: payload.title, category: payload.category },
+    op: async () => {
+      const token = tokenStore.get(deviceId);
+      if (!token) {
+        throw E.push("EC-PUSH-002", "Token not found", {
+          context: { deviceId: deviceId.slice(0, 8) },
+          hint: "Device needs to register a push token first",
+        });
+      }
+      // Actualizar lastSeen
+      token.lastSeenAt = Date.now();
+      tokenStore.set(deviceId, token);
+      if (token.platform === "android") {
+        return await sendFCM(token.token, payload, deviceId);
+      } else if (token.platform === "ios") {
+        return await sendAPNs(token.token, payload, deviceId);
+      }
+      throw E.push("EC-PUSH-003", "Unknown platform", {
+        context: { platform: token.platform, deviceId: deviceId.slice(0, 8) },
+        hint: "Platform must be 'android' or 'ios'",
+      });
+    },
+  });
+  if (!r.success || !r.value) return { success: false, platform: "android", deviceId, error: r.error?.message ?? "internal error" };
+  return r.value;
 }
 
 /**
@@ -107,15 +120,25 @@ export async function broadcastToUser(
   userId: string,
   payload: PushPayload
 ): Promise<PushResult[]> {
-  const tokens = listTokens().filter((t) => t.deviceId.startsWith(userId));
-  const results: PushResult[] = [];
-  for (const t of tokens) {
-    const r = await sendPush(t.deviceId, payload);
-    results.push(r);
-    // Si el token es inválido, eliminarlo
-    if (r.invalidToken) removeToken(t.deviceId);
-  }
-  return results;
+  const r = await safeCallAsync<PushResult[]>({
+    component: "push",
+    code: "EC-PUSH-004",
+    message: "broadcastToUser failed",
+    context: { userId: userId.slice(0, 8), title: payload.title },
+    op: async () => {
+      const tokens = listTokens().filter((t) => t.deviceId.startsWith(userId));
+      const results: PushResult[] = [];
+      for (const t of tokens) {
+        const r = await sendPush(t.deviceId, payload);
+        results.push(r);
+        // Si el token es inválido, eliminarlo
+        if (r.invalidToken) removeToken(t.deviceId);
+      }
+      logOp("push", "broadcast", true, { userId: userId.slice(0, 8), sent: results.length, failed: results.filter((r) => !r.success).length });
+      return results;
+    },
+  });
+  return r.value ?? [];
 }
 
 /**
@@ -127,51 +150,64 @@ async function sendFCM(
   payload: PushPayload,
   deviceId: string
 ): Promise<PushResult> {
-  const fcmServiceAccount = process.env.FCM_SERVICE_ACCOUNT;
-  if (!fcmServiceAccount) {
-    // Modo desarrollo: simular
-    log.info(`[DEV] FCM push to ${deviceId.slice(0, 8)}: ${payload.title} - ${payload.body}`);
-    return {
-      success: true,
-      platform: "android",
-      deviceId,
-      messageId: `dev-${Date.now()}`,
-    };
-  }
-
-  // Producción: usar firebase-admin
-  try {
-    // Lazy require para no cargar firebase en dev
-    const admin = await import("firebase-admin");
-    const adminApp = (admin as unknown as { default?: unknown }).default ?? admin;
-    const adminObj = adminApp as unknown as { apps: unknown[]; initializeApp: (opts: unknown) => unknown; credential: { cert: (sa: unknown) => unknown }; messaging: () => { send: (m: unknown) => Promise<string> } };
-    if (!adminObj.apps.length) {
-      const serviceAccount = JSON.parse(fcmServiceAccount);
-      adminObj.initializeApp({ credential: adminObj.credential.cert(serviceAccount) });
-    }
-    const messaging = adminObj.messaging();
-    const messageId = await messaging.send({
-      token,
-      notification: {
-        title: payload.title,
-        body: payload.body,
-      },
-      data: payload.data,
-      android: {
-        priority: payload.force ? "high" : "normal",
-        notification: {
-          sound: payload.sound ?? "default",
-          clickAction: payload.category,
-        },
-      },
-    });
-    return { success: true, platform: "android", deviceId, messageId };
-  } catch (err) {
-    const error = err instanceof Error ? err.message : String(err);
-    const isInvalid = error.includes("registration-token-not-registered") ||
-                     error.includes("invalid-argument");
-    return { success: false, platform: "android", deviceId, error, invalidToken: isInvalid };
-  }
+  const r = await safeCallAsync<PushResult>({
+    component: "push",
+    code: "EC-PUSH-005",
+    message: "sendFCM failed",
+    context: { deviceId: deviceId.slice(0, 8), title: payload.title },
+    op: async () => {
+      const fcmServiceAccount = process.env.FCM_SERVICE_ACCOUNT;
+      if (!fcmServiceAccount) {
+        // Modo desarrollo: simular
+        log.info(`[DEV] FCM push to ${deviceId.slice(0, 8)}: ${payload.title} - ${payload.body}`);
+        return {
+          success: true,
+          platform: "android",
+          deviceId,
+          messageId: `dev-${Date.now()}`,
+        };
+      }
+      // Producción: usar firebase-admin
+      try {
+        // Lazy require para no cargar firebase en dev
+        const admin = await import("firebase-admin");
+        const adminApp = (admin as unknown as { default?: unknown }).default ?? admin;
+        const adminObj = adminApp as unknown as { apps: unknown[]; initializeApp: (opts: unknown) => unknown; credential: { cert: (sa: unknown) => unknown }; messaging: () => { send: (m: unknown) => Promise<string> } };
+        if (!adminObj.apps.length) {
+          const serviceAccount = JSON.parse(fcmServiceAccount);
+          adminObj.initializeApp({ credential: adminObj.credential.cert(serviceAccount) });
+        }
+        const messaging = adminObj.messaging();
+        const messageId = await messaging.send({
+          token,
+          notification: {
+            title: payload.title,
+            body: payload.body,
+          },
+          data: payload.data,
+          android: {
+            priority: payload.force ? "high" : "normal",
+            notification: {
+              sound: payload.sound ?? "default",
+              clickAction: payload.category,
+            },
+          },
+        });
+        logOp("push", "fcm sent", true, { deviceId: deviceId.slice(0, 8), messageId });
+        return { success: true, platform: "android", deviceId, messageId };
+      } catch (err) {
+        const error = err instanceof Error ? err.message : String(err);
+        const isInvalid = error.includes("registration-token-not-registered") ||
+                         error.includes("invalid-argument");
+        if (isInvalid) {
+          logOp("push", "fcm invalid token", false, { deviceId: deviceId.slice(0, 8), error });
+        }
+        return { success: false, platform: "android", deviceId, error, invalidToken: isInvalid };
+      }
+    },
+  });
+  if (!r.success || !r.value) return { success: false, platform: "android", deviceId, error: r.error?.message ?? "internal error" };
+  return r.value;
 }
 
 /**

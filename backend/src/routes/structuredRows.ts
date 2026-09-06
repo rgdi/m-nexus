@@ -1,6 +1,9 @@
 // Structured routes: rows CRUD.
 
 import type { FastifyInstance } from "fastify";
+import { E } from "../utils/errorCodes.js";
+import { safeCallAsync } from "../utils/safeCall.js";
+import { logOp } from "../utils/log.js";
 import {
   type NoteRow,
   type DatabaseSchema,
@@ -62,7 +65,7 @@ export async function registerRowRoutes(app: FastifyInstance): Promise<void> {
       if (!db) return reply.code(404).send({ code: "NOT_FOUND" });
       const body = req.body;
       if (!body?.path || !body?.properties) {
-        return reply.code(400).send({ code: "INVALID", message: "path and properties required" });
+        throw E.val("INVALID", "path and properties required", { context: { bodyKeys: Object.keys(req.body ?? {}) } });
       }
       // Validar cada propiedad contra el schema
       for (const p of db.properties) {

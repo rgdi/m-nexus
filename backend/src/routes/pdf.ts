@@ -1,8 +1,12 @@
 // PDF routes: comparación de versiones (mueve la lógica del plugin al backend).
 // v0.11: el plugin envía los dos binarios; el backend extrae texto, divide en
 // párrafos y devuelve el diff. El plugin SOLO renderiza.
+// v0.45: error codes estructurados con AppError.
 
 import { FastifyInstance } from "fastify";
+import { E } from "../utils/errorCodes.js";
+import { safeCallAsync } from "../utils/safeCall.js";
+import { logOp } from "../utils/log.js";
 
 export interface PdfDiffHunk {
   kind: "equal" | "modified" | "added" | "removed";
@@ -18,42 +22,60 @@ export interface PdfDiffResponse {
   versionB: { size: number; paragraphCount: number };
 }
 
+interface PdfDiffBody {
+  pdfABase64?: string;
+  pdfBBase64?: string;
+}
+
 export async function pdfRoutes(app: FastifyInstance): Promise<void> {
   app.post("/api/v1/pdf/diff", async (req, reply) => {
-    const body = req.body as {
-      pdfABase64?: string;
-      pdfBBase64?: string;
-    };
-    if (!body?.pdfABase64 || !body?.pdfBBase64) {
-      reply.code(400).send({ code: "BAD_REQUEST", message: "pdfABase64 y pdfBBase64 requeridos" });
-      return;
-    }
-    try {
-      const a = Buffer.from(body.pdfABase64, "base64");
-      const b = Buffer.from(body.pdfBBase64, "base64");
-      const textA = extractText(a);
-      const textB = extractText(b);
-      const paragraphsA = extractParagraphs(textA);
-      const paragraphsB = extractParagraphs(textB);
-      const hunks = diffParagraphs(paragraphsA, paragraphsB);
-      const summary = {
-        equal: hunks.filter((h) => h.kind === "equal").length,
-        modified: hunks.filter((h) => h.kind === "modified").length,
-        added: hunks.filter((h) => h.kind === "added").length,
-        removed: hunks.filter((h) => h.kind === "removed").length,
-        changeRatio: 0,
-      };
-      const total = summary.equal + summary.modified + summary.added + summary.removed;
-      summary.changeRatio = total > 0 ? (summary.modified + summary.added + summary.removed) / total : 0;
-      return {
-        summary,
-        hunks,
-        versionA: { size: a.length, paragraphCount: paragraphsA.length },
-        versionB: { size: b.length, paragraphCount: paragraphsB.length },
-      };
-    } catch (e) {
-      reply.code(500).send({ code: "PDF_DIFF_ERROR", message: (e as Error).message });
-    }
+    const body = (req.body ?? {}) as PdfDiffBody;
+    const r = await safeCallAsync<PdfDiffResponse>({
+      component: "fs",
+      code: "EC-FS-001",
+      message: "pdf.diff failed",
+      context: {
+        sizeA: body.pdfABase64?.length ?? 0,
+        sizeB: body.pdfBBase64?.length ?? 0,
+      },
+      op: async () => {
+        if (!body.pdfABase64 || !body.pdfBBase64) {
+          throw E.val("EC-FS-002", "pdfABase64 y pdfBBase64 requeridos", {
+            context: { bodyKeys: Object.keys(body) },
+            hint: "Send { pdfABase64: '...', pdfBBase64: '...' }",
+          });
+        }
+        const a = Buffer.from(body.pdfABase64, "base64");
+        const b = Buffer.from(body.pdfBBase64, "base64");
+        const textA = extractText(a);
+        const textB = extractText(b);
+        const paragraphsA = extractParagraphs(textA);
+        const paragraphsB = extractParagraphs(textB);
+        const hunks = diffParagraphs(paragraphsA, paragraphsB);
+        const summary = {
+          equal: hunks.filter((h) => h.kind === "equal").length,
+          modified: hunks.filter((h) => h.kind === "modified").length,
+          added: hunks.filter((h) => h.kind === "added").length,
+          removed: hunks.filter((h) => h.kind === "removed").length,
+          changeRatio: 0,
+        };
+        const total = summary.equal + summary.modified + summary.added + summary.removed;
+        summary.changeRatio = total > 0 ? (summary.modified + summary.added + summary.removed) / total : 0;
+        logOp("fs", "pdf diff", true, {
+          sizeA: a.length, sizeB: b.length,
+          paragraphsA: paragraphsA.length, paragraphsB: paragraphsB.length,
+          changeRatio: summary.changeRatio.toFixed(2),
+        });
+        return {
+          summary,
+          hunks,
+          versionA: { size: a.length, paragraphCount: paragraphsA.length },
+          versionB: { size: b.length, paragraphCount: paragraphsB.length },
+        };
+      },
+    });
+    if (!r.success || !r.value) throw r.error!;
+    return r.value;
   });
 }
 

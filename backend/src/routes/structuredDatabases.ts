@@ -1,6 +1,9 @@
 // Structured routes: databases CRUD.
 
 import type { FastifyInstance } from "fastify";
+import { E } from "../utils/errorCodes.js";
+import { safeCallAsync } from "../utils/safeCall.js";
+import { logOp } from "../utils/log.js";
 import type { DatabaseSchema } from "../services/structuredNotes.js";
 import { genId } from "../services/structuredNotes.js";
 import { vaultDatabases, vaultRows, vaultViews, getOrCreate } from "./structuredStore.js";
@@ -17,15 +20,15 @@ export async function registerDatabaseRoutes(app: FastifyInstance): Promise<void
   app.post<{ Body: Partial<DatabaseSchema> & { vaultId: string } }>("/api/v1/databases", async (req, reply) => {
     const body = req.body;
     if (!body?.vaultId || !body?.name || !body?.folder || !body?.properties) {
-      return reply.code(400).send({ code: "INVALID", message: "vaultId, name, folder, properties required" });
+      throw E.val("INVALID", "vaultId, name, folder, properties required", { context: { bodyKeys: Object.keys(req.body ?? {}) } });
     }
     if (!Array.isArray(body.properties) || body.properties.length === 0) {
-      return reply.code(400).send({ code: "INVALID", message: "properties must be a non-empty array" });
+      throw E.val("INVALID", "properties must be a non-empty array", { context: { bodyKeys: Object.keys(req.body ?? {}) } });
     }
     // Validar schema
     for (const p of body.properties) {
       if (!p.name || !p.type) {
-        return reply.code(400).send({ code: "INVALID", message: "each property needs name and type" });
+        throw E.val("INVALID", "each property needs name and type", { context: { bodyKeys: Object.keys(req.body ?? {}) } });
       }
     }
     const id = genId();

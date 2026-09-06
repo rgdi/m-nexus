@@ -1,6 +1,9 @@
 // Structured routes: views CRUD.
 
 import type { FastifyInstance } from "fastify";
+import { E } from "../utils/errorCodes.js";
+import { safeCallAsync } from "../utils/safeCall.js";
+import { logOp } from "../utils/log.js";
 import type { ViewSchema } from "../services/structuredNotes.js";
 import { vaultDatabases, vaultViews, getOrCreate } from "./structuredStore.js";
 import { genId } from "../services/structuredNotes.js";
@@ -22,7 +25,7 @@ export async function registerViewRoutes(app: FastifyInstance): Promise<void> {
     async (req, reply) => {
       const body = req.body;
       if (!body?.name || !body?.type) {
-        return reply.code(400).send({ code: "INVALID", message: "name and type required" });
+        throw E.val("INVALID", "name and type required", { context: { bodyKeys: Object.keys(req.body ?? {}) } });
       }
       const valid = ["table", "kanban", "calendar", "gallery", "list"];
       if (!valid.includes(body.type)) {

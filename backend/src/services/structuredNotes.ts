@@ -24,7 +24,7 @@
 // el backend es la fuente de verdad compartida entre devices.
 
 import { E } from "../utils/errorCodes.js";
-import { safeCallAsync, safeCallOrNull } from "../utils/safeCall.js";
+import { safeCall, safeCallOrNullSync } from "../utils/safeCall.js";
 import { logOp, logError } from "../utils/log.js";
 import { createHash, randomUUID } from "node:crypto";
 
@@ -197,6 +197,18 @@ const FORMULA_FNS: Record<string, (args: unknown[], row: NoteRow) => unknown> = 
 };
 
 export function evalFormula(formula: string, row: NoteRow, allRows: NoteRow[]): unknown {
+  return safeCall<unknown>({
+    component: "str",
+    code: "EC-STR-001",
+    message: "evalFormula failed",
+    context: { formula: formula.slice(0, 50), rowId: row.id },
+    op: () => {
+      return evalFormulaInner(formula, row, allRows);
+    },
+  }).value;
+}
+
+function evalFormulaInner(formula: string, row: NoteRow, allRows: NoteRow[]): unknown {
   // Sintaxis muy simple: fn(arg1, arg2)
   // Los args pueden ser: string literal, número, o nombre de propiedad
   try {

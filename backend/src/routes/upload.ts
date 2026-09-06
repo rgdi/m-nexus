@@ -9,7 +9,9 @@ import { FastifyInstance } from "fastify";
 import { createWriteStream, existsSync, mkdirSync, statSync, unlinkSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { createHash } from "node:crypto";
-import { logger } from "../utils/log.js";
+import { logger, logOp } from "../utils/log.js";
+import { E } from "../utils/errorCodes.js";
+import { safeCallAsync } from "../utils/safeCall.js";
 
 function uploadDir() { return process.env.UPLOAD_DIR ?? "/var/lib/mnexus/uploads"; }
 const CHUNK_SIZE_DEFAULT = 1024 * 1024; // 1 MB
