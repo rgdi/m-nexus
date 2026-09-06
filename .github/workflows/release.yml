@@ -156,7 +156,7 @@ jobs:
         run: bash app/android/fix-plugins.sh
       - name: Build APK
         continue-on-error: true
-        run: cd app && flutter build apk --release
+        run: cd app && flutter build apk --release --verbose 2>&1 | tee build.log; ls -la build/app/outputs/flutter-apk/ 2>&1; test -f build/app/outputs/flutter-apk/app-release.apk && echo "APK OK" || (echo "APK MISSING"; tail -50 build.log; exit 1)
       - name: Copy APK
         run: |
           mkdir -p $GITHUB_WORKSPACE/artifacts
