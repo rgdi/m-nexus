@@ -137,5 +137,3 @@ class LogEntry {
     if (stack != null) 'stack': stack,
   };
 }
-
-class AdvancedLogger {
