@@ -249,7 +249,7 @@ jobs:
           fi
           # Set it for later steps
           echo "TAG=${TAG}" >> $GITHUB_ENV
-      - name: Delete existing release + tag if present (re-upload assets)
+      - name: Delete existing release if present (so we can re-upload assets)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ env.TAG }}
@@ -258,21 +258,30 @@ jobs:
             echo "Deleting existing release $TAG"
             gh release delete "$TAG" --yes || true
           fi
+          # Also delete remote tag so the next step re-pushes it (avoid stale ref)
           git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" :refs/tags/"$TAG" 2>/dev/null || true
-          git tag -d "$TAG" 2>/dev/null || true
-      - name: Recreate tag pointing to current commit
-        run: |
-          TAG="${{ env.TAG }}"
-          git tag -f "$TAG" HEAD
-          git push "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" -f "$TAG"
-      - name: Create Release with assets (gh CLI)
+      - name: Re-create tag pointing to current commit (force)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ env.TAG }}
         run: |
-          # Create the release first
-          gh release create "$TAG"             --title "$TAG"             --generate-notes             --draft=false
-          # Then upload all the assets (with clobber to overwrite)
-          for f in artifacts/m-nexus-backend-*.zip artifacts/m-nexus-backend.zip                    artifacts/m-nexus-install-*.sh artifacts/m-nexus-install.sh                    artifacts/m-nexus-app-*.apk artifacts/m-nexus-app.apk; do
-            [ -f "$f" ] && gh release upload "$TAG" "$f" --clobber
-          done
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          git tag -f "$TAG" HEAD
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" -f "$TAG"
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG }}
+          name: ${{ env.TAG }}
+          generate_release_notes: true
+          fail_on_unmatched_files: false
+          files: |
+            artifacts/m-nexus-backend-*.zip
+            artifacts/m-nexus-backend.zip
+            artifacts/m-nexus-install-*.sh
+            artifacts/m-nexus-install.sh
+            artifacts/m-nexus-app-*.apk
+            artifacts/m-nexus-app.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
