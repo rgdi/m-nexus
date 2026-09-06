@@ -40,6 +40,14 @@ class AppSettings {
       case AppThemeMode.system: return ThemeMode.system;
     }
   }
+
+  /// Serializa para logging.
+  Map<String, dynamic> toJson() => {
+    'themeMode': themeMode.name,
+    'fontScale': fontScale,
+    'enableHaptics': enableHaptics,
+    if (backendUrl != null) 'backendUrl': backendUrl,
+  };
 }
 
 class SettingsService {
