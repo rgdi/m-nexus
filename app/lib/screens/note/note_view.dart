@@ -13,8 +13,14 @@ import 'note_editor.dart';
 
 class NoteView extends StatefulWidget {
   final String notePath;
+  final String vaultPath;
   final bool embedded;
-  const NoteView({super.key, required this.notePath, this.embedded = false});
+  const NoteView({
+    super.key,
+    required this.notePath,
+    required this.vaultPath,
+    this.embedded = false,
+  });
 
   @override
   State<NoteView> createState() => _NoteViewState();
@@ -35,7 +41,7 @@ class _NoteViewState extends State<NoteView> {
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final service = VaultService(p.dirname(widget.notePath).split('/').sublist(0, p.dirname(widget.notePath).split('/').length - 1).join('/'));
+      final service = VaultService(widget.vaultPath);
       _note = await service.readNote(widget.notePath);
       if (_note != null) {
         _backlinks = await service.backlinks(_note!.relPath);
@@ -67,7 +73,10 @@ class _NoteViewState extends State<NoteView> {
             onPressed: () async {
               await Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => NoteEditor(notePath: note.path)),
+                MaterialPageRoute(builder: (_) => NoteEditor(
+                  notePath: note.path,
+                  vaultPath: widget.vaultPath,
+                )),
               );
               if (!mounted) return;
               _load();
@@ -118,7 +127,10 @@ class _NoteViewState extends State<NoteView> {
               title: Text(b.title ?? b.name, maxLines: 1, overflow: TextOverflow.ellipsis),
               onTap: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => NoteView(notePath: b.path)),
+                MaterialPageRoute(builder: (_) => NoteView(
+                  notePath: b.path,
+                  vaultPath: widget.vaultPath,
+                )),
               ),
             )),
           ],
@@ -181,12 +193,12 @@ class _NoteViewState extends State<NoteView> {
         });
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => NoteView(notePath: newPath)),
+          MaterialPageRoute(builder: (_) => NoteView(notePath: newPath, vaultPath: widget.vaultPath)),
         );
       } else {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => NoteView(notePath: newPath)),
+          MaterialPageRoute(builder: (_) => NoteView(notePath: newPath, vaultPath: widget.vaultPath)),
         );
       }
     } else {

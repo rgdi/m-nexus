@@ -1,5 +1,5 @@
 // PermissionService: gestión unificada de todos los permisos que necesita
-// la app companion. Solicita de forma inteligente (uno por uno, con
+// la app. Solicita de forma inteligente (uno por uno, con
 // explicación cuando son denegados permanentemente).
 //
 // v0.32: solicita permisos en grupos, no en cascada. Si el usuario
@@ -57,7 +57,7 @@ class PermissionsService {
     _PermSpec(
       id: 'install_unknown',
       name: 'Instalar apps',
-      description: 'Necesario para auto-actualizar el companion',
+      description: 'Necesario para auto-actualizar la app',
     ),
     _PermSpec(
       id: 'manage_storage',

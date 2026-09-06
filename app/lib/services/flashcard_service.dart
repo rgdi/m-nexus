@@ -120,6 +120,49 @@ $answer
     log.info('fc', 'Approved', context: {'id': card.id});
   }
 
+  /// Actualiza la dificultad y nextReview de una flashcard.
+  /// Busca el archivo actual por id (puede haberse movido de Drafts → Approved).
+  Future<void> updateMetadata(
+    Flashcard card, {
+    required int difficulty,
+    required DateTime nextReview,
+  }) async {
+    final now = DateTime.now();
+    // Busca el archivo actual por id
+    String? currentPath;
+    for (final sub in [AppConstants.flashcardsApproved, AppConstants.flashcardsDrafts]) {
+      final dir = Directory(p.join(vaultPath, sub));
+      if (!await dir.exists()) continue;
+      await for (final f in dir.list()) {
+        if (f is! File) continue;
+        if (p.basenameWithoutExtension(f.path) == card.id) {
+          currentPath = f.path;
+          break;
+        }
+      }
+      if (currentPath != null) break;
+    }
+    if (currentPath == null) {
+      log.warn('fc', 'Card not found for update', context: {'id': card.id});
+      return;
+    }
+    final body = '''---
+id: ${card.id}
+question: ${card.question}
+answer: ${card.answer}
+difficulty: $difficulty
+nextReview: ${nextReview.toIso8601String().substring(0, 10)}
+reviewed: ${now.toIso8601String()}
+---
+
+# ${card.question}
+
+${card.answer}
+''';
+    await File(currentPath).writeAsString(body);
+    log.info('fc', 'Updated', context: {'id': card.id, 'difficulty': difficulty});
+  }
+
   /// Borra una flashcard.
   Future<void> delete(Flashcard card) async {
     final f = File(card.path);
