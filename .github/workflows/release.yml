@@ -157,12 +157,11 @@ jobs:
       - name: Build APK
         run: |
           cd app
-          flutter build apk --release --verbose 2>&1 | tee /tmp/build.log
+          flutter build apk --release 2>&1 | tee /tmp/build.log | tail -100
           echo "=== Output dir ==="
           ls -la build/app/outputs/flutter-apk/ 2>&1 || true
-          find build -name "*.apk" 2>/dev/null || true
-          echo "=== Build log tail ==="
-          tail -30 /tmp/build.log
+          echo "=== Build log size ==="
+          wc -l /tmp/build.log
       - name: Copy APK
         run: |
           mkdir -p $GITHUB_WORKSPACE/artifacts
