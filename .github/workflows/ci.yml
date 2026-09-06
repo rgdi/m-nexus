@@ -21,8 +21,8 @@ jobs:
       - run: cd backend && npx tsc --noEmit
       - run: cd backend && npm test
 
-  test-companion-app:
-    name: Test Companion App
+  test-app:
+    name: Test App
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,6 +30,6 @@ jobs:
         with:
           flutter-version: '3.24.0'
           channel: 'stable'
-      - run: cd companion-app && flutter pub get
-      - run: cd companion-app && flutter analyze --no-fatal-infos --no-fatal-warnings || true
-      - run: cd companion-app && flutter test
+      - run: cd app && flutter pub get
+      - run: cd app && flutter analyze --no-fatal-infos --no-fatal-warnings || true
+      - run: cd app && flutter test

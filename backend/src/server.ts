@@ -47,7 +47,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   });
 
   // CORS estricto: solo orígenes permitidos
-  const allowedOrigins = (process.env.CORS_ORIGINS ?? "app://obsidian.md,capacitor://localhost,http://localhost").split(",");
+  const allowedOrigins = (process.env.CORS_ORIGINS ?? "app://mnexus.app,capacitor://localhost,http://localhost").split(",");
   await app.register(cors, {
     origin: (origin, cb) => {
       // Same-origin / herramientas locales

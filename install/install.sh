@@ -8,8 +8,8 @@
 #
 # Etiquetas / componentes:
 #   --component=backend   Solo backend
-#   --component=companion Solo app de Android (default)
-#   --component=all       Backend + companion (default)
+#   --component=app Solo app de Android (default)
+#   --component=all       Backend + app (default)
 #
 # Modos:
 #   (default)              Instalar (idempotente)
@@ -210,7 +210,7 @@ download_asset() {
     local asset_name
     case "$component" in
         backend) asset_name="m-nexus-backend-v${version}.zip" ;;
-        companion) asset_name="m-nexus-companion-v${version}.apk" ;;
+        app) asset_name="m-nexus-app-v${version}.apk" ;;
         *) err "Componente desconocido: $component"; return 1 ;;
     esac
     local url="${GITHUB_API}/releases/download/v${version}/${asset_name}"
@@ -302,17 +302,17 @@ EOF
     fi
 }
 
-# ─── Instalar companion (solo descargar APK) ───────────────────
-install_companion() {
+# ─── Instalar app (solo descargar APK) ───────────────────
+install_app() {
     local version="$1"
-    section "Companion v$version"
-    local apk_dir="$TARGET_DIR/companion"
+    section "App v$version"
+    local apk_dir="$TARGET_DIR/app"
     mkdir -p "$apk_dir"
-    if ! download_asset companion "$version" "$apk_dir/m-nexus-companion-v${version}.apk"; then
+    if ! download_asset app "$version" "$apk_dir/m-nexus-app-v${version}.apk"; then
         return 0
     fi
     cat > "$apk_dir/INSTALL.md" <<EOF
-# Instalar el companion v${version} en Android
+# Instalar el app v${version} en Android
 
 1. Transferí el APK a tu teléfono (USB, email, Drive, etc.)
 2. En el teléfono: Settings → Apps → Special access → Install unknown apps
@@ -322,9 +322,9 @@ install_companion() {
    "Actualizar" (mismo certificate de firma)
 
 Download directo desde el teléfono:
-  https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download/v${version}/m-nexus-companion-v${version}.apk
+  https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download/v${version}/m-nexus-app-v${version}.apk
 EOF
-    ok "APK guardado en $apk_dir/m-nexus-companion-v${version}.apk"
+    ok "APK guardado en $apk_dir/m-nexus-app-v${version}.apk"
     ok "Instrucciones en $apk_dir/INSTALL.md"
 }
 
@@ -391,10 +391,10 @@ install_all_components() {
     case "$COMPONENT" in
         all)
             install_backend "$VERSION"
-            install_companion "$VERSION"
+            install_app "$VERSION"
             ;;
         backend) install_backend "$VERSION" ;;
-        companion) install_companion "$VERSION" ;;
+        app) install_app "$VERSION" ;;
     esac
     if [[ "$DRY_RUN" == false ]]; then
         echo "$VERSION" > "$TARGET_DIR/VERSION"
@@ -431,8 +431,8 @@ for r in json.load(sys.stdin):
         shift
     done
     case "$COMPONENT" in
-        all|backend|companion) ;;
-        *) err "Componente inválido: $COMPONENT (usa all|backend|companion)"; exit 1 ;;
+        all|backend|app) ;;
+        *) err "Componente inválido: $COMPONENT (usa all|backend|app)"; exit 1 ;;
     esac
     case "$TAG" in
         stable|beta|nightly) ;;
@@ -445,7 +445,7 @@ check_compat() {
     section "Verificando compatibilidad de versiones"
     log "Versión instalada: v$INSTALLED_VERSION"
     log "Versión backend: v$VERSION (requerida: >= $COMPATIBLE_BACKEND_MIN)"
-        log "Versión companion: v$VERSION (requerida: >= $COMPATIBLE_COMPANION_MIN)"
+        log "Versión app: v$VERSION (requerida: >= $COMPATIBLE_COMPANION_MIN)"
     # Comparación simple de semver: extrae major.minor.patch
     local v="${VERSION%%.*}"; local v_min="${COMPATIBLE_BACKEND_MIN%%.*}"
     if [[ "$v" -lt "$v_min" ]]; then

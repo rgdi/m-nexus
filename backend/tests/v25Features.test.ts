@@ -152,7 +152,7 @@ describe("CrossRelevanceAnalyzer", () => {
     title: "Anatomía de membrana",
     content: "La membrana celular está compuesta por una bicapa lipídica con proteínas incrustadas. El modelo del mosaico fluido describe la membrana como un fluido.",
     type: "note",
-    source: { type: "obsidian" },
+    source: { type: "vault" },
     timestamp: Date.now(),
   };
   const noteB: NoteDocument = {
@@ -161,7 +161,7 @@ describe("CrossRelevanceAnalyzer", () => {
     title: "Bioquímica básica",
     content: "La membrana celular tiene proteínas que regulan el transporte. La bicapa lipídica es esencial para la integridad celular.",
     type: "note",
-    source: { type: "obsidian" },
+    source: { type: "vault" },
     timestamp: Date.now(),
   };
   const audioTranscript: NoteDocument = {

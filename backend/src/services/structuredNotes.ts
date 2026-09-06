@@ -1,6 +1,6 @@
 // StructuredNotes: el corazón del "Notion-style" de M-NEXUS.
 //
-// v0.33: un vault de Obsidian se convierte en una "database" con
+// v0.33: un vault M-NEXUS se convierte en una "database" con
 // propiedades tipadas (similar a Notion). Cada nota es una "row"
 // con su frontmatter extendido.
 //
@@ -56,7 +56,7 @@ export interface DatabaseSchema {
   id: string;
   vaultId: string;
   name: string;
-  /** Carpeta de Obsidian donde viven las notas (ej: "_M-NEXUS/Flashcards/Approved"). */
+  /** Carpeta M-NEXUS donde viven las notas (ej: "_M-NEXUS/Flashcards/Approved"). */
   folder: string;
   properties: PropertySchema[];
   /** Display: qué propiedad usar como "title" en las vistas. */

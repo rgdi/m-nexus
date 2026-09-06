@@ -1,0 +1,64 @@
+// M-NEXUS App — Android build config.
+
+// v0.29.1: pin Kotlin plugin to 1.9.22 to match shared_preferences_android
+// and other plugins compiled with newer Kotlin metadata.
+buildscript {
+    ext.kotlin_version = '1.9.22'
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    id "dev.flutter.flutter-gradle-plugin"
+}
+
+android {
+    namespace = "com.mnexus.app"
+    compileSdk = 34
+    ndkVersion = flutter.ndkVersion
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_17.toString()
+    }
+
+    defaultConfig {
+        applicationId = "com.mnexus.app"
+        minSdk = 23
+        targetSdk = 34
+        versionCode = 29
+        versionName = "0.44.0"
+    }
+
+    buildTypes {
+        release {
+            signingConfig = signingConfigs.debug
+            minifyEnabled = false
+            shrinkResources = false
+        }
+    }
+}
+
+flutter {
+    source = "../.."
+}
+
+dependencies {
+    implementation "androidx.activity:activity:1.9.0"
+    implementation "androidx.core:core-ktx:1.13.1"
+}
+
+// v0.29.1: the allprojects { resolutionStrategy } block is now in
+// android/build.gradle (the root project) so it applies to ALL
+// subprojects, including shared_preferences_android.
