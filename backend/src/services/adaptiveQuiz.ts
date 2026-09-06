@@ -2,7 +2,7 @@
 
 
 import type { KnowledgeLayer, KnowledgeGraph, KnowledgeConcept } from "./adaptiveQuizTypes.js";
-import { LAYER_LABELS, findGaps, markShown, updateMastery, buildQuestionForGap, checkAnswer, nextQuestion } from "./adaptiveQuizEngine.js";
+import { LAYER_LABELS, findGaps, markShown, updateMastery, buildQuestionForGap, checkAnswer, getConcept, suggestNextLayer } from "./adaptiveQuizEngine.js";
 export * from "./adaptiveQuizTypes.js";
 export * from "./adaptiveQuizEngine.js";
 

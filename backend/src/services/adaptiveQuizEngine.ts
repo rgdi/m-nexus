@@ -1,5 +1,7 @@
 // Adaptive quiz engine: knowledge graph + gaps.
 
+export * from "./adaptiveQuizTypes.js";
+
 import type { KnowledgeLayer } from "./adaptiveQuizTypes.js";
 import { LAYER_ORDER } from "./adaptiveQuizTypes.js";
 import type { KnowledgeConcept, ConceptLayer, KnowledgeGraph, KnowledgeGap } from "./adaptiveQuizTypes.js";
