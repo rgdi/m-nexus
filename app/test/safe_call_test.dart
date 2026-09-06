@@ -7,6 +7,11 @@ import 'package:mnexus_app/utils/safe_call.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  test('DEBUG: verify test runs', () {
+    print('DEBUG TEST RUNS');
+    expect(1, 1);
+  });
+
   test('AppError tiene code, category, message, cause, context', () {
     final e = AppError.net('EC-NET-001', 'Network down',
       cause: Exception('socket closed'),
