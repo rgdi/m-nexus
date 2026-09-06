@@ -2,7 +2,7 @@
 
 import type { FastifyInstance } from "fastify";
 import type { ViewSchema } from "../services/structuredNotes.js";
-import { vaultDatabases, vaultViews } from "./structuredStore.js";
+import { vaultDatabases, vaultViews, getOrCreate } from "./structuredStore.js";
 import { genId } from "../services/structuredNotes.js";
 
 export async function registerViewRoutes(app: FastifyInstance): Promise<void> {
