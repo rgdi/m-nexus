@@ -12,16 +12,21 @@ import android.os.IBinder
 /**
  * Foreground service for voice note recording.
  *
- * v0.44: stub implementation (recording uses RecorderService via MediaRecorder,
- * not a separate Service). Kept for MainActivity API compatibility.
+ * v0.44: stub implementation. Recording uses MediaRecorder directly
+ * from the Dart side via flutter_sound. This service exists for
+ * MainActivity API compatibility (startRecording/stopRecording).
  */
 class RecordingService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_NOT_STICKY
 
     companion object {
+        fun startRecording(context: Context, title: String) {
+            // No-op: recording is handled via MediaRecorder
+        }
+
         fun stopRecording(context: Context) {
-            // No-op: recording is handled via MediaRecorder in the plugin/recorder
+            // No-op: recording is handled via MediaRecorder
         }
     }
 }
