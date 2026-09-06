@@ -2,7 +2,9 @@
 
 import type { FastifyInstance } from "fastify";
 import type { DatabaseSchema } from "../services/structuredNotes.js";
-import { vaultDatabases, getOrCreate } from "./structuredStore.js";
+import { genId } from "../services/structuredNotes.js";
+import { vaultDatabases, vaultRows, vaultViews, getOrCreate } from "./structuredStore.js";
+import { logger } from "../utils/log.js";
 
 export async function registerDatabaseRoutes(app: FastifyInstance): Promise<void> {
 

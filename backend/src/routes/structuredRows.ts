@@ -3,6 +3,7 @@
 import type { FastifyInstance } from "fastify";
 import type { NoteRow, DatabaseSchema } from "../services/structuredNotes.js";
 import { vaultDatabases, vaultRows } from "./structuredStore.js";
+import { genId } from "../services/structuredNotes.js";
 
 export async function registerRowRoutes(app: FastifyInstance): Promise<void> {
 
