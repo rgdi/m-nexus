@@ -1,4 +1,9 @@
 // v0.28-0.30: UpdateChecker para el backend.
+// Re-exports applyUpdate + detectRestartCommand for backward compat.
+
+export * from "./updateApply.js";
+
+
 //
 // Capacidades:
 // - checkForUpdatesOnStartup(): chequea en el arranque, no bloquea

@@ -230,12 +230,30 @@ class AdvancedLogger {
 
     // 4) adb logcat (via platform channel)
     if (_enableAdb) {
-      LoggerSinks.logToAdb(entry);
+      _logToAdbDirect(entry);
     }
 
     // 5) Archivo
     if (_enableFile) {
       _logToFile(entry);
+    }
+  }
+
+  /// Loguea a Android Log (visible en adb logcat -s mnexus:*)
+  void _logToAdbDirect(LogEntry entry) {
+    final line = entry.toAdbLine();
+    if (_isAndroid) {
+      try {
+        const channel = MethodChannel('com.mnexus.app/logger');
+        channel.invokeMethod('log', {
+          'level': entry.level.value,
+          'tag': 'mnexus',
+          'message': line,
+        }).catchError((_) {});
+      } catch (_) {}
+    } else {
+      // ignore: avoid_print
+      print('[mnexus] $line');
     }
   }
 
@@ -309,4 +327,3 @@ class AdvancedLogger {
   }
 }
 
-}

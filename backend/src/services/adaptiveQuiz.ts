@@ -1,4 +1,7 @@
-// Adaptive quiz: sessions.
+// Adaptive quiz: sessions + re-exports for backward compat.
+
+export * from "./adaptiveQuizTypes.js";
+export * from "./adaptiveQuizEngine.js";
 
 // Adaptive quiz: sessions.
 
