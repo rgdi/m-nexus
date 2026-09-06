@@ -62,7 +62,7 @@ export interface CrossRelevanceOptions {
   factCheck: boolean;
 }
 
-const DEFAULT_OPTIONS: CrossRelevanceOptions = {
+export const DEFAULT_OPTIONS: CrossRelevanceOptions = {
   minSimilarity: 0.5,
   maxMatches: 50,
   detectContradictions: true,
@@ -80,7 +80,7 @@ function tokenize(text: string): string[] {
 }
 
 /** Función simple de similitud textual (Jaccard sobre palabras). */
-function textSimilarity(a: string, b: string): number {
+export function textSimilarity(a: string, b: string): number {
   const wa = new Set(tokenize(a));
   const wb = new Set(tokenize(b));
   if (wa.size === 0 || wb.size === 0) return 0;
@@ -91,7 +91,7 @@ function textSimilarity(a: string, b: string): number {
 }
 
 /** Encuentra frases compartidas (n-gramas de 3+ palabras). */
-function findSharedPhrases(a: string, b: string): string[] {
+export function findSharedPhrases(a: string, b: string): string[] {
   const phrases: string[] = [];
   const wordsA = a.split(/\s+/);
   const bLower = b.toLowerCase();
@@ -115,7 +115,7 @@ const ANTAGONIST_PAIRS: [string, string][] = [
   ["incrementa", "reduce"],
 ];
 
-function detectContradiction(a: string, b: string): boolean {
+export function detectContradiction(a: string, b: string): boolean {
   const la = a.toLowerCase();
   const lb = b.toLowerCase();
   for (const [p, q] of ANTAGONIST_PAIRS) {
