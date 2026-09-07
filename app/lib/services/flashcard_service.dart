@@ -14,9 +14,18 @@ class Flashcard {
   final String path;
   final String question;
   final String answer;
-  final int difficulty; // 1-5
+  final int difficulty; // 1-5 (legacy SM-2)
   final DateTime? nextReview;
   final bool approved;
+  // v0.46: FSRS fields (mismo shape que backend, nullable para compat legacy)
+  final double stability;        // S en FSRS
+  final double retrievability;    // R en FSRS
+  final int reps;                 // # reviews exitosos
+  final int lapses;               // # veces Again
+  final int state;                // 0=new, 1=learning, 2=review, 3=relearning
+  final int scheduledDays;        // intervalo en dias
+  final int elapsedDays;          // dias desde ultimo review
+  final DateTime? lastReview;     // timestamp del ultimo review
 
   const Flashcard({
     required this.id,
@@ -26,6 +35,14 @@ class Flashcard {
     required this.difficulty,
     required this.approved,
     this.nextReview,
+    this.stability = 0.0,
+    this.retrievability = 1.0,
+    this.reps = 0,
+    this.lapses = 0,
+    this.state = 0,
+    this.scheduledDays = 0,
+    this.elapsedDays = 0,
+    this.lastReview,
   });
 
   bool get isDue {
@@ -33,7 +50,19 @@ class Flashcard {
     return nextReview!.isBefore(DateTime.now());
   }
 
-  Flashcard copyWith({int? difficulty, DateTime? nextReview, bool? approved}) {
+  Flashcard copyWith({
+    int? difficulty,
+    DateTime? nextReview,
+    bool? approved,
+    double? stability,
+    double? retrievability,
+    int? reps,
+    int? lapses,
+    int? state,
+    int? scheduledDays,
+    int? elapsedDays,
+    DateTime? lastReview,
+  }) {
     return Flashcard(
       id: id,
       path: path,
@@ -42,6 +71,44 @@ class Flashcard {
       difficulty: difficulty ?? this.difficulty,
       nextReview: nextReview ?? this.nextReview,
       approved: approved ?? this.approved,
+      stability: stability ?? this.stability,
+      retrievability: retrievability ?? this.retrievability,
+      reps: reps ?? this.reps,
+      lapses: lapses ?? this.lapses,
+      state: state ?? this.state,
+      scheduledDays: scheduledDays ?? this.scheduledDays,
+      elapsedDays: elapsedDays ?? this.elapsedDays,
+      lastReview: lastReview ?? this.lastReview,
+    );
+  }
+
+  /// Parse desde frontmatter legacy.
+  /// Mapas SM-2 fields → FSRS defaults (card nuevo, sin historial FSRS).
+  factory Flashcard.fromFrontmatter({
+    required String id,
+    required String path,
+    required String question,
+    required String answer,
+    required int difficulty,
+    required bool approved,
+    DateTime? nextReview,
+  }) {
+    return Flashcard(
+      id: id,
+      path: path,
+      question: question,
+      answer: answer,
+      difficulty: difficulty,
+      approved: approved,
+      nextReview: nextReview,
+      // Mapear difficulty 1-5 a FSRS D 1-10
+      stability: 0.0,
+      retrievability: 1.0,
+      reps: 0,
+      lapses: 0,
+      state: 0, // new
+      scheduledDays: 0,
+      elapsedDays: 0,
     );
   }
 }
