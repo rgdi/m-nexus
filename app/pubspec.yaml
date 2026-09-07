@@ -34,13 +34,51 @@ dependencies:
   record: ^5.0.0
 
   # v0.46: DB local con FTS5 (Fase 2)
-  # drift: ^2.20.0  # pendiente instalación tras verificar resolución con Flutter 3.22
+  drift: ^2.20.0
+  drift_flutter: ^0.2.0
+  sqlite3_flutter_libs: ^0.5.0
 
   # v0.46: Charts para stats (Fase 3)
-  # fl_chart: ^0.69.0  # pendiente
+  fl_chart: ^0.69.0
 
   # v0.46: Secure storage para tokens
-  # flutter_secure_storage: ^9.0.0  # pendiente
+  flutter_secure_storage: ^9.0.0
+
+  # v0.46: Network detection
+  connectivity_plus: ^6.0.0
+
+  # v0.46: Local notifications (streaks, due cards)
+  flutter_local_notifications: ^17.0.0
+
+  # v0.46: Wakelock (no se apaga la pantalla durante estudio)
+  wakelock_plus: ^1.2.0
+
+  # v0.46: Share intents
+  share_plus: ^10.0.0
+
+  # v0.46: Heatmap
+  flutter_heatmap_calendar: ^2.0.0
+
+  # v0.46: Table calendar
+  table_calendar: ^3.1.0
+
+  # v0.46: Image picker (OCR con cámara)
+  image_picker: ^1.1.0
+
+  # v0.46: Photo view (zoom en imágenes médicas)
+  photo_view: ^0.15.0
+
+  # v0.46: Auto size text (flashcards)
+  auto_size_text: ^3.0.0
+
+  # v0.46: Biometric lock
+  local_auth: ^2.3.0
+
+  # v0.46: intl (i18n)
+  intl: any
+
+  # v0.46: image (manipulación de imágenes)
+  image: ^4.0.0
 
 dev_dependencies:
   flutter_test:
