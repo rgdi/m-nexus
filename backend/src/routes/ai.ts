@@ -1,9 +1,10 @@
 // v0.28: Rutas HTTP para AI (vault eval, proposals, knowledge graph, quiz).
-// Toda la lógica pesada está aquí — el plugin solo envía datos y recibe resultados.
+// v0.46: proposalsV2 usa LLM real (Ollama/OpenRouter) con fallback heurístico.
+// v0.46: /fsrs/review usa ts-fsrs real (no la implementación con W hardcoded).
 
 import { FastifyInstance } from "fastify";
 import { evaluateVault, type NoteSnapshotInput, type VaultEvaluationResult } from "../services/vaultEval.js";
-import { generateProposals, type GenerateProposalsInput, type GenerateProposalsResult } from "../services/proposals.js";
+import { generateProposalsV2, type GenerateProposalsInput, type GenerateProposalsResult, clearProposalCache } from "../services/proposalsV2.js";
 import type { Proposal } from "../services/proposalsTypes.js";
 import {
   KnowledgeGraph, addConcept, getConcept, findByTerm, allConcepts,
@@ -12,6 +13,7 @@ import {
   type AnswerResult, type SessionResult, type KnowledgeLayer,
   type KnowledgeConcept, createConcept,
 } from "../services/adaptiveQuiz.js";
+import { fsrs, generatorParameters, createEmptyCard, Rating, type Card as FsrsCard, type Grade } from "ts-fsrs";
 import { logger, logOp } from "../utils/log.js";
 import { E } from "../utils/errorCodes.js";
 import { safeCallAsync } from "../utils/safeCall.js";
@@ -58,7 +60,7 @@ export async function aiRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
-  // ── Proposals ────────────────────────────────────────
+  // ── Proposals (v0.46: usa LLM real con fallback heurístico) ───
   app.post<{ Body: GenerateProposalsInput }>(
     "/proposals/generate",
     async (req) => {
@@ -68,8 +70,8 @@ export async function aiRoutes(app: FastifyInstance): Promise<void> {
         message: "proposals generate failed",
         context: { snapshotCount: req.body?.snapshots?.length ?? 0 },
         op: async () => {
-          const result = generateProposals(req.body);
-          logOp("prop", "generate", true, { total: result.stats.generated });
+          const result = await generateProposalsV2(req.body);
+          logOp("prop", "generate", true, { total: result.stats.generated, source: result.stats.source ?? "llm" });
           return result;
         },
       });
@@ -77,6 +79,12 @@ export async function aiRoutes(app: FastifyInstance): Promise<void> {
       return r.value;
     },
   );
+
+  // POST /api/v1/ai/proposals/cache/clear - forzar regeneracion
+  app.post("/proposals/cache/clear", async () => {
+    clearProposalCache();
+    return { ok: true, cleared: true };
+  });
 
   // ── Knowledge graph: state operations ────────────────
   app.get<{ Params: { userId: string } }>(
@@ -209,37 +217,61 @@ export async function aiRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
-  // ── FSRS review (delegated) ─────────────────────────
+  // ── FSRS review (v0.46: usa ts-fsrs real, NO weights hardcoded) ──
+  const fsrsScheduler = fsrs(generatorParameters({
+    enable_fuzz: false,  // en API deshabilitamos fuzz para resultados deterministas
+    enable_short_term: true,
+    request_retention: 0.9,
+  }));
+
   app.post<{
     Body: {
-      card: { stability: number; difficulty: number; reps: number; lapses: number; lastRating?: number; lastReview?: number };
-      rating: 1 | 2 | 3 | 4;
+      card?: Partial<FsrsCard>;
+      rating: 1 | 2 | 3 | 4;  // 1=Again, 2=Hard, 3=Good, 4=Easy
     };
   }>(
     "/fsrs/review",
     async (req) => {
-      const W = [0.4072, 1.1829, 3.1262, 15.4722, 7.2102, 0.5316, 1.0651, 0.0589, 1.5330, 0.1192, 1.0006, 1.9395, 0.1100, 0.2939, 2.0078, 0.2315, 2.9466];
-      const { card, rating } = req.body;
-      const DAY = 24 * 3600 * 1000;
-      const elapsedDays = card.lastReview ? Math.max(0, (Date.now() - card.lastReview) / DAY) : 0;
-      const r = card.stability > 0 ? Math.pow(1 + elapsedDays / (9 * card.stability), -1) : 0;
-      let s = card.stability;
-      let d = card.difficulty;
-      let newLapses = card.lapses;
-      if (rating === 1) {
-        newLapses += 1;
-        s = Math.max(W[2], 0.1);
-      } else {
-        const increment = Math.exp(W[8]) * (11 - d) * Math.pow(Math.max(s, 0.1), -W[9]) * (Math.exp(W[10] * (1 - r)) - 1);
-        s = s * (1 + increment) * (rating === 4 ? W[16] : 1) * (rating === 2 ? W[15] : 1);
-        d = Math.min(10, Math.max(1, d - W[6] * (rating - 3)));
-      }
-      if (card.reps === 0) s = W[rating - 1];
-      const intervalDays = Math.max(1, 9 * s * (1 / 0.9 - 1));
-      return {
-        card: { stability: Math.round(s * 100) / 100, difficulty: Math.round(d * 100) / 100, reps: card.reps + 1, lapses: newLapses, lastReview: Date.now(), lastRating: rating, dueDate: Date.now() + intervalDays * DAY },
-        intervalDays: Math.round(intervalDays * 10) / 10,
-      };
+      const r = await safeCallAsync({
+        component: "fsrs",
+        code: "EC-FSRS-001",
+        message: "fsrs review failed",
+        context: { rating: req.body?.rating, hasCard: !!req.body?.card },
+        op: async () => {
+          const { card, rating } = req.body;
+          if (!rating || rating < 1 || rating > 4) {
+            throw E.val("EC-FSRS-002", "rating must be 1 (Again), 2 (Hard), 3 (Good), or 4 (Easy)", {
+              context: { rating },
+            });
+          }
+          // Construir card base (existente o nueva)
+          const now = new Date();
+          const baseCard: FsrsCard = card ? { ...createEmptyCard(now), ...card } : createEmptyCard(now);
+          // Mapear rating
+          const ratingEnum: Rating = rating === 1 ? Rating.Again
+            : rating === 2 ? Rating.Hard
+            : rating === 3 ? Rating.Good
+            : Rating.Easy;
+          const result = fsrsScheduler.repeat(baseCard, now);
+          const reviewed = result[ratingEnum as Grade];
+          if (!reviewed) {
+            throw E.llm("EC-FSRS-003", "FSRS scheduler returned no result", {});
+          }
+          logOp("fsrs", "review", true, {
+            rating,
+            newState: reviewed.card.state,
+            newStability: reviewed.card.stability,
+            intervalDays: reviewed.card.scheduled_days,
+          });
+          return {
+            card: reviewed.card,
+            intervalDays: reviewed.card.scheduled_days,
+            log: reviewed.log,
+          };
+        },
+      });
+      if (!r.success || !r.value) throw r.error!;
+      return r.value;
     },
   );
 }
