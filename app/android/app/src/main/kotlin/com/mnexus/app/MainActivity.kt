@@ -13,6 +13,10 @@ import io.flutter.plugin.common.MethodChannel
 import java.io.File
 
 class MainActivity: FlutterActivity() {
+    // v0.45.1: callback channel used by onActivityResult to forward SAF picker results
+    // to Dart (setSafPath). The result includes the tree URI as a String (or null if cancelled).
+    private var pendingSafResult: MethodChannel.Result? = null
+    private val SAF_PICKER_REQUEST = 4242
     private val INSTALL_CHANNEL = "com.mnexus.app/install"
     private val DEVICE_CHANNEL = "com.mnexus.app/device"
     private val CALENDAR_CHANNEL = "com.mnexus.app/calendar"
@@ -186,7 +190,7 @@ class MainActivity: FlutterActivity() {
             }
         }
 
-        // ── Vault / SAF picker (v0.34) ─────────────────────
+        // ── Vault / SAF picker (v0.34, v0.45.1: result handling) ──────
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, VAULT_CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "getSafPath" -> {
@@ -200,15 +204,22 @@ class MainActivity: FlutterActivity() {
                     result.success(true)
                 }
                 "pickVault" -> {
-                    // Abre el selector de Storage Access Framework (SAF)
+                    // Opens the Storage Access Framework (SAF) folder picker.
+                    // The result is delivered to Dart via the onActivityResult handler
+                    // below, which calls pendingSafResult.success() / error().
+                    if (pendingSafResult != null) {
+                        result.error("picker_busy", "Another picker is already in progress", null)
+                        return@setMethodCallHandler
+                    }
                     try {
+                        pendingSafResult = result
                         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
                         intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or
                                        Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
                                        Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
-                        startActivityForResult(intent, 4242)
-                        result.success(true)
+                        startActivityForResult(intent, SAF_PICKER_REQUEST)
                     } catch (e: Exception) {
+                        pendingSafResult = null
                         result.error("saf_failed", e.message, null)
                     }
                 }
@@ -374,6 +385,46 @@ class MainActivity: FlutterActivity() {
                 "getStats" -> result.success(mapOf("level" to "INFO", "bufferSize" to 0))
                 else -> result.notImplemented()
             }
+        }
+    }
+
+    /**
+     * v0.45.1: Handle the SAF picker result. When the user picks a folder, we
+     * - persist the chosen tree URI to SharedPreferences (so VaultDetector
+     *   can read it on next startup via getSafPath())
+     * - persist the URI permission so we can read it after reboot
+     * - send the URI string back to Dart via the pending MethodChannel.Result.
+     */
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != SAF_PICKER_REQUEST) return
+        val cb = pendingSafResult ?: return
+        pendingSafResult = null
+        if (resultCode != RESULT_OK || data == null) {
+            cb.success(null)
+            return
+        }
+        val uri = data.data
+        if (uri == null) {
+            cb.success(null)
+            return
+        }
+        try {
+            // Persist read/write permission for this URI so the app can read the
+            // folder even after the device reboots (vital for offline-first).
+            contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+            val prefs = applicationContext.getSharedPreferences(
+                safPathPrefs, android.content.Context.MODE_PRIVATE
+            )
+            prefs.edit().putString("path", uri.toString()).apply()
+            cb.success(uri.toString())
+        } catch (e: SecurityException) {
+            cb.error("permission_denied", e.message, null)
+        } catch (e: Exception) {
+            cb.error("saf_save_failed", e.message, null)
         }
     }
 }

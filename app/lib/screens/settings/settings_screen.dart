@@ -15,6 +15,7 @@ import '../../services/calendar_service.dart';
 import '../../services/logger.dart';
 import '../../services/settings_service.dart';
 import '../../services/vault_detector.dart';
+import '../../services/vault_saf_picker.dart';
 import 'changelog_view.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -202,34 +203,66 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _showVaultsDialog() async {
+    // v0.45.1: detecta vaults y ofrece opción de añadir uno vía SAF picker
     final vaults = await VaultDetector().detectVaults();
     if (!mounted) return;
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) {
+        // closure anidado para reabrir el dialog tras pickVault
+        Future<void> pickAndRefresh() async {
+          final path = await VaultSafPicker.pickVault();
+          if (path == null) return;
+          await VaultDetector().addSafPath(path);
+          if (!mounted) return;
+          Navigator.pop(ctx);
+          _showVaultsDialog();  // reabrir con la lista actualizada
+        }
+        return AlertDialog(
         title: const Text('Vaults detectados'),
-        content: vaults.isEmpty
-            ? const Text('No hay vaults. Usá SAF picker desde el home.')
-            : SizedBox(
-                width: double.maxFinite,
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: vaults.length,
-                  itemBuilder: (_, i) {
-                    final v = vaults[i];
-                    return ListTile(
-                      leading: const Icon(Icons.folder),
-                      title: Text(v.name),
-                      subtitle: Text('${v.path}\nMétodo: ${v.detectionMethod ?? "auto"}'),
-                      isThreeLine: true,
-                    );
-                  },
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (vaults.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Text(
+                    'No hay vaults. Tocá "Elegir manualmente" para añadir uno con SAF picker, '
+                    'o creá uno nuevo en una carpeta accesible.',
+                  ),
+                )
+              else
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: vaults.length,
+                    itemBuilder: (_, i) {
+                      final v = vaults[i];
+                      return ListTile(
+                        leading: Icon(v.detectionMethod == 'saf' ? Icons.folder_shared : Icons.folder),
+                        title: Text(v.name),
+                        subtitle: Text('${v.path}\nMétodo: ${v.detectionMethod ?? "auto"}'),
+                        isThreeLine: true,
+                      );
+                    },
+                  ),
                 ),
-              ),
+            ],
+          ),
+        ),
         actions: [
+          TextButton.icon(
+            onPressed: pickAndRefresh,
+            icon: const Icon(Icons.folder_open),
+            label: const Text('Elegir manualmente'),
+          ),
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cerrar')),
         ],
-      ),
+        );
+      },
     );
   }
 

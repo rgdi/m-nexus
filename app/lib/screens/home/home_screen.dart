@@ -12,6 +12,7 @@ import '../../core/theme.dart';
 import '../../services/app_info.dart';
 import '../../services/flashcard_service.dart';
 import '../../services/vault_detector.dart';
+import '../../services/vault_saf_picker.dart';
 import '../../services/vault_service.dart';
 import '../../services/logger.dart';
 import '../../state/app_state.dart';
@@ -134,6 +135,15 @@ class _HomeScreenState extends State<HomeScreen> {
     _load();
   }
 
+  /// v0.45.1: abre el SAF picker para que el usuario elija un vault manualmente.
+  Future<void> _pickSafVault() async {
+    final path = await VaultSafPicker.pickVault();
+    if (path == null) return;  // cancelado
+    await VaultDetector().addSafPath(path);
+    if (!mounted) return;
+    _load();
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) return const LoadingState(message: 'Cargando…');
@@ -142,9 +152,22 @@ class _HomeScreenState extends State<HomeScreen> {
         icon: Icons.folder_off,
         title: 'Sin vault',
         subtitle: _error,
-        action: FilledButton(
-          onPressed: _load,
-          child: const Text('Reintentar'),
+        action: Wrap(
+          spacing: 12,
+          runSpacing: 8,
+          alignment: WrapAlignment.center,
+          children: [
+            FilledButton.icon(
+              onPressed: _load,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Reintentar'),
+            ),
+            FilledButton.tonalIcon(
+              onPressed: _pickSafVault,
+              icon: const Icon(Icons.folder_open),
+              label: const Text('Elegir manualmente'),
+            ),
+          ],
         ),
       );
     }
@@ -380,6 +403,15 @@ class _ShortcutRow extends StatelessWidget {
   final String label;
   final String shortcut;
   const _ShortcutRow({required this.label, required this.shortcut});
+  /// v0.45.1: abre el SAF picker para que el usuario elija un vault manualmente.
+  Future<void> _pickSafVault() async {
+    final path = await VaultSafPicker.pickVault();
+    if (path == null) return;  // cancelado
+    await VaultDetector().addSafPath(path);
+    if (!mounted) return;
+    _load();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Row(
