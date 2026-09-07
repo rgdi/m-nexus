@@ -20,7 +20,8 @@ import '../../models/chat_message.dart';
 class ChatScreen extends StatefulWidget {
   final String backendUrl;
   final String? authToken;
-  const ChatScreen({super.key, required this.backendUrl, this.authToken});
+  final ValueChanged<String>? onNoteOpen;
+  const ChatScreen({super.key, required this.backendUrl, this.authToken, this.onNoteOpen});
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -246,7 +247,14 @@ class _ChatScreenState extends State<ChatScreen> {
                     const SizedBox(height: 4),
                     ...msg.sources!.map((s) => InkWell(
                           onTap: () {
-                            // Open note
+                            // Open the source note via the parent callback
+                            // (parámetro que la app pasa al construir ChatScreen)
+                            if (widget.onNoteOpen != null) {
+                              widget.onNoteOpen!(s);
+                            } else {
+                              // Fallback: pop con el path para que el padre lo maneje
+                              Navigator.of(context).pop(s);
+                            }
                           },
                           child: Padding(
                             padding: const EdgeInsets.symmetric(vertical: 2),
