@@ -22,7 +22,7 @@ class AdvancedLogger {
   AdvancedLogger._();
 
   // ── Config ─────────────────────────────────────────
-  LogLevel _level = kDebugMode ? LogLevel.debug : LogLevel.info;
+  LogLevel _level = kDebugMode ? LogLevel.debug : LogLevel.debug;  // v0.45.3: default DEBUG en release también
   String _sessionId = '';
   String _userId = '';
   String _deviceId = '';
