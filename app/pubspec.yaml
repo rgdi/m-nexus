@@ -1,6 +1,6 @@
 name: mnexus_app
 description: "M-NEXUS — Tu segundo cerebro digital. Notas, flashcards, calendar. Standalone (Android + Web)."
-version: 0.46.3+59
+version: 0.46.4+60
 publish_to: "none"
 
 environment:
@@ -13,72 +13,76 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
+  # =========================================================================
+  # CORE - USED in lib/ (verified with grep)
+  # =========================================================================
   # Permisos y archivos
   path_provider: ^2.1.4
-  # HTTP para descargar el plugin
+  # HTTP client
   http: ^1.2.2
-  # Storage paths
+  # Path manipulation
   path: ^1.9.0
-  # UI
-  cupertino_icons: ^1.0.8
+  # Open URLs (calendar, etc)
   url_launcher: ^6.3.0
+  # Persistent key-value storage
   shared_preferences: ^2.3.2
+  # Runtime permissions
   permission_handler: ^11.3.1
+  # UUID generation
   uuid: ^4.5.1
-  google_fonts: ^6.2.1
+  # Markdown rendering (chat_screen, note_editor)
   flutter_markdown: ^0.7.4
+  # App version info (updater)
   package_info_plus: ^8.0.0
 
-  # v0.46: Voice input (STT) + grabación
+  # =========================================================================
+  # v0.46 NEW FEATURES - USED in lib/
+  # =========================================================================
+  # Voice input (STT) - voice_input_button.dart
   speech_to_text: ^7.0.0
-  record: ^5.0.0
 
-  # v0.46: DB local con FTS5 (Fase 2)
+  # Local DB with FTS5 - app_db.dart (drift)
   drift: ^2.20.0
   drift_flutter: ^0.2.0
   sqlite3_flutter_libs: ^0.5.0
 
-  # v0.46: Charts para stats (Fase 3)
+  # Charts (pie, bar) - stats_screen.dart
   fl_chart: ^0.69.0
 
-  # v0.46: Secure storage para tokens
-  flutter_secure_storage: ^9.0.0
-
-  # v0.46: Network detection
-  connectivity_plus: ^6.0.0
-
-  # v0.46: Local notifications (streaks, due cards)
-  flutter_local_notifications: ^17.0.0
-
-  # v0.46: Wakelock (no se apaga la pantalla durante estudio)
-  wakelock_plus: ^1.2.0
-
-  # v0.46: Share intents
-  share_plus: ^10.0.0
-
-  # v0.46: Heatmap
-  flutter_heatmap_calendar: ^2.0.0
-
-  # v0.46: Table calendar
-  table_calendar: ^3.1.0
-
-  # v0.46: Image picker (OCR con cámara)
-  image_picker: ^1.1.0
-
-  # v0.46: Photo view (zoom en imágenes médicas)
-  photo_view: ^0.15.0
-
-  # v0.46: Auto size text (flashcards)
-  auto_size_text: ^3.0.0
-
-  # v0.46: Biometric lock
-  local_auth: ^2.3.0
-
-  # v0.46: intl (i18n)
+  # i18n - required by flutter_localizations
   intl: any
 
-  # v0.46: image (manipulación de imágenes)
-  image: ^4.0.0
+  # =========================================================================
+  # OPTIONAL - Uncomment when needed
+  # =========================================================================
+  # Voice recording (audio file)
+  # record: ^5.0.0
+  # UI icons
+  # cupertino_icons: ^1.0.8
+  # Google fonts (custom typography)
+  # google_fonts: ^6.2.1
+  # Secure storage (JWT tokens, etc)
+  # flutter_secure_storage: ^9.0.0
+  # Network detection
+  # connectivity_plus: ^6.0.0
+  # Local notifications (streaks, due cards)
+  # flutter_local_notifications: ^17.0.0
+  # Wakelock (keep screen on during study)
+  # wakelock_plus: ^1.2.0
+  # Share intents
+  # share_plus: ^10.0.0
+  # Table calendar
+  # table_calendar: ^3.1.0
+  # Image picker (OCR with camera)
+  # image_picker: ^1.1.0
+  # Photo view (zoom medical images)
+  # photo_view: ^0.15.0
+  # Auto size text (flashcards)
+  # auto_size_text: ^3.0.0
+  # Biometric lock
+  # local_auth: ^2.3.0
+  # Image manipulation
+  # image: ^4.0.0
 
 dev_dependencies:
   flutter_test:
