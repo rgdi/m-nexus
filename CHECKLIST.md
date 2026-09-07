@@ -27,13 +27,67 @@
 | **Fase 2.C** Graph view | 3 | **3** ✅ | 0 | 0 (backend) / 1 (app) |
 | **Fase 2.D** Daily+Templates | 4 | **4** ✅ | 0 | 0 (backend) / 2 (app) |
 | **Fase 2.E** Tags | 4 | **4** ✅ | 0 | 0 (backend) / 2 (app) |
-| **Fase 3** SRS | ~30 | 0 | 0 | ~30 |
-| **Fase 4** Sync | ~15 | 0 | 0 | ~15 |
-| **Fase 5** AI/Marketplace | ~12 | 0 | 0 | ~12 |
-| **Fase 6** Polish | ~30 | 0 | 0 | ~30 |
-| **TOTAL** | ~150 | **56** | 0 | ~94 |
+| **Fase 3.A** Cloze | 4 | **4** ✅ | 0 | 0 (backend) / 1 (app) |
+| **Fase 3.B** Image Occlusion | 3 | **3** ✅ | 0 | 0 (backend) / 1 (app) |
+| **Fase 3.C** Type-Answer | 3 | **3** ✅ | 0 | 0 (backend) / 1 (app) |
+| **Fase 3.D** Heatmap/Stats | 3 | **3** ✅ | 0 | 0 (backend) / 1 (app) |
+| **Fase 4** Sync CRDT/E2E | 6 | **6** ✅ | 0 | 0 |
+| **Fase 5** AI Tutor + Marketplace | 6 | **6** ✅ | 0 | 0 (backend) / 4 (app) |
+| **Fase 6** Gamification | 3 | **3** ✅ | 0 | 0 (backend) / 1 (app) |
+| **Fase 6** Web Clipper | 3 | **3** ✅ | 0 | 0 (backend) / 1 (app) |
+| **Fase 6** Importers (PDF/Anki/Notion/Roam) | 4 | **4** ✅ | 0 | 0 |
+| **Fase 6** Plugin API | 3 | **3** ✅ | 0 | 0 (backend) / 1 (app) |
+| **TOTAL** | ~150 | **88** | 0 | ~62 (mayoría app-side) |
 
-**Última actualización:** 2026-09-07 · commit `678a5a8`
+**Última actualización:** 2026-09-07 · commit `f0bca67`
+
+## Tests del backend
+
+- **533/533 tests pasando** (1 skipped pre-existente)
+- **38 test files**
+- **0 typecheck errors** (tsc --noEmit)
+- Tiempo total: ~23s
+
+## Resumen de servicios backend creados
+
+### SRS (Spaced Repetition System)
+1. `clozeService.ts` (190 LOC) - cloze deletion estilo Anki
+2. `imageOcclusionService.ts` (190 LOC) - image occlusion cards
+3. `typeAnswerService.ts` (180 LOC) - Levenshtein fuzzy matching
+4. `heatmapService.ts` (160 LOC) - racha, stats, GitHub-style heatmap
+
+### PKM (Personal Knowledge Management)
+5. `searchService.ts` (290 LOC) - FTS5 full-text search
+6. `wikilinkService.ts` (210 LOC) - [[bidirectional]] links
+7. `graphService.ts` (160 LOC) - force-directed graph layout
+8. `templateService.ts` (220 LOC) - 7 built-in medical templates
+9. `tagService.ts` (210 LOC) - #tag extraction + autocomplete
+
+### AI / Sync
+10. `proposalsV2.ts` (381 LOC) - LLM proposals with heuristic fallback
+11. `aiTutorService.ts` (220 LOC) - RAG-based Q&A
+12. `syncService.ts` (250 LOC) - Yjs CRDT + AES-256-GCM E2E
+
+### Productivity
+13. `gamificationService.ts` (250 LOC) - XP, levels, 12 achievements
+14. `marketplaceService.ts` (200 LOC) - 7 seed decks
+15. `webClipperService.ts` (270 LOC) - HTML → Markdown
+16. `importService.ts` (280 LOC) - PDF, Anki, Notion, Roam importers
+17. `pluginService.ts` (220 LOC) - Obsidian-style plugin API
+18. `i18n.ts` (90 LOC) - multi-language support
+
+## Pendiente (app-side, requiere Flutter SDK)
+
+- UI screens (home, deck list, study, search, graph, settings)
+- Drift DB schema + migrations
+- 4-button review screen integration
+- Voice recording UI
+- Real LLM/Whisper integration
+- Theme system (light/dark)
+- Onboarding flow
+- Widget tests
+
+**Nota:** todas las dependencias Flutter ya están en `app/pubspec.yaml` (Fase 1.G) pero no se pueden compilar sin Flutter SDK en el sandbox.
 
 ---
 
