@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import '../../core/theme.dart';
 import '../../services/vault_detector.dart';
+import '../../services/permissions.dart';
 import '../../services/vault_service.dart';
 import '../../services/logger.dart';
 import '../../utils/safe_call.dart';
@@ -246,16 +247,47 @@ class _VaultBrowserState extends State<VaultBrowser> {
 
   Future<void> _createNote() async {
     if (_vault == null) return;
-    final path = await _vault!.createNote(
-      folder: 'Inbox',
-      title: 'Sin título',
-      content: '# Sin título\n\n',
-    );
-    if (!mounted) return;
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => NoteEditor(notePath: path, vaultPath: _vault!.vaultPath)),
-    );
-    _load();
+    // v0.45.11: si el vault está en /storage/emulated/0/, necesitamos MANAGE_EXTERNAL_STORAGE
+    if (_vault!.vaultPath.startsWith('/storage/emulated/0/')) {
+      final granted = await PermissionsService.isManageStorageGranted();
+      if (!granted && mounted) {
+        final ok = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Permiso necesario'),
+            content: const Text(
+              'Para escribir en /storage/emulated/0/ (tarjeta SD o almacenamiento interno) '
+              'necesitamos el permiso "Acceso a todos los archivos". '
+              '\n\n¿Lo activamos ahora?',
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+              FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Abrir ajustes')),
+            ],
+          ),
+        );
+        if (ok != true) return;
+        await PermissionsService.openManageStorageSettings();
+        return;  // user grants permission, then re-tap to create
+      }
+    }
+    try {
+      final path = await _vault!.createNote(
+        folder: 'Inbox',
+        title: 'Sin título',
+        content: '# Sin título\n\n',
+      );
+      if (!mounted) return;
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => NoteEditor(notePath: path, vaultPath: _vault!.vaultPath)),
+      );
+      _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo crear la nota: $e')),
+      );
+    }
   }
 }

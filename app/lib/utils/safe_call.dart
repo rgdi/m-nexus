@@ -58,10 +58,13 @@ Future<SafeResult<T>> safeCallAsync<T>({
 }) async {
   final log = AdvancedLogger.instance;
   final ctx = context ?? const <String, dynamic>{};
-  log.debug(component, '→ $message', context: {'code': code, ...ctx});
+  // v0.45.11: log uses the code as the operation tag, not "X failed" - the
+  // word "failed" was misleading because it appears in the log even when
+  // the operation succeeded.
+  log.debug(component, '→ $code', context: {'op': message, 'code': code, ...ctx});
   try {
     final result = await op();
-    log.debug(component, '← OK $message', context: {'code': code, ...ctx});
+    log.debug(component, '← OK $code', context: {'op': message, 'code': code, ...ctx});
     return SafeResult<T>.ok(result);
   } catch (e, s) {
     final err = AppError(
@@ -93,10 +96,13 @@ SafeResult<T> safeCall<T>({
 }) {
   final log = AdvancedLogger.instance;
   final ctx = context ?? const <String, dynamic>{};
-  log.debug(component, '→ $message', context: {'code': code, ...ctx});
+  // v0.45.11: log uses the code as the operation tag, not "X failed" - the
+  // word "failed" was misleading because it appears in the log even when
+  // the operation succeeded.
+  log.debug(component, '→ $code', context: {'op': message, 'code': code, ...ctx});
   try {
     final result = op();
-    log.debug(component, '← OK $message', context: {'code': code, ...ctx});
+    log.debug(component, '← OK $code', context: {'op': message, 'code': code, ...ctx});
     return SafeResult<T>.ok(result);
   } catch (e, s) {
     final err = AppError(
