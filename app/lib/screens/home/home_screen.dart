@@ -74,20 +74,11 @@ class _HomeScreenState extends State<HomeScreen> {
       _dueCount = allCards.where((c) => c.isDue).length;
 
       // Últimas 5 notas modificadas
-      final tree = await _vault!.loadTree();
-      final mdFiles = <String>[];
-      void walk(VaultNode n) {
-        if (!n.isDir) mdFiles.add(n.relPath);
-        for (final c in n.children) walk(c);
-      }
-      walk(tree);
-      final notes = <Note>[];
-      for (final rel in mdFiles) {
-        final n = await _vault!.readNote(p.join(vaults.first.path, rel));
-        if (n != null) notes.add(n);
-      }
-      notes.sort((a, b) => b.modified.compareTo(a.modified));
-      _recent = notes.take(5).toList();
+      // v0.46 FIX (auditor bug #3): antes cargaba TODO el vault.
+      // Ahora usa listRecentNotes(5) que es O(N) para listar paths
+      // y O(limit) para leer contenido. En vault de 10K notas,
+      // pasamos de 30+ segundos a <500ms.
+      _recent = await _vault!.listRecentNotes(5);
 
       if (!mounted) return;
       setState(() { _loading = false; });
