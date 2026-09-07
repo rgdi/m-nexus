@@ -49,7 +49,15 @@ export async function buildServer(): Promise<FastifyInstance> {
   });
 
   // ── Plugins ──────────────────────────────────────
-  await app.register(cors, { origin: true, credentials: true });
+  // v0.46: CORS whitelist explícita (bug auditor #8: origin:true + credentials:true es CSRF-vulnerable)
+  const { corsOriginCallback, getAllowedOrigins } = await import("./utils/corsPolicy.js");
+  await app.register(cors, {
+    origin: corsOriginCallback,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  });
+  logOp("http", "cors.initialized", true, { allowedOrigins: getAllowedOrigins() });
   await app.register(compression);
   await app.addContentTypeParser("application/zip", { parseAs: "buffer" }, (_req, body, done) => done(null, body));
   await app.addContentTypeParser("application/octet-stream", { parseAs: "buffer" }, (_req, body, done) => done(null, body));
