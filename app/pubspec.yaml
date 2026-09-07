@@ -10,6 +10,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
   # Permisos y archivos
   path_provider: ^2.1.4
   # HTTP para descargar el plugin
@@ -24,8 +27,20 @@ dependencies:
   uuid: ^4.5.1
   google_fonts: ^6.2.1
   flutter_markdown: ^0.7.4
-
   package_info_plus: ^8.0.0
+
+  # v0.46: Voice input (STT) + grabación
+  speech_to_text: ^7.0.0
+  record: ^5.0.0
+
+  # v0.46: DB local con FTS5 (Fase 2)
+  # drift: ^2.20.0  # pendiente instalación tras verificar resolución con Flutter 3.22
+
+  # v0.46: Charts para stats (Fase 3)
+  # fl_chart: ^0.69.0  # pendiente
+
+  # v0.46: Secure storage para tokens
+  # flutter_secure_storage: ^9.0.0  # pendiente
 
 dev_dependencies:
   flutter_test:
@@ -36,5 +51,3 @@ flutter:
   uses-material-design: true
   assets:
     - assets/release-info.json
-
-# y record_android 2.x requiere Dart 3.12+ (Flutter 3.27+)
