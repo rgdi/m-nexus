@@ -1,0 +1,202 @@
+{
+  "@@locale": "es",
+  "appTitle": "M-NEXUS",
+
+  "navHome": "Inicio",
+  "navDecks": "Mazos",
+  "navNotes": "Notas",
+  "navStats": "Estadísticas",
+  "navSettings": "Ajustes",
+
+  "homeGreeting": "Buenas {timeOfDay}, {name}",
+  "@homeGreeting": {
+    "placeholders": {
+      "timeOfDay": {"type": "String"},
+      "name": {"type": "String"}
+    }
+  },
+
+  "homeTodaysReview": "Repaso de hoy",
+  "homeCardsDue": "{count, plural, =0{Sin tarjetas pendientes} =1{1 tarjeta pendiente} other{{count} tarjetas pendientes}}",
+  "@homeCardsDue": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "homeEstimatedTime": "~{minutes} min estimados",
+  "@homeEstimatedTime": {
+    "placeholders": {
+      "minutes": {"type": "int"}
+    }
+  },
+
+  "homeStartReview": "Empezar repaso",
+  "homeRecentNotes": "Notas recientes",
+  "homeNoNotes": "Aún no hay notas. ¡Crea tu primera nota!",
+
+  "reviewProgress": "{current} / {total}",
+  "@reviewProgress": {
+    "placeholders": {
+      "current": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+
+  "reviewAgain": "Otra vez",
+  "reviewHard": "Difícil",
+  "reviewGood": "Bien",
+  "reviewEasy": "Fácil",
+  "reviewShortcuts": "Atajos: Espacio para voltear, 1/2/3/4 para calificar",
+  "reviewAgainShort": "1",
+  "reviewHardShort": "2",
+  "reviewGoodShort": "3",
+  "reviewEasyShort": "4",
+
+  "reviewTapToFlip": "👆 Tocá para voltear",
+  "reviewQuestion": "Pregunta",
+  "reviewAnswer": "Respuesta",
+
+  "reviewSummaryTitle": "¡Sesión completada!",
+  "reviewCardsReviewed": "Repasaste {count} tarjetas",
+  "@reviewCardsReviewed": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "reviewAccuracy": "Precisión: {percent}%",
+  "@reviewAccuracy": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "reviewBack": "Volver",
+
+  "deckAnatomy": "Anatomía",
+  "deckPhysiology": "Fisiología",
+  "deckPharmacology": "Farmacología",
+  "deckPathology": "Patología",
+  "deckDefault": "Por defecto",
+  "deckCount": "{count, plural, =0{Sin tarjetas} =1{1 tarjeta} other{{count} tarjetas}}",
+  "@deckCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "searchTitle": "Buscar",
+  "searchPlaceholder": "Buscar notas, tarjetas, tags...",
+  "searchNoResults": "Sin resultados para \"{query}\"",
+  "@searchNoResults": {
+    "placeholders": {
+      "query": {"type": "String"}
+    }
+  },
+  "searchResults": "{count, plural, =0{Sin resultados} =1{1 resultado} other{{count} resultados}}",
+  "@searchResults": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "tagTitle": "Tag: {tag}",
+  "@tagTitle": {
+    "placeholders": {
+      "tag": {"type": "String"}
+    }
+  },
+  "tagNoNotes": "Aún no hay notas con este tag.",
+
+  "graphTitle": "Grafo de conocimiento",
+  "graphNodes": "{count} notas",
+  "@graphNodes": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "graphEdges": "{count} enlaces",
+  "@graphEdges": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "statsTitle": "Estadísticas",
+  "statsCurrentStreak": "Racha actual",
+  "statsLongestStreak": "Racha máxima",
+  "statsDays": "{count, plural, =1{1 día} other{{count} días}}",
+  "@statsDays": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "statsTotalReviews": "Total de repasos",
+  "statsRetentionRate": "Tasa de retención",
+  "statsNewCards": "Tarjetas nuevas",
+  "statsLearningCards": "Aprendiendo",
+  "statsReviewCards": "Repaso",
+  "statsMatureCards": "Maduras",
+  "statsTimeSpent": "Tiempo de estudio",
+
+  "settingsTitle": "Ajustes",
+  "settingsLanguage": "Idioma",
+  "settingsLanguageEnglish": "English",
+  "settingsLanguageSpanish": "Español",
+  "settingsLanguagePortuguese": "Português",
+  "settingsTheme": "Tema",
+  "settingsThemeSystem": "Sistema",
+  "settingsThemeLight": "Claro",
+  "settingsThemeDark": "Oscuro",
+  "settingsRetentionTarget": "Objetivo de retención",
+  "settingsRetentionHelp": "Mayor = más repasos pero mejor retención",
+  "settingsAbout": "Acerca de",
+  "settingsVersion": "Versión",
+
+  "commonSave": "Guardar",
+  "commonCancel": "Cancelar",
+  "commonDelete": "Eliminar",
+  "commonEdit": "Editar",
+  "commonClose": "Cerrar",
+  "commonOK": "OK",
+  "commonYes": "Sí",
+  "commonNo": "No",
+  "commonLoading": "Cargando...",
+  "commonError": "Error",
+  "commonRetry": "Reintentar",
+
+  "voiceListening": "Escuchando...",
+  "voiceProcessing": "Procesando audio...",
+  "voiceError": "Error de reconocimiento de voz",
+  "voiceTapToStart": "Tocar para grabar",
+  "voiceTapToStop": "Tocar para detener",
+
+  "aiChatTitle": "Tutor IA",
+  "aiChatPlaceholder": "Pregunta sobre tus notas...",
+  "aiChatThinking": "Pensando...",
+  "aiChatSources": "Fuentes",
+
+  "marketplaceTitle": "Marketplace",
+  "marketplaceInstall": "Instalar",
+  "marketplaceInstalled": "Instalado",
+  "marketplaceRating": "Calificación",
+  "marketplaceInstalls": "{count, plural, =1{1 instalación} other{{count} instalaciones}}",
+  "@marketplaceInstalls": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "clozeEditorTitle": "Editor de cloze",
+  "clozeHint": "Envolvé el texto con {syntax} para crear un cloze",
+  "@clozeHint": {
+    "placeholders": {
+      "syntax": {"type": "String"}
+    }
+  },
+  "clozeCount": "{count, plural, =0{Sin clozes} =1{1 cloze} other{{count} clozes}}",
+  "@clozeCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  }
+}
