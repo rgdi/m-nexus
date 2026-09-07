@@ -121,7 +121,7 @@ Future<T?> safeCallOrNull<T>({
   required String component,
   required String code,
   required String message,
-  required Future<T> Function() op,
+  required Future<T?> Function() op,
   Map<String, dynamic>? context,
   String? hint,
   ErrorCategory? category,
