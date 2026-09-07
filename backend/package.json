@@ -27,6 +27,7 @@
     "jsonwebtoken": "^9.0.2",
     "pino": "^9.3.0",
     "ts-fsrs": "^5.4.2",
+    "yjs": "^13.6.32",
     "zod": "^3.23.0"
   },
   "devDependencies": {
