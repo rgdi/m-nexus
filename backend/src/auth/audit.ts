@@ -23,6 +23,7 @@ export type AuditAction =
   | "ws.connect"
   | "ws.disconnect"
   | "ws.error"
+  | "ws.rate_limited"
   | "e2e.decrypt.failed";
 
 export interface AuditEntry {
