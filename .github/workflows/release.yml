@@ -276,17 +276,23 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
-      - name: Flatten artifact directories
+      - name: Flatten artifact directories + create quicklinks
         run: |
-          # v0.45.9: GitHub download-artifact downloads each artifact to its
-          # own subdirectory (artifacts/app/, artifacts/backend/, artifacts/installer/).
-          # We need to flatten those to artifacts/ root.
+          # v0.45.10: flatten subdirs to artifacts/ root, then create the
+          # m-nexus-app.apk quicklink (so /releases/latest/download/m-nexus-app.apk
+          # always works as a short URL to the release APK).
           for sub in app backend installer; do
             if [ -d "artifacts/$sub" ]; then
               mv "artifacts/$sub"/* artifacts/ 2>/dev/null || true
               rm -rf "artifacts/$sub"
             fi
           done
+          # Quicklink for the release APK
+          if [ -f "artifacts/m-nexus-app-v"*"-release.apk" ]; then
+            cp artifacts/m-nexus-app-*-release.apk artifacts/m-nexus-app.apk
+          elif [ -f "artifacts/m-nexus-app-v"*".apk" ]; then
+            cp artifacts/m-nexus-app-v*.apk artifacts/m-nexus-app.apk
+          fi
           echo "Final artifacts list:"
           ls -la artifacts/
       - name: Push new tag
