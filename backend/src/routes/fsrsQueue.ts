@@ -1,8 +1,9 @@
-// fsrsQueue routes: encolar y consultar evaluaciones FSRS async (v0.33).
+// fsrsQueue routes: encolar y consultar evaluaciones FSRS REALES (v0.46).
 // v0.45: error codes estructurados con AppError.
+// v0.46: nuevo body schema { cards: [{ cardId, rating, currentState? }] } usando ts-fsrs.
 
 import { FastifyInstance } from "fastify";
-import { fsrsQueue } from "../workers/fsrsQueue.js";
+import { fsrsQueue, type FsrsJobCard } from "../workers/fsrsQueue.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { E } from "../utils/errorCodes.js";
 import { safeCallAsync } from "../utils/safeCall.js";
@@ -12,30 +13,39 @@ export async function fsrsQueueRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authMiddleware);
 
   // POST /api/v1/fsrs/eval
-  app.post<{ Body: { userId?: string; cardIds?: string[]; algorithm?: "fsrs-v5" | "fsrs-v4" } }>(
+  app.post<{ Body: { userId?: string; cards?: FsrsJobCard[]; algorithm?: "fsrs-v6" | "fsrs-v5" } }>(
     "/api/v1/fsrs/eval",
     async (req, reply) => {
       const r = await safeCallAsync({
         component: "card",
         code: "EC-CARD-020",
         message: "fsrs eval enqueue failed",
-        context: { cardCount: req.body?.cardIds?.length ?? 0 },
+        context: { cardCount: req.body?.cards?.length ?? 0 },
         op: async () => {
-          const { userId, cardIds, algorithm } = req.body ?? {};
-          if (!userId || !Array.isArray(cardIds) || cardIds.length === 0) {
-            throw E.val("EC-CARD-021", "userId and cardIds are required", {
-              context: { hasUserId: !!userId, cardCount: cardIds?.length ?? 0 },
-              hint: "Send { userId, cardIds: ['...', '...'] }",
+          const { userId, cards, algorithm } = req.body ?? {};
+          if (!userId || !Array.isArray(cards) || cards.length === 0) {
+            throw E.val("EC-CARD-021", "userId and cards are required", {
+              context: { hasUserId: !!userId, cardCount: cards?.length ?? 0 },
+              hint: "Send { userId, cards: [{ cardId: '...', rating: 1-4, currentState?: {...} }] }",
             });
           }
-          if (cardIds.length > 10_000) {
+          if (cards.length > 10_000) {
             throw E.val("EC-CARD-022", "max 10000 cards per job", {
-              context: { cardCount: cardIds.length, max: 10000 },
+              context: { cardCount: cards.length, max: 10000 },
               hint: "Split into multiple jobs",
             });
           }
-          const id = fsrsQueue.enqueue({ userId, cardIds, algorithm });
-          logOp("card", "fsrs enqueued", true, { jobId: id, cardCount: cardIds.length });
+          // Validar ratings
+          for (const c of cards) {
+            if (c.rating != null && (c.rating < 1 || c.rating > 4)) {
+              throw E.val("EC-CARD-028", "rating must be 1 (Again), 2 (Hard), 3 (Good), or 4 (Easy)", {
+                context: { cardId: c.cardId, rating: c.rating },
+                hint: "FSRS usa 4 ratings: Again/Hard/Good/Easy",
+              });
+            }
+          }
+          const id = fsrsQueue.enqueue({ userId, cards, algorithm });
+          logOp("card", "fsrs enqueued", true, { jobId: id, cardCount: cards.length, algorithm: algorithm ?? "fsrs-v6" });
           return { jobId: id, queued: true };
         }
       });
