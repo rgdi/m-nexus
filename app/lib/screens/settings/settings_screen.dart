@@ -286,10 +286,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
             itemCount: cals.length,
             itemBuilder: (_, i) {
               final c = cals[i];
+              // v0.45.2: en algunos calendarios (ej. Gmail) el display name
+              // es el mismo email que la cuenta. Si son iguales, mostramos solo
+              // el email en el title y ocultamos el subtitle para no duplicar.
+              final displayName = c.name.trim().isEmpty
+                  ? (c.accountName.isNotEmpty ? c.accountName : 'Sin nombre')
+                  : c.name;
+              final showSubtitle = c.accountName.isNotEmpty &&
+                  c.accountName.toLowerCase() != displayName.toLowerCase();
+              // Avatar: 1ra letra en mayúscula del nombre o email
+              final initial = displayName.isNotEmpty
+                  ? displayName[0].toUpperCase()
+                  : '?';
               return ListTile(
-                leading: CircleAvatar(backgroundColor: Color(c.color), child: Text(c.name[0])),
-                title: Text(c.name),
-                subtitle: Text(c.accountName ?? 'Sin cuenta'),
+                leading: CircleAvatar(
+                  backgroundColor: Color(c.color),
+                  child: Text(initial, style: const TextStyle(color: Colors.white)),
+                ),
+                title: Text(
+                  displayName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: showSubtitle
+                    ? Text(
+                        c.accountName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      )
+                    : null,
                 trailing: Icon(
                   c.isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
                   color: c.isSelected ? Theme.of(context).colorScheme.primary : null,
