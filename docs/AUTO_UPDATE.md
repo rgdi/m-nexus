@@ -12,7 +12,7 @@ plugin de Obsidian, backend, y companion app.
 
 ## 1. Plugin de Obsidian
 
-Implementado en `obsidian-plugin/src/updateChecker.ts`.
+Implementado en `app/lib/services/updater.dart`.
 
 - Cada 6h consulta GitHub Releases
 - Si hay nueva versión, muestra un Notice con link
@@ -75,7 +75,7 @@ Si algo sale mal:
 
 ## 3. Companion App (Android APK)
 
-Implementado en `companion-app/lib/services/updater.dart` y `companion-app/lib/ui/update_dialog.dart`.
+Implementado en `app/lib/services/updater.dart` y `app/lib/screens/settings/update_dialog.dart`.
 
 ### Flujo del usuario
 

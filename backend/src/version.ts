@@ -1,4 +1,3 @@
-// Versión del backend — sincronizada con package.json vía build.
-// v0.28: extraída a un módulo separado para evitar el ciclo de imports
-// entre server.ts (que importa utils/log.js) y los routes.
-export const VERSION = "0.37.0";
+// Version synced with package.json (v0.45).
+// Increment on each release.
+export const VERSION = "0.45.0";

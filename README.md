@@ -2,7 +2,7 @@
 
 [![Release](https://img.shields.io/github/v/release/rgdi/m-nexus)](https://github.com/rgdi/m-nexus/releases/latest)
 [![License](https://img.shields.io/github/license/rgdi/m-nexus)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-300%2B%20passing-brightgreen)]()
+[![Tests](https://img.shields.io/badge/tests-226%2B%20passing-brightgreen)]()
 [![Topic](https://img.shields.io/badge/topics-15-blue)]()
 
 > **v0.45.0** · App standalone (sin Obsidian), Material 3, AdaptiveScaffold, atajos de teclado estilo Obsidian, búsqueda full-text, FSRS spaced repetition, voice notes, multi-dispositivo (Android + Web)
@@ -39,6 +39,24 @@ Diseñado para ser **humano en el loop**: la IA propone, tú decides.
 
 ## 🎯 ¿Qué hace M-NEXUS?
 
+### v0.45.0 — Sistema de error codes unificado
+- **🆔 Error codes `EC-XXX-NNN`** — 200 códigos en 28 categorías, frontend + backend sincronizados
+- **🛡️ `safeCall` / `safeCallAsync`** — Helpers que centralizan try-catch con logging automático
+- **📊 Logger estructurado** — `logOp`, `logError`, `logLifecycle`, `logNetwork`, `logPlatform` con redacción de secretos
+- **🌐 Central error handler** — `setErrorHandler` con respuestas JSON + `requestId` para correlación
+- **🔒 Redacción automática** — `*.password`, `*.token`, `*.secret`, `*.apiKey` no se loguean
+- **🔄 HTTP status code auto-mapeado** — `AUTH`→401, `VAL`→400, `RATE`→429, `DB`/`SEC`→403, `NET`/`EXT`→502
+- Ver [`docs/ERROR_CODES.md`](docs/ERROR_CODES.md) y [`docs/LOGGING.md`](docs/LOGGING.md)
+
+### v0.44.2 — Real Settings
+- **🎨 Tema dinámico** — system/light/dark, persistido en SharedPreferences
+- **📏 Font scale** — 85%/100%/115%/130% vía `MediaQuery.textScaler`
+- **🔌 Backend URL** — configurable, vacío = sin backend
+- **📂 Vaults dialog** — lista de vaults detectados con método de detección
+- **📅 Calendar picker** — permisos + lista de calendarios
+- **📳 Vibración toggle** — on/off en tiempo real
+- **📋 Changelog view** — histórico de versiones accesible desde Settings
+
 ### v0.43.0 — App standalone
 - **📦 UNIFIED ARCHITECTURE** — Sin Obsidian, sin plugin: la app es todo
 - **🎨 Material 3 + AdaptiveScaffold** — Bottom nav mobile / rail desktop
@@ -48,9 +66,7 @@ Diseñado para ser **humano en el loop**: la IA propone, tú decides.
 - **🔋 Battery optimization** — desactivación guiada desde el wizard (Android 6+)
 - **📅 Calendar selector robusto** — diálogo con StatefulBuilder, color avatar, auto-permiso
 - **🔄 Sync queue offline-first** — cada recording tiene badge de estado (pending/uploading/synced/failed)
-- **🎙️ Recording rename + retry** — renombrar con validación, reintentar sync individual
 - **📲 SAF picker** — seleccionar vault manualmente con Storage Access Framework
-- **🚫 Anti-SnackBar-spam** — `_notify()` con `hideCurrentSnackBar()`, update notification dedupe
 
 ### v0.33.0 — Notion-style
 - **🗂️ Notion-style databases** — Typed properties (text/number/select/multi/date/url/email/relation/formula)
@@ -58,17 +74,6 @@ Diseñado para ser **humano en el loop**: la IA propone, tú decides.
 - **🔄 Conflict Resolution** — LWW por FIELD con vector clocks
 - **📦 Chunked Upload** — 1 MB chunks, resumable, SHA-256 verify
 - **⏪ Rollback** — Backup antes de update, restore con un click
-- **📎 Web Clipper** — Extensión Chrome con detección de dominios médicos
-
-### v0.32.0 — Voice notes
-- **🎙️ Voice notes con speech_to_text 7.x** — foreground service, MANAGE_EXTERNAL_STORAGE
-- **🆘 Help page** — Diagnóstico copiable, troubleshooting, FAQ
-
-### v0.31.0 — Device identity
-- **🔐 Device identity** — UUID v4 + ANDROID_ID persistente
-- **🧙 Setup wizard** — Solo primer launch
-- **📅 Google Calendar** — Vía ContentResolver (sin Google Sign-In)
-- **🖼️ Logo** — M + heartbeat blue gradient
 
 ### Siempre
 - **🧠 FSRS spaced repetition** — Algoritmo moderno (mejor que SM-2/Anki)
@@ -87,9 +92,9 @@ Diseñado para ser **humano en el loop**: la IA propone, tú decides.
 curl -fsSL https://raw.githubusercontent.com/rgdi/m-nexus/main/install/install.sh | bash -s -- --component=all --tag=stable
 ```
 
-Para solo backend: `--component=backend`. Solo plugin: `--component=plugin`. Solo companion: `--component=companion`.
+Para solo backend: `--component=backend`. Solo app: `--component=app`. Todo: `--component=all`.
 
-Más opciones: `--update`, `--rollback`, `--uninstall`, `--list-versions`, `--version=v0.35.0`, `--auto`, `--dry-run`.
+Más opciones: `--update`, `--rollback`, `--uninstall`, `--list-versions`, `--version=v0.45.0`, `--auto`, `--dry-run`.
 
 ### Opción B — Manual
 
@@ -104,15 +109,17 @@ Más opciones: `--update`, `--rollback`, `--uninstall`, `--list-versions`, `--ve
 
 Cada componente tiene su README detallado:
 
-- **[Backend](backend/README.md)** — Fastify 5, 245 tests, 73+ endpoints
-- **[Companion App](companion-app/README.md)** — Flutter, 4 platform channels, 40 tests
+- **[Backend](backend/README.md)** — Fastify 5, 222 tests
+- **[App](app/README.md)** — Flutter standalone, Material 3, AdaptiveScaffold
 
 Otros docs:
-- [INSTALL.md](INSTALL.md) — guía de instalación paso a paso
-- [docs/API.md](docs/API.md) — referencia completa de los 73+ endpoints
-- [CHANGELOG.md](CHANGELOG.md) — historial de cambios
+- [RELEASE_NOTES.md](RELEASE_NOTES.md) — notas de cada release
+- [docs/ERROR_CODES.md](docs/ERROR_CODES.md) — 200 códigos EC-XXX-NNN
+- [docs/LOGGING.md](docs/LOGGING.md) — sistema de logging estructurado
+- [docs/API.md](docs/API.md) — referencia completa de los endpoints
 - [docs/AUTO_UPDATE.md](docs/AUTO_UPDATE.md) — auto-update
 - [docs/BACKUP_*.md](docs/) — backup y restore
+- [docs/STANDALONE_VISION.md](docs/STANDALONE_VISION.md) — visión del proyecto
 
 ---
 
@@ -120,20 +127,17 @@ Otros docs:
 
 ```bash
 # Backend
-cd backend && npm test              # 245 tests
+cd backend && npm test              # 222 tests passing
 
-# Plugin
-
-# Companion
-cd companion-app && flutter test    # 40 tests
+# App
+cd app && flutter test              # 4 test files
 ```
 
-**Total: 1484 tests passing**
+**Total: 226+ tests passing**
 
 Cubriendo:
-- Backend: secretManager (11), conflictResolver (17), structuredNotes (24), upload (11), rollback (6), fsrsQueue (8), auth (21), api (21), y muchos más
-- Plugin: 18+ subsistemas, e2e flows, FSRS, RAG, Notion-style, etc
-- Companion: backend_client, chunked_upload, recorder, permissions, vault_detector, updater, etc
+- Backend: secretManager, conflictResolver, structuredNotes, upload, rollback, fsrsQueue, auth, api, llm, ocr, whisper, embeddings, push, metrics, y muchos más
+- App: safe_call, settings_service, vault_service, flashcard_service
 
 ---
 
@@ -204,10 +208,9 @@ m-nexus/
 ├── .github/
 │   └── workflows/            # release.yml, ci.yml, update-version.yml
 ├── README.md                 # Este archivo
-├── INSTALL.md                # Guía de instalación
-├── CHANGELOG.md              # Historial
+├── RELEASE_NOTES.md         # Notas de cada release
 ├── LICENSE                   # MIT
-└── GITHUB_SETUP.md           # Setup inicial del repo
+└── .github/workflows/        # release.yml, ci.yml, debug-apk.yml
 ```
 
 ---
@@ -267,7 +270,7 @@ MIT
 
 ## 🆘 Soporte
 
-- **Docs:** ver [INSTALL.md](INSTALL.md), [docs/API.md](docs/API.md), y los READMEs por componente
+- **Docs:** ver [RELEASE_NOTES.md](RELEASE_NOTES.md), [docs/ERROR_CODES.md](docs/ERROR_CODES.md), y los READMEs por componente
 - **Issues:** https://github.com/rgdi/m-nexus/issues
 - **Releases:** https://github.com/rgdi/m-nexus/releases
 - **Repo:** https://github.com/rgdi/m-nexus

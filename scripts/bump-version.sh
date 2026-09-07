@@ -8,7 +8,7 @@
 # Actualiza:
 #   - backend/package.json
 #   - backend/src/version.ts
-#   - companion-app/pubspec.yaml
+#   - app/pubspec.yaml
 #   - README.md (referencias a la versión)
 #
 # Después de ejecutar, haz commit y push:
@@ -53,22 +53,22 @@ if [[ -f "$REPO_ROOT/backend/src/version.ts" ]]; then
 fi
 
 # 3. Companion pubspec.yaml
-if [[ -f "$REPO_ROOT/companion-app/pubspec.yaml" ]]; then
+if [[ -f "$REPO_ROOT/app/pubspec.yaml" ]]; then
     # Bump build number
-    CURRENT_BUILD=$(grep -o '+[0-9]*' "$REPO_ROOT/companion-app/pubspec.yaml" | head -1 | tr -d '+')
+    CURRENT_BUILD=$(grep -o '+[0-9]*' "$REPO_ROOT/app/pubspec.yaml" | head -1 | tr -d '+')
     NEW_BUILD=$((CURRENT_BUILD + 1))
     sed -i.bak "s/^version: [0-9.]*+[0-9]*/version: $NEW_VERSION+$NEW_BUILD/" \
-        "$REPO_ROOT/companion-app/pubspec.yaml"
-    rm -f "$REPO_ROOT/companion-app/pubspec.yaml.bak"
-    echo "  ✅ companion-app/pubspec.yaml (build $NEW_BUILD)"
+        "$REPO_ROOT/app/pubspec.yaml"
+    rm -f "$REPO_ROOT/app/pubspec.yaml.bak"
+    echo "  ✅ app/pubspec.yaml (build $NEW_BUILD)"
 fi
 
 # 7. Companion release-info.json
-if [[ -f "$REPO_ROOT/companion-app/assets/release-info.json" ]]; then
+if [[ -f "$REPO_ROOT/app/assets/release-info.json" ]]; then
     sed -i.bak "s/\"latest_version\": \"[0-9.]*[-a-zA-Z0-9.]*\"/\"latest_version\": \"$NEW_VERSION\"/" \
-        "$REPO_ROOT/companion-app/assets/release-info.json"
-    rm -f "$REPO_ROOT/companion-app/assets/release-info.json.bak"
-    echo "  ✅ companion-app/assets/release-info.json"
+        "$REPO_ROOT/app/assets/release-info.json"
+    rm -f "$REPO_ROOT/app/assets/release-info.json.bak"
+    echo "  ✅ app/assets/release-info.json"
 fi
 
 echo ""

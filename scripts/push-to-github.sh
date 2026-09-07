@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════════
-# push-to-github.sh — hacer push y crear la primera release de v0.28.0
+# push-to-github.sh — hacer push y crear la primera release de v0.45.0
 # ═══════════════════════════════════════════════════════════════════
 #
 # Uso: ./scripts/push-to-github.sh <GITHUB_TOKEN>
 #
 # Requiere un PAT con scope 'repo' + 'workflow'.
-# Después de ejecutar, la release v0.28.0 estará lista y los
+# Después de ejecutar, la release v0.45.0 estará lista y los
 # quicklinks funcionarán.
 
 set -euo pipefail
@@ -26,7 +26,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
 echo "═══════════════════════════════════════════════════════"
-echo "  M-NEXUS v0.28.0 — Push to GitHub"
+echo "  M-NEXUS v0.45.0 — Push to GitHub"
 echo "═══════════════════════════════════════════════════════"
 echo ""
 
@@ -62,12 +62,12 @@ echo ""
 echo "4️⃣  Pusheando código..."
 git push -u origin main 2>&1 | tail -5
 
-# 5. Crear tag v0.28.0
+# 5. Crear tag v0.45.0
 echo ""
-echo "5️⃣  Creando tag v0.28.0..."
-git tag -d v0.28.0 2>/dev/null || true
-git tag v0.28.0
-git push origin v0.28.0 2>&1 | tail -3
+echo "5️⃣  Creando tag v0.45.0..."
+git tag -d v0.45.0 2>/dev/null || true
+git tag v0.45.0
+git push origin v0.45.0 2>&1 | tail -3
 
 # 6. Esperar a que el workflow de release termine
 echo ""
@@ -82,14 +82,14 @@ MAX_ATTEMPTS=30
 ATTEMPT=0
 while [[ $ATTEMPT -lt $MAX_ATTEMPTS ]]; do
     sleep 20
-    RESP=$(curl -s -H "Authorization: token $TOKEN" https://api.github.com/repos/$REPO/releases/tags/v0.28.0)
+    RESP=$(curl -s -H "Authorization: token $TOKEN" https://api.github.com/repos/$REPO/releases/tags/v0.45.0)
     if echo "$RESP" | grep -q '"id"'; then
         echo ""
         echo "═══════════════════════════════════════════════════════"
-        echo "  ✅ ¡Release v0.28.0 publicada!"
+        echo "  ✅ ¡Release v0.45.0 publicada!"
         echo "═══════════════════════════════════════════════════════"
         echo ""
-        echo "  URL: https://github.com/$REPO/releases/tag/v0.28.0"
+        echo "  URL: https://github.com/$REPO/releases/tag/v0.45.0"
         echo "  Latest: https://github.com/$REPO/releases/latest"
         echo ""
         echo "  Quicklinks (siempre apuntan a la última versión):"
