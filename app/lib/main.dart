@@ -20,7 +20,7 @@ void main() async {
   final size = WidgetsBinding.instance.platformDispatcher.views.first.physicalSize /
       WidgetsBinding.instance.platformDispatcher.views.first.devicePixelRatio;
   await DeviceInfo.load(Size(size.width, size.height));
-  final settings = await SettingsService().load();
+  final settings = await SettingsService.instance.load();
 
   final osVersion = info.model.isNotEmpty
       ? '${info.model} (${info.osVersion})'
