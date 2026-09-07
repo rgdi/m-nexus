@@ -37,7 +37,7 @@ class SafeResult<T> {
   const SafeResult.ok(this.value) : error = null, success = true;
   const SafeResult.fail(this.error) : value = null, success = false;
 
-  T getOrNull() => value;
+  T? getOrNull() => value;
   T getOrElse(T fallback) => success ? value! : fallback;
   R fold<R>(R Function(AppError) onError, R Function(T) onOk) =>
     success ? onOk(value as T) : onError(error!);

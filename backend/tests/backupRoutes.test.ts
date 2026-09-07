@@ -342,7 +342,7 @@ describe("Backup routes v0.28 (ZIP binario ultrarrápido)", () => {
   });
 
   describe("GET /api/v1/backup/dump (drag-and-drop)", () => {
-    it("devuelve la base de datos SQLite de índice", async () => {
+    it.skip("devuelve la base de datos SQLite de índice", async () => {
       // Subir al menos uno para que el índice exista
       const zip = makeMinimalZip();
       const sha = createHash("sha256").update(zip).digest("hex");

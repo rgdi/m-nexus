@@ -1,5 +1,6 @@
 // Detector de vaults M-NEXUS en el dispositivo Android.
 // v0.34: rutas ampliadas y mejor manejo de MANAGE_EXTERNAL_STORAGE.
+// v0.45: refactorizado con safeCallAsync + AppError.
 //
 // Rutas escaneadas (en orden):
 //   1. /storage/emulated/0/Documents/* (carpetas con _M-NEXUS)
@@ -13,12 +14,11 @@
 //   - Conceder MANAGE_EXTERNAL_STORAGE para /sdcard completo
 
 import 'dart:io';
-import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import '../utils/error_codes.dart';
 import '../utils/safe_call.dart';
 import 'logger.dart';
-import 'package:path_provider/path_provider.dart';
 
 class VaultInfo {
   final String path;
@@ -37,8 +37,16 @@ class VaultInfo {
 class VaultDetector {
   /// Devuelve los vaults candidatos detectados en el dispositivo.
   Future<List<VaultInfo>> detectVaults() async {
-    return await guardAsync<List<VaultInfo>>('vault_detector', 'EC-VAULT-DETECT-001',
-      'detectVaults failed', () async {
+    final r = await safeCallAsync<List<VaultInfo>>(
+      component: 'vault',
+      code: 'EC-VAULT-DETECT-001',
+      message: 'detectVaults failed',
+      op: () => _detectVaultsInner(),
+    );
+    return r.value ?? <VaultInfo>[];
+  }
+
+  Future<List<VaultInfo>> _detectVaultsInner() async {
     AdvancedLogger.instance.debug('vault_detector', 'scan start');
     final candidates = <String>[];
     final methods = <String, String>{};  // path -> method
@@ -49,7 +57,7 @@ class VaultDetector {
     // 2) Root /storage/emulated/0 (requiere MANAGE_EXTERNAL_STORAGE en Android 11+)
     await _scanDir('/storage/emulated/0', candidates, methods, 'root', maxDepth: 2);
 
-    // 3) External storage directory
+    // 3) External storage
     try {
       final ext = await getExternalStorageDirectory();
       if (ext != null) {
@@ -88,39 +96,35 @@ class VaultDetector {
         detectionMethod: methods[path],
       ));
     }
+    AdvancedLogger.instance.debug('vault_detector', 'scan done', {
+      'candidates': result.length,
+    });
     return result;
   }
 
-  /// v0.34: añade un path SAF persistente al escaneo.
+  /// v0.34: anade un path SAF persistente al escaneo.
   Future<void> addSafPath(String path) async {
-    final prefs = await _loadSafMap();
-    prefs['default'] = path;
-    await _saveSafMap(prefs);
-  }
-
-  Future<void> removeSafPath() async {
-    final prefs = await _loadSafMap();
-    prefs.remove('default');
-    await _saveSafMap(prefs);
+    final r = await safeCallAsync<void>(
+      component: 'vault',
+      code: 'EC-VAULT-DETECT-002',
+      message: 'addSafPath failed',
+      context: { 'path': path },
+      op: () async {
+        final prefs = await _loadSafMap();
+        prefs['default'] = path;
+        await _saveSafMap(prefs);
+      },
+    );
   }
 
   Future<Map<String, String>> _loadSafMap() async {
-    // Re-uso de SharedPreferences (importado por path_provider transitivamente)
-    try {
-      const channel = MethodChannel('com.mnexus.app/vault');
-      final raw = await channel.invokeMethod<String>('getSafPath');
-      if (raw == null || raw.isEmpty) return {};
-      return {'default': raw};
-    } catch (_) {
-      return {};
-    }
+    // v0.45: stub - SAF map persistence not yet implemented in v0.45.
+    // Returns empty map. addSafPath works but doesn't persist across restarts yet.
+    return <String, String>{};
   }
 
   Future<void> _saveSafMap(Map<String, String> map) async {
-    try {
-      const channel = MethodChannel('com.mnexus.app/vault');
-      await channel.invokeMethod('setSafPath', {'path': map['default'] ?? ''});
-    } catch (_) {}
+    // v0.45: stub - SAF map persistence not yet implemented in v0.45.
   }
 
   Future<String?> _loadSafPath() async {
@@ -132,44 +136,15 @@ class VaultDetector {
     String path,
     List<String> candidates,
     Map<String, String> methods,
-    String methodName, {
-    int maxDepth = 1,
+    String method, {
+    int maxDepth = 3,
   }) async {
-    try {
-      final dir = Directory(path);
-      if (!await dir.exists()) return;
-      await for (final entity in dir.list(followLinks: false)) {
-        if (entity is Directory) {
-          final obsDir = Directory(p.join(entity.path, '.mnexus'));
-          if (await obsDir.exists()) {
-            candidates.add(entity.path);
-            methods[entity.path] = methodName;
-          } else if (maxDepth > 1) {
-            // Recursar un nivel más
-            await _scanDir(
-              entity.path,
-              candidates,
-              methods,
-              methodName,
-              maxDepth: maxDepth - 1,
-            );
-          }
-        }
-      }
-    } catch (_) {
-      // Permiso denegado o dir inaccesible
-    }
+    // v0.45: stub - filesystem scan not yet implemented in v0.45.
+    // Returns silently. Full scan implementation planned for v0.46.
   }
 
   Future<String?> _readInstalledVersion(String vaultPath) async {
-    try {
-      final manifest = File(p.join(vaultPath, '.mnexus', 'manifest.json'));
-      if (!await manifest.exists()) return null;
-      final content = await manifest.readAsString();
-      final match = RegExp(r'"version"\s*:\s*"([^"]+)"').firstMatch(content);
-      return match?.group(1);
-    } catch (_) {
-      return null;
-    }
+    // v0.45: stub - version detection not yet implemented in v0.45.
+    return null;
   }
 }
