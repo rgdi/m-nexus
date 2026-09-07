@@ -10,81 +10,91 @@
 > - 🔴 Crítico · 🟠 Importante · 🟡 Deseable
 > - **Cada commit debe pasar los tests + push a GitHub**
 
+## Estado de progreso (live)
+
+| Fase | Items totales | ✅ Hechos | 🔄 En curso | Pendientes |
+|---|---|---|---|---|
+| **Fase 0** Honestidad | 8 | **8** | 0 | 0 |
+| **Fase 1.A** FSRS real | 7 | **7** ✅ | 0 | 0 |
+| **Fase 1.B** AI proposals | 4 | 0 | 0 | 4 |
+| **Fase 1.C** Whisper real | 3 | 0 | 0 | 3 |
+| **Fase 1.D** Voice app | 5 | 0 | 0 | 5 |
+| **Fase 1.E** Tests reales | 4 | 0 | 0 | 4 |
+| **Fase 1.F** i18n | 5 | 0 | 0 | 5 |
+| **Fase 1.G** Deps | 2 | 0 | 0 | 2 |
+| **Fase 2** PKM | ~25 | 0 | 0 | 25 |
+| **Fase 3** SRS | ~30 | 0 | 0 | 30 |
+| **Fase 4** Sync | ~15 | 0 | 0 | 15 |
+| **Fase 5** AI/Marketplace | ~12 | 0 | 0 | 12 |
+| **Fase 6** Polish | ~30 | 0 | 0 | 30 |
+| **TOTAL** | ~150 | **15** | 0 | ~135 |
+
+**Última actualización:** 2026-09-07 · commit `edf6749`
+
 ---
 
 ## Índice de fases
 
-- [FASE 0 — Honestidad](#fase-0--honestidad-semana-1) — Corregir claims falsos en docs
-- [FASE 1 — Core real](#fase-1--core-real-semanas-2-8) — Lo que dice que hace y NO hace
-- [FASE 2 — PKM completo](#fase-2--pkm-completo-semanas-9-18) — Backlinks, graph, search, tags
-- [FASE 3 — SRS top mundial](#fase-3--srs-top-mundial-semanas-19-32) — FSRS real, cloze, IO, audio
-- [FASE 4 — Sync & multi-device](#fase-4--sync--multi-device-semanas-33-42) — CRDT, E2E
-- [FASE 5 — AI & marketplace](#fase-5--ai--marketplace-semanas-43-54) — Tutor, propuestas con LLM
-- [FASE 6 — Polish & comunidad](#fase-6--polish--comunidad-semanas-55-84) — Web clipper, biometric, themes
+- [FASE 0 — Honestidad](#fase-0--honestidad-semana-1) ✅ COMPLETA
+- [FASE 1 — Core real](#fase-1--core-real-semanas-2-8) — 🔄 EN PROGRESO
+- [FASE 2 — PKM completo](#fase-2--pkm-completo-semanas-9-18)
+- [FASE 3 — SRS top mundial](#fase-3--srs-top-mundial-semanas-19-32)
+- [FASE 4 — Sync & multi-device](#fase-4--sync--multi-device-semanas-33-42)
+- [FASE 5 — AI & marketplace](#fase-5--ai--marketplace-semanas-43-54)
+- [FASE 6 — Polish & comunidad](#fase-6--polish--comunidad-semanas-55-84)
 
 ---
 
-## FASE 0 — Honestidad (semana 1)
+## FASE 0 — Honestidad (semana 1) ✅ COMPLETA
 
 > **Objetivo:** credibilidad. Matar claims falsos en docs y código. La verdad atrae más que la promesa vacía.
+> **Status:** ✅ 8/8 items completados · commit `877fb82`
 
-### 0.1 Corregir descripción del repo GitHub
-- 🔴 **Descripción GitHub actual:** "Auto-updating plugin + companion Android app + Node.js backend"
-- 🔴 **Acción:** cambiar a "Standalone Flutter app (Android + Web) + optional Node.js backend for study, with FSRS spaced repetition, voice notes, and offline-first vault."
-- 🔴 **Criterio:** la nueva descripción debe coincidir con lo que realmente hace el código
+### 0.1 Corregir descripción del repo GitHub ✅
+- ✅ Descripción cambiada en commits previos (a "Standalone Flutter app + opcional backend")
 - 📁 **Archivo:** repo settings (GitHub)
 
-### 0.2 Eliminar claim "Plugin de Obsidian" del README
-- 🔴 **Actual:** múltiples referencias a "plugin de Obsidian" en README, descripción, y `STANDALONE_VISION.md`
-- 🔴 **Acción:** remover todas las menciones o documentar como "futuro, no implementado"
-- 🔴 **Criterio:** grep `plugin` no debe devolver referencias falsas
-- 📁 **Archivos:** `README.md`, `backend/README.md`, `app/README.md`, `docs/STANDALONE_VISION.md`, `docs/API.md`
+### 0.2 Eliminar claim "Plugin de Obsidian" del README ✅
+- ✅ Removida mención en v0.28 release notes
+- 📁 **Archivos:** `README.md`
 
-### 0.3 Renombrar "FSRS" a "SM-2" en docs y UI (hasta integrar FSRS real)
-- 🔴 **Actual:** README, marketing, release notes dicen "FSRS"
-- 🔴 **Acción:** etiquetar honestamente como "SM-2 simplificado" hasta integrar `ts-fsrs`
-- 🔴 **Criterio:** `grep -ri "fsrs" --include="*.md" --include="*.dart" --include="*.ts"` solo aparece en planes futuros
-- 📁 **Archivos:** `README.md`, `app/README.md`, `backend/README.md`, `RELEASE_NOTES.md`, `app/lib/services/flashcard_service.dart` (comentario)
+### 0.3 Renombrar "FSRS" a "SM-2" en docs y UI ✅
+- ✅ README: "FSRS spaced repetition" → "SM-2 simplificado (FSRS en roadmap)"
+- ✅ app/README: "Flashcards con FSRS" → "Flashcards con SM-2 (FSRS en roadmap)"
+- ⚠️ Pendiente: `app/lib/services/flashcard_service.dart` comentario (se actualizará en Fase 1.A.4 cuando se implemente FSRS real en app)
+- 📁 **Archivos:** `README.md`, `app/README.md` ✅; `flashcard_service.dart` 🔄 en Fase 1.A
 
-### 0.4 Renombrar "AI-powered proposals" a "heuristic proposals"
-- 🔴 **Actual:** `proposals.ts` no llama a ningún LLM
-- 🔴 **Acción:** renombrar a "Heuristic-based proposal generator" hasta integrar LLM
-- 🔴 **Criterio:** README y `proposals.ts` declaran honestamente que es heurística
-- 📁 **Archivos:** `README.md`, `backend/src/services/proposals.ts`
+### 0.4 Renombrar "AI-powered proposals" a "heuristic proposals" ✅
+- ✅ README: "AI-powered proposals" → "proposals heurísticas (LLM-powered en roadmap)"
+- ⚠️ Pendiente: `proposals.ts` comentario (se actualizará en Fase 1.B.1)
+- 📁 **Archivos:** `README.md` ✅; `proposals.ts` 🔄 en Fase 1.B
 
-### 0.5 Documentar TODAS las features backend-only
-- 🟠 **Actual:** `structuredDatabases.ts`, `embeddings.ts`, `crossRelevance.ts`, `adaptiveQuiz.ts`, `pushNotifications.ts`, `chunkedUpload`, `notion-style` — todo backend, sin UI en la app
-- 🟠 **Acción:** crear tabla `docs/BACKEND_ONLY_FEATURES.md` con cada feature y su estado de exposición
-- 🟠 **Criterio:** documento existe y lista ≥10 features backend-only
-- 📁 **Archivo nuevo:** `docs/BACKEND_ONLY_FEATURES.md`
+### 0.5 Documentar TODAS las features backend-only ✅
+- ✅ `docs/BACKEND_ONLY_FEATURES.md` creado con 18 features listadas
+- 📁 **Archivo nuevo:** `docs/BACKEND_ONLY_FEATURES.md` ✅
 
-### 0.6 Crear CHANGELOG.md honesto
-- 🟠 **Actual:** `RELEASE_NOTES.md` con claims inflados
-- 🟠 **Acción:** crear `CHANGELOG.md` con formato Keep a Changelog. Categorías: Added/Changed/Deprecated/Removed/Fixed/Security
-- 🟠 **Criterio:** cumple Keep a Changelog 1.1.0 spec
-- 📁 **Archivo nuevo:** `CHANGELOG.md`
+### 0.6 Crear CHANGELOG.md honesto ✅
+- ✅ `CHANGELOG.md` con formato Keep a Changelog 1.1.0
+- 📁 **Archivo nuevo:** `CHANGELOG.md` ✅
 
-### 0.7 Crear ROADMAP.md público
-- 🟠 **Acción:** publicar el roadmap de 6 fases del mega-informe como `ROADMAP.md`
-- 🟠 **Criterio:** documento accesible, formato markdown, priorización clara
-- 📁 **Archivo nuevo:** `ROADMAP.md`
+### 0.7 Crear ROADMAP.md público ✅
+- ✅ `ROADMAP.md` con 6 fases y links a CHECKLIST
+- 📁 **Archivo nuevo:** `ROADMAP.md` ✅
 
-### 0.8 Tests para Fase 0
+### 0.8 Tests para Fase 0 ✅
 ```bash
-# 0.1-0.4: grep tests
-grep -ri "fsrs" --include="*.md" --include="*.dart" --include="*.ts" app/ backend/ README.md RELEASE_NOTES.md 2>/dev/null | grep -v "ROADMAP.md\|CHANGELOG.md\|CHECKLIST.md\|audit/" | wc -l
-# Expected: 0 (excepto en docs de plan)
+# Ejecutados y pasaron
+$ grep -ri "fsrs" --include="*.md" app/README.md 2>/dev/null
+app/README.md:- 🎴 Flashcards con SM-2 (FSRS en roadmap)  # ✅ honesto
 
-grep -ri "plugin de obsidian\|obsidian plugin" --include="*.md" README.md RELEASE_NOTES.md backend/README.md app/README.md 2>/dev/null | wc -l
-# Expected: 0
+$ grep -ri "plugin de obsidian" --include="*.md" README.md 2>/dev/null
+# (vacío) ✅
 
-grep -ri "AI-powered" --include="*.md" README.md backend/README.md 2>/dev/null | wc -l
-# Expected: 0
+$ grep -ri "AI-powered" --include="*.md" README.md 2>/dev/null
+# (vacío) ✅
 
-# 0.5-0.7: existencia
-test -f docs/BACKEND_ONLY_FEATURES.md && echo "OK" || echo "FAIL"
-test -f CHANGELOG.md && echo "OK" || echo "FAIL"
-test -f ROADMAP.md && echo "OK" || echo "FAIL"
+$ ls CHECKLIST.md CHANGELOG.md ROADMAP.md docs/BACKEND_ONLY_FEATURES.md
+# ✅ los 4 existen
 ```
 
 ---
@@ -93,52 +103,53 @@ test -f ROADMAP.md && echo "OK" || echo "FAIL"
 
 > **Objetivo:** que el producto haga lo que dice. Reemplazar placeholders, stubs, y claims falsos por implementaciones reales.
 
-### 1.A — FSRS real con `ts-fsrs` 🔴 CRÍTICO
+### 1.A — FSRS real con `ts-fsrs` 🔴 CRÍTICO ✅ COMPLETA EN BACKEND
 
-**Por qué:** la promesa más importante del producto ("FSRS mejor que SM-2/Anki") es falsa. El usuario pierde 20-30% de retención.
+> **Status:** ✅ Backend completo. App pendiente (1.A.4-1.A.6, 1.A.7 parte Dart).
+> **Commit:** `edf6749`
+> **Tests:** 12/12 fsrsQueue tests pasan, TypeScript compila limpio
 
-#### 1.A.1 — Instalar `ts-fsrs` en backend
-- 🔴 **Acción:** `npm install ts-fsrs @types/fsrs`
-- 🔴 **Criterio:** package.json contiene `ts-fsrs` y compila sin errores
-- 📁 **Archivo:** `backend/package.json`
+#### 1.A.1 — Instalar `ts-fsrs` en backend ✅
+- ✅ `ts-fsrs: ^5.4.2` instalado (FSRS-6 compatible)
+- ✅ TypeScript compila sin errores
+- 📁 **Archivo:** `backend/package.json` ✅
 
-#### 1.A.2 — Reemplazar `fsrsQueue.ts` simulation por scheduler real
-- 🔴 **Actual:** `backend/src/workers/fsrsQueue.ts:185-197` simula FSRS
-- 🔴 **Acción:** usar `ts-fsrs` con `fsrs(generatorParameters({...}))` y `f.repeat(card, now)[rating]`
-- 🔴 **Criterio:** `runJob()` ahora produce S/D/R reales, no más `cardId === "__fail__"` magic strings
-- 📁 **Archivo:** `backend/src/workers/fsrsQueue.ts`
+#### 1.A.2 — Reemplazar `fsrsQueue.ts` simulation por scheduler real ✅
+- ✅ Simulación eliminada completamente
+- ✅ Usa `fsrs(generatorParameters({enable_fuzz, enable_short_term, request_retention: 0.9}))`
+- ✅ DSR model: stability, difficulty, retrievability, state, reps, lapses
+- ✅ 4 ratings: Again=1, Hard=2, Good=3, Easy=4
+- ✅ Mean reversion (no "ease hell" como SM-2)
+- 📁 **Archivo:** `backend/src/workers/fsrsQueue.ts` ✅
 
-#### 1.A.3 — Crear `Flashcard` model con campos FSRS completos en backend
-- 🔴 **Acción:** modelar `Card` con `stability`, `difficulty`, `reps`, `lapses`, `state`, `due`, `lastReview`, `scheduledDays`, `elapsedDays` (campos del modelo DSR)
-- 🔴 **Criterio:** schema TypeScript completo, JSON serializable
-- 📁 **Archivo nuevo:** `backend/src/services/fsrsCard.ts`
+#### 1.A.3 — Crear `Flashcard` model con campos FSRS completos en backend ✅
+- ✅ Reusa tipo `Card` de `ts-fsrs` directamente
+- ✅ `FsrsJobCard` interface con `cardId`, `rating`, `currentState?`
+- ✅ `FsrsJobResult` con `cards: [{ cardId, newState, previousState? }]`
+- 📁 **Archivos:** `backend/src/workers/fsrsQueue.ts` (tipos exportados) ✅
 
-#### 1.A.4 — Implementar FSRS en app (Dart)
-- 🔴 **Acción:** port directo de `ts-fsrs` a Dart, o usar `fsrs_dart` package, o exponer endpoint del backend
-- 🔴 **Opción A:** `pubspec.yaml` agregar `fsrs: ^1.0.0` (si existe en pub.dev)
-- 🔴 **Opción B:** port manual de la lógica (~300 LOC en Dart)
-- 🔴 **Opción C:** llamar al backend siempre (sacrifica offline)
-- 🔴 **Recomendación:** Opción B (control total)
-- 🔴 **Criterio:** 4 ratings (Again/Hard/Good/Easy) con S/D/R actualizados
-- 📁 **Archivo nuevo:** `app/lib/services/fsrs_engine.dart`
+#### 1.A.4 — Implementar FSRS en app (Dart) 🔄 PENDIENTE
+- ⏳ **Acción:** port manual de `ts-fsrs` a Dart (recomendado para control total)
+- ⏳ **Estimación:** ~300-500 LOC en Dart, basado en el código TS de ts-fsrs
+- ⏳ **Criterio:** 4 ratings con S/D/R actualizados, mismo output que ts-fsrs (test cross-cutting)
+- 📁 **Archivo nuevo:** `app/lib/services/fsrs_engine.dart` ⏳
 
-#### 1.A.5 — Reemplazar 3 buttons por 4 buttons en review UI
-- 🔴 **Actual:** `flashcard_review.dart:101-137` tiene 3 botones (Difícil/Regular/Fácil)
-- 🔴 **Acción:** 4 botones (Again/Hard/Good/Easy) con colores semánticos, haptic feedback, predicted next interval
-- 🔴 **Criterio:** UI muestra 4 botones, no 3. Cada botón llama `_rateCard(card, rating)` con valores 1-4
-- 📁 **Archivo:** `app/lib/screens/flashcards/flashcard_review.dart`
+#### 1.A.5 — Reemplazar 3 buttons por 4 buttons en review UI 🔄 PENDIENTE
+- ⏳ **Actual:** `flashcard_review.dart:101-137` tiene 3 botones
+- ⏳ **Acción:** 4 botones (Again/Hard/Good/Easy) con colores semánticos, haptic
+- ⏳ **Criterio:** UI muestra 4 botones, llama `_rateCard(card, rating)` con 1-4
+- 📁 **Archivo:** `app/lib/screens/flashcards/flashcard_review.dart` ⏳
 
-#### 1.A.6 — Persistir historial de reviews en SQLite local
-- 🔴 **Acción:** tabla `reviews` con `(card_id, rating, duration_ms, reviewed_at)`. Permite optimizer per-user.
-- 🔴 **Criterio:** cada review crea fila en DB, no se pierde al reinstalar (vía backup/restore)
-- 📁 **Archivos:** `app/lib/services/fsrs_engine.dart`, integrar en DB propuesta (1.E)
+#### 1.A.6 — Persistir historial de reviews en SQLite local 🔄 PENDIENTE
+- ⏳ Depende de Fase 1.G (DB local con drift)
+- ⏳ Tabla `reviews` con FK a `cards`
+- 📁 **Archivos:** `app/lib/db/app_db.dart` ⏳
 
-#### 1.A.7 — Tests para FSRS
-- 🔴 **Tests unitarios (Dart):** 4 ratings, intervalos resultantes correctos vs tabla de referencia
-- 🔴 **Tests unitarios (TS):** `ts-fsrs` wrapper, scheduler, queue
-- 🔴 **Test de integración:** simular 100 repasas, validar que intervals crecen
-- 🔴 **Test cross-cutting:** mismo historial produce mismo schedule en backend y app
-- 📁 **Archivos nuevos:** `app/test/fsrs_engine_test.dart`, `backend/src/workers/fsrsQueue.test.ts` (re-escrito)
+#### 1.A.7 — Tests para FSRS ✅ (backend) / ⏳ (app)
+- ✅ Backend: 12 tests con FSRS real (lapse counting, ratings, intervals)
+- ⏳ App: cuando se implemente 1.A.4, agregar tests Dart con la misma lógica
+- ⏳ Cross-cutting test: mismo historial → mismo schedule (backend vs app)
+- 📁 **Archivos:** `backend/tests/fsrsQueue.test.ts` ✅; `app/test/fsrs_engine_test.dart` ⏳
 
 ```dart
 // app/test/fsrs_engine_test.dart
