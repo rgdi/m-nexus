@@ -1,6 +1,12 @@
 // Audit log: registra cada acceso a un endpoint por dispositivo.
-// Almacenado en memoria (en producción: persistir en DB o archivo JSONL).
 // v0.12: privacy-first — solo el propio device puede ver su log, salvo admin.
+// v0.46: persistencia WORM (Write-Once-Read-Many) con hash chain.
+//        Bug auditor #7: antes era in-memory, un atacante podia borrar huellas.
+//        Ahora se append a JSONL con hash SHA-256 de la entry anterior.
+//        verifyChain() detecta cualquier modificacion, insercion o borrado.
+
+import { join } from "node:path";
+import { WormAuditLog, type WormEntry } from "../utils/wormAudit.js";
 
 export type AuditAction =
   | "register"
@@ -39,12 +45,49 @@ export interface AuditEntry {
   timestamp: number;
 }
 
+// v0.46: WORM audit log con hash chain en disco.
+// Path configurable via env, default: /var/log/mnexus/audit.jsonl
+// En dev/tests: usar tmpdir
+function getDefaultAuditPath(): string {
+  if (process.env.AUDIT_LOG_PATH) return process.env.AUDIT_LOG_PATH;
+  if (process.env.NODE_ENV === "production") {
+    return "/var/log/mnexus/audit.jsonl";
+  }
+  // dev/test: archivo temporal
+  const { tmpdir } = require("node:os") as typeof import("node:os");
+  return join(tmpdir(), `mnexus-audit-${process.pid}.jsonl`);
+}
+
+let wormLog: WormAuditLog | null = null;
+function getWormLog(): WormAuditLog {
+  if (!wormLog) {
+    wormLog = new WormAuditLog(getDefaultAuditPath());
+  }
+  return wormLog;
+}
+
+// v0.46: legacy in-memory log (deprecado, kept para backward compat en getAudit*)
 const MAX_ENTRIES = 50_000;
 const RETENTION_DAYS = 30;
-
 const auditLog: AuditEntry[] = [];
 
 export function audit(entry: Omit<AuditEntry, "id" | "timestamp">): void {
+  // 1) Append WORM (persistente, inmutable)
+  try {
+    getWormLog().append({
+      deviceId: entry.deviceId,
+      action: entry.action,
+      allowed: entry.allowed,
+      meta: entry.meta,
+      ip: entry.ip,
+      userAgent: entry.userAgent,
+    });
+  } catch (e) {
+    // Si falla el append a disco, logueamos pero NO crasheamos la app
+    console.error("[AUDIT] WORM append failed:", e);
+  }
+
+  // 2) Legacy in-memory (para queries rapidas via getAudit*)
   auditLog.push({
     ...entry,
     id: `a-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -73,4 +116,27 @@ export function getAuditStats() {
       return acc;
     }, {} as Record<string, number>),
   };
+}
+
+// v0.46: API para verificar la integridad del log WORM
+export function verifyAuditChain(): { ok: boolean; totalEntries: number; brokenAt?: number; reason?: string } {
+  return getWormLog().verifyChain();
+}
+
+export function getWormAuditStats(): { totalEntries: number; firstTs?: number; lastTs?: number; fileSize: number } {
+  return getWormLog().stats();
+}
+
+export function getWormAuditPath(): string {
+  return getDefaultAuditPath();
+}
+
+/** v0.46: helper para tests — reset el singleton */
+export function _resetWormLogForTest(): void {
+  wormLog = null;
+}
+
+/** v0.46: lee las entries WORM (para admin) */
+export function readWormAuditLog(): WormEntry[] {
+  return getWormLog().readAll();
 }
