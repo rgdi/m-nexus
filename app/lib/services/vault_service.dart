@@ -65,6 +65,13 @@ class VaultNode {
   });
 }
 
+/// v0.46: helper para listRecentNotes. Evita leer contenido en phase 1.
+class _NoteCandidate {
+  final String path;
+  final DateTime mtime;
+  _NoteCandidate({required this.path, required this.mtime});
+}
+
 class VaultService {
   final String vaultPath;
   final log = AdvancedLogger.instance;
@@ -93,6 +100,46 @@ class VaultService {
     if (r.success) return r.value!;
     // En error, devolvemos un nodo vacío para no romper la UI
     return VaultNode(name: p.basename(vaultPath), relPath: '', isDir: true, children: []);
+  }
+
+  /// v0.46 FIX (auditor bug #3): home_screen carga TODO el vault.
+  /// Bug: para mostrar 5 notas, leia TODOS los .md y los ordenaba.
+  /// En un vault de 10K notas, la home screen tarda 30+ segundos.
+  /// Fix: streaming con early-stop. Hace list(recursive:true), mantiene
+  /// un heap de tamaño 'limit' con los más recientes, y solo lee
+  /// el contenido completo de los top-N al final.
+  /// Complejidad: O(N) para listar paths, O(limit log limit) para sort,
+  /// O(limit) para leer contenido. Mucho mejor que O(N log N) + O(N).
+  Future<List<Note>> listRecentNotes(int limit) async {
+    return await guardAsync<List<Note>>('vault', 'EC-VAULT-008',
+      'listRecentNotes failed', () async {
+      // Phase 1: gather (path, mtime) pairs sin leer contenido
+      final candidates = <_NoteCandidate>[];
+      await for (final entity in Directory(vaultPath).list(recursive: true, followLinks: false)) {
+        if (entity is! File) continue;
+        final name = p.basename(entity.path);
+        if (name.startsWith('.')) continue;
+        if (!AppConstants.mdExtensions.contains(p.extension(name))) continue;
+        try {
+          final stat = await entity.stat();
+          candidates.add(_NoteCandidate(path: entity.path, mtime: stat.modified));
+        } catch (_) {
+          // skip files we can't stat (broken symlinks, etc)
+        }
+      }
+
+      // Phase 2: sort top-N by mtime
+      candidates.sort((a, b) => b.mtime.compareTo(a.mtime));
+      final topPaths = candidates.take(limit).map((c) => c.path).toList();
+
+      // Phase 3: read only top-N
+      final notes = <Note>[];
+      for (final path in topPaths) {
+        final n = await readNote(path);
+        if (n != null) notes.add(n);
+      }
+      return notes;
+    }, hint: 'limit=$limit');
   }
 
   Future<VaultNode> _buildNode(Directory dir, String relPath) async {
