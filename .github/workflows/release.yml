@@ -1,138 +1,156 @@
-# GitHub Actions: Release
-# Se ejecuta cuando se pushea un tag v*.*.* (ej. v0.28.0).
-# Construye el backend y la app Android M-NEXUS (standalone).
-# Sube los ZIPs/APK a una release de GitHub.
+# GitHub Actions: M-NEXUS Auto Release
+#
+# v0.46.2: Sistema de versionado automático.
+#
+# Trigger: push a main (cualquier cambio).
+# Comportamiento:
+#   1. Lee la versión de app/pubspec.yaml (FUENTE DE VERDAD).
+#   2. Compara con el último tag v*.*.* en el repo.
+#   3. Si la versión cambió (o no hay tag para esa versión):
+#      a) Construye backend (TypeScript → JS)
+#      b) Construye APK release (firmado)
+#      c) Construye APK debug (para diagnostic)
+#      d) Empaqueta installer
+#      e) Crea tag vX.Y.Z si no existe
+#      f) Crea/actualiza GitHub Release con todos los assets
+#   4. Si la versión NO cambió: skip (solo CI corre los tests).
+#
+# Version bump: simplemente edita app/pubspec.yaml y backend/package.json
+#   (mismo número) → push a main → CI hace el resto automáticamente.
+#
+# No se necesita crear tags manualmente ni correr workflows externos.
 
-name: "M-NEXUS Release"
+name: "M-NEXUS Auto Release"
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Forzar release aunque la versión no haya cambiado'
+        required: false
+        default: 'false'
+        type: boolean
 
-# v0.29.6: workaround for fine-grained PAT that doesn't trigger tag-push events.
-# The release workflow now runs on push to main, then figures out the version
-# by reading git tags inside the jobs.
+permissions:
+  contents: write
+
 jobs:
-  # -----------------------------------------------------------------
-  # 0. Determine version from latest tag
-  # -----------------------------------------------------------------
-  set-version:
-    name: Determine release version
+  # =========================================================================
+  # 0. Detectar si hay nueva versión
+  # =========================================================================
+  detect-version:
+    name: Detect version
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.read_tag.outputs.version }}
-      ref_name: ${{ steps.read_tag.outputs.ref_name }}
+      version: ${{ steps.parse.outputs.version }}
+      tag: ${{ steps.parse.outputs.tag }}
+      should_release: ${{ steps.parse.outputs.should_release }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           fetch-tags: true
-      - name: Read version from pubspec.yaml
-        id: read_tag
+
+      - name: Parse version from pubspec.yaml
+        id: parse
         run: |
-          # v0.45.5: read version from pubspec.yaml (the source of truth).
-          # The release workflow creates a NEW release for whatever version
-          # is in app/pubspec.yaml, regardless of existing tags.
-          # This way every push to main auto-publishes a release.
           set -e
-          if [ ! -f "app/pubspec.yaml" ]; then
-            echo "app/pubspec.yaml not found, falling back to git tag"
-            if [[ "${GITHUB_REF_TYPE:-}" == "tag" ]]; then
-              VERSION="${GITHUB_REF_NAME#v}"
-              REF_NAME="${GITHUB_REF_NAME}"
-            else
-              LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.28.0")
-              VERSION="${LATEST_TAG#v}"
-              REF_NAME="${LATEST_TAG}"
-            fi
-          else
-            # Extract the version field from app/pubspec.yaml
-            # Format: version: 0.45.4+51
-            PUBSPEC_VERSION=$(grep "^version:" app/pubspec.yaml | head -1 | awk '{print $2}' | sed 's/+.*//')
-            if [[ -z "$PUBSPEC_VERSION" ]]; then
-              echo "::error::Could not parse version from app/pubspec.yaml"
-              exit 1
-            fi
-            # Read backend version too for consistency check
-            BACKEND_VERSION=$(grep '"version"' backend/package.json | head -1 | awk -F'"' '{print $4}')
-            echo "Frontend version: ${PUBSPEC_VERSION}"
-            echo "Backend version:  ${BACKEND_VERSION}"
-            # Use the pubspec version (frontend is the one users see)
-            VERSION="${PUBSPEC_VERSION}"
-            REF_NAME="v${VERSION}"
-            # Sanity check: backend should match
-            if [[ -n "$BACKEND_VERSION" && "$BACKEND_VERSION" != "$VERSION" ]]; then
-              echo "::warning::Backend version (${BACKEND_VERSION}) does not match frontend (${VERSION}). Continuing with frontend version."
-            fi
+          # Lee la versión del pubspec.yaml (formato: version: 0.46.1+57)
+          VERSION=$(grep "^version:" app/pubspec.yaml | head -1 | awk '{print $2}' | sed 's/+.*//')
+          if [[ -z "$VERSION" ]]; then
+            echo "::error::No se pudo parsear la versión de app/pubspec.yaml"
+            exit 1
           fi
+          TAG="v${VERSION}"
+
+          # Verifica que backend/package.json tenga la misma versión (consistencia)
+          BACKEND_VERSION=$(grep '"version"' backend/package.json | head -1 | awk -F'"' '{print $4}')
+          if [[ -n "$BACKEND_VERSION" && "$BACKEND_VERSION" != "$VERSION" ]]; then
+            echo "::warning::backend (${BACKEND_VERSION}) != frontend (${VERSION})"
+            echo "::warning::Usando versión del frontend"
+          fi
+
+          # Compara con el último tag
+          LATEST_TAG=$(git tag --list 'v*' --sort=-v:refname | head -1 || echo "")
+          if [[ "$LATEST_TAG" == "$TAG" && "${{ inputs.force }}" != "true" ]]; then
+            SHOULD_RELEASE="false"
+            echo "Version ${VERSION} ya publicada como ${LATEST_TAG} — skip"
+          else
+            SHOULD_RELEASE="true"
+            echo "Nueva versión: ${TAG} (último tag: ${LATEST_TAG:-ninguno})"
+          fi
+
           {
             echo "version=${VERSION}"
-            echo "ref_name=${REF_NAME}"
+            echo "tag=${TAG}"
+            echo "should_release=${SHOULD_RELEASE}"
           } >> "$GITHUB_OUTPUT"
-          echo "Detected version: v${VERSION} (tag: ${REF_NAME})"
 
-  # -----------------------------------------------------------------
-  # 1. Plugin de Obsidian -> ZIP con 4 archivos
-  # -----------------------------------------------------------------
+  # =========================================================================
+  # 1. Build backend (ZIP con dist/ + package.json)
+  # =========================================================================
   build-backend:
-    name: Build Backend
+    name: Build backend ZIP
     runs-on: ubuntu-latest
-    needs: set-version
+    needs: detect-version
+    if: needs.detect-version.outputs.should_release == 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: cd backend && npm install --no-audit --no-fund
-      - name: Compile TypeScript
-        run: cd backend && npx tsc
-      - name: Package ZIP
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-backend-${{ hashFiles('backend/package-lock.json') }}
+          restore-keys: ${{ runner.os }}-npm-backend-
+      - run: cd backend && npm ci --no-audit --no-fund
+      - run: cd backend && npx tsc
+      - name: Create backend ZIP
         run: |
-          mkdir -p $GITHUB_WORKSPACE/artifacts
+          set -e
+          TAG="${{ needs.detect-version.outputs.tag }}"
+          mkdir -p artifacts
           cd backend
           mkdir -p deploy
-          cp -r dist/ package.json deploy/
-          # v0.45.8: solo el zip con versión. El quicklink m-nexus-backend.zip
-          # se crea en el flatten step del create-release job.
-          (cd deploy && zip -r $GITHUB_WORKSPACE/artifacts/m-nexus-backend-${{ needs.set-version.outputs.ref_name }}.zip .)
+          cp -r dist package.json deploy/
+          cd deploy
+          zip -r "$GITHUB_WORKSPACE/artifacts/m-nexus-backend-${TAG}.zip" .
+          # Quicklink "latest" para URLs cortas
+          cp "$GITHUB_WORKSPACE/artifacts/m-nexus-backend-${TAG}.zip" "$GITHUB_WORKSPACE/artifacts/m-nexus-backend.zip"
       - uses: actions/upload-artifact@v4
         with:
           name: backend
           path: artifacts/m-nexus-backend-*.zip
           if-no-files-found: error
 
-  # -----------------------------------------------------------------
-  # 3. Companion App Android -> APK
-  # -----------------------------------------------------------------
-
-  build-app:
-    name: Build App
+  # =========================================================================
+  # 2. Build APKs (release + debug) en paralelo
+  # =========================================================================
+  build-apk:
+    name: Build APKs (release + debug)
     runs-on: ubuntu-latest
-    needs: set-version
+    needs: detect-version
+    if: needs.detect-version.outputs.should_release == 'true'
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
+
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.24.0'
           channel: 'stable'
-      # v0.46: workaround for "APK build pipeline broken since v0.44.2" (auditor #5 urgent).
-      # Root cause: stale gradle cache in CI runner corrupts build state.
-      # Fix: flutter clean + .gradle clean BEFORE pub get.
-      - name: Clean Flutter + Gradle caches
-        run: |
-          echo "=== Cleaning stale build artifacts ==="
-          cd app
-          flutter clean 2>&1 | tee /tmp/clean.log
-          rm -rf ~/.gradle/caches/ 2>/dev/null || true
-          rm -rf .dart_tool/ 2>/dev/null || true
-          rm -rf build/ 2>/dev/null || true
-          echo "=== Clean done ==="
-      # v0.46: cache pub packages for speed (NOT gradle, that's what was breaking).
+
+      # Cache solo pub (NO gradle — el auditor bug #5 fue por cache corrupto de gradle)
       - name: Cache pub packages
         uses: actions/cache@v4
         with:
@@ -142,239 +160,177 @@ jobs:
           key: ${{ runner.os }}-pub-${{ hashFiles('app/pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-pub-
-      - name: Validate pubspec before build
+
+      # v0.46: limpia TODO antes de build (auditor bug #5 fix)
+      - name: Clean stale build artifacts
         run: |
-          # Fail fast si pubspec tiene problemas
+          echo "=== Cleaning ==="
           cd app
-          if ! flutter pub get --offline 2>/dev/null && ! flutter pub get; then
-            echo "::error::flutter pub get failed"
-            exit 1
-          fi
-      - run: cd app && flutter analyze --no-fatal-infos --no-fatal-warnings
-      - run: cd app && flutter test --no-pub --reporter=expanded || echo "::warning::Tests failed but continuing (build APK anyway)"
-      - name: Copy custom android files
-        run: |
-          # backup all custom android files
-          cp app/android/build.gradle /tmp/build.gradle 2>/dev/null || true
-          cp app/android/settings.gradle /tmp/settings.gradle 2>/dev/null || true
-          cp app/android/gradle.properties /tmp/gradle.properties 2>/dev/null || true
-          cp app/android/app/build.gradle.kts /tmp/app-build.gradle.kts 2>/dev/null || true
-          cp app/android/app/build.gradle /tmp/app-build.gradle 2>/dev/null || true
-          cp app/android/app/src/main/AndroidManifest.xml /tmp/AndroidManifest.xml
-          cp -r app/android/app/src/main/kotlin /tmp/main-kotlin 2>/dev/null || true
-          cp -r app/android/app/src/main/res/mipmap-anydpi-v26 /tmp/mipmap-anydpi-v26 2>/dev/null || true
-          cp -r app/android/app/src/main/res/mipmap-mdpi /tmp/mipmap-mdpi 2>/dev/null || true
-          cp -r app/android/app/src/main/res/mipmap-hdpi /tmp/mipmap-hdpi 2>/dev/null || true
-          cp -r app/android/app/src/main/res/mipmap-xhdpi /tmp/mipmap-xhdpi 2>/dev/null || true
-          cp -r app/android/app/src/main/res/mipmap-xxhdpi /tmp/mipmap-xxhdpi 2>/dev/null || true
-          cp -r app/android/app/src/main/res/mipmap-xxxhdpi /tmp/mipmap-xxxhdpi 2>/dev/null || true
-          cp -r app/android/app/src/main/res/drawable /tmp/drawable 2>/dev/null || true
-          cp app/android/app/src/main/res/values/colors.xml /tmp/colors.xml 2>/dev/null || true
-          cp app/android/app/src/main/res/xml/file_paths.xml /tmp/file_paths.xml 2>/dev/null || true
-          # v0.32: backup release signing config so the APK is signed with the
-          # same keystore on every build (so devices recognize updates).
-          cp app/android/key.properties /tmp/key.properties 2>/dev/null || true
-          cp -r app/android/keystores /tmp/keystores 2>/dev/null || true
-      - name: Regenerate Android platform files
-        run: cd app && flutter create --platforms=android --no-overwrite --project-name mnexus_app .
-      - name: Restore custom android files
-        run: |
-          # restore the build configs
-          cp /tmp/build.gradle app/android/build.gradle 2>/dev/null || true
-          cp /tmp/settings.gradle app/android/settings.gradle 2>/dev/null || true
-          cp /tmp/gradle.properties app/android/gradle.properties 2>/dev/null || true
-          # restore the app build config (kts preferred)
-          if [ -f /tmp/app-build.gradle.kts ]; then
-            cp /tmp/app-build.gradle.kts app/android/app/build.gradle.kts
-          elif [ -f /tmp/app-build.gradle ]; then
-            cp /tmp/app-build.gradle app/android/app/build.gradle
-          fi
-          # v0.32: restore release signing config
-          if [ -f /tmp/key.properties ]; then cp /tmp/key.properties app/android/key.properties; fi
-          if [ -d /tmp/keystores ]; then cp -r /tmp/keystores app/android/; fi
-          # restore MainActivity.kt + AndroidManifest.xml (v0.30+ have 3 platform channels)
-          cp /tmp/AndroidManifest.xml app/android/app/src/main/AndroidManifest.xml
-          if [ -d /tmp/main-kotlin ]; then
-            mkdir -p app/android/app/src/main/kotlin
-            cp -r /tmp/main-kotlin/. app/android/app/src/main/kotlin/ 2>/dev/null || true
-          fi
-          # restore the launcher icons
-          if [ -d /tmp/mipmap-anydpi-v26 ]; then cp -r /tmp/mipmap-anydpi-v26 app/android/app/src/main/res/; fi
-          if [ -d /tmp/mipmap-mdpi ]; then cp -r /tmp/mipmap-mdpi app/android/app/src/main/res/; fi
-          if [ -d /tmp/mipmap-hdpi ]; then cp -r /tmp/mipmap-hdpi app/android/app/src/main/res/; fi
-          if [ -d /tmp/mipmap-xhdpi ]; then cp -r /tmp/mipmap-xhdpi app/android/app/src/main/res/; fi
-          if [ -d /tmp/mipmap-xxhdpi ]; then cp -r /tmp/mipmap-xxhdpi app/android/app/src/main/res/; fi
-          if [ -d /tmp/mipmap-xxxhdpi ]; then cp -r /tmp/mipmap-xxxhdpi app/android/app/src/main/res/; fi
-          if [ -d /tmp/drawable ]; then cp -r /tmp/drawable app/android/app/src/main/res/; fi
-          if [ -f /tmp/colors.xml ]; then cp /tmp/colors.xml app/android/app/src/main/res/values/colors.xml; fi
-          if [ -f /tmp/file_paths.xml ]; then cp /tmp/file_paths.xml app/android/app/src/main/res/xml/file_paths.xml; fi
-          if [ -f /tmp/key.properties ]; then cp /tmp/key.properties app/android/key.properties; fi
-          if [ -d /tmp/keystores ]; then cp -r /tmp/keystores app/android/; fi
-      - name: Patch plugin build.gradle for AGP 8.3 compat
-        run: bash app/android/fix-plugins.sh
-      - name: Build APKs (release + debug)
+          flutter clean
+          rm -rf ~/.gradle/caches/ 2>/dev/null || true
+          rm -rf .dart_tool/ 2>/dev/null || true
+          rm -rf build/ 2>/dev/null || true
+          rm -rf android/.gradle 2>/dev/null || true
+          rm -rf android/app/build 2>/dev/null || true
+          echo "=== Clean done ==="
+
+      - name: Install dependencies
+        run: cd app && flutter pub get
+
+      # Sincroniza versionName/versionCode del pubspec al android/app/build.gradle
+      # (así el APK muestra el número correcto en Ajustes → Aplicaciones)
+      - name: Sync version to Android
         run: |
           set -e
-          echo "=== ENV ==="
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          echo "JAVA_HOME=$JAVA_HOME"
-          java -version 2>&1
+          VERSION=$(grep "^version:" app/pubspec.yaml | head -1 | awk '{print $2}')
+          VERSION_NAME=$(echo "$VERSION" | sed 's/+.*//')
+          VERSION_CODE=$(echo "$VERSION" | sed 's/.*+//')
+          echo "Setting versionName=${VERSION_NAME} versionCode=${VERSION_CODE}"
+          sed -i "s/versionCode = .*/versionCode = ${VERSION_CODE}/" app/android/app/build.gradle
+          sed -i "s/versionName = .*/versionName = \"${VERSION_NAME}\"/" app/android/app/build.gradle
+          # Genera l10n
+          cd app && flutter gen-l10n || echo "l10n skipped (no ARB changes)"
+
+      # Genera locales (necesario para MaterialLocalizations)
+      - name: Generate localization
+        run: cd app && flutter gen-l10n
+
+      - name: Analyze (fail fast)
+        run: cd app && flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Run tests (warn-only)
+        run: cd app && flutter test --no-pub --reporter=expanded || echo "::warning::Tests failed but continuing (build APK anyway)"
+
+      # Build ambos APKs. Si uno falla, igual queremos el otro.
+      - name: Build release APK
+        id: build_release
+        run: |
+          set +e
           cd app
-          # v0.46: gradle --no-daemon para evitar issues del daemon en CI runners
-          # (solución al bug del auditor #5: APK pipeline broken)
-          echo "=== Building RELEASE APK ==="
           flutter build apk --release --no-tree-shake-icons 2>&1 | tee /tmp/build-release.log
-          echo "=== Building DEBUG APK ==="
-          flutter build apk --debug --no-tree-shake-icons 2>&1 | tee /tmp/build-debug.log
-          echo "=== Results ==="
-          ls -la build/app/outputs/flutter-apk/ 2>/dev/null || true
-          if [ ! -f build/app/outputs/flutter-apk/app-release.apk ] && [ ! -f build/app/outputs/flutter-apk/app-debug.apk ]; then
-            echo "=== ERROR: Neither release nor debug APK was produced ==="
-            echo "=== Last 100 lines of release build log ==="
-            tail -100 /tmp/build-release.log
-            echo "=== Last 100 lines of debug build log ==="
-            tail -100 /tmp/build-debug.log
-            exit 1
+          STATUS=$?
+          if [ $STATUS -eq 0 ] && [ -f build/app/outputs/flutter-apk/app-release.apk ]; then
+            echo "status=ok" >> "$GITHUB_OUTPUT"
+            echo "::notice::Release APK built successfully"
+          else
+            echo "status=failed" >> "$GITHUB_OUTPUT"
+            echo "::warning::Release APK build failed (continuing with debug only)"
+            tail -30 /tmp/build-release.log
           fi
-      - name: Copy APK
+          exit 0
+
+      - name: Build debug APK
+        id: build_debug
+        run: |
+          set +e
+          cd app
+          flutter build apk --debug --no-tree-shake-icons 2>&1 | tee /tmp/build-debug.log
+          STATUS=$?
+          if [ $STATUS -eq 0 ] && [ -f build/app/outputs/flutter-apk/app-debug.apk ]; then
+            echo "status=ok" >> "$GITHUB_OUTPUT"
+            echo "::notice::Debug APK built successfully"
+          else
+            echo "status=failed" >> "$GITHUB_OUTPUT"
+            echo "::warning::Debug APK build failed"
+            tail -30 /tmp/build-debug.log
+          fi
+          exit 0
+
+      - name: Copy APKs to artifacts
         run: |
           set -e
-          mkdir -p $GITHUB_WORKSPACE/artifacts
-          # v0.45.8: minimal artifacts - 3 APKs total (2 con versión, 1 quicklink).
-          # - m-nexus-app-vX.Y.Z-release.apk (principal, firmado con release keystore)
-          # - m-nexus-app-vX.Y.Z-debug.apk (mismo certificado, sirve para update desde debug)
-          # - m-nexus-app.apk (quicklink al release para URLs cortas tipo
-          #   https://github.com/.../releases/latest/download/m-nexus-app.apk)
+          TAG="${{ needs.detect-version.outputs.tag }}"
+          mkdir -p artifacts
+
           RELEASE_APK="app/build/app/outputs/flutter-apk/app-release.apk"
           DEBUG_APK="app/build/app/outputs/flutter-apk/app-debug.apk"
-          REF="${{ needs.set-version.outputs.ref_name }}"
+
           if [ -f "$RELEASE_APK" ]; then
-            cp "$RELEASE_APK" "$GITHUB_WORKSPACE/artifacts/m-nexus-app-${REF}-release.apk"
-            cp "$RELEASE_APK" "$GITHUB_WORKSPACE/artifacts/m-nexus-app.apk"
+            cp "$RELEASE_APK" "artifacts/m-nexus-app-${TAG}-release.apk"
+            cp "$RELEASE_APK" "artifacts/m-nexus-app.apk"
             echo "Release APK: $(du -h $RELEASE_APK | cut -f1)"
           fi
+
           if [ -f "$DEBUG_APK" ]; then
-            cp "$DEBUG_APK" "$GITHUB_WORKSPACE/artifacts/m-nexus-app-${REF}-debug.apk"
+            cp "$DEBUG_APK" "artifacts/m-nexus-app-${TAG}-debug.apk"
             echo "Debug APK: $(du -h $DEBUG_APK | cut -f1)"
           fi
+
           if [ ! -f "$RELEASE_APK" ] && [ ! -f "$DEBUG_APK" ]; then
-            echo "::error::No APK found"
-            find . -name "*.apk" 2>/dev/null || true
+            echo "::error::Neither release nor debug APK was produced"
             exit 1
           fi
-          echo "APKs copied:"
-          ls -la $GITHUB_WORKSPACE/artifacts/
+
+          echo "=== Artifacts ==="
+          ls -la artifacts/
+
       - uses: actions/upload-artifact@v4
         with:
           name: app
           path: artifacts/m-nexus-app-*.apk
           if-no-files-found: error
 
-
-  upload-installer:
-    name: Upload Installer Script
+  # =========================================================================
+  # 3. Empaquetar installer
+  # =========================================================================
+  build-installer:
+    name: Package installer
     runs-on: ubuntu-latest
-    needs: set-version
+    needs: detect-version
+    if: needs.detect-version.outputs.should_release == 'true'
     steps:
       - uses: actions/checkout@v4
-      - name: Copy installer to artifacts
+      - name: Copy installer
         run: |
-          mkdir -p $GITHUB_WORKSPACE/artifacts
-          # v0.45.8: solo el archivo con versión. El quicklink m-nexus-install.sh
-          # se crea en el flatten step del create-release job.
-          cp install/install.sh $GITHUB_WORKSPACE/artifacts/m-nexus-install-${{ needs.set-version.outputs.ref_name }}.sh
+          set -e
+          TAG="${{ needs.detect-version.outputs.tag }}"
+          mkdir -p artifacts
+          cp install/install.sh "artifacts/m-nexus-install-${TAG}.sh"
+          cp install/install.sh "artifacts/m-nexus-install.sh"
+          chmod +x artifacts/m-nexus-install-*.sh
       - uses: actions/upload-artifact@v4
         with:
           name: installer
           path: artifacts/m-nexus-install-*.sh
           if-no-files-found: error
 
+  # =========================================================================
+  # 4. Create / update GitHub Release
+  # =========================================================================
   create-release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
-    needs: [build-backend, build-app, upload-installer]
-    permissions:
-      contents: write
+    needs: [detect-version, build-backend, build-apk, build-installer]
+    if: needs.detect-version.outputs.should_release == 'true'
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           fetch-tags: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
-      - name: Flatten artifact directories + create quicklinks
+
+      - name: Flatten artifact dirs
         run: |
-          # v0.45.10: flatten subdirs to artifacts/ root, then create the
-          # m-nexus-app.apk quicklink (so /releases/latest/download/m-nexus-app.apk
-          # always works as a short URL to the release APK).
+          # Mueve todo a artifacts/ root (upload-artifact crea subdirs por nombre)
           for sub in app backend installer; do
             if [ -d "artifacts/$sub" ]; then
               mv "artifacts/$sub"/* artifacts/ 2>/dev/null || true
               rm -rf "artifacts/$sub"
             fi
           done
-          # Quicklink for the release APK
-          if [ -f "artifacts/m-nexus-app-v"*"-release.apk" ]; then
-            cp artifacts/m-nexus-app-*-release.apk artifacts/m-nexus-app.apk
-          elif [ -f "artifacts/m-nexus-app-v"*".apk" ]; then
-            cp artifacts/m-nexus-app-v*.apk artifacts/m-nexus-app.apk
-          fi
-          echo "Final artifacts list:"
+          echo "=== Final artifacts ==="
           ls -la artifacts/
-      - name: Push new tag
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -e
-          # v0.45.7: read version from pubspec.yaml directly (avoids cross-job
-          # outputs timing issues). set-version already verified and printed it.
-          if [ -f "app/pubspec.yaml" ]; then
-            TAG_VERSION=$(grep "^version:" app/pubspec.yaml | head -1 | awk '{print $2}' | sed 's/+.*//')
-            TAG="v${TAG_VERSION}"
-          else
-            # Fallback: try needs output
-            TAG="${{ needs.set-version.outputs.ref_name }}"
-          fi
-          if [ -z "$TAG" ]; then
-            echo "::error::Could not determine TAG version"
-            exit 1
-          fi
-          echo "Using TAG: ${TAG}"
-          git config user.email "actions@github.com"
-          git config user.name "GitHub Actions"
-          git tag -f "$TAG" HEAD
-          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" -f "$TAG" || {
-            echo "::warning::Failed to push tag, trying create"
-            git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$TAG"
-          }
-          echo "TAG=${TAG}" >> $GITHUB_ENV
-      - name: Delete existing release if present (so we can re-upload assets)
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ env.TAG }}
-        run: |
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "Deleting existing release $TAG"
-            gh release delete "$TAG" --yes || true
-          fi
-          # Also delete remote tag so the next step re-pushes it (avoid stale ref)
-          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" :refs/tags/"$TAG" 2>/dev/null || true
-      - name: Re-create tag pointing to current commit (force)
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ env.TAG }}
-        run: |
-          git config user.email "actions@github.com"
-          git config user.name "GitHub Actions"
-          git tag -f "$TAG" HEAD
-          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" -f "$TAG"
-      - name: Create Release
+
+      - name: Create / update release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ env.TAG }}
-          name: ${{ env.TAG }}
+          tag_name: ${{ needs.detect-version.outputs.tag }}
+          name: ${{ needs.detect-version.outputs.tag }}
           generate_release_notes: true
           fail_on_unmatched_files: false
           files: |
@@ -386,3 +342,10 @@ jobs:
             artifacts/m-nexus-app.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        run: |
+          echo "### 🎉 Release ${{ needs.detect-version.outputs.tag }} publicada" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Assets:**" >> $GITHUB_STEP_SUMMARY
+          ls -la artifacts/ >> $GITHUB_STEP_SUMMARY
