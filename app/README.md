@@ -3,7 +3,7 @@
 App Flutter 3.24 + Dart 3.5 (Android + Web) que:
 - 📂 Lee vaults de notas (markdown) desde almacenamiento local
 - 🔍 Búsqueda full-text en notas
-- 🎴 Flashcards con FSRS spaced repetition
+- 🎴 Flashcards con SM-2 (FSRS real en roadmap)
 - 🎙️ Voice notes (foreground service)
 - 📅 Detecta eventos de Calendar (Google Calendar via ContentProvider)
 - ⚙️ Configuración (Settings) persistente con SharedPreferences
@@ -34,7 +34,7 @@ App Flutter 3.24 + Dart 3.5 (Android + Web) que:
 | `CAL` | Calendar | Errores del calendario de Android |
 | `PLAT` | Platform | Platform channels |
 | `VAULT` | Vault | Operaciones de vault |
-| `CARD` | Flashcard | FSRS, save, load |
+| `CARD` | Flashcard | SM-2 (FSRS en roadmap), save, load |
 | `NOTE` | Note | Vista, edición, guardado |
 | `UP` | Update | Auto-update, APK install |
 | `UI` | UI | Render de widgets |
