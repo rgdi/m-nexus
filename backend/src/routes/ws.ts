@@ -2,6 +2,8 @@
 // v0.12: requiere JWT en query (?token=...) o como header Sec-WebSocket-Protocol.
 // v0.13: soporta permessage-deflate (negociado por @fastify/websocket).
 //        Métricas: conexiones, bytes recibidos, compresión ahorrada.
+// v0.46: rate limit por connection (messages/bytes por ventana) + max concurrent
+//        por deviceId. Cierra con code 1008 si se supera. Fix bug auditor #6.
 
 import { FastifyInstance } from "fastify";
 import { WhisperService } from "../services/whisper.js";
@@ -12,6 +14,13 @@ import { getMetrics } from "../utils/metrics.js";
 import { E } from "../utils/errorCodes.js";
 import { safeCallAsync, safeCallOrNull } from "../utils/safeCall.js";
 import { logOp, logError } from "../utils/log.js";
+import {
+  createRateLimitTracker,
+  checkRateLimit,
+  getWSRateLimitConfig,
+  ConcurrentConnectionTracker,
+  type RateLimitState,
+} from "../utils/wsRateLimit.js";
 
 interface ClientMessage {
   type: "start" | "audio" | "end";
@@ -23,6 +32,8 @@ interface ClientMessage {
 
 export async function wsRoutes(app: FastifyInstance): Promise<void> {
   const whisper = new WhisperService();
+  const rateConfig = getWSRateLimitConfig();
+  const concurrentTracker = new ConcurrentConnectionTracker();
 
   app.get("/api/v1/audio/transcribe/stream", { websocket: true }, async (socket, req) => {
     const url = new URL(req.url, `http://${req.headers.host ?? "localhost"}`);
@@ -51,8 +62,26 @@ export async function wsRoutes(app: FastifyInstance): Promise<void> {
       return;
     }
     deviceId = authR.value;
+
+    // v0.46: Check concurrent connection limit per device (DoS protection)
+    if (!concurrentTracker.canConnect(deviceId, rateConfig.maxConcurrentPerDevice)) {
+      audit({ deviceId, action: "ws.error", allowed: false, meta: { reason: "concurrent_limit", max: rateConfig.maxConcurrentPerDevice } });
+      getMetrics().incCounter("mnexus_ws_concurrent_rejected_total", { device: deviceId });
+      socket.send(JSON.stringify({
+        type: "error",
+        code: "EC-WS-003",
+        message: `Too many concurrent connections (max ${rateConfig.maxConcurrentPerDevice})`,
+      }));
+      socket.close(1008, "concurrent_limit");
+      return;
+    }
+    concurrentTracker.increment(deviceId);
+
     audit({ deviceId, action: "ws.connect", allowed: true });
     getMetrics().incCounter("mnexus_ws_connections_total", { device: deviceId });
+
+    // v0.46: rate limit tracker per-connection
+    const rateState: RateLimitState = createRateLimitTracker();
 
     // Detectar soporte de permessage-deflate (extension header)
     const extensions = req.headers["sec-websocket-extensions"] as string | undefined;
@@ -64,6 +93,22 @@ export async function wsRoutes(app: FastifyInstance): Promise<void> {
 
     socket.on("message", async (raw: Buffer) => {
       uncompressedBytes += raw.length;
+
+      // v0.46: rate limit check on every message
+      const verdict = checkRateLimit(rateState, raw.length, rateConfig);
+      if (!verdict.allowed) {
+        getMetrics().incCounter("mnexus_ws_rate_limited_total", { device: deviceId, reason: verdict.reason });
+        audit({ deviceId, action: "ws.rate_limited", allowed: false, meta: verdict });
+        socket.send(JSON.stringify({
+          type: "error",
+          code: verdict.reason === "messages" ? "EC-WS-004" : "EC-WS-005",
+          message: `Rate limit exceeded: ${verdict.reason} (${verdict.used}/${verdict.limit})`,
+          resetMs: verdict.resetMs,
+        }));
+        socket.close(1008, `rate_limit_${verdict.reason}`);
+        return;
+      }
+
       let msg: ClientMessage;
       try {
         msg = JSON.parse(raw.toString()) as ClientMessage;
@@ -108,6 +153,7 @@ export async function wsRoutes(app: FastifyInstance): Promise<void> {
     });
 
     socket.on("close", () => {
+      concurrentTracker.decrement(deviceId);
       audit({ deviceId, action: "ws.disconnect", allowed: true });
       // Estimación de ahorro: si el cliente envió permessage-deflate,
       // el ahorro típico en JSON es 60-80% para texto repetitivo.
