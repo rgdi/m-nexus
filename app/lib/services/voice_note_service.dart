@@ -12,7 +12,9 @@
 // Esta clase es mockeable via VoiceNoteServiceInterface para tests.
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
+import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -249,18 +251,64 @@ class VoiceNoteService implements VoiceNoteServiceInterface {
             context: { 'path': audioPath },
           );
         }
-        // Build multipart request manually (no http package here para mantener simple)
-        // En producción, usar package:http o dio con MultipartRequest
+        // Real multipart upload via package:http.MultipartRequest.
+        // Backend endpoint: POST /api/v1/audio/transcribe
+        //   - Field 'audio': the audio file (WAV/MP3/M4A/OGG)
+        //   - Field 'language': BCP-47 (es, en, pt)
+        //   - Field 'deviceId': optional, for rate limiting
+        // Response: { text, language, durationSec, segments: [{startMs, endMs, text}], model }
         final uri = Uri.parse('$backendUrl/api/v1/audio/transcribe');
-        final request = await _buildMultipartRequest(uri, file, language, authToken, deviceId);
-        final httpClient = await _createHttpClient();
-        final streamedResponse = await httpClient.send(request);
-        final response = await httpClient.send(request);  // bug, enviar una vez
-        // NOTA: implementar con package:http en producción
-        throw AppError.net(
-          code: 'EC-VOICE-012',
-          message: 'transcribeRemote not yet implemented in client; use backend API directly',
-          context: { 'hint': 'See backend /api/v1/audio/transcribe endpoint' },
+        final request = http.MultipartRequest('POST', uri)
+          ..files.add(await http.MultipartFile.fromPath('audio', audioPath))
+          ..fields['language'] = language;
+        if (authToken != null) request.headers['Authorization'] = 'Bearer $authToken';
+        if (deviceId != null) request.fields['deviceId'] = deviceId;
+
+        final streamed = await request.send().timeout(const Duration(seconds: 60));
+        final response = await http.Response.fromStream(streamed);
+
+        if (response.statusCode == 401 || response.statusCode == 403) {
+          throw AppError.auth(
+            code: 'EC-VOICE-013',
+            message: 'Authentication failed for transcribe',
+            context: { 'statusCode': response.statusCode, 'body': response.body },
+            hint: 'Check authToken is valid and not expired',
+          );
+        }
+        if (response.statusCode == 429) {
+          throw AppError.net(
+            code: 'EC-VOICE-014',
+            message: 'Rate limit exceeded for transcribe',
+            context: { 'statusCode': response.statusCode, 'body': response.body },
+            hint: 'Wait and retry; reduce request frequency',
+          );
+        }
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+          throw AppError.net(
+            code: 'EC-VOICE-015',
+            message: 'Transcribe failed: HTTP ${response.statusCode}',
+            context: { 'statusCode': response.statusCode, 'body': response.body },
+            hint: 'Check backend logs; verify audio format is supported',
+          );
+        }
+
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        final segments = (body['segments'] as List?)?.map((s) {
+          final m = s as Map<String, dynamic>;
+          return TranscriptionSegment(
+            startMs: (m['startMs'] as num?)?.toInt() ?? 0,
+            endMs: (m['endMs'] as num?)?.toInt() ?? 0,
+            text: (m['text'] as String?) ?? '',
+          );
+        }).toList() ?? <TranscriptionSegment>[];
+
+        return TranscriptionResult(
+          text: (body['text'] as String?) ?? '',
+          language: (body['language'] as String?) ?? language,
+          durationSec: (body['durationSec'] as num?)?.toDouble() ?? 0.0,
+          segments: segments,
+          usedBackend: true,
+          transcribedAt: DateTime.now(),
         );
       },
     );
@@ -271,10 +319,6 @@ class VoiceNoteService implements VoiceNoteServiceInterface {
     _emitState(VoiceNoteState.done);
     return r.value!;
   }
-
-  // Stubs privados (reemplazar con package:http en integración real)
-  Future<dynamic> _createHttpClient() async => null;
-  Future<dynamic> _buildMultipartRequest(Uri uri, File file, String language, String? authToken, String? deviceId) async => null;
 
   void dispose() {
     _stateController.close();

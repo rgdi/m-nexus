@@ -5,12 +5,13 @@
 //   - Filtros: categoria, idioma, ordenar por
 //   - Buscador
 //   - Boton install con download progress
-//   - Tap → detail screen
+//   - Tap → DeckDetailScreen (v0.46.1 fix)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../services/marketplace_client.dart';
 import '../../models/marketplace_deck.dart';
+import 'deck_detail_screen.dart';
 
 class MarketplaceScreen extends StatefulWidget {
   final String backendUrl;
@@ -200,6 +201,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                         deck: decks[index],
                         theme: theme,
                         onInstall: () => _installDeck(decks[index]),
+                        client: _client,
                       );
                     },
                   ),
@@ -243,7 +245,13 @@ class _DeckTile extends StatelessWidget {
   final MarketplaceDeck deck;
   final ThemeData theme;
   final VoidCallback onInstall;
-  const _DeckTile({required this.deck, required this.theme, required this.onInstall});
+  final MarketplaceClient client;
+  const _DeckTile({
+    required this.deck,
+    required this.theme,
+    required this.onInstall,
+    required this.client,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -294,7 +302,15 @@ class _DeckTile extends StatelessWidget {
           onPressed: onInstall,
         ),
         onTap: () {
-          // Show detail screen
+          // Open detail screen (v0.46.1 fix — antes era callback vacío)
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => DeckDetailScreen(
+                deck: deck,
+                client: client,
+              ),
+            ),
+          );
         },
       ),
     );
