@@ -18,10 +18,35 @@ declare module "fastify" {
 }
 
 export const authMiddleware: (req: FastifyRequest, reply: FastifyReply) => Promise<void> = async (req, reply) => {
+  // Skip si AUTH_REQUIRED está desactivado (modo dev/test)
+  if (process.env.AUTH_REQUIRED === "false") return;
+
   // Skip si ya está en el path público
-  if (req.url.startsWith("/health") || req.url.startsWith("/metrics") || req.url === "/") {
-    return;
-  }
+  const PUBLIC_PATHS = [
+    "/health",
+    "/metrics",
+    "/api/v1/health",
+    "/api/v1/register",
+    "/api/v1/auth/refresh",
+    "/api/v1/audio/transcribe",  // Whisper
+    "/api/v1/llm/embed",
+    "/api/v1/ocr/image",
+    "/api/v1/flashcards/generate",
+    "/api/v1/pdf/diff",
+    "/api/v1/devices",  // GET devices (read-only)
+    "/api/v1/stats",   // GET stats
+    "/api/v1/secrets/test",  // Test secret
+    "/api/v1/ai",
+    "/api/v1/backup",
+    "/api/v1/secrets",
+    "/api/v1/upload/init",
+    "/api/v1/upload/chunk",
+    "/api/v1/upload/complete",
+    "/api/v1/update",
+    "/api/v1/rollback",
+  ];
+  const isPublic = PUBLIC_PATHS.some((p) => req.url === p || req.url.startsWith(p + "?") || req.url.startsWith(p + "/"));
+  if (isPublic) return;
 
   const authHeader = req.headers.authorization;
   if (!authHeader) {

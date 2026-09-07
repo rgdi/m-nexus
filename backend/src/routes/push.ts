@@ -35,7 +35,7 @@ interface BroadcastBody {
 
 export async function pushRoutes(app: FastifyInstance): Promise<void> {
   // POST /push/register
-  app.post("/push/register", async (req, reply) => {
+  app.post("/api/v1/push/register", async (req, reply) => {
     const body = (req.body ?? {}) as RegisterTokenBody;
     const r = await safeCallAsync({
       component: "push",
@@ -72,7 +72,7 @@ export async function pushRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // DELETE /push/token/:deviceId
-  app.delete<{ Params: { deviceId: string } }>("/push/token/:deviceId", async (req, reply) => {
+  app.delete<{ Params: { deviceId: string } }>("/api/v1/push/token/:deviceId", async (req, reply) => {
     const { deviceId } = req.params;
     const r = await safeCallAsync({
       component: "push",
@@ -97,7 +97,7 @@ export async function pushRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // POST /push/send
-  app.post("/push/send", async (req, reply) => {
+  app.post("/api/v1/push/send", async (req, reply) => {
     const body = (req.body ?? {}) as SendPushBody;
     const r = await safeCallAsync({
       component: "push",
@@ -126,7 +126,7 @@ export async function pushRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // POST /push/broadcast
-  app.post("/push/broadcast", async (req, reply) => {
+  app.post("/api/v1/push/broadcast", async (req, reply) => {
     const body = (req.body ?? {}) as BroadcastBody;
     const r = await safeCallAsync({
       component: "push",
@@ -150,7 +150,7 @@ export async function pushRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // GET /push/tokens (admin)
-  app.get("/push/tokens", async (req, reply) => {
+  app.get("/api/v1/push/tokens", async (req, reply) => {
     const r = await safeCallAsync({
       component: "push",
       code: "EC-PUSH-020",
@@ -162,7 +162,7 @@ export async function pushRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // GET /push/stats
-  app.get("/push/stats", async (req, reply) => {
+  app.get("/api/v1/push/stats", async (req, reply) => {
     const r = await safeCallAsync({
       component: "push",
       code: "EC-PUSH-021",

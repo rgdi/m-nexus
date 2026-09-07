@@ -182,7 +182,7 @@ export async function backupRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // ─── GET /api/v1/backup/download/:id ─────────────────────────────────
-  app.get<{ Params: { id: string } }>("/api/v1/backup/download/:id", async (req, reply) => {
+  app.get<{ Params: { id: string } }>("/download/:id", async (req, reply) => {
     const deviceId = deviceFromReq(req);
     const id = req.params.id;
     if (!safeBackupId(id)) {
@@ -252,7 +252,7 @@ export async function backupRoutes(app: FastifyInstance): Promise<void> {
   // ─── GET /api/v1/backup/dump ─────────────────────────────────────────
   // v0.28: drag-and-drop friendly — devuelve la DB SQLite de índice
   // para que el usuario pueda hacer backup/copiar el archivo entero.
-  app.get("/api/v1/backup/dump", async (req, reply) => {
+  app.get("/dump", async (req, reply) => {
     if (!existsSync(config.backupIndexPath)) {
       reply.code(404).send({ code: "NO_INDEX", message: "Índice aún no creado" });
       return;

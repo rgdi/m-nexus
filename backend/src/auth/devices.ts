@@ -31,10 +31,10 @@ export function registerDevice(
     message: "registerDevice failed",
     context: { deviceId, hasName: !!info.deviceName, platform: info.platform },
     op: () => {
-      if (!deviceId || deviceId.length < 8) {
+      if (!deviceId || deviceId.length < 3) {
         throw E.val("EC-AUTH-013", "Invalid deviceId", {
           context: { deviceIdLen: deviceId?.length ?? 0 },
-          hint: "deviceId must be a UUID (36 chars) or similar identifier",
+          hint: "deviceId must be at least 3 characters",
         });
       }
       const existing = registeredDevices.get(deviceId);

@@ -120,7 +120,7 @@ export async function rollbackRoutes(app: FastifyInstance): Promise<void> {
   );
 
   // GET /api/v1/rollback/list
-  app.get("/api/v1/rollback/list", async (_req, reply) => {
+  app.get("/list", async (_req, reply) => {
     const items = readRegistry();
     return reply.send({ backups: items, count: items.length });
   });
