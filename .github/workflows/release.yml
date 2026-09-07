@@ -276,13 +276,19 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
-      - name: Flatten artifact directories + create quicklinks
+      - name: Flatten artifact directories
         run: |
-          # v0.45.8: move artifacts/*.zip, *.apk, *.sh to artifacts/ root
-          # (they already are, this is just defensive cleanup)
+          # v0.45.9: GitHub download-artifact downloads each artifact to its
+          # own subdirectory (artifacts/app/, artifacts/backend/, artifacts/installer/).
+          # We need to flatten those to artifacts/ root.
+          for sub in app backend installer; do
+            if [ -d "artifacts/$sub" ]; then
+              mv "artifacts/$sub"/* artifacts/ 2>/dev/null || true
+              rm -rf "artifacts/$sub"
+            fi
+          done
+          echo "Final artifacts list:"
           ls -la artifacts/
-          echo "Final artifacts list (should be exactly 5 files):"
-          ls artifacts/ | sort
       - name: Push new tag
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
