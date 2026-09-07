@@ -150,7 +150,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       op: async () => {
         const events = getAuditForDevice(deviceId);
         logOp("auth", "audit fetched", true, { deviceId, count: events.length });
-        return { deviceId, events };
+        return { deviceId, entries: events };
       },
     });
     if (!r.success || !r.value) throw r.error!;

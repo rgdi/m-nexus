@@ -33,7 +33,7 @@ function getOrCreateGraph(userId: string): KnowledgeGraph {
 export async function aiRoutes(app: FastifyInstance): Promise<void> {
   // ── Vault evaluation ────────────────────────────────
   app.post<{ Body: { snapshots?: NoteSnapshotInput[] } }>(
-    "/api/v1/ai/vault/eval",
+    "/vault/eval",
     async (req) => {
       const { snapshots } = req.body;
       const r = await safeCallAsync({
@@ -60,7 +60,7 @@ export async function aiRoutes(app: FastifyInstance): Promise<void> {
 
   // ── Proposals ────────────────────────────────────────
   app.post<{ Body: GenerateProposalsInput }>(
-    "/api/v1/ai/proposals/generate",
+    "/proposals/generate",
     async (req) => {
       const r = await safeCallAsync({
         component: "prop",
@@ -80,7 +80,7 @@ export async function aiRoutes(app: FastifyInstance): Promise<void> {
 
   // ── Knowledge graph: state operations ────────────────
   app.get<{ Params: { userId: string } }>(
-    "/api/v1/ai/knowledge/:userId",
+    "/knowledge/:userId",
     async (req) => {
       const g = getOrCreateGraph(req.params.userId);
       return {
@@ -101,7 +101,7 @@ export async function aiRoutes(app: FastifyInstance): Promise<void> {
     Params: { userId: string };
     Body: { id: string; term: string; aliases?: string[]; category?: string; tags?: string[] };
   }>(
-    "/api/v1/ai/knowledge/:userId/concept",
+    "/knowledge/:userId/concept",
     async (req) => {
       const g = getOrCreateGraph(req.params.userId);
       const { id, term, ...rest } = req.body;
@@ -115,7 +115,7 @@ export async function aiRoutes(app: FastifyInstance): Promise<void> {
     Params: { userId: string };
     Body: { conceptId: string; layer: KnowledgeLayer; correct: boolean; confidence?: number };
   }>(
-    "/api/v1/ai/knowledge/:userId/mastery",
+    "/knowledge/:userId/mastery",
     async (req) => {
       const g = getOrCreateGraph(req.params.userId);
       const { conceptId, layer, correct, confidence } = req.body;
@@ -125,7 +125,7 @@ export async function aiRoutes(app: FastifyInstance): Promise<void> {
   );
 
   app.get<{ Params: { userId: string }; Querystring: { limit?: string } }>(
-    "/api/v1/ai/knowledge/:userId/gaps",
+    "/knowledge/:userId/gaps",
     async (req) => {
       const g = getOrCreateGraph(req.params.userId);
       const limit = parseInt(req.query.limit ?? "20", 10);
@@ -135,7 +135,7 @@ export async function aiRoutes(app: FastifyInstance): Promise<void> {
 
   // ── Quiz sessions ───────────────────────────────────
   app.post<{ Params: { userId: string }; Body: { config?: Partial<QuizSession["config"]> } }>(
-    "/api/v1/ai/quiz/:userId/session",
+    "/quiz/:userId/session",
     async (req) => {
       const session = newSession(req.body.config ?? {});
       userSessions.set(req.params.userId, session);
@@ -144,7 +144,7 @@ export async function aiRoutes(app: FastifyInstance): Promise<void> {
   );
 
   app.get<{ Params: { userId: string } }>(
-    "/api/v1/ai/quiz/:userId/next",
+    "/quiz/:userId/next",
     async (req) => {
       const g = getOrCreateGraph(req.params.userId);
       const session = userSessions.get(req.params.userId);
@@ -158,7 +158,7 @@ export async function aiRoutes(app: FastifyInstance): Promise<void> {
     Params: { userId: string };
     Body: { answer: string; confidence?: number; timeMs?: number };
   }>(
-    "/api/v1/ai/quiz/:userId/answer",
+    "/quiz/:userId/answer",
     async (req) => {
       const g = getOrCreateGraph(req.params.userId);
       const session = userSessions.get(req.params.userId);
@@ -169,7 +169,7 @@ export async function aiRoutes(app: FastifyInstance): Promise<void> {
   );
 
   app.get<{ Params: { userId: string } }>(
-    "/api/v1/ai/quiz/:userId/result",
+    "/quiz/:userId/result",
     async (req) => {
       const session = userSessions.get(req.params.userId);
       if (!session) return { error: "no active session" };
@@ -181,7 +181,7 @@ export async function aiRoutes(app: FastifyInstance): Promise<void> {
   app.post<{
     Body: { source: { path: string; content: string }; candidates: Array<{ path: string; content: string }>; minSimilarity?: number };
   }>(
-    "/api/v1/ai/cross-relevance/analyze",
+    "/cross-relevance/analyze",
     async (req) => {
       const { source, candidates, minSimilarity = 0.3 } = req.body;
       const tokenize = (s: string) =>
@@ -216,7 +216,7 @@ export async function aiRoutes(app: FastifyInstance): Promise<void> {
       rating: 1 | 2 | 3 | 4;
     };
   }>(
-    "/api/v1/ai/fsrs/review",
+    "/fsrs/review",
     async (req) => {
       const W = [0.4072, 1.1829, 3.1262, 15.4722, 7.2102, 0.5316, 1.0651, 0.0589, 1.5330, 0.1192, 1.0006, 1.9395, 0.1100, 0.2939, 2.0078, 0.2315, 2.9466];
       const { card, rating } = req.body;

@@ -30,6 +30,7 @@ import { dashboardRoutes } from "./routes/dashboard.js";
 import { pushRoutes } from "./routes/push.js";
 import { aiRoutes } from "./routes/ai.js";
 import { backupRoutes } from "./routes/backup.js";
+import { updateRoutes } from "./routes/update.js";
 import { rollbackRoutes } from "./routes/rollback.js";
 import { structuredRoutes } from "./routes/structured.js";
 import { secretsRoutes } from "./routes/secrets.js";
@@ -37,6 +38,7 @@ import { secretsRoutes } from "./routes/secrets.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+export async function buildApp(): Promise<FastifyInstance> { return buildServer(); }
 export async function buildServer(): Promise<FastifyInstance> {
   const app = Fastify({
     logger: logger as any,
@@ -48,6 +50,8 @@ export async function buildServer(): Promise<FastifyInstance> {
   // ── Plugins ──────────────────────────────────────
   await app.register(cors, { origin: true, credentials: true });
   await app.register(compression);
+  await app.addContentTypeParser("application/zip", { parseAs: "buffer" }, (_req, body, done) => done(null, body));
+  await app.addContentTypeParser("application/octet-stream", { parseAs: "buffer" }, (_req, body, done) => done(null, body));
   await app.register(rateLimit, { 
     max: 300, 
     timeWindow: "1 minute",
@@ -234,20 +238,21 @@ export async function buildServer(): Promise<FastifyInstance> {
   // ── Routes ──────────────────────────────────────
   await app.register(healthRoutes);
   await app.register(metricsRoutes);
-  await app.register(audioRoutes, { prefix: "/api/v1/audio" });
-  await app.register(llmRoutes, { prefix: "/api/v1/llm" });
-  await app.register(ocrRoutes, { prefix: "/api/v1/ocr" });
-  await app.register(flashcardsRoutes, { prefix: "/api/v1/flashcards" });
-  await app.register(pdfRoutes, { prefix: "/api/v1/pdf" });
-  await app.register(wsRoutes, { prefix: "/ws" });
-  await app.register(authRoutes, { prefix: "/api/v1/auth" });
-  await app.register(dashboardRoutes, { prefix: "/api/v1/dashboard" });
-  await app.register(pushRoutes, { prefix: "/api/v1/push" });
+  await app.register(audioRoutes);
+  await app.register(llmRoutes);
+  await app.register(ocrRoutes);
+  await app.register(flashcardsRoutes);
+  await app.register(pdfRoutes);
+  await app.register(wsRoutes);
+  await app.register(authRoutes);
+  await app.register(dashboardRoutes);
+  await app.register(pushRoutes);
   await app.register(aiRoutes, { prefix: "/api/v1/ai" });
-  await app.register(backupRoutes, { prefix: "/api/v1/backup" });
-  await app.register(rollbackRoutes, { prefix: "/api/v1/rollback" });
-  await app.register(structuredRoutes, { prefix: "/api/v1/structured" });
-  await app.register(secretsRoutes, { prefix: "/api/v1/secrets" });
+  await app.register(backupRoutes);
+  await app.register(rollbackRoutes);
+  await app.register(updateRoutes);
+  await app.register(structuredRoutes);
+  await app.register(secretsRoutes);
 
   logLifecycle("server", "routes registered", {
     routes: [

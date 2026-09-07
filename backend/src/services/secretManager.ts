@@ -234,6 +234,7 @@ export class SecretManager {
       code: "EC-SEC-012",
       message: "get failed",
       context: { name, by: opts.requestedBy ?? "unknown" },
+      throwOnError: true,
       op: () => {
         const rec = this.store.get(name);
         if (!rec) {
