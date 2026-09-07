@@ -34,6 +34,7 @@ import { updateRoutes } from "./routes/update.js";
 import { rollbackRoutes } from "./routes/rollback.js";
 import { structuredRoutes } from "./routes/structured.js";
 import { secretsRoutes } from "./routes/secrets.js";
+import { searchRoutes } from "./routes/search.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -253,12 +254,13 @@ export async function buildServer(): Promise<FastifyInstance> {
   await app.register(updateRoutes);
   await app.register(structuredRoutes);
   await app.register(secretsRoutes);
+  await app.register(searchRoutes);
 
   logLifecycle("server", "routes registered", {
     routes: [
       "health", "metrics", "audio", "llm", "ocr", "flashcards", "pdf",
       "ws", "auth", "dashboard", "push", "ai", "backup", "rollback",
-      "structured", "secrets",
+      "structured", "secrets", "search",
     ].length,
   });
 
