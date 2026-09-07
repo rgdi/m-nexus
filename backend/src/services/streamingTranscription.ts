@@ -1,9 +1,11 @@
 // v0.22: Transcripción en tiempo real (streaming).
 // Recibe chunks de audio (WebSocket o SSE) y devuelve transcripción incremental.
+// v0.46: WhisperLocalStreaming usa WhisperService real (no más placeholder text: "").
 
 import { E } from "../utils/errorCodes.js";
 import { safeCallAsync, safeCallOrNull } from "../utils/safeCall.js";
-import { logOp, logError } from "../utils/log.js";
+import { logOp, logError, logger } from "../utils/log.js";
+import { WhisperService } from "./whisper.js";
 import type { IncomingMessage, ServerResponse } from "http";
 
 export interface StreamChunk {
@@ -72,14 +74,40 @@ export class WhisperLocalStreaming implements StreamingTranscriber {
 
   private async transcribeBuffer(): Promise<StreamResult | null> {
     if (this.buffer.length === 0) return null;
-    // En implementación real, llamaríamos a whisper.cpp o similar.
-    // Por ahora devolvemos un placeholder que el frontend puede mostrar.
-    return {
-      text: "",
-      isFinal: false,
-      startMs: 0,
-      endMs: 0,
-    };
+    // v0.46: usar WhisperService real para transcribir el buffer acumulado
+    // (no más placeholder text: "")
+    const audio = Buffer.concat(this.buffer);
+    const whisper = new WhisperService();
+    try {
+      const result = await whisper.transcribe(audio, {
+        mimeType: "audio/wav",
+        model: "base",
+        language: "es",
+      });
+      // Calcular timestamps aproximados (no tenemos alignment por chunk,
+      // así que estimamos basado en duración del buffer)
+      const totalMs = (this.buffer.reduce((s, b) => s + b.length, 0) / (this.sampleRate * 2)) * 1000;
+      return {
+        text: result.text,
+        isFinal: true, // en este modo procesamos el chunk acumulado completo
+        confidence: 0.85, // Whisper no retorna confidence por segmento
+        startMs: 0,
+        endMs: Math.floor(totalMs),
+      };
+    } catch (err) {
+      logger.warn({
+        component: "aud",
+        err: err instanceof Error ? err.message : String(err),
+      }, "Whisper streaming failed, returning empty segment");
+      // Si whisper falla (binary not found, timeout), devolver vacío
+      // en vez de crashear el stream
+      return {
+        text: "",
+        isFinal: false,
+        startMs: 0,
+        endMs: 0,
+      };
+    }
   }
 }
 
