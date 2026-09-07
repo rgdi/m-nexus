@@ -36,6 +36,16 @@ export class OCRService {
   }
 
   async recognize(image: Buffer, opts: { language?: string } = {}): Promise<OCRResult> {
+    // MOCK_TESSERACT=1: devuelve un resultado simulado sin llamar al binario
+    if (process.env.MOCK_TESSERACT === "1") {
+      return {
+        text: `[MOCK OCR] Recognized ${image.length} bytes (lang: ${opts.language ?? "spa"})`,
+        confidence: 0.85,
+        blocks: [
+          { text: "Mock block 1", bbox: { x: 0, y: 0, w: 100, h: 20 }, confidence: 0.9 },
+        ],
+      };
+    }
     const r = await safeCallAsync<OCRResult>({
       component: "ocr",
       code: "EC-OCR-011",

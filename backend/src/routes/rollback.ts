@@ -60,7 +60,7 @@ function writeRegistry(items: BackupInfo[]): void {
 export async function rollbackRoutes(app: FastifyInstance): Promise<void> {
   // POST /api/v1/rollback/create
   app.post<{ Body: { version?: string; description?: string; trigger?: string } }>(
-    "/api/v1/rollback/create",
+    "/create",
     async (req, reply) => {
       const r = await safeCallAsync({
         component: "bk",
@@ -127,7 +127,7 @@ export async function rollbackRoutes(app: FastifyInstance): Promise<void> {
 
   // POST /api/v1/rollback/restore
   app.post<{ Body: { id?: string; confirm?: boolean } }>(
-    "/api/v1/rollback/restore",
+    "/restore",
     async (req, reply) => {
       const r = await safeCallAsync({
         component: "bk",
@@ -193,7 +193,7 @@ export async function rollbackRoutes(app: FastifyInstance): Promise<void> {
   );
 
   // GET /api/v1/rollback/strategy
-  app.get("/api/v1/rollback/strategy", async (_req, reply) => {
+  app.get("/strategy", async (_req, reply) => {
     return reply.send({
       strategy: "pre_update_backup",
       maxBackups: MAX_BACKUPS,

@@ -19,7 +19,7 @@ describe("Rollback", () => {
     // put a sentinel file
     writeFileSync(join(tmpDir, "data", "sentinel.txt"), "v1");
     app = Fastify();
-    await app.register(rollbackRoutes);
+    await app.register(rollbackRoutes, { prefix: "/api/v1/rollback" });
   });
 
   it("GET /strategy returns info", async () => {
@@ -74,7 +74,8 @@ describe("Rollback", () => {
       payload: { id }, // confirm:false
     });
     expect(r.statusCode).toBe(400);
-    expect(r.json().code).toBe("CONFIRM_REQUIRED");
+    // v0.45: code is now EC-BK-014 instead of legacy "CONFIRM_REQUIRED"
+    expect(r.json().code).toBe("EC-BK-014");
   });
 
   it("restore of non-existent id returns 404", async () => {

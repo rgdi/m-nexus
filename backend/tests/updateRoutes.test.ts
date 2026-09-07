@@ -86,7 +86,8 @@ describe("Update routes", () => {
     // v0.0.1 < current VERSION, so no update
     expect(res.statusCode).toBe(400);
     const body = res.json();
-    expect(body.error).toBe("no_update_available");
+    // v0.45: error message now uses spaces (human-readable)
+    expect(body.error).toBe("no update available");
     await app.close();
   });
 });

@@ -1,4 +1,4 @@
-# GitHub Actions: CI — Tests
+# GitHub Actions: CI - Tests
 # Se ejecuta en cada push y PR. Si falla, no se puede mergear.
 name: CI
 
@@ -12,24 +12,40 @@ jobs:
   test-backend:
     name: Test Backend
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: cd backend && npm install --no-audit --no-fund
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-backend-${{ hashFiles('backend/package-lock.json') }}
+          restore-keys: ${{ runner.os }}-npm-backend-
+      - run: cd backend && npm ci --no-audit --no-fund
       - run: cd backend && npx tsc --noEmit
       - run: cd backend && npm test
 
   test-app:
     name: Test App
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.24.0'
           channel: 'stable'
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            app/.dart_tool
+          key: ${{ runner.os }}-flutter-app-${{ hashFiles('app/pubspec.lock') }}
+          restore-keys: ${{ runner.os }}-flutter-app-
       - run: cd app && flutter pub get
-      - run: cd app && flutter analyze --no-fatal-infos --no-fatal-warnings || true
-      - run: cd app && flutter test
+      - name: Analyze
+        run: cd app && flutter analyze --no-fatal-infos --no-fatal-warnings
+      - name: Test
+        run: cd app && flutter test --no-pub --reporter=expanded

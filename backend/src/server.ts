@@ -248,7 +248,7 @@ export async function buildServer(): Promise<FastifyInstance> {
   await app.register(dashboardRoutes);
   await app.register(pushRoutes);
   await app.register(aiRoutes, { prefix: "/api/v1/ai" });
-  await app.register(backupRoutes);
+  await app.register(backupRoutes, { prefix: "/api/v1/backup" });
   await app.register(rollbackRoutes);
   await app.register(updateRoutes);
   await app.register(structuredRoutes);
