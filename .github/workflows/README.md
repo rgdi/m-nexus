@@ -58,8 +58,18 @@
 
 **Solution**: Create and push the tag in a step BEFORE the release action.
 
+### 9. APK pipeline broken: gradle cache + daemon (v0.46.0 fix)
+
+**Problem**: El release pipeline v0.45.x generaba APKs corruptos o no los generaba. El gradle daemon dejaba procesos zombie entre runs y el cache de gradle se corrompía.
+
+**Solution** (commit `7e3ecde`):
+- Añadir `flutter clean` antes del build
+- Cachear **pub** (no gradle): `actions/cache@v4` con key `pub-${{ hashFiles('**/pubspec.lock') }}`
+- `org.gradle.daemon=false` y `org.gradle.parallel=false` en `gradle.properties`
+- Validar con `--fail-fast` que el APK se haya generado antes de upload
+
 ## Workflow files
 
 - `ci.yml` - Tests (plugin, backend, companion) on every push
-- `release.yml` - Full release pipeline on push to main
+- `release.yml` - Full release pipeline on push to main (reparado v0.46.0)
 - `update-version.yml` - Auto-update version files (manual trigger)
