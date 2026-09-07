@@ -313,23 +313,27 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
-          # v0.45.6: use the version from set-version (which reads pubspec.yaml)
-          # This creates a NEW release for every push to main.
-          TAG="${{ needs.set-version.outputs.ref_name }}"
-          echo "Using TAG from set-version: ${TAG}"
-          if ! git rev-parse "$TAG" >/dev/null 2>&1; then
-            echo "Tag $TAG not found locally, creating and pushing"
-            git config user.email "actions@github.com"
-            git config user.name "GitHub Actions"
-            git tag "$TAG" HEAD
-            git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$TAG"
+          # v0.45.7: read version from pubspec.yaml directly (avoids cross-job
+          # outputs timing issues). set-version already verified and printed it.
+          if [ -f "app/pubspec.yaml" ]; then
+            TAG_VERSION=$(grep "^version:" app/pubspec.yaml | head -1 | awk '{print $2}' | sed 's/+.*//')
+            TAG="v${TAG_VERSION}"
           else
-            # Force move the tag to current commit (keeps the release version-locked)
-            git config user.email "actions@github.com"
-            git config user.name "GitHub Actions"
-            git tag -f "$TAG" HEAD
-            git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" -f "$TAG"
+            # Fallback: try needs output
+            TAG="${{ needs.set-version.outputs.ref_name }}"
           fi
+          if [ -z "$TAG" ]; then
+            echo "::error::Could not determine TAG version"
+            exit 1
+          fi
+          echo "Using TAG: ${TAG}"
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          git tag -f "$TAG" HEAD
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" -f "$TAG" || {
+            echo "::warning::Failed to push tag, trying create"
+            git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$TAG"
+          }
           echo "TAG=${TAG}" >> $GITHUB_ENV
       - name: Delete existing release if present (so we can re-upload assets)
         env:
