@@ -93,6 +93,8 @@ jobs:
           cd backend
           mkdir -p deploy
           cp -r dist/ package.json deploy/
+          # v0.45.8: solo el zip con versión. El quicklink m-nexus-backend.zip
+          # se crea en el flatten step del create-release job.
           (cd deploy && zip -r $GITHUB_WORKSPACE/artifacts/m-nexus-backend-${{ needs.set-version.outputs.ref_name }}.zip .)
       - uses: actions/upload-artifact@v4
         with:
@@ -210,39 +212,29 @@ jobs:
         run: |
           set -e
           mkdir -p $GITHUB_WORKSPACE/artifacts
-          # v0.45.4: copy BOTH release and debug APKs (both signed with the
-          # same release keystore since v0.45.4, so users can install either
-          # as an UPDATE over the other).
+          # v0.45.8: minimal artifacts - 3 APKs total (2 con versión, 1 quicklink).
+          # - m-nexus-app-vX.Y.Z-release.apk (principal, firmado con release keystore)
+          # - m-nexus-app-vX.Y.Z-debug.apk (mismo certificado, sirve para update desde debug)
+          # - m-nexus-app.apk (quicklink al release para URLs cortas tipo
+          #   https://github.com/.../releases/latest/download/m-nexus-app.apk)
           RELEASE_APK="app/build/app/outputs/flutter-apk/app-release.apk"
           DEBUG_APK="app/build/app/outputs/flutter-apk/app-debug.apk"
+          REF="${{ needs.set-version.outputs.ref_name }}"
           if [ -f "$RELEASE_APK" ]; then
-            cp "$RELEASE_APK" $GITHUB_WORKSPACE/artifacts/m-nexus-app-${{ needs.set-version.outputs.ref_name }}-release.apk
-            cp "$RELEASE_APK" $GITHUB_WORKSPACE/artifacts/m-nexus-app-release.apk
+            cp "$RELEASE_APK" "$GITHUB_WORKSPACE/artifacts/m-nexus-app-${REF}-release.apk"
+            cp "$RELEASE_APK" "$GITHUB_WORKSPACE/artifacts/m-nexus-app.apk"
             echo "Release APK: $(du -h $RELEASE_APK | cut -f1)"
-          else
-            echo "::warning::Release APK not found"
           fi
           if [ -f "$DEBUG_APK" ]; then
-            cp "$DEBUG_APK" $GITHUB_WORKSPACE/artifacts/m-nexus-app-${{ needs.set-version.outputs.ref_name }}-debug.apk
-            cp "$DEBUG_APK" $GITHUB_WORKSPACE/artifacts/m-nexus-app-debug.apk
+            cp "$DEBUG_APK" "$GITHUB_WORKSPACE/artifacts/m-nexus-app-${REF}-debug.apk"
             echo "Debug APK: $(du -h $DEBUG_APK | cut -f1)"
-          else
-            echo "::warning::Debug APK not found"
           fi
-          # Also copy release as the "default" (m-nexus-app.apk) for quicklinks
-          if [ -f "$RELEASE_APK" ]; then
-            cp "$RELEASE_APK" $GITHUB_WORKSPACE/artifacts/m-nexus-app-${{ needs.set-version.outputs.ref_name }}.apk
-            cp "$RELEASE_APK" $GITHUB_WORKSPACE/artifacts/m-nexus-app.apk
-          elif [ -f "$DEBUG_APK" ]; then
-            cp "$DEBUG_APK" $GITHUB_WORKSPACE/artifacts/m-nexus-app-${{ needs.set-version.outputs.ref_name }}.apk
-            cp "$DEBUG_APK" $GITHUB_WORKSPACE/artifacts/m-nexus-app.apk
-            echo "::warning::Using DEBUG APK as default (release build failed)"
-          else
+          if [ ! -f "$RELEASE_APK" ] && [ ! -f "$DEBUG_APK" ]; then
             echo "::error::No APK found"
             find . -name "*.apk" 2>/dev/null || true
             exit 1
           fi
-          echo "All APKs copied:"
+          echo "APKs copied:"
           ls -la $GITHUB_WORKSPACE/artifacts/
       - uses: actions/upload-artifact@v4
         with:
@@ -260,8 +252,9 @@ jobs:
       - name: Copy installer to artifacts
         run: |
           mkdir -p $GITHUB_WORKSPACE/artifacts
+          # v0.45.8: solo el archivo con versión. El quicklink m-nexus-install.sh
+          # se crea en el flatten step del create-release job.
           cp install/install.sh $GITHUB_WORKSPACE/artifacts/m-nexus-install-${{ needs.set-version.outputs.ref_name }}.sh
-          cp install/install.sh $GITHUB_WORKSPACE/artifacts/m-nexus-install.sh
       - uses: actions/upload-artifact@v4
         with:
           name: installer
@@ -285,29 +278,11 @@ jobs:
           path: artifacts
       - name: Flatten artifact directories + create quicklinks
         run: |
-          if [ -d artifacts/backend ]; then
-            mv artifacts/backend/*.zip artifacts/ 2>/dev/null || true
-            rm -rf artifacts/backend
-          fi
-          if [ -d artifacts/app ]; then
-            mv artifacts/app/*.apk artifacts/ 2>/dev/null || true
-            rm -rf artifacts/app
-          fi
-          if [ -d artifacts/installer ]; then
-            mv artifacts/installer/*.sh artifacts/ 2>/dev/null || true
-            rm -rf artifacts/installer
-          fi
-          # v0.31.0: also create quicklinks (no version) for each artifact
-          for f in artifacts/m-nexus-backend-*.zip; do
-            [ -f "$f" ] && cp "$f" "artifacts/m-nexus-backend.zip"
-          done
-          for f in artifacts/m-nexus-install-*.sh; do
-            [ -f "$f" ] && cp "$f" "artifacts/m-nexus-install.sh"
-          done
-          for f in artifacts/m-nexus-app-*.apk; do
-            [ -f "$f" ] && cp "$f" "artifacts/m-nexus-app.apk"
-          done
+          # v0.45.8: move artifacts/*.zip, *.apk, *.sh to artifacts/ root
+          # (they already are, this is just defensive cleanup)
           ls -la artifacts/
+          echo "Final artifacts list (should be exactly 5 files):"
+          ls artifacts/ | sort
       - name: Push new tag
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
