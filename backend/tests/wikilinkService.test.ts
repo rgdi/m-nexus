@@ -93,7 +93,7 @@ describe("WikilinkService graph", () => {
   it("finds backlinks", () => {
     service.indexNote("anatomia/diafragma.md", "El [[nervio frénico]] es importante");
     service.indexNote("anatomia/inspiracion.md", "Durante la [[fase inspiratoria]] el [[nervio frénico]] se activa");
-    const backlinks = service.getBacklinks("nervio frénico");
+    const backlinks = service.getBacklinks("nervio frénico.md");
     expect(backlinks).toContain("anatomia/diafragma.md");
     expect(backlinks).toContain("anatomia/inspiracion.md");
     expect(backlinks).toHaveLength(2);
@@ -119,9 +119,9 @@ describe("WikilinkService graph", () => {
   it("removes a note and cleans incoming", () => {
     service.indexNote("a.md", "[[B]]");
     service.indexNote("b.md", "Contenido");
-    expect(service.getBacklinks("b")).toContain("a.md");
+    expect(service.getBacklinks("b.md")).toContain("a.md");
     service.removeNote("a.md");
-    expect(service.getBacklinks("b")).toHaveLength(0);
+    expect(service.getBacklinks("b.md")).toHaveLength(0);
   });
 
   it("autocomplete finds notes by prefix", () => {
@@ -143,19 +143,20 @@ describe("WikilinkService graph", () => {
   it("stats: counts notes, links, orphans", () => {
     service.indexNote("a.md", "[[B]]");
     service.indexNote("b.md", "[[C]]");
-    service.indexNote("c.md", "standalone content");
+    service.indexNote("c.md", "[[D]]");
+    service.indexNote("d.md", "standalone content");
     service.indexNote("orphan.md", "no links in or out");
     const stats = service.stats();
-    expect(stats.totalNotes).toBe(4);
-    expect(stats.totalLinks).toBe(2);
-    // c.md y orphan.md son orphans (sin links in ni out)
-    expect(stats.orphans).toBe(2);
+    expect(stats.totalNotes).toBe(5);
+    expect(stats.totalLinks).toBe(3);
+    // orphan.md es el único orphan (sin links in ni out)
+    expect(stats.orphans).toBe(1);
   });
 
   it("re-indexing updates links", () => {
     service.indexNote("a.md", "[[B]]");
-    expect(service.getBacklinks("b")).toContain("a.md");
+    expect(service.getBacklinks("b.md")).toContain("a.md");
     service.indexNote("a.md", "no links anymore");
-    expect(service.getBacklinks("b")).toHaveLength(0);
+    expect(service.getBacklinks("b.md")).toHaveLength(0);
   });
 });
