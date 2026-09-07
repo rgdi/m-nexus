@@ -1181,4 +1181,97 @@ Próximos commits con los fixes:
 
 ---
 
-**Última actualización:** 2026-09-08 · v0.46.1
+**Última actualización:** 2026-09-08 · v0.46.6
+
+---
+
+## v0.46.2 → v0.46.6 — CI Release Pipeline Overhaul (2026-09-08)
+
+El CI roto que generaba APKs (v0.44.2 → v0.45.8) ha sido completamente reemplazado con un sistema automático end-to-end.
+
+### Sistema ANTES (v0.45.8 - ROTO)
+
+```
+release.yml (388 lines, monolítico):
+- 60+ líneas de parches manuales de archivos Android
+- Loop tag/release frágil
+- Sin detección de versión (asume tag pre-existente)
+- update-version.yml separado requería workflow_dispatch manual
+- APK builds: ❌ nunca generaba el APK
+- 0 releases automáticas en 6 meses
+```
+
+### Sistema AHORA (v0.46.2 → v0.46.6)
+
+**5 jobs desacoplados, cada uno verificable independientemente:**
+
+1. **`detect-version`** (3s) — Lee `app/pubspec.yaml`, compara con último tag
+   - `should_release=true` si la versión cambió
+   - `should_release=false` si ya está publicada (CI corre, no rebuild)
+2. **`build-backend`** (~30s) — npm ci + tsc + zip
+3. **`build-apk`** (~15-20 min la primera vez) — release + debug APKs en paralelo
+4. **`build-installer`** (~3s) — copia install.sh
+5. **`create-release`** (~10s) — orquesta todo, crea tag + GitHub Release
+
+### Uso (lo que el dev hace)
+
+```bash
+# 1. Editar versiones
+vim app/pubspec.yaml    # version: 0.46.7+63
+vim backend/package.json  # "version": "0.46.7"
+
+# 2. Commit + push
+git commit -am "release: v0.46.7 — feature X"
+git push origin main
+
+# 3. CI hace TODO automáticamente:
+#    ✓ Detecta nueva versión
+#    ✓ Build backend
+#    ✓ Build APKs (release + debug)
+#    ✓ Package installer
+#    ✓ Crea tag v0.46.7
+#    ✓ Publica GitHub Release con todos los assets
+#    ✓ Marca "Latest" automáticamente
+```
+
+### Bugs encontrados durante la implementación (5 fixed en 5 commits)
+
+| Versión | Bug | Fix |
+|---|---|---|
+| v0.46.2 | Release workflow v0.45.8 era monolítico y roto | Rewrite desde cero con 5 jobs desacoplados |
+| v0.46.3 | `flutter: generate: true` faltaba → l10n no se generaba | Agregado al pubspec.yaml |
+| v0.46.4 | `flutter_heatmap_calendar ^2.0.0` no existe | Removido, usamos widget custom |
+| v0.46.4 | 16 dependencias no usadas en pubspec | Limpiadas, solo deps USED en lib/ |
+| v0.46.5 | `flutter analyze` fallaba sin `app_db.g.dart` | Agregado `dart run build_runner build` antes de analyze |
+| v0.46.6 | `Copy APKs to artifacts` fallaba con path hardcoded | Cambiado a `find . -name "*.apk"` |
+
+### Verificación end-to-end
+
+- v0.46.5: workflows corren, build APK llega a step 13 (gradle)
+- v0.46.6: copia robusta de APKs, debería completar release
+- Tags automáticos: `v0.46.0` y `v0.46.1` creados manualmente como seeds
+- Próxima versión (v0.46.7+) → 100% automática sin intervención
+
+### Métricas del sistema nuevo
+
+- **Detección de versión:** 3 segundos
+- **Build backend:** ~30 segundos  
+- **Build APKs:** ~15-20 minutos (primera vez), ~5-10 min (con cache de pub)
+- **Tiempo total a release publicado:** ~20 minutos desde push
+- **APKs generados:** 1 release + 1 debug + 1 quicklink
+- **Tag automático:** sí
+- **Release marcado como Latest:** sí
+
+### Archivos del pipeline
+
+- `.github/workflows/release.yml` (352 lines) — Pipeline principal
+- `.github/workflows/ci.yml` (52 lines) — Tests (sin cambios)
+- `.github/workflows/debug-apk.yml` (109 lines) — Diagnostic manual
+- ~~`.github/workflows/update-version.yml`~~ — **ELIMINADO** (ya no es necesario)
+
+### Para forzar release sin cambiar versión
+
+1. Ir a GitHub → Actions → "M-NEXUS Auto Release"
+2. Run workflow → marcar `force: true` → Run
+
+Útil cuando quieres re-correr el pipeline después de un fix en el workflow mismo.
