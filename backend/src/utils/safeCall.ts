@@ -63,7 +63,7 @@ export async function safeCallAsync<T>(
   } catch (err) {
     const error = normalizeError(err, opts);
     logError(error, startTime, ctx);
-    if (opts.throwOnError) throw error;
+    if (opts.throwOnError) throw (err instanceof Error ? err : error);
     return buildSafeResult<T>(startTime, false, undefined, error);
   }
 }
@@ -85,7 +85,7 @@ export function safeCall<T>(
   } catch (err) {
     const error = normalizeError(err, opts);
     logError(error, startTime, ctx);
-    if (opts.throwOnError) throw error;
+    if (opts.throwOnError) throw (err instanceof Error ? err : error);
     return buildSafeResult<T>(startTime, false, undefined, error);
   }
 }

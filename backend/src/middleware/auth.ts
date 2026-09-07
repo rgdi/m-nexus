@@ -102,18 +102,19 @@ export const authMiddleware: (req: FastifyRequest, reply: FastifyReply) => Promi
   });
 };
 
-function sendAuthError(reply: FastifyReply, err: AppError, statusCode: number): FastifyReply {
+function sendAuthError(reply: FastifyReply, err: Error, statusCode: number): FastifyReply {
+  const appErr = err as Error & { code?: string; category?: string; context?: unknown; hint?: string };
   logError("auth", {
-    code: err.code,
-    category: err.category,
+    code: appErr.code ?? "EC-AUTH-001",
+    category: appErr.category ?? "AUTH",
     message: err.message,
-    context: err.context,
-    hint: err.hint,
+    context: appErr.context as Record<string, unknown>,
+    hint: appErr.hint,
   });
   return reply.status(statusCode).send({
     error: err.message,
-    code: err.code,
-    category: err.category,
-    hint: err.hint,
+    code: appErr.code ?? "EC-AUTH-001",
+    category: appErr.category ?? "AUTH",
+    hint: appErr.hint,
   });
 }
