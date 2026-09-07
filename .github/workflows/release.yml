@@ -154,7 +154,7 @@ jobs:
           if [ -d /tmp/keystores ]; then cp -r /tmp/keystores app/android/; fi
       - name: Patch plugin build.gradle for AGP 8.3 compat
         run: bash app/android/fix-plugins.sh
-      - name: Build APK
+      - name: Build APKs (release + debug)
         run: |
           set -e
           echo "=== ENV ==="
@@ -162,63 +162,60 @@ jobs:
           echo "JAVA_HOME=$JAVA_HOME"
           java -version 2>&1
           cd app
-          flutter build apk --release --no-tree-shake-icons 2>&1 | tee /tmp/build.log
-          BUILD_EXIT=${PIPESTATUS[0]}
-          echo "=== Build exit code: ${BUILD_EXIT} ==="
-          if [ -f build/app/outputs/flutter-apk/app-release.apk ]; then
-            echo "=== APK built successfully at build/app/outputs/flutter-apk/app-release.apk ==="
-            exit 0
+          # v0.45.4: always build BOTH release and debug APKs. Both are signed
+          # with the same release keystore (per app/build.gradle.kts), so
+          # users can update freely between them.
+          echo "=== Building RELEASE APK ==="
+          flutter build apk --release --no-tree-shake-icons 2>&1 | tee /tmp/build-release.log || true
+          echo "=== Building DEBUG APK ==="
+          flutter build apk --debug --no-tree-shake-icons 2>&1 | tee /tmp/build-debug.log || true
+          echo "=== Results ==="
+          ls -la build/app/outputs/flutter-apk/ 2>/dev/null || true
+          if [ ! -f build/app/outputs/flutter-apk/app-release.apk ] && [ ! -f build/app/outputs/flutter-apk/app-debug.apk ]; then
+            echo "=== ERROR: Neither release nor debug APK was produced ==="
+            echo "=== Last 100 lines of release build log ==="
+            tail -100 /tmp/build-release.log
+            echo "=== Last 100 lines of debug build log ==="
+            tail -100 /tmp/build-debug.log
+            exit 1
           fi
-          echo "=== RELEASE flutter build did not produce APK, trying DEBUG as fallback ==="
-          flutter build apk --debug --no-tree-shake-icons 2>&1 | tee /tmp/build-debug.log
-          if [ -f build/app/outputs/flutter-apk/app-debug.apk ]; then
-            echo "=== DEBUG APK built at build/app/outputs/flutter-apk/app-debug.apk ==="
-            exit 0
-          fi
-          echo "=== ERROR: Neither release nor debug APK was produced ==="
-          echo "=== Last 100 lines of build log ==="
-          tail -100 /tmp/build.log
-          exit 1
       - name: Copy APK
         run: |
           set -e
           mkdir -p $GITHUB_WORKSPACE/artifacts
-          # Find the APK (release or debug fallback) - flutter build apk puts it in build/app/outputs/flutter-apk/
-          APK_PATH=""
-          if [ -f app/build/app/outputs/flutter-apk/app-release.apk ]; then
-            APK_PATH="app/build/app/outputs/flutter-apk/app-release.apk"
-            APK_TYPE="release"
-          elif [ -f app/build/app/outputs/flutter-apk/app-debug.apk ]; then
-            APK_PATH="app/build/app/outputs/flutter-apk/app-debug.apk"
-            APK_TYPE="debug"
-            echo "::warning::Using DEBUG APK as fallback (release build failed)"
-          elif [ -f build/app/outputs/flutter-apk/app-release.apk ]; then
-            APK_PATH="build/app/outputs/flutter-apk/app-release.apk"
-            APK_TYPE="release"
-          elif [ -f build/app/outputs/flutter-apk/app-debug.apk ]; then
-            APK_PATH="build/app/outputs/flutter-apk/app-debug.apk"
-            APK_TYPE="debug"
-            echo "::warning::Using DEBUG APK as fallback (release build failed)"
+          # v0.45.4: copy BOTH release and debug APKs (both signed with the
+          # same release keystore since v0.45.4, so users can install either
+          # as an UPDATE over the other).
+          RELEASE_APK="app/build/app/outputs/flutter-apk/app-release.apk"
+          DEBUG_APK="app/build/app/outputs/flutter-apk/app-debug.apk"
+          if [ -f "$RELEASE_APK" ]; then
+            cp "$RELEASE_APK" $GITHUB_WORKSPACE/artifacts/m-nexus-app-${{ needs.set-version.outputs.ref_name }}-release.apk
+            cp "$RELEASE_APK" $GITHUB_WORKSPACE/artifacts/m-nexus-app-release.apk
+            echo "Release APK: $(du -h $RELEASE_APK | cut -f1)"
           else
-            # Fallback: use Gradle's output path (assembleRelease/assembleDebug)
-            GRADLE_APK=$(find . -name "*.apk" -type f 2>/dev/null | head -1)
-            if [ -n "$GRADLE_APK" ]; then
-              APK_PATH="$GRADLE_APK"
-              APK_TYPE="gradle"
-              echo "::warning::Found APK at $GRADLE_APK (Gradle output)"
-            fi
+            echo "::warning::Release APK not found"
           fi
-          if [ -z "$APK_PATH" ]; then
-            echo "::error::APK not found anywhere"
+          if [ -f "$DEBUG_APK" ]; then
+            cp "$DEBUG_APK" $GITHUB_WORKSPACE/artifacts/m-nexus-app-${{ needs.set-version.outputs.ref_name }}-debug.apk
+            cp "$DEBUG_APK" $GITHUB_WORKSPACE/artifacts/m-nexus-app-debug.apk
+            echo "Debug APK: $(du -h $DEBUG_APK | cut -f1)"
+          else
+            echo "::warning::Debug APK not found"
+          fi
+          # Also copy release as the "default" (m-nexus-app.apk) for quicklinks
+          if [ -f "$RELEASE_APK" ]; then
+            cp "$RELEASE_APK" $GITHUB_WORKSPACE/artifacts/m-nexus-app-${{ needs.set-version.outputs.ref_name }}.apk
+            cp "$RELEASE_APK" $GITHUB_WORKSPACE/artifacts/m-nexus-app.apk
+          elif [ -f "$DEBUG_APK" ]; then
+            cp "$DEBUG_APK" $GITHUB_WORKSPACE/artifacts/m-nexus-app-${{ needs.set-version.outputs.ref_name }}.apk
+            cp "$DEBUG_APK" $GITHUB_WORKSPACE/artifacts/m-nexus-app.apk
+            echo "::warning::Using DEBUG APK as default (release build failed)"
+          else
+            echo "::error::No APK found"
             find . -name "*.apk" 2>/dev/null || true
             exit 1
           fi
-          echo "Found $APK_TYPE APK at $APK_PATH"
-          APK_SIZE=$(du -h "$APK_PATH" | cut -f1)
-          echo "APK size: $APK_SIZE"
-          cp "$APK_PATH" $GITHUB_WORKSPACE/artifacts/m-nexus-app-${{ needs.set-version.outputs.ref_name }}.apk
-          cp $GITHUB_WORKSPACE/artifacts/m-nexus-app-${{ needs.set-version.outputs.ref_name }}.apk $GITHUB_WORKSPACE/artifacts/m-nexus-app.apk
-          echo "APK copied successfully:"
+          echo "All APKs copied:"
           ls -la $GITHUB_WORKSPACE/artifacts/
       - uses: actions/upload-artifact@v4
         with:

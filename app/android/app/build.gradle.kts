@@ -73,6 +73,19 @@ android {
     }
 
     buildTypes {
+        // v0.45.4: BOTH debug and release use the same release keystore.
+        // This ensures that installing a debug APK over a release APK (or
+        // vice versa) works as an UPDATE, not as a new app install.
+        // The Android debug keystore (default) was causing "App not installed"
+        // errors when users tried to update between debug/release builds.
+        debug {
+            signingConfig = if (hasReleaseKey) {
+                signingConfigs.getByName("release")
+            } else {
+                println("WARNING: key.properties not found, debug uses Android default keystore")
+                signingConfigs.getByName("debug")
+            }
+        }
         release {
             signingConfig = if (hasReleaseKey) {
                 signingConfigs.getByName("release")
