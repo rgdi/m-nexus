@@ -68,3 +68,4 @@ secrets/
 artifacts/
 test-results/
 playwright-report/
+releases/
