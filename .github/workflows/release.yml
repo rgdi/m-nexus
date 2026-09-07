@@ -157,28 +157,20 @@ jobs:
       - name: Build APK
         run: |
           set -e
-          cd app/android
-          # Show env info first
           echo "=== ENV ==="
           echo "ANDROID_HOME=$ANDROID_HOME"
           echo "JAVA_HOME=$JAVA_HOME"
           java -version 2>&1
-          ./gradlew --version 2>&1 | head -10
-          echo "=== Building release APK (with full logs) ==="
-          # Full output to log, no tail -50 (we want to see errors)
-          ./gradlew assembleRelease --no-daemon --stacktrace 2>&1 | tee /tmp/build.log
-          BUILD_EXIT=$?
+          cd app
+          flutter build apk --release --no-tree-shake-icons 2>&1 | tee /tmp/build.log
+          BUILD_EXIT=${PIPESTATUS[0]}
           echo "=== Build exit code: ${BUILD_EXIT} ==="
-          echo "=== Searching for APK ==="
-          find app/build -name "*.apk" 2>/dev/null || true
-          ls -la app/build/app/outputs/flutter-apk/ 2>&1 || true
-          ls -la build/app/outputs/flutter-apk/ 2>&1 || true
           if [ -f build/app/outputs/flutter-apk/app-release.apk ]; then
             echo "=== APK built successfully at build/app/outputs/flutter-apk/app-release.apk ==="
             exit 0
           fi
-          echo "=== RELEASE build did not produce APK, trying DEBUG as fallback ==="
-          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee /tmp/build-debug.log
+          echo "=== RELEASE flutter build did not produce APK, trying DEBUG as fallback ==="
+          flutter build apk --debug --no-tree-shake-icons 2>&1 | tee /tmp/build-debug.log
           if [ -f build/app/outputs/flutter-apk/app-debug.apk ]; then
             echo "=== DEBUG APK built at build/app/outputs/flutter-apk/app-debug.apk ==="
             exit 0
@@ -191,7 +183,7 @@ jobs:
         run: |
           set -e
           mkdir -p $GITHUB_WORKSPACE/artifacts
-          # Find the APK (release or debug fallback)
+          # Find the APK (release or debug fallback) - flutter build apk puts it in build/app/outputs/flutter-apk/
           APK_PATH=""
           if [ -f app/build/app/outputs/flutter-apk/app-release.apk ]; then
             APK_PATH="app/build/app/outputs/flutter-apk/app-release.apk"
@@ -207,6 +199,14 @@ jobs:
             APK_PATH="build/app/outputs/flutter-apk/app-debug.apk"
             APK_TYPE="debug"
             echo "::warning::Using DEBUG APK as fallback (release build failed)"
+          else
+            # Fallback: use Gradle's output path (assembleRelease/assembleDebug)
+            GRADLE_APK=$(find . -name "*.apk" -type f 2>/dev/null | head -1)
+            if [ -n "$GRADLE_APK" ]; then
+              APK_PATH="$GRADLE_APK"
+              APK_TYPE="gradle"
+              echo "::warning::Found APK at $GRADLE_APK (Gradle output)"
+            fi
           fi
           if [ -z "$APK_PATH" ]; then
             echo "::error::APK not found anywhere"
