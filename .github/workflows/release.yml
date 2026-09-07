@@ -28,16 +28,43 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
-      - name: Read latest tag
+      - name: Read version from pubspec.yaml
         id: read_tag
         run: |
-          if [[ "${GITHUB_REF_TYPE:-}" == "tag" ]]; then
-            VERSION="${GITHUB_REF_NAME#v}"
-            REF_NAME="${GITHUB_REF_NAME}"
+          # v0.45.5: read version from pubspec.yaml (the source of truth).
+          # The release workflow creates a NEW release for whatever version
+          # is in app/pubspec.yaml, regardless of existing tags.
+          # This way every push to main auto-publishes a release.
+          set -e
+          if [ ! -f "app/pubspec.yaml" ]; then
+            echo "app/pubspec.yaml not found, falling back to git tag"
+            if [[ "${GITHUB_REF_TYPE:-}" == "tag" ]]; then
+              VERSION="${GITHUB_REF_NAME#v}"
+              REF_NAME="${GITHUB_REF_NAME}"
+            else
+              LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.28.0")
+              VERSION="${LATEST_TAG#v}"
+              REF_NAME="${LATEST_TAG}"
+            fi
           else
-            LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.28.0")
-            VERSION="${LATEST_TAG#v}"
-            REF_NAME="${LATEST_TAG}"
+            # Extract the version field from app/pubspec.yaml
+            # Format: version: 0.45.4+51
+            PUBSPEC_VERSION=$(grep "^version:" app/pubspec.yaml | head -1 | awk '{print $2}' | sed 's/+.*//')
+            if [[ -z "$PUBSPEC_VERSION" ]]; then
+              echo "::error::Could not parse version from app/pubspec.yaml"
+              exit 1
+            fi
+            # Read backend version too for consistency check
+            BACKEND_VERSION=$(grep '"version"' backend/package.json | head -1 | awk -F'"' '{print $4}')
+            echo "Frontend version: ${PUBSPEC_VERSION}"
+            echo "Backend version:  ${BACKEND_VERSION}"
+            # Use the pubspec version (frontend is the one users see)
+            VERSION="${PUBSPEC_VERSION}"
+            REF_NAME="v${VERSION}"
+            # Sanity check: backend should match
+            if [[ -n "$BACKEND_VERSION" && "$BACKEND_VERSION" != "$VERSION" ]]; then
+              echo "::warning::Backend version (${BACKEND_VERSION}) does not match frontend (${VERSION}). Continuing with frontend version."
+            fi
           fi
           {
             echo "version=${VERSION}"
