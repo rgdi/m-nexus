@@ -18,6 +18,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'updater_io.dart';
 import 'updater_models.dart';
+import 'logger.dart' as logger_mod;
 
 const String _repoOwner = 'rgdi';
 const String _repoName = 'm-nexus';
@@ -79,7 +80,7 @@ class Updater extends ChangeNotifier {
       code: 'EC-UP-001',
       message: 'check for updates failed',
       category: ErrorCategory.up,
-      context: {'force': force, 'repo': config.repo},
+      context: {'force': force, 'repo': "rgdi/m-nexus"},
       hint: 'Check network connectivity, GitHub API accessible',
       op: () async {
         await loadInstalledVersion();
@@ -87,8 +88,8 @@ class Updater extends ChangeNotifier {
         if (!force) {
           final cached = await _readCache();
           if (cached != null) {
-            AdvancedLogger.instance.debug('updater', 'using cached result',
-              context: {'version': cached.latestVersion});
+            logger_mod.AdvancedLogger.instance.debug('updater', 'using cached result',
+              context: {'version': cached.update?.latestVersion});
             _lastResult = cached;
             return cached;
           }

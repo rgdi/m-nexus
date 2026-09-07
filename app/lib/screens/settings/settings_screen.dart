@@ -254,7 +254,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             itemBuilder: (_, i) {
               final c = cals[i];
               return ListTile(
-                leading: CircleAvatar(backgroundColor: c.color, child: Text(c.name[0])),
+                leading: CircleAvatar(backgroundColor: Color(c.color), child: Text(c.name[0])),
                 title: Text(c.name),
                 subtitle: Text(c.accountName ?? 'Sin cuenta'),
                 trailing: Icon(

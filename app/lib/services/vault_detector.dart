@@ -96,9 +96,8 @@ class VaultDetector {
         detectionMethod: methods[path],
       ));
     }
-    AdvancedLogger.instance.debug('vault_detector', 'scan done', {
-      'candidates': result.length,
-    });
+    AdvancedLogger.instance.debug('vault_detector', 'scan done', context: {
+      'candidates': result.length});
     return result;
   }
 

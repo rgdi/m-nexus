@@ -303,8 +303,11 @@ class CalendarService {
 
   /// Sugiere el evento más probable para "ahora" (dentro de ±30 min).
   Future<CalendarEvent?> suggestCurrentEvent() async {
-    return await guardAsync<CalendarEvent?>('cal', 'EC-CAL-009',
-      'suggestCurrentEvent failed', () async {
+    final r = await safeCallAsync<CalendarEvent?>(
+      component: 'cal',
+      code: 'EC-CAL-009',
+      message: 'suggestCurrentEvent failed',
+      op: () async {
         final now = DateTime.now();
         final events = await listEvents(
           from: now.subtract(const Duration(minutes: 30)),
@@ -320,9 +323,12 @@ class CalendarService {
         log.debug('cal', 'suggestCurrentEvent', context: {
           'eventId': events.first.id,
           'title': events.first.title,
+          'now': now.toIso8601String(),
         });
         return events.first;
-      }, context: {'now': now.toIso8601String()});
+      },
+    );
+    return r.value;
   }
 
   /// v0.34: lista los próximos N eventos (para mostrar en home).
