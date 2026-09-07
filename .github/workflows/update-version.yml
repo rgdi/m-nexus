@@ -33,8 +33,8 @@ jobs:
       - name: Update Companion app version
         run: |
           VERSION="${{ inputs.version }}"
-          sed -i "s/^version: .*/version: $VERSION+1/" companion-app/pubspec.yaml
-          sed -i "s/0\.28\.0+1/$VERSION+1/" companion-app/pubspec.yaml || true
+          sed -i "s/^version: .*/version: $VERSION+1/" app/pubspec.yaml
+          sed -i "s/0\.28\.0+1/$VERSION+1/" app/pubspec.yaml || true
 
       - name: Commit changes
         run: |

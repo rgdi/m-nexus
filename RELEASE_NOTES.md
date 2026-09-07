@@ -1,6 +1,6 @@
 # Release Notes
 
-## v0.45.0 (in progress)
+## v0.45.0 (2026-09-07) — Released ✅
 
 ### 🆔 Sistema de error codes unificado (frontend + backend)
 
