@@ -1,0 +1,117 @@
+# GitHub Actions: Debug APK Build
+# Se ejecuta manualmente (workflow_dispatch) para diagnosticar problemas con el build del APK.
+# Produce un artifact descargable y muestra logs detallados.
+
+name: "Debug APK Build"
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build type (release or debug)'
+        required: true
+        default: 'debug'
+        type: choice
+        options:
+          - debug
+          - release
+  push:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - '.github/workflows/release.yml'
+
+jobs:
+  debug-apk:
+    name: Build APK (diagnostic)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+      - name: Show environment
+        run: |
+          echo "=== Versions ==="
+          java -version 2>&1
+          ./gradlew --version 2>&1 | head -10 || echo "no gradle yet"
+          flutter --version 2>&1 || echo "no flutter yet"
+          node --version
+          echo "=== ANDROID_HOME ==="
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+          ls -la $ANDROID_HOME/platforms/ 2>/dev/null || echo "no platforms"
+          ls -la $ANDROID_HOME/build-tools/ 2>/dev/null || echo "no build-tools"
+      - run: cd app && flutter pub get
+      - name: Backup custom android files
+        run: |
+          cp app/android/build.gradle /tmp/build.gradle 2>/dev/null || true
+          cp app/android/settings.gradle /tmp/settings.gradle 2>/dev/null || true
+          cp app/android/gradle.properties /tmp/gradle.properties 2>/dev/null || true
+          cp app/android/app/build.gradle.kts /tmp/app-build.gradle.kts 2>/dev/null || true
+          cp app/android/app/build.gradle /tmp/app-build.gradle 2>/dev/null || true
+          cp app/android/app/src/main/AndroidManifest.xml /tmp/AndroidManifest.xml
+          cp -r app/android/app/src/main/kotlin /tmp/main-kotlin 2>/dev/null || true
+          cp app/android/key.properties /tmp/key.properties 2>/dev/null || true
+          cp -r app/android/keystores /tmp/keystores 2>/dev/null || true
+      - name: Regenerate Android platform files
+        run: cd app && flutter create --platforms=android --no-overwrite --project-name mnexus_app .
+      - name: Restore custom android files
+        run: |
+          cp /tmp/build.gradle app/android/build.gradle 2>/dev/null || true
+          cp /tmp/settings.gradle app/android/settings.gradle 2>/dev/null || true
+          cp /tmp/gradle.properties app/android/gradle.properties 2>/dev/null || true
+          if [ -f /tmp/app-build.gradle.kts ]; then
+            cp /tmp/app-build.gradle.kts app/android/app/build.gradle.kts
+          elif [ -f /tmp/app-build.gradle ]; then
+            cp /tmp/app-build.gradle app/android/app/build.gradle
+          fi
+          if [ -f /tmp/key.properties ]; then cp /tmp/key.properties app/android/key.properties; fi
+          if [ -d /tmp/keystores ]; then cp -r /tmp/keystores app/android/; fi
+          cp /tmp/AndroidManifest.xml app/android/app/src/main/AndroidManifest.xml
+          if [ -d /tmp/main-kotlin ]; then
+            mkdir -p app/android/app/src/main/kotlin
+            cp -r /tmp/main-kotlin/. app/android/app/src/main/kotlin/ 2>/dev/null || true
+          fi
+      - name: Patch plugin build.gradle
+        run: bash app/android/fix-plugins.sh
+      - name: Build APK
+        run: |
+          set -e
+          cd app/android
+          BUILD_TYPE="${{ github.event.inputs.build_type || 'debug' }}"
+          if [ "$BUILD_TYPE" = "release" ]; then
+            echo "Building RELEASE APK..."
+            ./gradlew assembleRelease --no-daemon --stacktrace 2>&1 | tee /tmp/build.log
+          else
+            echo "Building DEBUG APK..."
+            ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee /tmp/build.log
+          fi
+      - name: Find and upload APK
+        run: |
+          mkdir -p artifacts
+          echo "=== Searching for APK files ==="
+          find . -name "*.apk" 2>/dev/null
+          APK_PATH=$(find . -name "*.apk" 2>/dev/null | head -1)
+          if [ -z "$APK_PATH" ]; then
+            echo "::error::No APK produced"
+            tail -50 /tmp/build.log
+            exit 1
+          fi
+          echo "APK at: $APK_PATH"
+          cp "$APK_PATH" artifacts/debug.apk
+          echo "Size: $(du -h artifacts/debug.apk | cut -f1)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: debug-apk
+          path: artifacts/debug.apk
+          if-no-files-found: error

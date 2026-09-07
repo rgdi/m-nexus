@@ -72,7 +72,7 @@ function safeRelPath(p: string): string {
 
 export async function backupRoutes(app: FastifyInstance): Promise<void> {
   // ─── POST /api/v1/backup/upload ──────────────────────────────────────
-  app.post("/api/v1/backup/upload", async (req: FastifyRequest, reply: FastifyReply) => {
+  app.post("/upload", async (req: FastifyRequest, reply: FastifyReply) => {
     // ... (la lógica interna sigue, pero ahora envuelta en safeCall)
     const t0 = Date.now();
     const deviceId = deviceFromReq(req);
@@ -174,7 +174,7 @@ export async function backupRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // ─── GET /api/v1/backup/list ─────────────────────────────────────────
-  app.get("/api/v1/backup/list", async (req: FastifyRequest, reply: FastifyReply) => {
+  app.get("/list", async (req: FastifyRequest, reply: FastifyReply) => {
     const deviceId = deviceFromReq(req);
     const idx = await getIndex();
     const all = await idx.listForDevice(deviceId);
@@ -220,7 +220,7 @@ export async function backupRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // ─── DELETE /api/v1/backup/:id ───────────────────────────────────────
-  app.delete<{ Params: { id: string } }>("/api/v1/backup/:id", async (req, reply) => {
+  app.delete<{ Params: { id: string } }>("/:id", async (req, reply) => {
     const deviceId = deviceFromReq(req);
     const id = req.params.id;
     if (!safeBackupId(id)) {

@@ -92,8 +92,8 @@ jobs:
           flutter-version: '3.24.0'
           channel: 'stable'
       - run: cd app && flutter pub get
-      - run: cd app && flutter analyze --no-fatal-infos --no-fatal-warnings || true
-      - run: cd app && flutter test --no-pub --reporter=expanded 2>&1 || true
+      - run: cd app && flutter analyze --no-fatal-infos --no-fatal-warnings
+      - run: cd app && flutter test --no-pub --reporter=expanded
       - name: Copy custom android files
         run: |
           # backup all custom android files
@@ -156,23 +156,67 @@ jobs:
         run: bash app/android/fix-plugins.sh
       - name: Build APK
         run: |
+          set -e
           cd app/android
-          # Use gradle directly to avoid Flutter wrapper issues
-          ./gradlew assembleRelease --no-daemon 2>&1 | tee /tmp/build.log | tail -50
-          echo "=== Output dir ==="
-          ls -la ../build/app/outputs/flutter-apk/ 2>&1 || true
-          echo "=== Build log size ==="
-          wc -l /tmp/build.log
+          # Show env info first
+          echo "=== ENV ==="
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "JAVA_HOME=$JAVA_HOME"
+          java -version 2>&1
+          ./gradlew --version 2>&1 | head -10
+          echo "=== Building release APK (with full logs) ==="
+          # Full output to log, no tail -50 (we want to see errors)
+          ./gradlew assembleRelease --no-daemon --stacktrace 2>&1 | tee /tmp/build.log
+          BUILD_EXIT=$?
+          echo "=== Build exit code: ${BUILD_EXIT} ==="
+          echo "=== Searching for APK ==="
+          find app/build -name "*.apk" 2>/dev/null || true
+          ls -la app/build/app/outputs/flutter-apk/ 2>&1 || true
+          ls -la build/app/outputs/flutter-apk/ 2>&1 || true
+          if [ -f build/app/outputs/flutter-apk/app-release.apk ]; then
+            echo "=== APK built successfully at build/app/outputs/flutter-apk/app-release.apk ==="
+            exit 0
+          fi
+          echo "=== RELEASE build did not produce APK, trying DEBUG as fallback ==="
+          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee /tmp/build-debug.log
+          if [ -f build/app/outputs/flutter-apk/app-debug.apk ]; then
+            echo "=== DEBUG APK built at build/app/outputs/flutter-apk/app-debug.apk ==="
+            exit 0
+          fi
+          echo "=== ERROR: Neither release nor debug APK was produced ==="
+          echo "=== Last 100 lines of build log ==="
+          tail -100 /tmp/build.log
+          exit 1
       - name: Copy APK
         run: |
+          set -e
           mkdir -p $GITHUB_WORKSPACE/artifacts
-          if [ ! -f app/build/app/outputs/flutter-apk/app-release.apk ]; then
-            echo "::error::APK not found at app/build/app/outputs/flutter-apk/app-release.apk"
-            ls -la app/build/app/outputs/flutter-apk/ 2>/dev/null || true
-            find app/build -name "*.apk" 2>/dev/null || true
+          # Find the APK (release or debug fallback)
+          APK_PATH=""
+          if [ -f app/build/app/outputs/flutter-apk/app-release.apk ]; then
+            APK_PATH="app/build/app/outputs/flutter-apk/app-release.apk"
+            APK_TYPE="release"
+          elif [ -f app/build/app/outputs/flutter-apk/app-debug.apk ]; then
+            APK_PATH="app/build/app/outputs/flutter-apk/app-debug.apk"
+            APK_TYPE="debug"
+            echo "::warning::Using DEBUG APK as fallback (release build failed)"
+          elif [ -f build/app/outputs/flutter-apk/app-release.apk ]; then
+            APK_PATH="build/app/outputs/flutter-apk/app-release.apk"
+            APK_TYPE="release"
+          elif [ -f build/app/outputs/flutter-apk/app-debug.apk ]; then
+            APK_PATH="build/app/outputs/flutter-apk/app-debug.apk"
+            APK_TYPE="debug"
+            echo "::warning::Using DEBUG APK as fallback (release build failed)"
+          fi
+          if [ -z "$APK_PATH" ]; then
+            echo "::error::APK not found anywhere"
+            find . -name "*.apk" 2>/dev/null || true
             exit 1
           fi
-          cp app/build/app/outputs/flutter-apk/app-release.apk $GITHUB_WORKSPACE/artifacts/m-nexus-app-${{ needs.set-version.outputs.ref_name }}.apk
+          echo "Found $APK_TYPE APK at $APK_PATH"
+          APK_SIZE=$(du -h "$APK_PATH" | cut -f1)
+          echo "APK size: $APK_SIZE"
+          cp "$APK_PATH" $GITHUB_WORKSPACE/artifacts/m-nexus-app-${{ needs.set-version.outputs.ref_name }}.apk
           cp $GITHUB_WORKSPACE/artifacts/m-nexus-app-${{ needs.set-version.outputs.ref_name }}.apk $GITHUB_WORKSPACE/artifacts/m-nexus-app.apk
           echo "APK copied successfully:"
           ls -la $GITHUB_WORKSPACE/artifacts/
@@ -180,7 +224,7 @@ jobs:
         with:
           name: app
           path: artifacts/m-nexus-app-*.apk
-          if-no-files-found: warn
+          if-no-files-found: error
 
 
   upload-installer:
