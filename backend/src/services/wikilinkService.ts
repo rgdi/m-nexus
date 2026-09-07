@@ -91,7 +91,13 @@ export class WikilinkService {
       }
 
       // Normalizar target path (lowercase, sin acentos, sin espacios extra)
-      const targetPath = target.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      let targetPath = target.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      // Si el target no tiene extensión de archivo, agregar .md por defecto
+      // (es el formato más común en Obsidian/Logseq)
+      const hasKnownExt = /\.(md|png|jpg|jpeg|gif|pdf|webp|mp3|mp4)$/.test(targetPath);
+      if (!hasKnownExt) {
+        targetPath = targetPath + ".md";
+      }
 
       links.push({
         displayText: displayText.trim(),
