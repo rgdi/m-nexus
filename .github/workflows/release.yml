@@ -249,26 +249,36 @@ jobs:
           TAG="${{ needs.detect-version.outputs.tag }}"
           mkdir -p artifacts
 
-          RELEASE_APK="app/build/app/outputs/flutter-apk/app-release.apk"
-          DEBUG_APK="app/build/app/outputs/flutter-apk/app-debug.apk"
+          # Buscar APKs en todas las ubicaciones posibles (Flutter a veces
+          # los pone en paths diferentes segun la version de Gradle)
+          echo "=== Looking for APKs ==="
+          find . -name "*.apk" 2>/dev/null || true
+          ls -la app/build/app/outputs/flutter-apk/ 2>/dev/null || echo "no flutter-apk dir"
 
-          if [ -f "$RELEASE_APK" ]; then
+          RELEASE_APK=$(find . -name "app-release.apk" 2>/dev/null | head -1)
+          DEBUG_APK=$(find . -name "app-debug.apk" 2>/dev/null | head -1)
+
+          if [ -n "$RELEASE_APK" ] && [ -f "$RELEASE_APK" ]; then
             cp "$RELEASE_APK" "artifacts/m-nexus-app-${TAG}-release.apk"
             cp "$RELEASE_APK" "artifacts/m-nexus-app.apk"
             echo "Release APK: $(du -h $RELEASE_APK | cut -f1)"
+          else
+            echo "::warning::No release APK found"
           fi
 
-          if [ -f "$DEBUG_APK" ]; then
+          if [ -n "$DEBUG_APK" ] && [ -f "$DEBUG_APK" ]; then
             cp "$DEBUG_APK" "artifacts/m-nexus-app-${TAG}-debug.apk"
             echo "Debug APK: $(du -h $DEBUG_APK | cut -f1)"
+          else
+            echo "::warning::No debug APK found"
           fi
 
-          if [ ! -f "$RELEASE_APK" ] && [ ! -f "$DEBUG_APK" ]; then
+          if [ ! -f "artifacts/m-nexus-app-${TAG}-release.apk" ] && [ ! -f "artifacts/m-nexus-app-${TAG}-debug.apk" ]; then
             echo "::error::Neither release nor debug APK was produced"
             exit 1
           fi
 
-          echo "=== Artifacts ==="
+          echo "=== Final artifacts ==="
           ls -la artifacts/
 
       - uses: actions/upload-artifact@v4
