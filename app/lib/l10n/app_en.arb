@@ -1,0 +1,206 @@
+{
+  "@@locale": "en",
+  "appTitle": "M-NEXUS",
+  "@appTitle": {
+    "description": "Application title"
+  },
+
+  "navHome": "Home",
+  "navDecks": "Decks",
+  "navNotes": "Notes",
+  "navStats": "Stats",
+  "navSettings": "Settings",
+
+  "homeGreeting": "Good {timeOfDay}, {name}",
+  "@homeGreeting": {
+    "description": "Greeting on home screen",
+    "placeholders": {
+      "timeOfDay": {"type": "String"},
+      "name": {"type": "String"}
+    }
+  },
+
+  "homeTodaysReview": "Today's review",
+  "homeCardsDue": "{count, plural, =0{No cards due} =1{1 card due} other{{count} cards due}}",
+  "@homeCardsDue": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "homeEstimatedTime": "~{minutes} min estimated",
+  "@homeEstimatedTime": {
+    "placeholders": {
+      "minutes": {"type": "int"}
+    }
+  },
+
+  "homeStartReview": "Start review",
+  "homeRecentNotes": "Recent notes",
+  "homeNoNotes": "No notes yet. Create your first note!",
+
+  "reviewProgress": "{current} / {total}",
+  "@reviewProgress": {
+    "placeholders": {
+      "current": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+
+  "reviewAgain": "Again",
+  "reviewHard": "Hard",
+  "reviewGood": "Good",
+  "reviewEasy": "Easy",
+  "reviewShortcuts": "Shortcuts: Space to flip, 1/2/3/4 to rate",
+  "reviewAgainShort": "1",
+  "reviewHardShort": "2",
+  "reviewGoodShort": "3",
+  "reviewEasyShort": "4",
+
+  "reviewTapToFlip": "👆 Tap to flip",
+  "reviewQuestion": "Question",
+  "reviewAnswer": "Answer",
+
+  "reviewSummaryTitle": "Session complete!",
+  "reviewCardsReviewed": "You reviewed {count} cards",
+  "@reviewCardsReviewed": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "reviewAccuracy": "Accuracy: {percent}%",
+  "@reviewAccuracy": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "reviewBack": "Back",
+
+  "deckAnatomy": "Anatomy",
+  "deckPhysiology": "Physiology",
+  "deckPharmacology": "Pharmacology",
+  "deckPathology": "Pathology",
+  "deckDefault": "Default",
+  "deckCount": "{count, plural, =0{No cards} =1{1 card} other{{count} cards}}",
+  "@deckCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "searchTitle": "Search",
+  "searchPlaceholder": "Search notes, cards, tags...",
+  "searchNoResults": "No results for \"{query}\"",
+  "@searchNoResults": {
+    "placeholders": {
+      "query": {"type": "String"}
+    }
+  },
+  "searchResults": "{count, plural, =0{No results} =1{1 result} other{{count} results}}",
+  "@searchResults": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "tagTitle": "Tag: {tag}",
+  "@tagTitle": {
+    "placeholders": {
+      "tag": {"type": "String"}
+    }
+  },
+  "tagNoNotes": "No notes with this tag yet.",
+
+  "graphTitle": "Knowledge graph",
+  "graphNodes": "{count} notes",
+  "@graphNodes": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "graphEdges": "{count} links",
+  "@graphEdges": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "statsTitle": "Statistics",
+  "statsCurrentStreak": "Current streak",
+  "statsLongestStreak": "Longest streak",
+  "statsDays": "{count, plural, =1{1 day} other{{count} days}}",
+  "@statsDays": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "statsTotalReviews": "Total reviews",
+  "statsRetentionRate": "Retention rate",
+  "statsNewCards": "New cards",
+  "statsLearningCards": "Learning",
+  "statsReviewCards": "Review",
+  "statsMatureCards": "Mature",
+  "statsTimeSpent": "Time spent",
+
+  "settingsTitle": "Settings",
+  "settingsLanguage": "Language",
+  "settingsLanguageEnglish": "English",
+  "settingsLanguageSpanish": "Español",
+  "settingsLanguagePortuguese": "Português",
+  "settingsTheme": "Theme",
+  "settingsThemeSystem": "System",
+  "settingsThemeLight": "Light",
+  "settingsThemeDark": "Dark",
+  "settingsRetentionTarget": "Retention target",
+  "settingsRetentionHelp": "Higher = more reviews but better retention",
+  "settingsAbout": "About",
+  "settingsVersion": "Version",
+
+  "commonSave": "Save",
+  "commonCancel": "Cancel",
+  "commonDelete": "Delete",
+  "commonEdit": "Edit",
+  "commonClose": "Close",
+  "commonOK": "OK",
+  "commonYes": "Yes",
+  "commonNo": "No",
+  "commonLoading": "Loading...",
+  "commonError": "Error",
+  "commonRetry": "Retry",
+
+  "voiceListening": "Listening...",
+  "voiceProcessing": "Processing audio...",
+  "voiceError": "Voice recognition error",
+  "voiceTapToStart": "Tap to record",
+  "voiceTapToStop": "Tap to stop",
+
+  "aiChatTitle": "AI Tutor",
+  "aiChatPlaceholder": "Ask about your notes...",
+  "aiChatThinking": "Thinking...",
+  "aiChatSources": "Sources",
+
+  "marketplaceTitle": "Marketplace",
+  "marketplaceInstall": "Install",
+  "marketplaceInstalled": "Installed",
+  "marketplaceRating": "Rating",
+  "marketplaceInstalls": "{count, plural, =1{1 install} other{{count} installs}}",
+  "@marketplaceInstalls": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "clozeEditorTitle": "Cloze editor",
+  "clozeHint": "Wrap text with {syntax} to create a cloze",
+  "@clozeHint": {
+    "placeholders": {
+      "syntax": {"type": "String"}
+    }
+  },
+  "clozeCount": "{count, plural, =0{No clozes} =1{1 cloze} other{{count} clozes}}",
+  "@clozeCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  }
+}

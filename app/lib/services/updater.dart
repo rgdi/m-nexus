@@ -154,12 +154,34 @@ class Updater extends ChangeNotifier {
     if (raw == null) return null;
     try {
       final m = jsonDecode(raw) as Map<String, dynamic>;
-      final result = UpdateCheckResult(
-        installedVersion: m['installedVersion'] as String,
-        checkedAt: DateTime.fromMillisecondsSinceEpoch(m['checkedAt'] as int),
+      // v0.46 FIX (auditor bug #1): antes solo se persistia installedVersion + checkedAt,
+      // por lo que el cache siempre decia "no update" aunque hubiera uno disponible.
+      // Ahora persistimos el update completo y comparamos versiones localmente.
+      final cachedInstalled = m['installedVersion'] as String;
+      final cachedCheckedAt = DateTime.fromMillisecondsSinceEpoch(m['checkedAt'] as int);
+      final updateJson = m['update'] as Map<String, dynamic>?;
+      AppUpdate? cachedUpdate;
+      if (updateJson != null) {
+        try {
+          cachedUpdate = AppUpdate.fromGithub(updateJson);
+        } catch (_) {
+          cachedUpdate = null;
+        }
+      }
+      // Comparar versiones: si la cache tiene un update y la latest > installed,
+      // retornamos el update. Si no, retornamos null update (correcto).
+      AppUpdate? finalUpdate;
+      if (cachedUpdate != null) {
+        if (compareVersions(cachedUpdate.latestVersion, cachedInstalled) > 0) {
+          finalUpdate = cachedUpdate;
+        }
+      }
+      return UpdateCheckResult(
+        installedVersion: cachedInstalled,
+        checkedAt: cachedCheckedAt,
+        update: finalUpdate,
         isFromCache: true,
       );
-      return result;
     } catch (_) {
       return null;
     }
@@ -168,12 +190,17 @@ class Updater extends ChangeNotifier {
   Future<void> _writeCache(UpdateCheckResult result) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_prefsKeyLastCheck, DateTime.now().millisecondsSinceEpoch);
+    // v0.46: persistir el update completo (no solo installedVersion).
+    // Esto permite que el cache muestre la actualizacion disponible
+    // sin necesidad de re-pegarle a GitHub.
+    final data = <String, dynamic>{
+      'installedVersion': result.installedVersion,
+      'checkedAt': result.checkedAt.millisecondsSinceEpoch,
+      'update': result.update?.toJson(),
+    };
     await prefs.setString(
       '${_prefsKeyLastCheck}.data',
-      jsonEncode({
-        'installedVersion': result.installedVersion,
-        'checkedAt': result.checkedAt.millisecondsSinceEpoch,
-      }),
+      jsonEncode(data),
     );
   }
 

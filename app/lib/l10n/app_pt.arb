@@ -1,0 +1,202 @@
+{
+  "@@locale": "pt",
+  "appTitle": "M-NEXUS",
+
+  "navHome": "Início",
+  "navDecks": "Baralhos",
+  "navNotes": "Notas",
+  "navStats": "Estatísticas",
+  "navSettings": "Configurações",
+
+  "homeGreeting": "Bom(a) {timeOfDay}, {name}",
+  "@homeGreeting": {
+    "placeholders": {
+      "timeOfDay": {"type": "String"},
+      "name": {"type": "String"}
+    }
+  },
+
+  "homeTodaysReview": "Revisão de hoje",
+  "homeCardsDue": "{count, plural, =0{Sem cartões pendentes} =1{1 cartão pendente} other{{count} cartões pendentes}}",
+  "@homeCardsDue": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "homeEstimatedTime": "~{minutes} min estimados",
+  "@homeEstimatedTime": {
+    "placeholders": {
+      "minutes": {"type": "int"}
+    }
+  },
+
+  "homeStartReview": "Começar revisão",
+  "homeRecentNotes": "Notas recentes",
+  "homeNoNotes": "Ainda não há notas. Crie sua primeira nota!",
+
+  "reviewProgress": "{current} / {total}",
+  "@reviewProgress": {
+    "placeholders": {
+      "current": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+
+  "reviewAgain": "De novo",
+  "reviewHard": "Difícil",
+  "reviewGood": "Bom",
+  "reviewEasy": "Fácil",
+  "reviewShortcuts": "Atalhos: Espaço para virar, 1/2/3/4 para classificar",
+  "reviewAgainShort": "1",
+  "reviewHardShort": "2",
+  "reviewGoodShort": "3",
+  "reviewEasyShort": "4",
+
+  "reviewTapToFlip": "👆 Toque para virar",
+  "reviewQuestion": "Pergunta",
+  "reviewAnswer": "Resposta",
+
+  "reviewSummaryTitle": "Sessão completa!",
+  "reviewCardsReviewed": "Você revisou {count} cartões",
+  "@reviewCardsReviewed": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "reviewAccuracy": "Precisão: {percent}%",
+  "@reviewAccuracy": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "reviewBack": "Voltar",
+
+  "deckAnatomy": "Anatomia",
+  "deckPhysiology": "Fisiologia",
+  "deckPharmacology": "Farmacologia",
+  "deckPathology": "Patologia",
+  "deckDefault": "Padrão",
+  "deckCount": "{count, plural, =0{Sem cartões} =1{1 cartão} other{{count} cartões}}",
+  "@deckCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "searchTitle": "Buscar",
+  "searchPlaceholder": "Buscar notas, cartões, tags...",
+  "searchNoResults": "Sem resultados para \"{query}\"",
+  "@searchNoResults": {
+    "placeholders": {
+      "query": {"type": "String"}
+    }
+  },
+  "searchResults": "{count, plural, =0{Sem resultados} =1{1 resultado} other{{count} resultados}}",
+  "@searchResults": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "tagTitle": "Tag: {tag}",
+  "@tagTitle": {
+    "placeholders": {
+      "tag": {"type": "String"}
+    }
+  },
+  "tagNoNotes": "Ainda não há notas com esta tag.",
+
+  "graphTitle": "Grafo de conhecimento",
+  "graphNodes": "{count} notas",
+  "@graphNodes": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "graphEdges": "{count} links",
+  "@graphEdges": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "statsTitle": "Estatísticas",
+  "statsCurrentStreak": "Sequência atual",
+  "statsLongestStreak": "Maior sequência",
+  "statsDays": "{count, plural, =1{1 dia} other{{count} dias}}",
+  "@statsDays": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "statsTotalReviews": "Total de revisões",
+  "statsRetentionRate": "Taxa de retenção",
+  "statsNewCards": "Cartões novos",
+  "statsLearningCards": "Aprendendo",
+  "statsReviewCards": "Revisão",
+  "statsMatureCards": "Maduros",
+  "statsTimeSpent": "Tempo estudado",
+
+  "settingsTitle": "Configurações",
+  "settingsLanguage": "Idioma",
+  "settingsLanguageEnglish": "English",
+  "settingsLanguageSpanish": "Español",
+  "settingsLanguagePortuguese": "Português",
+  "settingsTheme": "Tema",
+  "settingsThemeSystem": "Sistema",
+  "settingsThemeLight": "Claro",
+  "settingsThemeDark": "Escuro",
+  "settingsRetentionTarget": "Meta de retenção",
+  "settingsRetentionHelp": "Maior = mais revisões mas melhor retenção",
+  "settingsAbout": "Sobre",
+  "settingsVersion": "Versão",
+
+  "commonSave": "Salvar",
+  "commonCancel": "Cancelar",
+  "commonDelete": "Excluir",
+  "commonEdit": "Editar",
+  "commonClose": "Fechar",
+  "commonOK": "OK",
+  "commonYes": "Sim",
+  "commonNo": "Não",
+  "commonLoading": "Carregando...",
+  "commonError": "Erro",
+  "commonRetry": "Tentar novamente",
+
+  "voiceListening": "Ouvindo...",
+  "voiceProcessing": "Processando áudio...",
+  "voiceError": "Erro de reconhecimento de voz",
+  "voiceTapToStart": "Toque para gravar",
+  "voiceTapToStop": "Toque para parar",
+
+  "aiChatTitle": "Tutor IA",
+  "aiChatPlaceholder": "Pergunte sobre suas notas...",
+  "aiChatThinking": "Pensando...",
+  "aiChatSources": "Fontes",
+
+  "marketplaceTitle": "Marketplace",
+  "marketplaceInstall": "Instalar",
+  "marketplaceInstalled": "Instalado",
+  "marketplaceRating": "Avaliação",
+  "marketplaceInstalls": "{count, plural, =1{1 instalação} other{{count} instalações}}",
+  "@marketplaceInstalls": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "clozeEditorTitle": "Editor de cloze",
+  "clozeHint": "Envolva o texto com {syntax} para criar um cloze",
+  "@clozeHint": {
+    "placeholders": {
+      "syntax": {"type": "String"}
+    }
+  },
+  "clozeCount": "{count, plural, =0{Sem clozes} =1{1 cloze} other{{count} clozes}}",
+  "@clozeCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  }
+}
