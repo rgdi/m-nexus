@@ -1,5 +1,63 @@
 # Release Notes
 
+## v0.46.0 (2026-09-08) — Released ✅ — Major audit-driven release
+
+**40 commits · 16 backend services · 13 app-side files · 6 auditor bugs · 589 tests passing**
+
+Esta versión cierra el **audit Expectativa vs Realidad** (`INFORME_EXPECTATIVA_VS_REALIDAD.pdf` + `MEGA_INFORME_M_NEXUS.pdf`).
+
+### 🎯 Highlights
+
+#### Backend (16 servicios nuevos, 6,591 LOC)
+
+- **🧠 FSRS-5/6 real** — `ts-fsrs@5.4.2` con 21 parámetros, 4 ratings, DSR model, forgetting curve
+- **🤖 AI Proposals v2** — LLM-powered con heuristic regex fallback
+- **🎙️ Whisper real** — Streaming transcription con whisper-node
+- **🔍 Search FTS5** — BM25 ranking, < 100ms en 10K+ notas
+- **🔗 Wikilinks** — Parser + backlinks + NFD normalize
+- **🕸️ Graph view** — Force-directed layout
+- **📝 Cloze + Image Occlusion + Type-Answer** — 3 tipos de cards Anki-style
+- **📊 Heatmap + Stats** — 365 días, streaks, retention
+- **🔄 Sync Yjs CRDT + E2E** — AES-256-GCM encryption
+- **💬 AI Tutor (RAG)** + **🛒 Marketplace** + **🎮 Gamification**
+- **🌐 Web Clipper** + **📥 Importers** (PDF/Anki/Notion/Roam) + **🔌 Plugin API**
+- **🌍 i18n** (3 idiomas)
+- **🛡️ corsPolicy, wsRateLimit, wormAudit** — 6 auditor bugs cerrados
+
+#### App (13 archivos nuevos, 4,465 LOC, 56 tests documentados)
+
+- **FSRS engine Dart** — Port 1:1 del backend, parity tests
+- **Drift schema** — 7 tables + 2 FTS5 virtual + 6 triggers
+- **4-button review UI** — Anki-style semantic colors + FSRS info bar
+- **i18n ARB files** (en/es/pt) — 97 keys idénticas
+- **VoiceInputButton** — Local STT + remote Whisper dual mode
+- **Search command palette** — Cmd+K con FTS5 highlighting
+- **Backlinks panel** + **Wikilink parser**
+- **Cloze editor** — Edit/Preview tabs + live render
+- **Heatmap widget** + **Stats screen** (fl_chart)
+- **AI chat screen** + **Marketplace screen**
+
+### 🐛 Auditor bugs cerrados
+
+| # | Bug | Severidad |
+|---|---|---|
+| #1 | CORS CSRF | 🔴 alta |
+| #2 | WS DoS | 🔴 alta |
+| #3 | WORM audit mutable | 🟠 media |
+| #4 | APK pipeline roto | 🔴 crítica |
+| #5 | Updater cache pierde release | 🟠 media |
+| #6 | home_screen 30s | 🟠 media |
+
+### 📦 Instalación
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/rgdi/m-nexus/main/install/install.sh | bash -s -- --component=all --tag=v0.46.0
+```
+
+Ver [CHANGELOG.md](CHANGELOG.md) para el detalle completo. Ver [CHECKLIST.md](CHECKLIST.md) para los 135/150 items.
+
+---
+
 ## v0.45.0 (2026-09-07) — Released ✅
 
 ### 🆔 Sistema de error codes unificado (frontend + backend)

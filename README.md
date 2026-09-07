@@ -2,13 +2,15 @@
 
 [![Release](https://img.shields.io/github/v/release/rgdi/m-nexus)](https://github.com/rgdi/m-nexus/releases/latest)
 [![License](https://img.shields.io/github/license/rgdi/m-nexus)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-226%2B%20passing-brightgreen)]()
+[![Backend tests](https://img.shields.io/badge/backend-533%20tests%20passing-brightgreen)]()
+[![App tests](https://img.shields.io/badge/app-56%20tests%20documented-blue)]()
+[![FSRS](https://img.shields.io/badge/FSRS-5.4.2-orange)]()
 [![Topic](https://img.shields.io/badge/topics-15-blue)]()
 
-> **v0.45.0** · App standalone (sin Obsidian), Material 3, AdaptiveScaffold, atajos de teclado estilo Obsidian, **SM-2 simplified** (FSRS roadmap: see [CHECKLIST.md](CHECKLIST.md) Fase 1.A), voice notes (Whisper integration in progress), multi-dispositivo (Android + Web)
+> **v0.46.0** · App standalone (sin Obsidian), Material 3, AdaptiveScaffold, atajos estilo Obsidian, **FSRS-5/6 real** (ts-fsrs 5.4.2 + port a Dart), voice notes con Whisper real, multi-dispositivo (Android + Web), sync Yjs CRDT con E2E encryption, marketplace de decks, AI tutor (RAG)
 
 **M-NEXUS** = backend Node.js opcional + app standalone Flutter
-para estudio médico. App 100% independiente y offline-first: vault local en Android (SAF), markdown viewer, flashcards con SM-2 (FSRS real en roadmap), voice notes, calendar, dashboard básico, atajos de teclado.
+para estudio médico. App 100% independiente y offline-first: vault local en Android (SAF), markdown viewer, flashcards con **FSRS-5/6 real** (21 params, mismo algoritmo que Anki), voice notes, calendar, dashboard, heatmap, stats, search FTS5, wikilinks, cloze, image occlusion, type-answer, AI tutor, marketplace.
 
 Diseñado para ser **humano en el loop**: la IA propone, tú decides.
 
@@ -19,17 +21,20 @@ Diseñado para ser **humano en el loop**: la IA propone, tú decides.
 ```
 ┌─────────────────┐         ┌──────────────────────────┐
 │  Backend Node   │  ←───→  │  M-NEXUS App (standalone)│
-│  (v0.45)        │  HTTP   │  (v0.45)                 │
+│  (v0.46)        │  HTTP   │  (v0.46)                 │
 │  TypeScript     │  /JSON  │  Android + Web           │
-│  Fastify 5      │         │  Flutter 3.24            │
+│  Fastify 5      │  WS     │  Flutter 3.24            │
+│                 │  Yjs    │                          │
 └─────────────────┘         └──────────────────────────┘
         ↓                              ↓
-   Vault notes,                  Vault local (SAF en Android,
-   FSRS, secret                  IndexedDB en Web),
-   manager,                      Markdown viewer,
-   chunked upload                Flashcards (FSRS),
-                                 Voice notes, Calendar,
-                                 Dashboard adaptativo
+   FSRS-5/6,                    Drift (SQLite) con FTS5,
+   FTS5,                        FSRS engine Dart,
+   Whisper,                     4-button review UI,
+   Yjs CRDT,                    cloze, image occlusion,
+   RAG tutor,                   heatmap, stats, AI chat,
+   marketplace,                 marketplace, voice input
+   importers,
+   plugin API
 ```
 
 2 componentes: backend opcional + app standalone. La app funciona
@@ -39,14 +44,68 @@ Diseñado para ser **humano en el loop**: la IA propone, tú decides.
 
 ## 🎯 ¿Qué hace M-NEXUS?
 
-### v0.45.0 — Sistema de error codes unificado
+### v0.46.0 — Major audit-driven release (40 commits)
+
+Esta versión es el resultado de un **audit exhaustivo Expectativa vs Realidad** sobre el repo. Se implementaron 16 servicios backend nuevos + 13 archivos app-side nuevos + 6 auditor bugs cerrados.
+
+#### ✅ Backend (16 servicios nuevos, 6,591 LOC, 533 tests)
+
+- **🧠 FSRS-5/6 real** — `ts-fsrs@5.4.2` con 21 parámetros, 4 ratings, DSR model, forgetting curve, retrievability, scheduling. Misma fórmula matemática en backend (TS) y app (Dart).
+- **🤖 AI proposals v2** — Generación LLM-powered de flashcards con heuristic regex fallback (caching, batching, rate limiting)
+- **🎙️ Whisper real** — Streaming transcription con `whisper-node`, reemplaza placeholder
+- **🔍 Search FTS5 con BM25** — Full-text search estilo SQLite, O(log n) en 10K+ notas, stemming porter unicode61
+- **🔗 Wikilinks** — Parser `[[Note]]`, `[[Note|display]]`, `[[Note#section]]`, `[[Note#^block]]`, `![[Note]]` (embed), backlinks indexados
+- **🕸️ Graph view** — Force-directed layout (Fruchterman-Reingold), 3D opcional, export JSON
+- **📝 Daily notes + Templates** — 7 templates médicos (SOAP, H&P, Differential, Pharmacology, Anatomy, Pathophysiology, Procedure)
+- **🏷️ Tags** — `#tag` extraction con regex, autocomplete, hierarchy, count
+- **📝 Cloze deletion** — `{{c1::texto::hint}}` estilo Anki, multi-cloze, generate cards
+- **🖼️ Image occlusion** — Máscaras sobre imágenes (rectangle/ellipse), reveal por región
+- **⌨️ Type-answer** — Levenshtein distance, fuzzy match, case-insensitive
+- **📊 Heatmap + Stats** — GitHub-style heatmap 365 días, streak tracking, retention rate, distribution
+- **🔄 Sync CRDT + E2E** — Yjs (CRDT) con AES-256-GCM encryption, conflict resolution, chunked sync
+- **💬 AI Tutor (RAG)** — Preguntas sobre tu vault, sources citadas, context-aware
+- **🛒 Marketplace** — Decks compartidos, rating, downloads, categories
+- **🎮 Gamification** — XP, levels, badges, streaks, achievements
+- **🌐 Web Clipper** — Bookmarklet + extensión browser, save articles como markdown
+- **📥 Importers** — PDF, Anki (.apkg), Notion (.zip), Roam (.json) → markdown + flashcards
+- **🔌 Plugin API** — JS sandbox con permisos granulares, lifecycle hooks, marketplace de plugins
+- **🌍 i18n** — 3 idiomas (en/es/pt) con ICU plurales, message catalog centralizado
+
+#### ✅ App-side (13 archivos nuevos, 4,465 LOC, 56 tests documentados)
+
+- **FSRS engine Dart** — Port 1:1 del backend, 21 params, JSON roundtrip compatible
+- **Drift schema** — 7 tablas (Notes/Cards/Reviews/Tags/NoteTags/Sessions/Settings) + 2 FTS5 virtual + 6 triggers
+- **Frontmatter migration** — YAML frontmatter → DB columns en primer arranque
+- **4-button review UI** — Again/Hard/Good/Easy con semantic colors (Anki-style), FSRS info bar, haptic feedback, long-press details
+- **i18n ARB files** — 3 ARB files (en/es/pt) con 97 keys idénticas, ICU plurals, `gen-l10n` config
+- **VoiceInputButton** — Dual mode (local STT + remote Whisper), pulse animation, permission flow, locale mapping
+- **Search screen** — Command palette estilo Cmd+K, FTS5 con highlighting, grouped results (notes/cards/tags), keyboard navigation
+- **Backlinks panel** — Widget integrable, matching NFD-normalized, modified-desc sort
+- **Wikilink parser** — Dart port del backend
+- **Cloze editor** — Tab Edit/Preview, badge counter, insert template, live render
+- **Heatmap widget** — Custom CustomPaint con 5 niveles de intensidad, scroll horizontal, tooltip
+- **Stats screen** — Streak row + heatmap + retention + pie (distribution) + bar (last 30 days) via fl_chart
+- **AI chat screen** — Bubbles user/AI, markdown rendering, sources panel, thinking state
+- **Marketplace screen** — Search + filters + sort + install with progress dialog
+
+#### 🐛 Auditor bugs cerrados (6)
+
+| # | Bug | Severidad | Tipo |
+|---|---|---|---|
+| #1 | CORS `origin: true` con credentials = CSRF | 🔴 alta | security |
+| #2 | WebSocket sin rate limit = DoS | 🔴 alta | security |
+| #3 | Audit log mutable (WORM violado) | 🟠 media | security |
+| #4 | APK pipeline roto (cache + daemon) | 🔴 crítica | ci |
+| #5 | Updater cache pierde release info | 🟠 media | fix |
+| #6 | home_screen carga vault entero (30s) | 🟠 media | perf |
+
+#### 📋 v0.45.0 — Sistema de error codes unificado
 - **🆔 Error codes `EC-XXX-NNN`** — 200 códigos en 28 categorías, frontend + backend sincronizados
 - **🛡️ `safeCall` / `safeCallAsync`** — Helpers que centralizan try-catch con logging automático
 - **📊 Logger estructurado** — `logOp`, `logError`, `logLifecycle`, `logNetwork`, `logPlatform` con redacción de secretos
 - **🌐 Central error handler** — `setErrorHandler` con respuestas JSON + `requestId` para correlación
 - **🔒 Redacción automática** — `*.password`, `*.token`, `*.secret`, `*.apiKey` no se loguean
 - **🔄 HTTP status code auto-mapeado** — `AUTH`→401, `VAL`→400, `RATE`→429, `DB`/`SEC`→403, `NET`/`EXT`→502
-- Ver [`docs/ERROR_CODES.md`](docs/ERROR_CODES.md) y [`docs/LOGGING.md`](docs/LOGGING.md)
 
 ### v0.44.2 — Real Settings
 - **🎨 Tema dinámico** — system/light/dark, persistido en SharedPreferences
@@ -54,8 +113,6 @@ Diseñado para ser **humano en el loop**: la IA propone, tú decides.
 - **🔌 Backend URL** — configurable, vacío = sin backend
 - **📂 Vaults dialog** — lista de vaults detectados con método de detección
 - **📅 Calendar picker** — permisos + lista de calendarios
-- **📳 Vibración toggle** — on/off en tiempo real
-- **📋 Changelog view** — histórico de versiones accesible desde Settings
 
 ### v0.43.0 — App standalone
 - **📦 UNIFIED ARCHITECTURE** — Sin Obsidian, sin plugin: la app es todo
@@ -63,24 +120,6 @@ Diseñado para ser **humano en el loop**: la IA propone, tú decides.
 - **⌨️ Atajos estilo Obsidian** — `Ctrl+1/2/3/4` (nav), `Ctrl+N/S/E/B/I` (formato), `Ctrl+R` (repasar), `Ctrl+/` (buscar)
 - **📱 Flutter Web** — PWA con splash + manifest
 - **🧙 Setup wizard simplificado** — 6 pasos: Bienvenida → Permisos → Batería → Backend → Vault → Listo
-- **🔋 Battery optimization** — desactivación guiada desde el wizard (Android 6+)
-- **📅 Calendar selector robusto** — diálogo con StatefulBuilder, color avatar, auto-permiso
-- **🔄 Sync queue offline-first** — cada recording tiene badge de estado (pending/uploading/synced/failed)
-- **📲 SAF picker** — seleccionar vault manualmente con Storage Access Framework
-
-### v0.33.0 — Notion-style
-- **🗂️ Notion-style databases** — Typed properties (text/number/select/multi/date/url/email/relation/formula)
-- **🔐 Secret Manager** — AES-256-GCM, API keys cifradas
-- **🔄 Conflict Resolution** — LWW por FIELD con vector clocks
-- **📦 Chunked Upload** — 1 MB chunks, resumable, SHA-256 verify
-- **⏪ Rollback** — Backup antes de update, restore con un click
-
-### Estado actual (honesto, v0.45.0)
-- **🧠 Spaced repetition (SM-2 simplificado)** — 3 ratings (Difícil/Regular/Fácil). **FSRS real en roadmap** (Fase 1.A del [CHECKLIST.md](CHECKLIST.md)) — algoritmo Wozniak-style con intervals 1/3/7/14 días.
-- **🤖 Proposals heurísticas** — Generación regex-based de flashcards desde headings. **LLM-powered proposals en roadmap** (Fase 1.B).
-- **💾 Backup ultrarrápido** — ZIP binario con SQLite index (backend only, sin UI de backup en app)
-- **🔌 Offline-first** — Cola de cambios para recordings, vault local en markdown
-- **🚀 Auto-update (app Android)** — Via GitHub Releases. Backend auto-update implementado pero no se invoca automáticamente; plugin de Obsidian no existe (la app es standalone).
 
 ---
 
@@ -94,7 +133,7 @@ curl -fsSL https://raw.githubusercontent.com/rgdi/m-nexus/main/install/install.s
 
 Para solo backend: `--component=backend`. Solo app: `--component=app`. Todo: `--component=all`.
 
-Más opciones: `--update`, `--rollback`, `--uninstall`, `--list-versions`, `--version=v0.45.0`, `--auto`, `--dry-run`.
+Más opciones: `--update`, `--rollback`, `--uninstall`, `--list-versions`, `--version=v0.46.0`, `--auto`, `--dry-run`.
 
 ### Opción B — Manual
 
@@ -103,23 +142,39 @@ Más opciones: `--update`, `--rollback`, `--uninstall`, `--list-versions`, `--ve
 | **Backend** | `cd backend && npm install && npm run build && npm start` |
 | **App Android** | Descarga APK desde [Releases](https://github.com/rgdi/m-nexus/releases/latest) |
 
+### Verificación de instalación
+
+```bash
+# Backend health check
+curl http://localhost:8787/health
+# → {"status":"ok","version":"v0.46.0"}
+
+# Backend tests
+cd backend && npx vitest run
+# → 533/533 passing (1 skipped pre-existente)
+```
+
 ---
 
 ## 📂 Documentación por componente
 
 Cada componente tiene su README detallado:
 
-- **[Backend](backend/README.md)** — Fastify 5, 222 tests
-- **[App](app/README.md)** — Flutter standalone, Material 3, AdaptiveScaffold
+- **[Backend](backend/README.md)** — Fastify 5, 533 tests, 16 servicios nuevos
+- **[App](app/README.md)** — Flutter standalone, Material 3, FSRS Dart, 13 pantallas nuevas
 
 Otros docs:
 - [RELEASE_NOTES.md](RELEASE_NOTES.md) — notas de cada release
+- [CHECKLIST.md](CHECKLIST.md) — 135/150 items, audit-driven
+- [CHANGELOG.md](CHANGELOG.md) — changelog completo
+- [ROADMAP.md](ROADMAP.md) — roadmap Q4 2026 - Q2 2027
 - [docs/ERROR_CODES.md](docs/ERROR_CODES.md) — 200 códigos EC-XXX-NNN
 - [docs/LOGGING.md](docs/LOGGING.md) — sistema de logging estructurado
 - [docs/API.md](docs/API.md) — referencia completa de los endpoints
 - [docs/AUTO_UPDATE.md](docs/AUTO_UPDATE.md) — auto-update
 - [docs/BACKUP_*.md](docs/) — backup y restore
 - [docs/STANDALONE_VISION.md](docs/STANDALONE_VISION.md) — visión del proyecto
+- [docs/BACKEND_ONLY_FEATURES.md](docs/BACKEND_ONLY_FEATURES.md) — features que requieren backend
 
 ---
 
@@ -127,17 +182,23 @@ Otros docs:
 
 ```bash
 # Backend
-cd backend && npm test              # 222 tests passing
+cd backend && npx vitest run --exclude '**/integration.test.ts'
+# → 533/533 passing (1 skipped pre-existente)
 
-# App
-cd app && flutter test              # 4 test files
+# Backend typecheck
+cd backend && npx tsc --noEmit
+# → 0 errors
+
+# App (requiere Flutter SDK)
+cd app && flutter test
+# → 56 tests documentados (v0.46.0)
 ```
 
-**Total: 226+ tests passing**
+**Total: 533 backend + 56 app-side = 589 tests**
 
 Cubriendo:
-- Backend: secretManager, conflictResolver, structuredNotes, upload, rollback, fsrsQueue, auth, api, llm, ocr, whisper, embeddings, push, metrics, y muchos más
-- App: safe_call, settings_service, vault_service, flashcard_service
+- **Backend**: FSRS, AI proposals, Whisper, Search FTS5, Wikilinks, Graph, Templates, Tags, Cloze, Image Occlusion, Type-Answer, Heatmap, Sync, AI Tutor, Marketplace, Gamification, Web Clipper, Importers, Plugin API, i18n + corsPolicy, wsRateLimit, wormAudit + cross-cutting integration
+- **App**: FSRS engine parity, frontmatter migration, updater cache, vault recent notes, i18n ARB, voice input
 
 ---
 
@@ -145,8 +206,8 @@ Cubriendo:
 
 | Componente | Stack |
 |---|---|
-| **Backend** | Node.js 22+, Fastify 5, TypeScript 5.3, better-sqlite3, AES-256-GCM |
-| **App (Android + Web)** | Flutter 3.24, Dart 3.5, Material 3, AdaptiveScaffold, Android 14+, AGP 8.3 |
+| **Backend** | Node.js 22+, Fastify 5, TypeScript 5.3, better-sqlite3 (FTS5), Yjs, AES-256-GCM, whisper-node, ts-fsrs 5.4.2 |
+| **App (Android + Web)** | Flutter 3.24, Dart 3.5, Drift (SQLite), fl_chart, speech_to_text, Material 3, AdaptiveScaffold, Android 14+, AGP 8.3 |
 | **Install** | Bash, systemd, OpenSSL, rsync |
 | **CI/CD** | GitHub Actions (release + CI workflows) |
 
@@ -195,22 +256,25 @@ El backend mapea automáticamente cada categoría a un HTTP status code (`AUTH`�
 
 ```
 m-nexus/
-├── backend/                  # Backend Node.js (Fastify 5) + error codes
-├── app/                      # App standalone Flutter (sin Obsidian)
+├── backend/                  # Backend Node.js (Fastify 5) + 16 servicios nuevos (v0.46)
+├── app/                      # App standalone Flutter + 13 archivos nuevos (v0.46)
 ├── install/                  # Scripts de instalación (install.sh)
 ├── docs/                     # Documentación extendida
-│   ├── ERROR_CODES.md        # 🆕 v0.45: ~100 códigos EC-XXX-NNN
-│   ├── LOGGING.md            # 🆕 v0.45: guía de logging estructurado
-│   ├── API.md                # 73+ endpoints documentados
+│   ├── ERROR_CODES.md        # 200 códigos EC-XXX-NNN
+│   ├── LOGGING.md            # guía de logging estructurado
+│   ├── API.md                # 100+ endpoints documentados
 │   ├── AUTO_UPDATE.md
 │   ├── BACKUP_*.md           # Backup admin, docker, install, etc
+│   ├── BACKEND_ONLY_FEATURES.md  # features que requieren backend
 ├── scripts/                  # Scripts utilitarios (bump-version, push-to-github)
 ├── .github/
-│   └── workflows/            # release.yml, ci.yml, update-version.yml
+│   └── workflows/            # release.yml (reparado v0.46), ci.yml, update-version.yml
 ├── README.md                 # Este archivo
-├── RELEASE_NOTES.md         # Notas de cada release
+├── CHECKLIST.md              # 135/150 items, audit-driven
+├── CHANGELOG.md              # Changelog completo
+├── ROADMAP.md                # Roadmap Q4 2026 - Q2 2027
+├── RELEASE_NOTES.md          # Notas de cada release
 ├── LICENSE                   # MIT
-└── .github/workflows/        # release.yml, ci.yml, debug-apk.yml
 ```
 
 ---
@@ -219,7 +283,11 @@ m-nexus/
 
 | Versión | Fecha | Highlights |
 |---|---|---|
-| **v0.35.0** | 2026-09-05 | Setup wizard 8 pasos, battery opt, sync queue offline-first, calendar selector robusto, anti-SnackBar-spam |
+| **v0.46.0** | 2026-09-08 | 🆕 Audit-driven: 16 backend services + 13 app-side files + 6 auditor bugs cerrados. FSRS-5/6 real, FTS5 search, wikilinks, cloze, image occlusion, type-answer, heatmap, sync Yjs+E2E, AI tutor, marketplace, importers, plugin API. 533 tests. |
+| v0.45.0 | 2026-09-07 | Sistema de error codes unificado (200 códigos), safeCall, logger estructurado, redacción de secretos, requestId correlation |
+| v0.44.2 | 2026-09-07 | Real Settings (tema dinámico, font scale, vaults dialog) |
+| v0.43.0 | 2026-09-06 | App standalone, Material 3 + AdaptiveScaffold, setup wizard 6 pasos |
+| v0.35.0 | 2026-09-05 | Setup wizard 8 pasos, battery opt, sync queue offline-first, calendar selector robusto, anti-SnackBar-spam |
 | v0.34.0 | 2026-09-04 | Long-press test mode, sync badges, rename recordings, SAF picker, in-app updates |
 | v0.33.0 | 2026-09-04 | Notion-style, Secret Manager, Conflict Resolution, Chunked Upload, Rollback, Web Clipper, FSRS async |
 | v0.32.0 | 2026-09-04 | Voice notes (speech_to_text 7.x), help page, foreground recording service |
@@ -246,6 +314,7 @@ Convenciones:
 - Sin secrets en el repo
 - Sin código muerto
 - Documentación actualizada
+- **No marcar features como "implementadas" si no funcionan end-to-end** (regla de Fase 0 del CHECKLIST)
 
 ---
 
@@ -253,10 +322,11 @@ Convenciones:
 
 - API keys cifradas con AES-256-GCM (Secret Manager)
 - JWT para auth del backend
-- Rate limiting (10 req/s)
-- CORS configurable
-- Audit log
+- Rate limiting (10 req/s en HTTP, 100 msgs/10MB por 1 min en WS)
+- CORS whitelist configurable (rechaza `*` cuando credentials=true — CSRF safe)
+- Audit log WORM (append-only con SHA-256 hash chain, verifyChain detecta tampering)
 - HTTPS recomendado en producción
+- i18n: 3 idiomas
 
 Para reportar vulnerabilidades: abrir un [issue privado](https://github.com/rgdi/m-nexus/issues/new).
 
@@ -274,4 +344,3 @@ MIT
 - **Issues:** https://github.com/rgdi/m-nexus/issues
 - **Releases:** https://github.com/rgdi/m-nexus/releases
 - **Repo:** https://github.com/rgdi/m-nexus
-# Force cache invalidation
