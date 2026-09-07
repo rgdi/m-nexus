@@ -126,7 +126,7 @@ Future<T?> safeCallOrNull<T>({
   String? hint,
   ErrorCategory? category,
 }) async {
-  final r = await safeCallAsync<T>(
+  final r = await safeCallAsync<T?>(
     component: component, code: code, message: message,
     op: op, context: context, hint: hint, category: category);
   return r.value;

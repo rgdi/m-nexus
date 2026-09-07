@@ -48,16 +48,12 @@ class UpdaterIO {
         final file = File('${tmp.path}/${update.apkFileName}');
         final resp = await _http.get(Uri.parse(update.apkDownloadUrl));
         if (resp.statusCode != 200) {
-          throw E.net("EC-UP-003", "APK download non-200", {
-            context: {'url': update.apkDownloadUrl, 'status': resp.statusCode},
-          });
+          throw AppError.net('EC-UP-003', 'APK download non-200', context: {'url': update.apkDownloadUrl, 'status': resp.statusCode});
         }
         if (update.apkSize > 0) {
           final diff = (resp.bodyBytes.length - update.apkSize).abs();
           if (diff > update.apkSize * 0.02) {
-            throw E.net("EC-UP-004", "APK size mismatch", {
-              context: {'expected': update.apkSize, 'got': resp.bodyBytes.length},
-            });
+            throw AppError.net('EC-UP-004', 'APK size mismatch', context: {'expected': update.apkSize, 'got': resp.bodyBytes.length});
           }
         }
         await file.writeAsBytes(resp.bodyBytes);
