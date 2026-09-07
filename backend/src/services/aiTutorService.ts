@@ -11,7 +11,6 @@
 //   5. Si no hay LLM disponible, fallback a extract-based answer
 
 import { SearchService } from "./searchService";
-import { LLMService } from "./llmService";
 
 export interface TutorContext {
   /** Query del usuario */
