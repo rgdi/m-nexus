@@ -37,7 +37,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _load() async {
     final log = AdvancedLogger.instance;
     try {
-      final s = await SettingsService().load();
+      final s = await SettingsService.instance.load();
       if (!mounted) return;
       log.debug('settings', 'settings loaded', context: s.toJson());
       setState(() {
@@ -53,7 +53,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _save() async {
     try {
-      await SettingsService().save(_settings);
+      // v0.45.11: save() now notifies listeners automatically (MnexusApp
+      // rebuilds with new theme/font scale)
+      await SettingsService.instance.save(_settings);
       AdvancedLogger.instance.info('settings', 'settings saved', context: _settings.toJson());
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

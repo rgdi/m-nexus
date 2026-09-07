@@ -54,32 +54,38 @@ class MnexusApp extends StatefulWidget {
 }
 
 class _MnexusAppState extends State<MnexusApp> {
-  AppSettings _settings = const AppSettings();
+  final SettingsService _settings = SettingsService.instance;
 
   @override
   void initState() {
     super.initState();
-    _load();
+    _settings.load();
+    _settings.addListener(_onSettingsChanged);
   }
 
-  Future<void> _load() async {
-    final s = await SettingsService().load();
-    if (!mounted) return;
-    setState(() => _settings = s);
+  void _onSettingsChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _settings.removeListener(_onSettingsChanged);
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final s = _settings.current;
     return MaterialApp(
       title: AppConstants.name,
       debugShowCheckedModeBanner: false,
-      themeMode: _settings.materialThemeMode,
+      themeMode: s.materialThemeMode,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       builder: (ctx, child) {
         return MediaQuery(
           data: MediaQuery.of(ctx).copyWith(
-            textScaler: TextScaler.linear(_settings.fontScale),
+            textScaler: TextScaler.linear(s.fontScale),
           ),
           child: child!,
         );

@@ -50,23 +50,63 @@ class AppSettings {
   };
 }
 
-class SettingsService {
+class SettingsService extends ChangeNotifier {
   static const String _kTheme = 'mnexus.theme';
   static const String _kBackend = 'mnexus.backend_url';
   static const String _kFontScale = 'mnexus.font_scale';
   static const String _kHaptics = 'mnexus.haptics';
 
+  // v0.45.11: singleton + ChangeNotifier so the whole app rebuilds
+  // when settings change (theme, font scale, haptics).
+  static final SettingsService instance = SettingsService._();
+  SettingsService._();
+
+  AppSettings _settings = const AppSettings();
+
+  AppSettings get current => _settings;
+
   Future<AppSettings> load() async {
     final p = await SharedPreferences.getInstance();
-    return AppSettings(
+    _settings = AppSettings(
       themeMode: AppThemeMode.values[p.getInt(_kTheme) ?? 0],
       backendUrl: p.getString(_kBackend),
       fontScale: p.getDouble(_kFontScale) ?? 1.0,
       enableHaptics: p.getBool(_kHaptics) ?? true,
     );
+    return _settings;
   }
 
+  /// Updates a single setting and notifies listeners. Use this from
+  /// anywhere instead of save(AppSettings) to avoid the listener
+  /// missing the change.
+  Future<void> update({
+    AppThemeMode? themeMode,
+    String? backendUrl,
+    bool clearBackend = false,
+    double? fontScale,
+    bool? enableHaptics,
+  }) async {
+    _settings = _settings.copyWith(
+      themeMode: themeMode,
+      backendUrl: clearBackend ? null : (backendUrl ?? _settings.backendUrl),
+      fontScale: fontScale,
+      enableHaptics: enableHaptics,
+    );
+    final p = await SharedPreferences.getInstance();
+    if (themeMode != null) await p.setInt(_kTheme, themeMode.index);
+    if (clearBackend) {
+      await p.remove(_kBackend);
+    } else if (backendUrl != null) {
+      await p.setString(_kBackend, backendUrl);
+    }
+    if (fontScale != null) await p.setDouble(_kFontScale, fontScale);
+    if (enableHaptics != null) await p.setBool(_kHaptics, enableHaptics);
+    notifyListeners();
+  }
+
+  /// Legacy: saves the full AppSettings object. Use update() instead.
   Future<void> save(AppSettings s) async {
+    _settings = s;
     final p = await SharedPreferences.getInstance();
     await p.setInt(_kTheme, s.themeMode.index);
     if (s.backendUrl != null) {
@@ -76,5 +116,6 @@ class SettingsService {
     }
     await p.setDouble(_kFontScale, s.fontScale);
     await p.setBool(_kHaptics, s.enableHaptics);
+    notifyListeners();
   }
 }

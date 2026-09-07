@@ -13,6 +13,7 @@ import '../../services/app_info.dart';
 import '../../services/flashcard_service.dart';
 import '../../services/vault_detector.dart';
 import '../../services/vault_saf_picker.dart';
+import '../../services/permissions.dart';
 import '../../services/vault_service.dart';
 import '../../services/logger.dart';
 import '../../state/app_state.dart';
