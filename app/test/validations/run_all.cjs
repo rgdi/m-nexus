@@ -4,9 +4,21 @@
 // Uso: node test/validations/run_all.cjs
 // Exit code: 0 si todos pasan, 1 si alguno falla.
 
-const { execSync } = require('child_process');
+const { execSync, spawnSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+
+// Encuentra el root del repo (donde está backend/node_modules con `yaml`)
+function findRepoRoot() {
+  let dir = __dirname;
+  for (let i = 0; i < 10; i++) {
+    if (fs.existsSync(path.join(dir, '.git'))) return dir;
+    dir = path.dirname(dir);
+  }
+  return path.resolve(__dirname, '..', '..', '..');
+}
+const repoRoot = findRepoRoot();
+const nodeModulesPath = path.join(repoRoot, 'backend', 'node_modules');
 
 const validations = [
   'validate_fsrs.cjs',
@@ -15,6 +27,7 @@ const validations = [
   'validate_clients.cjs',
   'validate_backlinks.cjs',
   'validate_transcribe.cjs',
+  'validate_release.cjs',
 ];
 
 console.log('='.repeat(60));
@@ -32,10 +45,18 @@ for (const file of validations) {
   }
   console.log('--- Running', file, '---');
   try {
-    const out = execSync(`node ${filepath}`, { encoding: 'utf-8' });
-    process.stdout.write(out);
+    // NODE_PATH para que encuentre el paquete 'yaml' en backend/node_modules
+    const result = spawnSync('node', [filepath], {
+      encoding: 'utf-8',
+      env: { ...process.env, NODE_PATH: nodeModulesPath },
+    });
+    if (result.stdout) process.stdout.write(result.stdout);
+    if (result.stderr) process.stderr.write(result.stderr);
+    if (result.status !== 0) {
+      allPassed = false;
+    }
   } catch (e) {
-    console.error('FAIL:', file, '\n', e.stdout || e.message);
+    console.error('FAIL:', file, '\n', e.message);
     allPassed = false;
   }
   console.log();
