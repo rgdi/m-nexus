@@ -403,14 +403,6 @@ class _ShortcutRow extends StatelessWidget {
   final String label;
   final String shortcut;
   const _ShortcutRow({required this.label, required this.shortcut});
-  /// v0.45.1: abre el SAF picker para que el usuario elija un vault manualmente.
-  Future<void> _pickSafVault() async {
-    final path = await VaultSafPicker.pickVault();
-    if (path == null) return;  // cancelado
-    await VaultDetector().addSafPath(path);
-    if (!mounted) return;
-    _load();
-  }
 
   @override
   Widget build(BuildContext context) {

@@ -234,8 +234,7 @@ class VaultDetector {
       await dir.create(recursive: true);
       // Marker
       final marker = File('$defaultPath/.mnexus');
-      await marker.writeAsString('v0.45.1
-');
+      await marker.writeAsString('v0.45.1\n');
       // Welcome note
       final welcome = File('$defaultPath/Bienvenido.md');
       if (!await welcome.exists()) {
