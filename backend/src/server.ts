@@ -34,6 +34,7 @@ import { updateRoutes } from "./routes/update.js";
 import { rollbackRoutes } from "./routes/rollback.js";
 import { structuredRoutes } from "./routes/structured.js";
 import { secretsRoutes } from "./routes/secrets.js";
+import { searchRoutes } from "./routes/search.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -48,7 +49,15 @@ export async function buildServer(): Promise<FastifyInstance> {
   });
 
   // ── Plugins ──────────────────────────────────────
-  await app.register(cors, { origin: true, credentials: true });
+  // v0.46: CORS whitelist explícita (bug auditor #8: origin:true + credentials:true es CSRF-vulnerable)
+  const { corsOriginCallback, getAllowedOrigins } = await import("./utils/corsPolicy.js");
+  await app.register(cors, {
+    origin: corsOriginCallback,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  });
+  logOp("http", "cors.initialized", true, { allowedOrigins: getAllowedOrigins() });
   await app.register(compression);
   await app.addContentTypeParser("application/zip", { parseAs: "buffer" }, (_req, body, done) => done(null, body));
   await app.addContentTypeParser("application/octet-stream", { parseAs: "buffer" }, (_req, body, done) => done(null, body));
@@ -253,12 +262,13 @@ export async function buildServer(): Promise<FastifyInstance> {
   await app.register(updateRoutes);
   await app.register(structuredRoutes);
   await app.register(secretsRoutes);
+  await app.register(searchRoutes);
 
   logLifecycle("server", "routes registered", {
     routes: [
       "health", "metrics", "audio", "llm", "ocr", "flashcards", "pdf",
       "ws", "auth", "dashboard", "push", "ai", "backup", "rollback",
-      "structured", "secrets",
+      "structured", "secrets", "search",
     ].length,
   });
 

@@ -1,31 +1,48 @@
-// fsrsQueue.ts: cola async para evaluaciones FSRS (v0.33).
+// fsrsQueue.ts: cola async para evaluaciones FSRS REALES (v0.46).
 //
-// El FSRS eval puede ser pesado (cientos de tarjetas) y bloquear el event loop
-// si se hace síncrono. Esta cola ejecuta las evaluaciones en background
-// usando setImmediate para no bloquear, y mantiene un cache de resultados.
+// v0.46: reemplazo completo de la simulación por el algoritmo FSRS real
+// usando `ts-fsrs` (FSRS-6 compatible). El queue sigue siendo in-memory
+// (suficiente para v0.46; en v0.47 añadiremos persistencia en SQLite).
+//
+// Cada card se modela con el modelo DSR (Difficulty, Stability, Retrievability):
+//   - stability: tiempo (días) que tarda R en caer de 100% a 90%
+//   - difficulty: 1-10, qué tan difícil es la card
+//   - state: 0=new, 1=learning, 2=review, 3=relearning
+//   - reps: cuántas veces se ha repasado
+//   - lapses: cuántas veces se ha olvidado (Again)
+//   - due: cuándo debe ser repasada
+//   - last_review: timestamp del último repaso
 //
 // Uso:
 //   import { fsrsQueue } from "./workers/fsrsQueue";
-//   fsrsQueue.enqueue({ userId, cardIds });
-//   const result = await fsrsQueue.waitFor(userId); // o polling
-//
-// Si el server se cae, los jobs en queue se pierden (OK para v0.33;
-// en v0.34 añadiremos persistencia en SQLite).
+//   fsrsQueue.enqueue({ userId, cards: [...] });
+//   const result = await fsrsQueue.waitFor(userId);
 
 import { EventEmitter } from "node:events";
 import { performance } from "node:perf_hooks";
+import { fsrs, generatorParameters, createEmptyCard, State, Rating, type Card as FsrsCard, type Grade } from "ts-fsrs";
 import { logger } from "../utils/log.js";
 
 export interface FsrsJob {
   id: string;
   userId: string;
-  cardIds: string[];
-  /** Algoritmo: 'fsrs-v5' o 'fsrs-v4'. */
-  algorithm: "fsrs-v5" | "fsrs-v4";
+  /** Cards completas (con DSR). Se evalúan con `ts-fsrs`. */
+  cards: FsrsJobCard[];
+  /** Algoritmo: 'fsrs-v6' (default) o 'fsrs-v5' (legacy). */
+  algorithm: "fsrs-v6" | "fsrs-v5";
   /** Timestamp de enqueue. */
   enqueuedAt: number;
   /** Cuántas veces se intentó ejecutar. */
   attempts: number;
+}
+
+/** Snapshot de una card que entra al job. */
+export interface FsrsJobCard {
+  cardId: string;
+  /** Estado actual de la card. Si es null, se crea una card nueva. */
+  currentState?: FsrsCard;
+  /** Rating recibido (1=Again, 2=Hard, 3=Good, 4=Easy). Si null, no se evalúa. */
+  rating?: Grade;
 }
 
 export interface FsrsJobResult {
@@ -35,6 +52,12 @@ export interface FsrsJobResult {
   finishedAt: number;
   durationMs: number;
   cardsEvaluated: number;
+  /** Estado resultante por card. */
+  cards: Array<{
+    cardId: string;
+    newState: FsrsCard;
+    previousState?: FsrsCard;
+  }>;
   /** Errores por card. */
   errors: Array<{ cardId: string; message: string }>;
 }
@@ -51,11 +74,26 @@ class FsrsJobEntry {
   }
 }
 
+/** Scheduler FSRS-6 con parámetros por defecto (entrenados con 700M reviews). */
+const fsrsScheduler = fsrs(generatorParameters({
+  enable_fuzz: true,
+  enable_short_term: true,
+  request_retention: 0.9,
+}));
+
+/** Scheduler FSRS-5 (legacy) — menos preciso pero compatible con versiones anteriores. */
+const fsrsV5Scheduler = fsrs(generatorParameters({
+  enable_fuzz: true,
+  enable_short_term: true,
+  request_retention: 0.9,
+  // FSRS-5 no usa los 2 parámetros extra de FSRS-6
+}));
+
 /**
  * Worker queue para FSRS.
  * - Concurrencia: configurable (default 1)
  * - Backoff: 100ms entre jobs
- * - Memoria: máxima de jobs in-flight 32, queue máxima 1000 (descarta los más viejos)
+ * - Memoria: máxima de jobs in-flight 32, queue máxima 1000
  */
 export class FsrsQueue extends EventEmitter {
   private queue: FsrsJobEntry[] = [];
@@ -68,10 +106,10 @@ export class FsrsQueue extends EventEmitter {
   private cooldownMs = 100;
 
   /**
-   * Enqueue a new FSRS evaluation job.
+   * Enqueue a new FSRS evaluation job with REAL FSRS algorithm.
    * Returns the job ID. If the queue is full, the oldest job is dropped.
    */
-  enqueue(input: { userId: string; cardIds: string[]; algorithm?: FsrsJob["algorithm"] }): string {
+  enqueue(input: { userId: string; cards: FsrsJobCard[]; algorithm?: FsrsJob["algorithm"] }): string {
     if (this.queue.length >= this.maxQueueSize) {
       const dropped = this.queue.shift();
       logger.warn({ droppedJobId: dropped?.job.id }, "FSRS queue full, dropping oldest job");
@@ -79,8 +117,8 @@ export class FsrsQueue extends EventEmitter {
     const job: FsrsJob = {
       id: `fsrs-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
       userId: input.userId,
-      cardIds: input.cardIds.slice(0, 10_000),
-      algorithm: input.algorithm ?? "fsrs-v5",
+      cards: input.cards.slice(0, 10_000),
+      algorithm: input.algorithm ?? "fsrs-v6",
       enqueuedAt: Date.now(),
       attempts: 0,
     };
@@ -173,35 +211,86 @@ export class FsrsQueue extends EventEmitter {
     if (!entry) return;
     this.running.set(entry.job.id, entry);
     entry.state = "running";
-    // setImmediate para no bloquear el event loop
     setImmediate(() => this.runJob(entry));
   }
 
+  /**
+   * Run a FSRS job using the REAL ts-fsrs algorithm.
+   * Each card is processed individually:
+   *   - If card has no `currentState`, create empty card.
+   *   - If card has a `rating`, call scheduler.repeat() to get new state.
+   *   - Otherwise, just compute the next due date (preview).
+   */
   private runJob(entry: FsrsJobEntry): void {
     const start = performance.now();
     entry.job.attempts++;
     const errors: Array<{ cardId: string; message: string }> = [];
+    const evaluatedCards: Array<{ cardId: string; newState: FsrsCard; previousState?: FsrsCard }> = [];
 
     try {
-      // Simulación de evaluación FSRS. En producción, esto llama al
-      // motor FSRS real (cómputo de S/D por tarjeta, next-due, etc).
-      // Aquí contamos tarjetas evaluadas y generamos errores de prueba
-      // para forzar el path de fallo si cardIds incluye '__fail__'.
-      for (const cardId of entry.job.cardIds) {
-        if (cardId === "__fail__") {
-          throw new Error("simulated FSRS engine failure");
-        }
-        if (cardId.startsWith("__bad__")) {
-          errors.push({ cardId, message: "bad card data" });
+      const scheduler = entry.job.algorithm === "fsrs-v5" ? fsrsV5Scheduler : fsrsScheduler;
+      const now = new Date();
+
+      for (const jobCard of entry.job.cards) {
+        try {
+          // Validar cardId
+          if (!jobCard.cardId || typeof jobCard.cardId !== "string") {
+            errors.push({ cardId: String(jobCard.cardId), message: "invalid cardId" });
+            continue;
+          }
+
+          let previousState: FsrsCard | undefined = jobCard.currentState;
+          let newState: FsrsCard;
+
+          if (jobCard.rating != null) {
+            // Tiene rating: aplicar el repaso
+            const card = jobCard.currentState ?? createEmptyCard(now);
+            const ratingNum = Number(jobCard.rating);
+            if (!Number.isFinite(ratingNum) || ratingNum < 1 || ratingNum > 4) {
+              errors.push({ cardId: jobCard.cardId, message: `invalid rating: ${jobCard.rating}` });
+              continue;
+            }
+            // ts-fsrs Rating enum: 1=Manual, 2=Again, 3=Hard, 4=Good, 5=Easy
+            // Mapeamos nuestro Grade (1-4) al enum de ts-fsrs (Again/Hard/Good/Easy)
+            const ratingEnum: Rating = ratingNum === 1 ? Rating.Again
+              : ratingNum === 2 ? Rating.Hard
+              : ratingNum === 3 ? Rating.Good
+              : Rating.Easy;
+            // `card` puede ser undefined (ts-fsrs requiere no-undefined) — usamos empty card
+            const baseCard: FsrsCard = card ?? createEmptyCard(now);
+            const result = scheduler.repeat(baseCard, now);
+            const reviewed = result[ratingEnum as Grade];
+            if (!reviewed) {
+              errors.push({ cardId: jobCard.cardId, message: "scheduler returned no result" });
+              continue;
+            }
+            newState = reviewed.card;
+          } else {
+            // Sin rating: crear empty card (card nueva)
+            newState = createEmptyCard(now);
+          }
+
+          evaluatedCards.push({
+            cardId: jobCard.cardId,
+            newState,
+            previousState,
+          });
+        } catch (err) {
+          errors.push({
+            cardId: jobCard.cardId,
+            message: err instanceof Error ? err.message : String(err),
+          });
         }
       }
+
       const result: FsrsJobResult = {
         jobId: entry.job.id,
         userId: entry.job.userId,
         startedAt: Date.now() - Math.floor(performance.now() - start),
         finishedAt: Date.now(),
         durationMs: Math.floor(performance.now() - start),
-        cardsEvaluated: entry.job.cardIds.length - errors.length,
+        cardsEvaluated: evaluatedCards.length,
+        cards: evaluatedCards,
         errors,
       };
       entry.result = result;
@@ -221,6 +310,7 @@ export class FsrsQueue extends EventEmitter {
           userId: entry.job.userId,
           cards: result.cardsEvaluated,
           durationMs: result.durationMs,
+          algorithm: entry.job.algorithm,
         },
         "FSRS job done"
       );
@@ -231,7 +321,6 @@ export class FsrsQueue extends EventEmitter {
           "FSRS job failed, retrying"
         );
         this.running.delete(entry.job.id);
-        // Re-queue
         this.queue.push(entry);
         setTimeout(() => this.tick(), this.cooldownMs * entry.job.attempts);
         return;
@@ -247,7 +336,6 @@ export class FsrsQueue extends EventEmitter {
         "FSRS job failed permanently"
       );
     }
-    // Cooldown y siguiente
     setTimeout(() => this.tick(), this.cooldownMs);
   }
 

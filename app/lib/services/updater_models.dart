@@ -64,6 +64,28 @@ class AppUpdate {
         publishedAt: DateTime.fromMillisecondsSinceEpoch(0),
         isPrerelease: false,
       );
+  }
+
+  /// v0.46: serializa a JSON para persistir en SharedPreferences cache.
+  /// Roundtrip con AppUpdate.fromGithub() debe dar instancia equivalente.
+  Map<String, dynamic> toJson() {
+    return {
+      'tag_name': tagName,
+      'html_url': releaseUrl,
+      'body': body,
+      'published_at': publishedAt.toIso8601String(),
+      'prerelease': isPrerelease,
+      'assets': apkDownloadUrl.isNotEmpty
+          ? [
+              {
+                'name': apkFileName,
+                'browser_download_url': apkDownloadUrl,
+                'size': apkSize,
+              }
+            ]
+          : [],
+    };
+  }
 }
 
 /// Resultado de un check de updates.

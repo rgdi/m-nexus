@@ -5,10 +5,10 @@
 [![Tests](https://img.shields.io/badge/tests-226%2B%20passing-brightgreen)]()
 [![Topic](https://img.shields.io/badge/topics-15-blue)]()
 
-> **v0.45.0** · App standalone (sin Obsidian), Material 3, AdaptiveScaffold, atajos de teclado estilo Obsidian, búsqueda full-text, FSRS spaced repetition, voice notes, multi-dispositivo (Android + Web)
+> **v0.45.0** · App standalone (sin Obsidian), Material 3, AdaptiveScaffold, atajos de teclado estilo Obsidian, **SM-2 simplified** (FSRS roadmap: see [CHECKLIST.md](CHECKLIST.md) Fase 1.A), voice notes (Whisper integration in progress), multi-dispositivo (Android + Web)
 
-**M-NEXUS** = backend Node.js + app standalone Flutter
-para estudio médico con IA en el loop. App 100% independiente: vault local en Android (SAF), markdown viewer, flashcards con FSRS, voice notes, calendar, dashboard adaptativo, atajos de teclado.
+**M-NEXUS** = backend Node.js opcional + app standalone Flutter
+para estudio médico. App 100% independiente y offline-first: vault local en Android (SAF), markdown viewer, flashcards con SM-2 (FSRS real en roadmap), voice notes, calendar, dashboard básico, atajos de teclado.
 
 Diseñado para ser **humano en el loop**: la IA propone, tú decides.
 
@@ -75,12 +75,12 @@ Diseñado para ser **humano en el loop**: la IA propone, tú decides.
 - **📦 Chunked Upload** — 1 MB chunks, resumable, SHA-256 verify
 - **⏪ Rollback** — Backup antes de update, restore con un click
 
-### Siempre
-- **🧠 FSRS spaced repetition** — Algoritmo moderno (mejor que SM-2/Anki)
-- **🤖 Proposals de IA** — Flashcards, resúmenes, preguntas
-- **💾 Backup ultrarrápido** — ZIP binario con SQLite index
-- **🔌 Offline-first** — Cola de cambios, sync cuando hay red
-- **🚀 Auto-update** — Los 3 componentes se actualizan solos
+### Estado actual (honesto, v0.45.0)
+- **🧠 Spaced repetition (SM-2 simplificado)** — 3 ratings (Difícil/Regular/Fácil). **FSRS real en roadmap** (Fase 1.A del [CHECKLIST.md](CHECKLIST.md)) — algoritmo Wozniak-style con intervals 1/3/7/14 días.
+- **🤖 Proposals heurísticas** — Generación regex-based de flashcards desde headings. **LLM-powered proposals en roadmap** (Fase 1.B).
+- **💾 Backup ultrarrápido** — ZIP binario con SQLite index (backend only, sin UI de backup en app)
+- **🔌 Offline-first** — Cola de cambios para recordings, vault local en markdown
+- **🚀 Auto-update (app Android)** — Via GitHub Releases. Backend auto-update implementado pero no se invoca automáticamente; plugin de Obsidian no existe (la app es standalone).
 
 ---
 
@@ -226,7 +226,7 @@ m-nexus/
 | v0.31.0 | 2026-09-03 | Device identity, setup wizard, Google Calendar |
 | v0.30.0 | 2026-09-03 | Auto-update (3 componentes), QR install |
 | v0.29.7 | 2026-09-03 | Primer APK firmado |
-| v0.28.0 | 2026-09-02 | Plugin v0.28 base + FSRS v5 |
+| v0.28.0 | 2026-09-02 | (no publicado — el "plugin de Obsidian" mencionado históricamente no se implementó; la app es standalone desde v0.43) |
 
 Todas las releases: https://github.com/rgdi/m-nexus/releases
 

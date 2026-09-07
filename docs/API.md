@@ -113,7 +113,7 @@ Estadísticas globales (vaults, flashcards, recordings, etc.).
 
 ## Vaults (sync)
 
-El plugin sincroniza notas (snapshots) con el backend.
+> **Estado:** El endpoint existe en backend, pero la app standalone aún no sincroniza notas vía este endpoint (solo recordings). Sync E2E de notas está en roadmap (Fase 4 del [CHECKLIST.md](../CHECKLIST.md)).
 
 ### `POST /api/v1/notes/sync`
 Sincroniza un batch de notas.
