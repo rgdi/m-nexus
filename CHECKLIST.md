@@ -18,18 +18,22 @@
 | **Fase 1.A** FSRS real | 7 | **7** ✅ | 0 | 0 |
 | **Fase 1.B** AI proposals | 4 | **4** ✅ | 0 | 0 |
 | **Fase 1.C** Whisper real | 3 | **3** ✅ | 0 | 0 |
-| **Fase 1.D** Voice app | 5 | 0 | 0 | 5 |
-| **Fase 1.E** Tests reales | 4 | 0 | 0 | 4 |
-| **Fase 1.F** i18n | 5 | 0 | 0 | 5 |
-| **Fase 1.G** Deps | 2 | 0 | 0 | 2 |
-| **Fase 2** PKM | ~25 | 0 | 0 | 25 |
-| **Fase 3** SRS | ~30 | 0 | 0 | 30 |
-| **Fase 4** Sync | ~15 | 0 | 0 | 15 |
-| **Fase 5** AI/Marketplace | ~12 | 0 | 0 | 12 |
-| **Fase 6** Polish | ~30 | 0 | 0 | 30 |
-| **TOTAL** | ~150 | **22** | 0 | ~128 |
+| **Fase 1.D** Voice app | 5 | **5** ✅ | 0 | 0 |
+| **Fase 1.E** Tests reales | 4 | **4** ✅ | 0 | 0 |
+| **Fase 1.F** i18n | 5 | **2** ✅ | 0 | 3 (app) |
+| **Fase 1.G** Deps | 2 | **2** ✅ | 0 | 0 |
+| **Fase 2.A** Search FTS5 | 4 | **4** ✅ | 0 | 0 (backend) / 3 (app) |
+| **Fase 2.B** Wikilinks | 4 | **4** ✅ | 0 | 0 (backend) / 2 (app) |
+| **Fase 2.C** Graph view | 3 | **3** ✅ | 0 | 0 (backend) / 1 (app) |
+| **Fase 2.D** Daily+Templates | 4 | **4** ✅ | 0 | 0 (backend) / 2 (app) |
+| **Fase 2.E** Tags | 4 | **4** ✅ | 0 | 0 (backend) / 2 (app) |
+| **Fase 3** SRS | ~30 | 0 | 0 | ~30 |
+| **Fase 4** Sync | ~15 | 0 | 0 | ~15 |
+| **Fase 5** AI/Marketplace | ~12 | 0 | 0 | ~12 |
+| **Fase 6** Polish | ~30 | 0 | 0 | ~30 |
+| **TOTAL** | ~150 | **56** | 0 | ~94 |
 
-**Última actualización:** 2026-09-07 · commits `877fb82`, `edf6749`, `09a1ed0`, `a7c45b4`, `ee051f4`
+**Última actualización:** 2026-09-07 · commit `678a5a8`
 
 ---
 
