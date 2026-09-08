@@ -351,12 +351,27 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // v0.47.34: gradient sutil + shadow para look cristal. Antes era color plano.
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            color.withOpacity(0.12),
+            color.withOpacity(0.06),
+          ],
+        ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withOpacity(0.25)),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.08),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -411,12 +426,30 @@ class _DashboardCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // v0.47.34: gradient sutil + rounded 16px para look moderno cristal.
+    // Antes era surface plano con border gris. Ahora tiene un gradient
+    // diagonal surface→surfaceContainerLow que da profundidad sin
+    // perder legibilidad.
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            theme.colorScheme.surface,
+            theme.colorScheme.surfaceContainerLow,
+          ],
+        ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+        border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

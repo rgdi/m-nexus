@@ -17,6 +17,8 @@ import '../../services/logger.dart';
 import '../../services/settings_service.dart';
 import '../../services/vault_detector.dart';
 import '../../services/vault_saf_picker.dart';
+import '../../state/app_state.dart';
+import '../ai/chat_screen.dart';
 import 'changelog_view.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -109,6 +111,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onTap: _toggleHaptics),
           ]),
           _buildSection(title: 'Avanzado', tiles: [
+            // v0.47.33: AI Tutor (Local) — usa LocalTutorService que corre
+            // en cliente sin backend, basado en las notas del vault.
+            _Tile(icon: Icons.psychology, title: 'Tutor IA',
+              subtitle: 'Pregúntale a tus notas (offline)',
+              onTap: () {
+                final app = AppState.instance;
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => ChatScreen(
+                    backendUrl: _settings.backendUrl ?? '',
+                    vaultPath: app.activeVault?.path,
+                  ),
+                ));
+              }),
             _Tile(icon: Icons.bug_report, title: 'Reportar bug',
               subtitle: 'github.com/rgdi/m-nexus/issues',
               onTap: () => launchUrl(Uri.parse('https://github.com/rgdi/m-nexus/issues'))),

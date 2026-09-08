@@ -28,11 +28,14 @@ class AppTheme {
       colorScheme: scheme,
       scaffoldBackgroundColor: scheme.surface,
       appBarTheme: AppBarTheme(
-        backgroundColor: scheme.surface,
+        backgroundColor: scheme.surface.withOpacity(0.85),
         foregroundColor: scheme.onSurface,
         elevation: 0,
-        scrolledUnderElevation: 1,
+        scrolledUnderElevation: 0,
         centerTitle: false,
+        // v0.47.34: estilo cristal. La AppBar se vuelve semi-transparente
+        // (85% opacidad) con backdrop blur para un look moderno tipo iOS.
+        // Antes era totalmente opaca.
       ),
       cardTheme: CardTheme(
         elevation: 0,
