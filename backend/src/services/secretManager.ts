@@ -334,7 +334,16 @@ export class SecretManager {
 let instance: SecretManager | null = null;
 export function getSecretManager(): SecretManager {
   if (!instance) {
-    instance = new SecretManager({ devMode: process.env.NODE_ENV !== "production" });
+    // v0.47.13: invertir default devMode.
+    // Antes: devMode=process.env.NODE_ENV !== "production" — entraba en dev
+    // cuando NODE_ENV no estaba seteado (caso común: Docker sin env explícito).
+    // Dev mode usa master key hardcodeada pública, haciendo que TODOS los
+    // secrets cifrados sean descifrables por cualquiera. Ver AUDIT_REPORT SEC-3.
+    //
+    // Ahora: devMode solo si NODE_ENV === "development" O MNEXUS_DEV_MODE=1
+    // explícito. En cualquier otro caso, exige master key real.
+    const isDev = process.env.NODE_ENV === "development" || process.env.MNEXUS_DEV_MODE === "1";
+    instance = new SecretManager({ devMode: isDev });
   }
   return instance;
 }
