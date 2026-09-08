@@ -17,6 +17,11 @@ class Flashcard {
   final int difficulty; // 1-5 (legacy SM-2)
   final DateTime? nextReview;
   final bool approved;
+  // v0.47.35: mediaPath para flashcards con imagen/GIF/video.
+  // Si es null, la flashcard es texto-only (cloze o Q/A).
+  // Si está presente, se renderiza como Image/GIF en el review.
+  final String? mediaPath;
+  final String? mediaType; // 'image', 'gif', 'video'
   // v0.46: FSRS fields (mismo shape que backend, nullable para compat legacy)
   final double stability;        // S en FSRS
   final double retrievability;    // R en FSRS
@@ -35,6 +40,8 @@ class Flashcard {
     required this.difficulty,
     required this.approved,
     this.nextReview,
+    this.mediaPath,
+    this.mediaType,
     this.stability = 0.0,
     this.retrievability = 1.0,
     this.reps = 0,
@@ -54,6 +61,8 @@ class Flashcard {
     int? difficulty,
     DateTime? nextReview,
     bool? approved,
+    String? mediaPath,
+    String? mediaType,
     double? stability,
     double? retrievability,
     int? reps,
@@ -71,6 +80,8 @@ class Flashcard {
       difficulty: difficulty ?? this.difficulty,
       nextReview: nextReview ?? this.nextReview,
       approved: approved ?? this.approved,
+      mediaPath: mediaPath ?? this.mediaPath,
+      mediaType: mediaType ?? this.mediaType,
       stability: stability ?? this.stability,
       retrievability: retrievability ?? this.retrievability,
       reps: reps ?? this.reps,
@@ -167,6 +178,7 @@ class FlashcardService {
     required String answer,
     int difficulty = 3,
     bool approved = true,
+    String? sourceNote, // v0.47.37: nota de la que se generó automáticamente
   }) async {
     final r = await safeCallAsync<Flashcard>(
       component: 'fc',
@@ -200,7 +212,7 @@ scheduled_days: 0
 elapsed_days: 0
 nextReview: ${DateTime.now().toIso8601String().substring(0, 10)}
 created: ${DateTime.now().toIso8601String()}
----
+${sourceNote != null ? "source_note: $sourceNote\n" : ""}---
 
 # $question
 

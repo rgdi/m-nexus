@@ -19,6 +19,10 @@ import '../../services/vault_detector.dart';
 import '../../services/vault_saf_picker.dart';
 import '../../state/app_state.dart';
 import '../ai/chat_screen.dart';
+import '../subjects/subjects_screen.dart';
+import '../exams/exams_screen.dart';
+import '../review_queue/review_queue_screen.dart';
+import '../review_queue/generate_flashcards_screen.dart';
 import 'changelog_view.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -122,6 +126,46 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     backendUrl: _settings.backendUrl ?? '',
                     vaultPath: app.activeVault?.path,
                   ),
+                ));
+              }),
+            // v0.47.36: Asignaturas (estructura del vault).
+            _Tile(icon: Icons.school, title: 'Asignaturas',
+              subtitle: 'Estructura el vault por materia',
+              onTap: () {
+                final app = AppState.instance;
+                if (app.activeVault == null) return;
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => SubjectsScreen(vaultPath: app.activeVault!.path),
+                ));
+              }),
+            // v0.47.38: Exámenes programados.
+            _Tile(icon: Icons.event_note, title: 'Exámenes',
+              subtitle: 'Programa fechas y temario',
+              onTap: () {
+                final app = AppState.instance;
+                if (app.activeVault == null) return;
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => ExamsScreen(vaultPath: app.activeVault!.path),
+                ));
+              }),
+            // v0.47.37: Generar flashcards desde notas.
+            _Tile(icon: Icons.auto_awesome, title: 'Generar flashcards',
+              subtitle: 'Extrae cloze/QA de tus notas',
+              onTap: () {
+                final app = AppState.instance;
+                if (app.activeVault == null) return;
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => GenerateFlashcardsScreen(vaultPath: app.activeVault!.path),
+                ));
+              }),
+            // v0.47.37: Cola de revisión de flashcards pendientes.
+            _Tile(icon: Icons.task_alt, title: 'Pendientes de revisión',
+              subtitle: 'Aprueba flashcards generadas',
+              onTap: () {
+                final app = AppState.instance;
+                if (app.activeVault == null) return;
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => ReviewQueueScreen(vaultPath: app.activeVault!.path),
                 ));
               }),
             _Tile(icon: Icons.bug_report, title: 'Reportar bug',
