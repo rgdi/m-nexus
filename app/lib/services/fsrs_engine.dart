@@ -288,33 +288,33 @@ class FsrsEngine {
 /// FSRS card state.
 class FsrsCard {
   /// When the card is next due.
-  final DateTime due;
+  DateTime due;
 
   /// Stability (days). Higher = more stable in memory.
-  final double stability;
+  double stability;
 
   /// Difficulty (1-10). Higher = harder.
-  final double difficulty;
+  double difficulty;
 
   /// Days elapsed since the last review.
-  final int elapsedDays;
+  int elapsedDays;
 
   /// Scheduled interval in days.
-  final int scheduledDays;
+  int scheduledDays;
 
   /// Number of successful reviews.
-  final int reps;
+  int reps;
 
   /// Number of lapses (times answered Again).
-  final int lapses;
+  int lapses;
 
   /// Current state.
-  final FsrsState state;
+  FsrsState state;
 
   /// Timestamp of the last review (null if never reviewed).
-  final DateTime? lastReview;
+  DateTime? lastReview;
 
-  const FsrsCard({
+  FsrsCard({
     required this.due,
     required this.stability,
     required this.difficulty,

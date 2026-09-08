@@ -191,10 +191,8 @@ jobs:
       - name: Install dependencies
         run: cd app && flutter pub get
 
-      # Drift codegen (necesario antes de analyze)
-      - name: Generate Drift code
-        if: ${{ inputs.skip_validation != 'true' }}
-        run: cd app && dart run build_runner build --delete-conflicting-outputs || echo "::warning::build_runner failed, continuing"
+      # v0.46.7: drift codegen removed (drift dependency was removed)
+      # If you need it back, add build_runner + drift_dev to dev_dependencies
 
       # Sync version del pubspec al android build.gradle
       - name: Sync version to Android

@@ -12,12 +12,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import '../../db/app_db.dart';
+// import '../../db/app_db.dart'; // removed v0.46.7
 import '../../models/search_result.dart';
+import '../../services/vault_service.dart';
 
 class SearchScreen extends StatefulWidget {
-  final AppDb db;
-  const SearchScreen({super.key, required this.db});
+  final VaultService vault;
+  const SearchScreen({super.key, required this.vault});
 
   @override
   State<SearchScreen> createState() => _SearchScreenState();
@@ -27,8 +28,8 @@ class _SearchScreenState extends State<SearchScreen> {
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
   List<Note> _noteResults = [];
-  List<Card> _cardResults = [];
-  List<Tag> _tagResults = [];
+  List<Map<String, String>> _cardResults = []; // v0.46.7: simple maps until DB restored
+  List<Map<String, dynamic>> _tagResults = []; // v0.46.7: simple maps until DB restored
   bool _isSearching = false;
   int _selectedIndex = 0;
   List<SearchResultItem> _flatResults = [];
@@ -65,35 +66,43 @@ class _SearchScreenState extends State<SearchScreen> {
 
     setState(() => _isSearching = true);
     try {
-      // FTS5 search (BM25 ranking)
-      final noteResults = await widget.db.searchNotesFts(query, limit: 20);
-      final cardResults = await widget.db.searchCardsFts(query, limit: 10);
-      // Tag search (LIKE %query%)
-      final tagResults = await widget.db.searchTags(query, limit: 5);
+      // v0.46.7: search via vault (markdown files) since drift was removed
+      // In-memory FTS-like search: scan vault for matching notes
+      final allNotes = await widget.vault.listRecentNotes(1000);
+      final queryLower = query.toLowerCase();
+      final noteResults = allNotes.where((n) =>
+        n.content.toLowerCase().contains(queryLower) ||
+        n.title.toLowerCase().contains(queryLower) ||
+        n.name.toLowerCase().contains(queryLower)
+      ).take(20).toList();
+      // Card/tag search: disabled (no DB), show empty
+      final cardResults = <Map<String, String>>[];
+      final tagResults = <Map<String, dynamic>>[];
 
       final flat = <SearchResultItem>[];
       for (final n in noteResults) {
         flat.add(SearchResultItem(
           type: SearchResultType.note,
           path: n.path,
-          title: n.title.isNotEmpty ? n.title : n.path,
+          title: n.title.isNotEmpty ? n.title : n.name,
           snippet: _generateNoteSnippet(n),
         ));
       }
+      // No cards/tags in vault-only search (drift DB removed)
       for (final c in cardResults) {
         flat.add(SearchResultItem(
           type: SearchResultType.card,
-          path: c.notePath ?? c.cardId,
-          title: c.question,
-          snippet: c.answer,
+          path: c['notePath'] ?? c['cardId'] ?? '',
+          title: c['question'] ?? '',
+          snippet: c['answer'] ?? '',
         ));
       }
       for (final t in tagResults) {
         flat.add(SearchResultItem(
           type: SearchResultType.tag,
-          path: '#${t.name}',
-          title: '#${t.name}',
-          snippet: '${t.noteCount} ${t.noteCount == 1 ? "note" : "notes"}',
+          path: '#${t['name']}',
+          title: '#${t['name']}',
+          snippet: '${t['noteCount']} notes',
         ));
       }
 

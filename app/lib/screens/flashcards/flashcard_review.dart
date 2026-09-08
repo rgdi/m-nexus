@@ -15,33 +15,26 @@
 //
 // Requisitos:
 //   - FsrsEngine (lib/services/fsrs_engine.dart)
-//   - AppDb (lib/db/app_db.dart) para persistir reviews
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:drift/drift.dart' show Value;
 import '../../services/flashcard_service.dart';
 import '../../services/fsrs_engine.dart';
-import '../../db/app_db.dart';
 import '../../widgets/empty_state.dart';
 import 'dart:async';
 
 class FlashcardReview extends StatefulWidget {
   final List<Flashcard> cards;
   final FlashcardService service;
-  final AppDb? db; // Opcional: si hay DB, persistir reviews
   final FsrsEngine? fsrs; // Opcional: inyectar engine (default fsrs5)
   final VoidCallback? onFinish;
-  final int? sessionId; // Session ID para heatmap
 
   const FlashcardReview({
     super.key,
     required this.cards,
     required this.service,
-    this.db,
     this.fsrs,
     this.onFinish,
-    this.sessionId,
   });
 
   @override
@@ -65,10 +58,7 @@ class _FlashcardReviewState extends State<FlashcardReview> {
 
   @override
   void dispose() {
-    // Save session on close
-    if (widget.db != null && widget.sessionId != null) {
-      widget.db!.endSession(widget.sessionId!, DateTime.now(), 0);
-    }
+    // Session tracking removed in v0.46.7 (drift DB was removed)
     super.dispose();
   }
 
@@ -346,9 +336,9 @@ class _FlashcardReviewState extends State<FlashcardReview> {
   /// Convert legacy Flashcard to FsrsCard.
   FsrsCard _cardToFsrsCard(Flashcard card) {
     return FsrsCard(
-      due: card.nextReview,
+      due: card.nextReview ?? DateTime.now(),
       stability: card.stability,
-      difficulty: card.difficulty,
+      difficulty: card.difficulty.toDouble(),
       elapsedDays: card.elapsedDays,
       scheduledDays: card.scheduledDays,
       reps: card.reps,
@@ -398,41 +388,9 @@ class _FlashcardReviewState extends State<FlashcardReview> {
       nextReview: newNextReview,
     );
 
-    // 4) Persist in DB if available
-    if (widget.db != null) {
-      try {
-        await widget.db!.updateCardState(
-          cardId: card.id,
-          stability: newCard.stability,
-          difficulty: newCard.difficulty,
-          retrievability: _fsrs.currentRetrievability(newCard, now),
-          state: newCard.state.index,
-          due: newCard.due,
-          scheduledDays: newCard.scheduledDays,
-          elapsedDays: newCard.elapsedDays,
-          reps: newCard.reps,
-          lapses: newCard.lapses,
-          lastReview: now,
-        );
-        await widget.db!.insertReview(
-          ReviewsCompanion.insert(
-            cardId: card.id,
-            rating: rating.value,
-            durationMs: Value(duration),
-            reviewedAt: now,
-            prevState: oldCard.state.index,
-            newState: newCard.state.index,
-            prevStability: oldCard.stability,
-            newStability: newCard.stability,
-            prevDifficulty: oldCard.difficulty,
-            newDifficulty: newCard.difficulty,
-          ),
-        );
-      } catch (e) {
-        // DB errors shouldn't block the review flow
-        debugPrint('DB write failed (non-fatal): $e');
-      }
-    }
+    // v0.46.7: DB persistence removed (drift/SQLite deprecated)
+    // FSRS state is now managed entirely in-memory via widget.service
+    // and re-persisted via the FlashcardService (markdown frontmatter).
 
     _next();
   }

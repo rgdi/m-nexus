@@ -1,22 +1,22 @@
 // backlinks_panel.dart: panel de backlinks para note_view (Fase 2.B.3).
 //
 // v0.46: muestra las notas que tienen [[wikilinks]] apuntando a la nota actual.
-// Usa AppDb para query eficiente (O(1) lookup via links_json index).
+// v0.46.7: simplificado para no depender de AppDb (drift removido).
+// Muestra empty state por ahora; los backlinks se pueden computar
+// en runtime escaneando el vault cuando se carga una nota.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import '../../db/app_db.dart';
+// import '../../db/app_db.dart'; // removed v0.46.7
 import '../../services/wikilink_parser.dart';
 
 class BacklinksPanel extends StatefulWidget {
   final String currentNotePath;
-  final AppDb db;
   final ValueChanged<String>? onNoteOpen;
 
   const BacklinksPanel({
     super.key,
     required this.currentNotePath,
-    required this.db,
     this.onNoteOpen,
   });
 
@@ -42,63 +42,12 @@ class _BacklinksPanelState extends State<BacklinksPanel> {
   }
 
   Future<List<BacklinkResult>> _loadBacklinks() async {
-    // Query: notes que tienen [[X]] en su body, donde X apunta a currentNotePath.
-    // Usamos el links_json index de la tabla notes.
-    // Estrategia: cargar todas las notas (O(n)) y filtrar en memoria.
-    // En produccion: usar un index invertido en una tabla separada.
-    final allNotes = await widget.db.getAllNotes();
-    final currentBasename = widget.currentNotePath.split('/').last.replaceAll('.md', '');
-    final results = <BacklinkResult>[];
-
-    for (final note in allNotes) {
-      if (note.path == widget.currentNotePath) continue;
-      // Parse wikilinks from linksJson (ya extraido en migration)
-      // Para MVP, parseamos de la cache local del note service
-      // En produccion: links_json deberia ser un array de strings
-      final links = _parseLinksJson(note.linksJson);
-      for (final link in links) {
-        if (_linkMatches(link, currentBasename, widget.currentNotePath)) {
-          // Get a snippet from the note title (placeholder - real impl would be the paragraph containing the link)
-          results.add(BacklinkResult(
-            sourcePath: note.path,
-            sourceTitle: note.title.isNotEmpty ? note.title : note.path,
-            contextSnippet: '[[${_linkDisplay(link)}]]',
-          ));
-          break; // Don't add the same source multiple times
-        }
-      }
-    }
-
-    // Sort by modified desc
-    results.sort((a, b) {
-      final aNote = allNotes.firstWhere(
-        (n) => n.path == a.sourcePath,
-        orElse: () => Note(
-          path: a.sourcePath,
-          title: a.sourceTitle,
-          tagsJson: '[]',
-          linksJson: '[]',
-          modified: 0,
-          sizeBytes: 0,
-          wordCount: 0,
-        ),
-      );
-      final bNote = allNotes.firstWhere(
-        (n) => n.path == b.sourcePath,
-        orElse: () => Note(
-          path: b.sourcePath,
-          title: b.sourceTitle,
-          tagsJson: '[]',
-          linksJson: '[]',
-          modified: 0,
-          sizeBytes: 0,
-          wordCount: 0,
-        ),
-      );
-      return bNote.modified.compareTo(aNote.modified);
-    });
-
-    return results;
+    // v0.46.7: stub - returns empty list.
+    // Backlinks would normally query the drift DB (AppDb.getAllNotes())
+    // and filter by links_json. With drift removed, we show empty
+    // state. To restore, integrate VaultService.listRecentNotes() and
+    // parse wikilinks on the fly.
+    return <BacklinkResult>[];
   }
 
   List<String> _parseLinksJson(String json) {
