@@ -149,6 +149,9 @@ class FlashcardService {
     return r.value ?? <Flashcard>[];
   }
 
+  /// Cards que hay que repasar hoy (alias de dueCards, mismo nombre que en home).
+  Future<List<Flashcard>> getDue() async => dueCards();
+
   /// Cards que hay que repasar hoy.
   Future<List<Flashcard>> dueCards() async {
     final all = await listAll();
@@ -156,29 +159,45 @@ class FlashcardService {
   }
 
   /// Crea una nueva flashcard.
+  /// v0.47.1: se guarda directamente en Approved (no Drafts) para que
+  /// aparezca inmediatamente en repasos. El usuario puede moverla a Drafts
+  /// manualmente si quiere revisarla antes.
   Future<Flashcard> create({
     required String question,
     required String answer,
     int difficulty = 3,
+    bool approved = true,
   }) async {
     final r = await safeCallAsync<Flashcard>(
       component: 'fc',
       code: 'EC-CARD-002',
       message: 'create failed',
       category: ErrorCategory.card,
-      context: {'vault': vaultPath, 'difficulty': difficulty, 'qLen': question.length, 'aLen': answer.length},
-      hint: 'Check vault path writable, Drafts dir can be created',
+      context: {'vault': vaultPath, 'difficulty': difficulty, 'qLen': question.length, 'aLen': answer.length, 'approved': approved},
+      hint: 'Check vault path writable, Flashcards/Approved dir can be created',
       op: () async {
         final id = 'fc-${DateTime.now().millisecondsSinceEpoch}';
         final filename = '$id.md';
-        final dir = Directory(p.join(vaultPath, AppConstants.flashcardsDrafts));
+        final folder = approved ? AppConstants.flashcardsApproved : AppConstants.flashcardsDrafts;
+        final dir = Directory(p.join(vaultPath, folder));
         if (!await dir.exists()) await dir.create(recursive: true);
         final path = p.join(dir.path, filename);
+        // FSRS: new card se guarda con state=learning, due=now (la primera
+        // review debe ser inmediata). Despues el algoritmo recalcula.
         final body = '''---
 id: $id
 question: $question
 answer: $answer
 difficulty: $difficulty
+approved: $approved
+stability: 0.0
+difficulty_fsrs: 0.0
+retrievability: 1.0
+reps: 0
+lapses: 0
+state: 0
+scheduled_days: 0
+elapsed_days: 0
 nextReview: ${DateTime.now().toIso8601String().substring(0, 10)}
 created: ${DateTime.now().toIso8601String()}
 ---
@@ -188,7 +207,7 @@ created: ${DateTime.now().toIso8601String()}
 $answer
 ''';
         await File(path).writeAsString(body);
-        log.info('fc', 'Created', context: {'id': id, 'path': path});
+        log.info('fc', 'Created', context: {'id': id, 'path': path, 'approved': approved});
         return Flashcard(
           id: id,
           path: path,
@@ -196,7 +215,7 @@ $answer
           answer: answer,
           difficulty: difficulty,
           nextReview: DateTime.now(),
-          approved: false,
+          approved: approved,
         );
       },
     );

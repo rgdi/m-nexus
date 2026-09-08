@@ -1,8 +1,7 @@
 // M-NEXUS — entry point.
-// v0.47.0: refactor para cargar AppState UNA vez al arranque.
-// Antes: cada screen llamaba VaultDetector + FlashcardService en su initState
-//        (4 screens x 2 scans = 8 lecturas del vault = 30s en cold start).
-// Ahora: 1 init global, todas las screens leen de cache (<100ms).
+// v0.47.1: NO bloquea esperando AppState.init. La UI se muestra inmediatamente
+// y los datos se cargan en background. Esto elimina la pantalla "Cargando..."
+// que aparecia durante 30s en cold start.
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -21,12 +20,17 @@ import 'state/app_state.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  final identity = await DeviceIdentity.load();
-  final info = await AppInfo.load();
+  // Carga info básica (rapida, en paralelo)
+  final identityFuture = DeviceIdentity.load();
+  final infoFuture = AppInfo.load();
+  final settingsFuture = SettingsService.instance.load();
+
+  final identity = await identityFuture;
+  final info = await infoFuture;
   final size = WidgetsBinding.instance.platformDispatcher.views.first.physicalSize /
       WidgetsBinding.instance.platformDispatcher.views.first.devicePixelRatio;
   await DeviceInfo.load(Size(size.width, size.height));
-  final settings = await SettingsService.instance.load();
+  final settings = await settingsFuture;
 
   final osVersion = info.model.isNotEmpty
       ? '${info.model} (${info.osVersion})'
@@ -44,13 +48,20 @@ void main() async {
       'device': identity.deviceId,
       'os': osVersion,
       'platform': kIsWeb ? 'web' : 'native',
-      'deviceInfo': DeviceInfo.current.toJson(),
-      'themeMode': settings.materialThemeMode.name,
-      'fontScale': settings.fontScale,
     });
 
-  // Carga global UNA sola vez
-  await AppState.instance.init();
+  // v0.47.1: NO esperamos AppState.init aquí. La UI se muestra
+  // inmediatamente. Las pantallas leen AppState (que se inicializa en
+  // background) y muestran skeleton/empty state hasta que esté listo.
+  //
+  // Antes: 30s "Cargando..." en cold start (bloqueaba esperando vault scan)
+  // Ahora: <500ms para mostrar UI; vault scan corre en background.
+
+  // Inicia carga en background (no awaited)
+  // ignore: discarded_futures
+  AppState.instance.init().catchError((e) {
+    AdvancedLogger.instance.error('app', 'AppState.init failed', error: e);
+  });
 
   runApp(const MnexusApp());
 }
@@ -99,29 +110,94 @@ class _MnexusAppState extends State<MnexusApp> {
           child: child!,
         );
       },
-      // Si no hay vault, mostrar el setup wizard
-      home: AppState.instance.hasVault
-          ? const MainShell()
-          : const _SetupGate(),
+      home: const _RootGate(),
     );
   }
 }
 
-class _SetupGate extends StatelessWidget {
-  const _SetupGate();
+/// v0.47.1: root gate inteligente que cambia de UI segun el estado de AppState.
+///   - Si no hay vault: setup wizard
+///   - Si hay vault: MainShell
+///   - Mientras AppState se inicializa: skeleton (no pantalla de "Cargando..." infinito)
+class _RootGate extends StatefulWidget {
+  const _RootGate();
+  @override
+  State<_RootGate> createState() => _RootGateState();
+}
+
+class _RootGateState extends State<_RootGate> {
+  @override
+  void initState() {
+    super.initState();
+    // Escucha cambios en AppState para cambiar UI cuando esté listo
+    AppState.instance.addListener(_onAppStateChanged);
+    // Si despues de 100ms AppState sigue cargando, no esperamos
+    // (la UI ya muestra algo)
+  }
+
+  void _onAppStateChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    AppState.instance.removeListener(_onAppStateChanged);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return const SetupWizard();
+    final app = AppState.instance;
+    if (app.hasVault) {
+      return const MainShell();
+    }
+    // Si no tiene vault pero ya termino de cargar → setup wizard
+    if (app.initialLoaded) {
+      return const _SetupWithTutorialGate();
+    }
+    // Mientras carga: skeleton mínimo (nada de "Cargando..." infinito)
+    return const _BootSkeleton();
   }
 }
 
-class _TutorialGate extends StatelessWidget {
-  final VoidCallback onFinish;
-  const _TutorialGate({required this.onFinish});
+class _BootSkeleton extends StatelessWidget {
+  const _BootSkeleton();
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: SizedBox(
+          width: 32, height: 32,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ),
+    );
+  }
+}
+
+class _SetupWithTutorialGate extends StatefulWidget {
+  const _SetupWithTutorialGate();
+  @override
+  State<_SetupWithTutorialGate> createState() => _SetupWithTutorialGateState();
+}
+
+class _SetupWithTutorialGateState extends State<_SetupWithTutorialGate> {
+  bool _showTutorial = false;
 
   @override
   Widget build(BuildContext context) {
-    return OnboardingTutorial(onFinish: onFinish);
+    if (_showTutorial) {
+      return OnboardingTutorial(onFinish: () {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const MainShell()),
+        );
+      });
+    }
+    return SetupWizard(
+      onComplete: () {
+        // Despues del setup, muestra el tutorial
+        setState(() => _showTutorial = true);
+      },
+    );
   }
 }

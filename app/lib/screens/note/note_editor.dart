@@ -1,5 +1,6 @@
 // NoteEditor: editor markdown con split view + preview.
-// Editor de nota: monospace, shortcuts de formato, auto-save.
+// v0.47.1: arreglado para soportar creación de notas nuevas (notePath nullable).
+// Antes: requeria notePath obligatorio, lo que causaba crash al crear desde home.
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -7,20 +8,33 @@ import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../core/shortcuts.dart';
 import '../../core/theme.dart';
 import '../../services/vault_service.dart';
 import '../../services/logger.dart';
+import '../../state/app_state.dart';
 import '../../utils/safe_call.dart';
 import 'note_view.dart';
 
 class NoteEditor extends StatefulWidget {
-  final String notePath;
   final String vaultPath;
+
+  /// Si es null, se crea una nota nueva. Si tiene valor, se edita.
+  final String? notePath;
+
+  /// Título inicial (solo para notas nuevas).
+  final String? initialTitle;
+
+  /// Contenido inicial (solo para notas nuevas).
+  final String? initialContent;
+
   const NoteEditor({
     super.key,
-    required this.notePath,
     required this.vaultPath,
+    this.notePath,
+    this.initialTitle,
+    this.initialContent,
   });
 
   @override
@@ -40,96 +54,22 @@ class _NoteEditorState extends State<NoteEditor> {
   bool _showPreview = false;
   Timer? _autoSave;
   String _autosaveKey = '';
+  bool _isNewNote = true;
 
   @override
   void initState() {
     super.initState();
-    _autosaveKey = 'mnexus.editor.${widget.notePath}';
-    _load();
+    _isNewNote = widget.notePath == null;
+    _autosaveKey = 'mnexus.editor.${widget.notePath ?? "new-${DateTime.now().millisecondsSinceEpoch}"}';
+    if (_isNewNote) {
+      _titleController.text = widget.initialTitle ?? '';
+      _bodyController.text = widget.initialContent ?? '';
+    } else {
+      _load();
+    }
     _titleController.addListener(_onChange);
     _bodyController.addListener(_onChange);
-  }
-
-  Future<void> _load() async {
-    _vault = VaultService(widget.vaultPath);
-    _original = await _vault!.readNote(widget.notePath);
-    if (_original == null) return;
-    if (!mounted) return;
-    final parsed = VaultService.parseFrontmatter(_original!.content);
-    final bodyOnly = parsed.body;
-    final titleFromFm = parsed.frontmatter['title'];
-    setState(() {
-      _titleController.text = titleFromFm ?? _original!.name;
-      _bodyController.text = bodyOnly;
-      _isDirty = false;
-    });
-  }
-
-  void _onChange() {
-    if (!_isDirty) setState(() { _isDirty = true; });
-    _autoSave?.cancel();
-    _autoSave = Timer(const Duration(seconds: 2), _autoSavePersist);
-  }
-
-  Future<void> _autoSavePersist() async {
-    if (!_isDirty) return;
-    await guardAsync<void>('note_editor', 'EC-NOTE-002',
-      'autosave failed', () async {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('$_autosaveKey.body', _bodyController.text);
-        await prefs.setString('$_autosaveKey.title', _titleController.text);
-        AdvancedLogger.instance.debug('note_editor', 'autosave ok', context: {'key': _autosaveKey});
-      }, context: {'key': _autosaveKey, 'bodyLen': _bodyController.text.length});
-  }
-
-  Future<void> _save() async {
-    if (_vault == null) return;
-    setState(() { _saving = true; });
-    final title = _titleController.text.trim().isEmpty
-        ? _original?.name ?? 'Sin título'
-        : _titleController.text.trim();
-    final body = _bodyController.text;
-    final content = '''---
-title: $title
-date: ${DateTime.now().toIso8601String().substring(0, 10)}
-modified: ${DateTime.now().toIso8601String()}
----
-
-$body''';
-    try {
-      await _vault!.writeNote(widget.notePath, content);
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('$_autosaveKey.body');
-      await prefs.remove('$_autosaveKey.title');
-      if (!mounted) return;
-      setState(() { _saving = false; _isDirty = false; });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Guardado')),
-      );
-    } catch (e, s) {
-      AdvancedLogger.instance.error('note_editor', '[EC-NOTE-003] Save failed',
-        context: {'path': widget.notePath, 'title': title, 'bodyLen': body.length},
-        error: e, stack: s);
-      if (!mounted) return;
-      setState(() { _saving = false; });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al guardar: $e')),
-      );
-    }
-  }
-
-  void _insertFormat(String before, String after) {
-    final sel = _bodyController.selection;
-    final text = _bodyController.text;
-    if (sel.start < 0) return;
-    final selected = sel.textInside(text);
-    final newText = text.replaceRange(sel.start, sel.end, '$before$selected$after');
-    _bodyController.value = TextEditingValue(
-      text: newText,
-      selection: TextSelection.collapsed(
-        offset: sel.start + before.length + selected.length,
-      ),
-    );
+    _bodyFocus.addListener(() => setState(() {}));
   }
 
   @override
@@ -142,200 +82,255 @@ $body''';
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final isMobile = AppTheme.isMobile(context);
-    return Shortcuts(
-      shortcuts: const {
-        SingleActivator(LogicalKeyboardKey.keyS, control: true): _SaveIntent(),
-        SingleActivator(LogicalKeyboardKey.keyE, control: true): _TogglePreviewIntent(),
-        SingleActivator(LogicalKeyboardKey.keyB, control: true): _BoldIntent(),
-        SingleActivator(LogicalKeyboardKey.keyI, control: true): _ItalicIntent(),
-        SingleActivator(LogicalKeyboardKey.escape): _EscapeIntent(),
-      },
-      child: Actions(
-        actions: <Type, Action<Intent>>{
-          _SaveIntent: CallbackAction<_SaveIntent>(
-            onInvoke: (i) { _save(); return null; },
-          ),
-          _TogglePreviewIntent: CallbackAction<_TogglePreviewIntent>(
-            onInvoke: (i) { setState(() { _showPreview = !_showPreview; }); return null; },
-          ),
-          _BoldIntent: CallbackAction<_BoldIntent>(
-            onInvoke: (i) { _insertFormat('**', '**'); return null; },
-          ),
-          _ItalicIntent: CallbackAction<_ItalicIntent>(
-            onInvoke: (i) { _insertFormat('*', '*'); return null; },
-          ),
-          _EscapeIntent: CallbackAction<_EscapeIntent>(
-            onInvoke: (i) {
-              if (_showPreview) setState(() { _showPreview = false; });
-              return null;
-            },
-          ),
-        },
-        child: Focus(
-          autofocus: true,
-          child: Scaffold(
-            appBar: _buildAppBar(),
-            body: isMobile ? _buildMobile() : _buildDesktop(),
-          ),
-        ),
+  Future<void> _load() async {
+    if (widget.notePath == null) return;
+    setState(() {
+      _vault = VaultService(widget.vaultPath);
+    });
+    final note = await _vault!.readNote(widget.notePath!);
+    if (!mounted) return;
+    if (note == null) {
+      Navigator.of(context).pop();
+      return;
+    }
+    setState(() {
+      _original = note;
+      _titleController.text = note.title;
+      _bodyController.text = note.content;
+      _isDirty = false;
+    });
+  }
+
+  void _onChange() {
+    if (!_isDirty) {
+      setState(() => _isDirty = true);
+    }
+    _autoSave?.cancel();
+    _autoSave = Timer(const Duration(seconds: 2), _autoSavePersist);
+  }
+
+  Future<void> _autoSavePersist() async {
+    // Autosave only saves to SharedPreferences for crash recovery
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('${_autosaveKey}.title', _titleController.text);
+    await prefs.setString('${_autosaveKey}.body', _bodyController.text);
+  }
+
+  Future<void> _save() async {
+    final title = _titleController.text.trim();
+    final body = _bodyController.text;
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('El título es obligatorio')),
+      );
+      return;
+    }
+    setState(() => _saving = true);
+    try {
+      _vault ??= VaultService(widget.vaultPath);
+      Note saved;
+      if (_isNewNote) {
+        // Crea nota nueva (en root o subcarpeta notes)
+        final path = await _vault!.createNote(
+          folder: 'notes',
+          title: title,
+          content: body.isEmpty ? '# $title\n' : body,
+        );
+        setState(() {
+          _isNewNote = false;
+          _original = Note(
+            path: path,
+            relPath: path.replaceFirst(widget.vaultPath, ''),
+            name: p.basename(path),
+            content: body,
+            frontmatter: {},
+            modified: DateTime.now(),
+            sizeBytes: body.length,
+            tags: const [],
+            links: const [],
+            title: title,
+          );
+        });
+      } else {
+        // Edita nota existente
+        await _vault!.writeNote(widget.notePath!, title, body);
+        saved = (await _vault!.readNote(widget.notePath!))!;
+        _original = saved;
+      }
+      // Recarga AppState
+      await AppState.instance.reload();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Guardado'), duration: Duration(seconds: 2)),
+      );
+      setState(() {
+        _isDirty = false;
+        _saving = false;
+      });
+    } catch (e) {
+      setState(() => _saving = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
+  void _insertFormat(String open, String close) {
+    final sel = _bodyController.selection;
+    final text = _bodyController.text;
+    if (sel.start < 0) return;
+    final before = text.substring(0, sel.start);
+    final mid = text.substring(sel.start, sel.end);
+    final after = text.substring(sel.end);
+    final newText = '$before$open$mid$close$after';
+    _bodyController.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection(
+        baseOffset: sel.start + open.length,
+        extentOffset: sel.start + open.length + mid.length,
       ),
     );
+    _bodyFocus.requestFocus();
   }
 
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      title: Text(_titleController.text.isEmpty ? 'Sin título' : _titleController.text,
-        overflow: TextOverflow.ellipsis),
-      actions: [
-        if (_isDirty)
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 8),
-            child: Center(
-              child: Text('● sin guardar',
-                style: TextStyle(fontSize: 11, color: Colors.orange)),
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(_isNewNote ? 'Nueva nota' : (_titleController.text.isEmpty ? 'Editar' : _titleController.text)),
+        actions: [
+          IconButton(
+            icon: Icon(_showPreview ? Icons.edit : Icons.preview),
+            onPressed: () => setState(() => _showPreview = !_showPreview),
+            tooltip: _showPreview ? 'Editar' : 'Vista previa',
+          ),
+          if (_isDirty && !_saving)
+            const Padding(
+              padding: EdgeInsets.only(right: 8),
+              child: Center(
+                child: SizedBox(
+                  width: 8, height: 8,
+                  child: CircularProgressIndicator(strokeWidth: 1.5),
+                ),
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilledButton.icon(
+              onPressed: _saving ? null : _save,
+              icon: _saving
+                  ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.save, size: 16),
+              label: const Text('Guardar'),
+              style: FilledButton.styleFrom(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
             ),
           ),
-        if (!AppTheme.isMobile(context))
-          IconButton(
-            icon: Icon(_showPreview ? Icons.edit : Icons.visibility),
-            onPressed: () => setState(() { _showPreview = !_showPreview; }),
-            tooltip: 'Toggle preview (Ctrl+E)',
-          ),
-        IconButton(
-          icon: _saving
-              ? const SizedBox(width: 18, height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2))
-              : const Icon(Icons.save),
-          onPressed: _saving ? null : _save,
-          tooltip: 'Guardar (Ctrl+S)',
-        ),
-        const SizedBox(width: 8),
-      ],
-    );
-  }
-
-  Widget _buildMobile() {
-    if (_showPreview) {
-      return _buildPreview();
-    }
-    return _buildEditor();
-  }
-
-  Widget _buildDesktop() {
-    return Row(
-      children: [
-        Expanded(flex: 1, child: _buildEditor()),
-        const VerticalDivider(width: 1),
-        Expanded(flex: 1, child: _buildPreview()),
-      ],
-    );
-  }
-
-  Widget _buildEditor() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        ],
+      ),
+      body: Column(
         children: [
           // Title
-          TextField(
-            controller: _titleController,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
-            decoration: const InputDecoration(
-              hintText: 'Título',
-              border: InputBorder.none,
-              filled: false,
-              contentPadding: EdgeInsets.zero,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: TextField(
+              controller: _titleController,
+              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+              decoration: const InputDecoration(
+                hintText: 'Título de la nota',
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(vertical: 8),
+              ),
             ),
           ),
-          const SizedBox(height: 12),
-          // Format toolbar
-          Wrap(
-            spacing: 4,
-            children: [
-              _FormatBtn(icon: Icons.format_bold, tooltip: 'Bold (Ctrl+B)',
-                onPressed: () => _insertFormat('**', '**')),
-              _FormatBtn(icon: Icons.format_italic, tooltip: 'Italic (Ctrl+I)',
-                onPressed: () => _insertFormat('*', '*')),
-              _FormatBtn(icon: Icons.code, tooltip: 'Code',
-                onPressed: () => _insertFormat('`', '`')),
-              _FormatBtn(icon: Icons.title, tooltip: 'Heading',
-                onPressed: () => _insertFormat('\n## ', '\n')),
-              _FormatBtn(icon: Icons.format_list_bulleted, tooltip: 'Lista',
-                onPressed: () => _insertFormat('\n- ', '\n')),
-              _FormatBtn(icon: Icons.format_quote, tooltip: 'Cita',
-                onPressed: () => _insertFormat('\n> ', '\n')),
-              _FormatBtn(icon: Icons.link, tooltip: 'Link',
-                onPressed: () => _insertFormat('[', '](url)')),
-            ],
-          ),
-          const Divider(height: 24),
+          // Toolbar
+          if (!_showPreview)
+            _buildToolbar(theme),
           // Body
-          TextField(
-            controller: _bodyController,
-            focusNode: _bodyFocus,
-            maxLines: null,
-            minLines: 20,
-            style: const TextStyle(
-              fontSize: 14, fontFamily: 'monospace', height: 1.5,
-            ),
-            decoration: const InputDecoration(
-              hintText: 'Empezá a escribir…\n\n'
-                  '# Heading\n**bold** *italic*\n- lista\n'
-                  '[[link a otra nota]]\n![imagen](ruta.png)',
-              border: InputBorder.none,
-              filled: false,
-              contentPadding: EdgeInsets.zero,
-            ),
+          Expanded(
+            child: _showPreview
+                ? _buildPreview(theme)
+                : _buildEditor(theme),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildPreview() {
+  Widget _buildToolbar(ThemeData theme) {
     return Container(
-      color: Theme.of(context).colorScheme.surfaceContainerLowest,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: MarkdownBody(
-          data: _bodyController.text.isEmpty ? '_(vacío)_' : _bodyController.text,
-          selectable: true,
-          onTapLink: (text, href, title) {
-            if (href == null) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Link: $href')),
-            );
-          },
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3))),
+      ),
+      child: Row(
+        children: [
+          _ToolbarBtn(icon: Icons.format_bold, onTap: () => _insertFormat('**', '**')),
+          _ToolbarBtn(icon: Icons.format_italic, onTap: () => _insertFormat('*', '*')),
+          _ToolbarBtn(icon: Icons.code, onTap: () => _insertFormat('`', '`')),
+          _ToolbarBtn(icon: Icons.title, onTap: () => _insertFormat('\n## ', '')),
+          _ToolbarBtn(icon: Icons.format_list_bulleted, onTap: () => _insertFormat('\n- ', '')),
+          _ToolbarBtn(icon: Icons.format_quote, onTap: () => _insertFormat('\n> ', '')),
+          _ToolbarBtn(icon: Icons.link, onTap: () => _insertFormat('[[', ']]')),
+          const Spacer(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEditor(ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: TextField(
+        controller: _bodyController,
+        focusNode: _bodyFocus,
+        maxLines: null,
+        expands: true,
+        textAlignVertical: TextAlignVertical.top,
+        style: const TextStyle(fontFamily: 'monospace', fontSize: 14, height: 1.6),
+        decoration: const InputDecoration(
+          hintText: 'Empieza a escribir...',
+          border: InputBorder.none,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPreview(ThemeData theme) {
+    final body = _bodyController.text;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: MarkdownBody(
+        data: body.isEmpty ? '*Sin contenido*' : body,
+        styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+          p: theme.textTheme.bodyLarge,
+          h1: theme.textTheme.headlineLarge,
+          h2: theme.textTheme.headlineMedium,
+          code: TextStyle(
+            fontFamily: 'monospace',
+            backgroundColor: theme.colorScheme.surfaceContainerHigh,
+          ),
         ),
       ),
     );
   }
 }
 
-class _FormatBtn extends StatelessWidget {
+class _ToolbarBtn extends StatelessWidget {
   final IconData icon;
-  final String tooltip;
-  final VoidCallback onPressed;
-  const _FormatBtn({
-    required this.icon, required this.tooltip, required this.onPressed,
-  });
+  final VoidCallback onTap;
+  const _ToolbarBtn({required this.icon, required this.onTap});
   @override
   Widget build(BuildContext context) {
     return IconButton(
       icon: Icon(icon, size: 18),
-      tooltip: tooltip,
-      onPressed: onPressed,
+      onPressed: onTap,
       visualDensity: VisualDensity.compact,
+      tooltip: '',
     );
   }
 }
-
-class _SaveIntent extends Intent { const _SaveIntent(); }
-class _TogglePreviewIntent extends Intent { const _TogglePreviewIntent(); }
-class _BoldIntent extends Intent { const _BoldIntent(); }
-class _ItalicIntent extends Intent { const _ItalicIntent(); }
-class _EscapeIntent extends Intent { const _EscapeIntent(); }

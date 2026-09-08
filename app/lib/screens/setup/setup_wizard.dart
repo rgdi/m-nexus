@@ -22,7 +22,8 @@ import '../../utils/safe_call.dart';
 import 'onboarding_tutorial.dart';
 
 class SetupWizard extends StatefulWidget {
-  const SetupWizard({super.key});
+  final VoidCallback? onComplete;
+  const SetupWizard({super.key, this.onComplete});
   @override
   State<SetupWizard> createState() => _SetupWizardState();
 }
@@ -142,7 +143,11 @@ Usa `[[Nota]]` para enlazar: [[anatomia]]
       return;
     }
     if (mounted) {
-      Navigator.of(context).pop(_selectedVaultPath);
+      if (widget.onComplete != null) {
+        widget.onComplete!();
+      } else {
+        Navigator.of(context).pop(_selectedVaultPath);
+      }
     }
   }
 
