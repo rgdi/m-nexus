@@ -274,6 +274,49 @@ install_backend() {
         cd - >/dev/null
         ok "Backend instalado en $TARGET_DIR/backend"
     fi
+    # v0.47.16: generar .env con secrets aleatorios si no existe.
+    # Antes: EnvironmentFile=-... (opcional) y JWT_SECRET default = "change-me"
+    # hardcodeado en config.ts → cualquier deploy sin .env arrancaba con auth
+    # bypass trivial. Ver AUDIT_REPORT.md FUNC-3 + SEC-2.
+    if [[ "$DRY_RUN" == false ]]; then
+        local env_file="$TARGET_DIR/.env"
+        if [[ ! -f "$env_file" ]]; then
+            log "Generando $env_file con secrets aleatorios..."
+            local jwt_secret
+            jwt_secret=$(openssl rand -hex 32 2>/dev/null || head -c 64 /dev/urandom | xxd -p -c 64 2>/dev/null || date +%s%N | sha256sum | cut -d' ' -f1)
+            cat > "$env_file" <<EOF
+# Generado automáticamente por install.sh v0.47.16
+# NO COMMITEAR. Mantener permisos 0600.
+
+# Required: JWT signing key (>=32 chars random)
+JWT_SECRET=$jwt_secret
+
+# Required: NODE_ENV production para activar fail-fast de config.ts
+NODE_ENV=production
+
+# Optional: provider config
+OLLAMA_BASE_URL=http://localhost:11434
+OPENROUTER_API_KEY=
+EMBEDDING_MODEL=nomic-embed-text
+AUTH_REQUIRED=true
+PORT=$DEFAULT_PORT
+HOST=0.0.0.0
+RATE_LIMIT_PER_MINUTE=120
+
+# Backup storage
+BACKUP_STORAGE_PATH=/var/lib/mnexus/backups
+BACKUP_INDEX_PATH=/var/lib/mnexus/backups-index.db
+MAX_BACKUP_SIZE=524288000
+
+# Chunked upload (v0.47.14: ahora registrado)
+UPLOAD_DIR=/var/lib/mnexus/uploads
+EOF
+            chmod 600 "$env_file"
+            ok ".env generado (chmod 600). JWT_SECRET random 64 chars."
+        else
+            ok ".env ya existe en $env_file (no se sobreescribe)"
+        fi
+    fi
     # Service (systemd)
     if [[ "$DRY_RUN" == false ]] && [[ -d /etc/systemd/system ]]; then
         cat > /etc/systemd/system/${SERVICE_NAME}.service <<EOF
@@ -290,7 +333,7 @@ Restart=on-failure
 RestartSec=5
 Environment=PORT=$DEFAULT_PORT
 Environment=NODE_ENV=production
-EnvironmentFile=-$TARGET_DIR/.env
+EnvironmentFile=$TARGET_DIR/.env
 
 [Install]
 WantedBy=multi-user.target
