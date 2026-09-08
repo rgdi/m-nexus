@@ -1,6 +1,6 @@
 name: mnexus_app
 description: "M-NEXUS — Tu segundo cerebro digital. Notas, flashcards, calendar. Standalone (Android + Web)."
-version: 0.46.6+62
+version: 0.46.7+63
 publish_to: "none"
 
 environment:
@@ -42,9 +42,10 @@ dependencies:
   speech_to_text: ^7.0.0
 
   # Local DB with FTS5 - app_db.dart (drift)
-  drift: ^2.20.0
-  drift_flutter: ^0.2.0
-  sqlite3_flutter_libs: ^0.5.0
+  # v0.46.7: pin versions to avoid breaking changes
+  drift: 2.23.1
+  drift_flutter: 0.2.4
+  sqlite3_flutter_libs: 0.5.42
 
   # Charts (pie, bar) - stats_screen.dart
   fl_chart: ^0.69.0
