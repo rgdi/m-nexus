@@ -73,6 +73,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
     try {
       final response = await _client.ask(text);
+      // v0.47.21: mounted check tras await. Si el usuario navegó away
+      // mientras la AI pensaba, evitar setState en disposed widget.
+      if (!mounted) return;
       setState(() {
         _messages.add(ChatMessage(
           role: 'ai',
@@ -84,6 +87,7 @@ class _ChatScreenState extends State<ChatScreen> {
       });
       _scrollToBottom();
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _messages.add(ChatMessage(
           role: 'ai',

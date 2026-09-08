@@ -113,6 +113,9 @@ class _SearchScreenState extends State<SearchScreen> {
         _isSearching = false;
       });
     } catch (e) {
+      // v0.47.21: mounted check antes de setState en catch — si el usuario
+      // cerró la pantalla mientras search corría, esto evita el assert.
+      if (!mounted) return;
       setState(() => _isSearching = false);
       debugPrint('Search error: $e');
     }

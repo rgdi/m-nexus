@@ -81,6 +81,9 @@ class _VoiceInputButtonState extends State<VoiceInputButton> with SingleTickerPr
       _speechAvailable = await _speech.initialize(
         onError: (e) => debugPrint('STT error: $e'),
         onStatus: (s) {
+          // v0.47.21: mounted check en callbacks async.
+          // El callback onStatus puede dispararse tras dispose (p.ej. tras _speech.stop()).
+          if (!mounted) return;
           if (s == 'done' || s == 'notListening') {
             setState(() => _isListening = false);
             _pulseAnim.stop();
@@ -140,6 +143,10 @@ class _VoiceInputButtonState extends State<VoiceInputButton> with SingleTickerPr
       // Local STT: streaming transcription
       await _speech.listen(
         onResult: (result) {
+          // v0.47.21: mounted check en onResult (callback async que puede
+          // dispararse tras dispose si el usuario sale de la pantalla
+          // mientras speech_to_text procesa el chunk final).
+          if (!mounted) return;
           setState(() {
             _transcript = result.recognizedWords;
           });
@@ -158,6 +165,8 @@ class _VoiceInputButtonState extends State<VoiceInputButton> with SingleTickerPr
       // Remote: record audio + send to backend
       try {
         await _voiceService.startRecording();
+        // v0.47.21: mounted check tras await antes de setState.
+        if (!mounted) return;
         setState(() => _isProcessing = false);
       } catch (e) {
         debugPrint('Recording failed: $e');
@@ -175,12 +184,17 @@ class _VoiceInputButtonState extends State<VoiceInputButton> with SingleTickerPr
       await _speech.stop();
     } else {
       // Remote: stop recording + transcribe
-      setState(() {
-        _isListening = false;
-        _isProcessing = true;
-      });
+      // v0.47.21: mounted check — _stopListening puede invocarse desde
+      // _maxDurationTimer (que dispara aunque el State esté disposed).
+      if (mounted) {
+        setState(() {
+          _isListening = false;
+          _isProcessing = true;
+        });
+      }
       try {
         final audioPath = await _voiceService.stopRecording();
+        if (!mounted) return;
         if (audioPath != null && audioPath.isNotEmpty && widget.backendUrl != null) {
           // Verificar tamaño del archivo (lengthInBytes puede ser null en FS exótico).
           final file = File(audioPath);
@@ -207,7 +221,12 @@ class _VoiceInputButtonState extends State<VoiceInputButton> with SingleTickerPr
           );
         }
       } finally {
-        setState(() => _isProcessing = false);
+        // v0.47.21: mounted check en finally (puede ejecutarse tras dispose).
+        // Usa una flag local en lugar de return para evitar
+        // control_flow_in_finally (Dart linter).
+        if (mounted) {
+          setState(() => _isProcessing = false);
+        }
       }
     }
 

@@ -135,6 +135,8 @@ class _NoteEditorState extends State<NoteEditor> {
           title: title,
           content: body.isEmpty ? '# $title\n' : body,
         );
+        // v0.47.21: mounted check tras await antes de setState.
+        if (!mounted) return;
         setState(() {
           _isNewNote = false;
           _original = Note(

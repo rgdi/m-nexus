@@ -154,7 +154,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         )).toList(),
       ),
     );
-    if (r != null) {
+    // v0.47.21: mounted check antes de setState tras showDialog.
+    if (r != null && mounted) {
       setState(() => _settings = _settings.copyWith(themeMode: r));
       await _save();
     }
@@ -173,7 +174,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         )).toList(),
       ),
     );
-    if (r != null) {
+    if (r != null && mounted) {
       setState(() => _settings = _settings.copyWith(fontScale: r));
       await _save();
     }
@@ -206,7 +207,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
     );
-    if (r != _settings.backendUrl) {
+    if (r != _settings.backendUrl && mounted) {
       setState(() => _settings = _settings.copyWith(backendUrl: r));
       await _save();
     }

@@ -154,9 +154,16 @@ Usa `[[Nota]]` para enlazar: [[anatomia]]
   }
 
   Future<void> _requestPerms() async {
+    // v0.47.21: wrap en mounted check tras cada await. El setState en línea
+    // 160 era un bug — si el usuario salía del wizard durante el flujo de
+    // permisos, el State estaba disposed y el setState lanzaba assert error
+    // en debug, silent noop en release (con posible pérdida de state updates).
     final storageGranted = await PermissionsService.request("storage").then((s) => s.granted);
+    if (!mounted) return;
     final microGranted = await PermissionsService.request("microphone").then((s) => s.granted);
+    if (!mounted) return;
     final calendarGranted = await PermissionsService.request("calendar").then((s) => s.granted);
+    if (!mounted) return;
     setState(() {
       _permStorage = storageGranted;
       _permMicro = microGranted;
@@ -416,6 +423,7 @@ Usa `[[Nota]]` para enlazar: [[anatomia]]
             granted: _permStorage,
             onRequest: () async {
               final ok = await PermissionsService.request("storage").then((s) => s.granted);
+              if (!mounted) return;
               setState(() => _permStorage = ok);
             },
           ),
@@ -427,6 +435,7 @@ Usa `[[Nota]]` para enlazar: [[anatomia]]
             granted: _permMicro,
             onRequest: () async {
               final ok = await PermissionsService.request("microphone").then((s) => s.granted);
+              if (!mounted) return;
               setState(() => _permMicro = ok);
             },
           ),
@@ -438,6 +447,7 @@ Usa `[[Nota]]` para enlazar: [[anatomia]]
             granted: _permCalendar,
             onRequest: () async {
               final ok = await PermissionsService.request("calendar").then((s) => s.granted);
+              if (!mounted) return;
               setState(() => _permCalendar = ok);
             },
           ),
