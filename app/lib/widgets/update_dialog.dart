@@ -43,57 +43,74 @@ class _UpdateBannerState extends State<UpdateBanner> {
     final update = _updater.lastResult?.update;
     if (update == null) return const SizedBox.shrink();
 
+    // v0.47.31: banner más compacto (56px de alto vs 140px) para que
+    // NO cubra los AppBar.actions (IconButton) de los screens debajo.
+    // Antes era un banner alto que interceptaba taps del ▶ y + en la
+    // flashcards_list.
     return Material(
       color: theme.colorScheme.primaryContainer,
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              Icon(Icons.system_update, color: theme.colorScheme.primary),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Actualización ${update.latestVersion} disponible',
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    if (update.notes.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        update.notes.split('\n').first,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              if (_updater.isDownloading) ...[
-                SizedBox(
-                  width: 80,
-                  child: LinearProgressIndicator(value: _updater.downloadProgress),
-                ),
+      // v0.47.31: hitTestBehavior.opaque para que la fila entera del banner
+      // sea clickeable, no sólo los TextButton. Antes el Material sin
+      // HitTestBehavior dejaba huecos donde los taps pasaban al AppBar
+      // del screen debajo (que está justo bajo el banner en z-axis cuando
+      // el banner se monta en una Column encima del MainShell).
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {}, // consume taps que caen en zonas sin botón
+        child: SafeArea(
+          top: false,
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: Row(
+              children: [
+                Icon(Icons.system_update, size: 16, color: theme.colorScheme.primary),
                 const SizedBox(width: 8),
-              ] else ...[
-                TextButton(
-                  onPressed: () => _updater.dismissUpdate(),
-                  child: const Text('Más tarde'),
+                Expanded(
+                  child: Text(
+                    'Actualización ${update.latestVersion}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-                const SizedBox(width: 4),
-                FilledButton(
-                  onPressed: () => _showInstallDialog(context),
-                  child: const Text('Actualizar'),
-                ),
+                if (_updater.isDownloading) ...[
+                  SizedBox(
+                    width: 60,
+                    child: LinearProgressIndicator(
+                      value: _updater.downloadProgress,
+                      minHeight: 3,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ] else ...[
+                  TextButton(
+                    onPressed: () {
+                      debugPrint('UpdateBanner: dismissing');
+                      _updater.dismissUpdate();
+                    },
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      minimumSize: const Size(48, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text('Más tarde', style: TextStyle(fontSize: 12)),
+                  ),
+                  const SizedBox(width: 4),
+                  FilledButton(
+                    onPressed: () => _showInstallDialog(context),
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      minimumSize: const Size(48, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text('Actualizar', style: TextStyle(fontSize: 12)),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

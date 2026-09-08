@@ -21,7 +21,7 @@ import '../../state/app_state.dart';
 import '../flashcards/flashcard_review.dart';
 import '../flashcards/flashcard_edit.dart';
 import '../note/note_editor.dart';
-import '../vault/vault_browser.dart';
+import '../note/note_view.dart';
 import '../../services/permissions.dart';
 import '../../widgets/review_heatmap.dart';
 
@@ -237,10 +237,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   title: 'Actividad',
                   subtitle: 'Últimos 90 días',
                   child: SizedBox(
-                    height: 100,
-                    child: ReviewHeatmap(
-                      dailyStats: _dailyStats,
-                      daysToShow: 90,
+                    // v0.47.31: height dinámico según daysToShow.
+                    // Antes era height: 100 fijo, lo que provocaba
+                    // "BOTTOM OVERFLOWED BY 22 PIXELS" porque el contenido
+                    // real era ~130px (7 rows × 14px + legend ~24px + gap).
+                    // Fórmula: rows × (cellHeight + 2*padding) + legendHeight + gap
+                    height: 7 * 14.0 + 8 + 24,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: ReviewHeatmap(
+                        dailyStats: _dailyStats,
+                        daysToShow: 90,
+                      ),
                     ),
                   ),
                 ),
@@ -517,9 +525,19 @@ class _RecentNoteCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
+        // v0.47.31: tap del recientes ahora navega a NoteView con la
+        // nota específica, en lugar de abrir el VaultBrowser genérico.
+        // Bug previo: onTap: () => Navigator.push(VaultBrowser()) — abría
+        // la lista de archivos sin llevar al usuario a su nota.
         onTap: () {
+          final app = AppState.instance;
+          final vault = app.activeVault;
+          if (vault == null) return;
           Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => VaultBrowser(),
+            builder: (_) => NoteView(
+              notePath: note.path,
+              vaultPath: vault.path,
+            ),
           ));
         },
         child: Container(
