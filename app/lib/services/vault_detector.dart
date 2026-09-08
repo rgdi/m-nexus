@@ -47,7 +47,12 @@ class VaultDetector {
         onTimeout: () => Directory.systemTemp,
       );
       await _ensureDefaultVault(app.path);
-      await _scanDir(app.path, candidates, methods, 'app', maxDepth: 1).timeout(
+      // v0.47.32: maxDepth aumentado a 2 para que se escanee app_flutter/
+      // (el setup wizard crea el vault en docsDir/Mi_Vault que es
+      // depth 2 desde app.path). Antes con maxDepth: 1 el vault no se
+      // detectaba tras restart y había que crear manualmente
+      // _M-NEXUS/ para que apareciera.
+      await _scanDir(app.path, candidates, methods, 'app', maxDepth: 2).timeout(
         const Duration(seconds: 2),
         onTimeout: () {},
       );

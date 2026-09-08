@@ -86,7 +86,14 @@ class _SetupWizardState extends State<SetupWizard> {
         // 1. Si eligió crear vault, lo creamos
         if (_isCreatingVault) {
           final docsDir = await getApplicationDocumentsDirectory();
-          final vaultDir = Directory(p.join(docsDir.path, _vaultNameController.text.trim()));
+          // v0.47.32: sanitizar nombre del vault. Antes el usuario
+          // podía escribir "Mi Vault" y el sistema lo spliteaba en
+          // "Mi/" + "Mi Vault/" porque algún path handler (mkdir -p,
+          // cp, run-as) partía por el space. Ahora reemplazamos
+          // espacios por underscores para evitar el bug.
+          final rawName = _vaultNameController.text.trim();
+          final safeName = rawName.replaceAll(RegExp(r'\s+'), '_');
+          final vaultDir = Directory(p.join(docsDir.path, safeName));
           if (!await vaultDir.exists()) {
             await vaultDir.create(recursive: true);
             // Crear estructura inicial
