@@ -488,7 +488,7 @@ check_compat() {
     section "Verificando compatibilidad de versiones"
     log "Versión instalada: v$INSTALLED_VERSION"
     log "Versión backend: v$VERSION (requerida: >= $COMPATIBLE_BACKEND_MIN)"
-        log "Versión app: v$VERSION (requerida: >= $COMPATIBLE_COMPANION_MIN)"
+    log "Versión app: v$VERSION (requerida: >= $COMPATIBLE_COMPANION_MIN)"
     # Comparación simple de semver: extrae major.minor.patch
     local v="${VERSION%%.*}"; local v_min="${COMPATIBLE_BACKEND_MIN%%.*}"
     if [[ "$v" -lt "$v_min" ]]; then
