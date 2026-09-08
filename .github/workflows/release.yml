@@ -204,15 +204,29 @@ jobs:
       # Si los secrets no están configurados, el build.gradle cae a debug keystore
       # (con warning) para que CI no rompa builds de desarrollo.
       # Ver AUDIT_REPORT.md SEC-1.
+      #
+      # v0.47.25: fix CI — secrets no se pueden usar en if: directamente.
+      # Usar env var + test en script bash.
       - name: Setup release keystore
-        if: ${{ secrets.MN_KEYSTORE_BASE64 != '' }}
         env:
           MN_KEYSTORE_BASE64: ${{ secrets.MN_KEYSTORE_BASE64 }}
+          MN_KEYSTORE_STORE_PASSWORD: ${{ secrets.MN_KEYSTORE_STORE_PASSWORD }}
+          MN_KEYSTORE_KEY_PASSWORD: ${{ secrets.MN_KEYSTORE_KEY_PASSWORD }}
         run: |
-          mkdir -p app/android/keystores
-          echo "$MN_KEYSTORE_BASE64" | base64 -d > app/android/keystores/release.keystore
-          chmod 600 app/android/keystores/release.keystore
-          echo "Keystore restaurado desde secret. Size: $(stat -c %s app/android/keystores/release.keystore) bytes"
+          if [[ -n "$MN_KEYSTORE_BASE64" ]]; then
+            mkdir -p app/android/keystores
+            echo "$MN_KEYSTORE_BASE64" | base64 -d > app/android/keystores/release.keystore
+            chmod 600 app/android/keystores/release.keystore
+            echo "Keystore restaurado desde secret. Size: $(stat -c %s app/android/keystores/release.keystore) bytes"
+            # Guardar passwords en gradle.properties (que el build.gradle lee)
+            sed -i "s|^appKeystoreStorePassword=.*|appKeystoreStorePassword=${MN_KEYSTORE_STORE_PASSWORD}|" app/android/gradle.properties
+            sed -i "s|^appKeystoreKeyPassword=.*|appKeystoreKeyPassword=${MN_KEYSTORE_KEY_PASSWORD}|" app/android/gradle.properties
+            echo "Passwords guardados en gradle.properties"
+          else
+            echo "MN_KEYSTORE_BASE64 no configurado - usando debug keystore (warning)"
+            mkdir -p app/android/keystores
+            echo "# MN_KEYSTORE_BASE64 not set - using debug keystore" > app/android/keystores/.placeholder
+          fi
 
       # Sync version del pubspec al gradle.properties
       - name: Sync version to Android
@@ -232,14 +246,25 @@ jobs:
           set -e
           cd app
           echo "=== Building release APK ==="
+          if [[ ! -f /home/runner/.android/debug.keystore ]]; then
+            echo "No hay keystore release ni debug - generando uno temporal"
+            mkdir -p /home/runner/.android
+            keytool -genkey -v -keystore /home/runner/.android/debug.keystore \
+              -storepass android -alias androiddebugkey -keypass android \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US" 2>&1 | tail -1
+          fi
+          # Si no hay release keystore, copiar el debug como fallback
+          if [[ ! -f app/android/keystores/release.keystore ]]; then
+            cp /home/runner/.android/debug.keystore app/android/keystores/release.keystore
+            chmod 600 app/android/keystores/release.keystore
+            # Usar passwords del debug keystore
+            sed -i "s|^appKeystoreStorePassword=.*|appKeystoreStorePassword=android|" app/android/gradle.properties
+            sed -i "s|^appKeystoreKeyPassword=.*|appKeystoreKeyPassword=android|" app/android/gradle.properties
+          fi
           flutter build apk --release --no-tree-shake-icons 2>&1 | tee /tmp/build-release.log
         env:
           GRADLE_OPTS: "-Xmx4G"
-          # v0.47.20: pasar passwords del keystore como env vars (gradle las lee).
-          KEYSTORE_FILE: ${{ github.workspace }}/app/android/keystores/release.keystore
-          KEYSTORE_KEY_ALIAS: mnexus
-          KEYSTORE_STORE_PASSWORD: ${{ secrets.MN_KEYSTORE_STORE_PASSWORD }}
-          KEYSTORE_KEY_PASSWORD: ${{ secrets.MN_KEYSTORE_KEY_PASSWORD }}
 
       # Build debug APK (reusa cache de gradle del release)
       - name: Build debug APK
