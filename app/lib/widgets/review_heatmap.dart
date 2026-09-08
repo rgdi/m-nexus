@@ -14,6 +14,15 @@ class ReviewHeatmap extends StatelessWidget {
   final int daysToShow;
   final ValueChanged<DateTime>? onDayTap;
 
+  /// Devuelve 0-4 segun numero de repasas (estilo GitHub).
+  static int _intensityBucket(int reviews) {
+    if (reviews == 0) return 0;
+    if (reviews < 5) return 1;
+    if (reviews < 15) return 2;
+    if (reviews < 50) return 3;
+    return 4;
+  }
+
   const ReviewHeatmap({
     super.key,
     required this.dailyStats,
@@ -57,7 +66,7 @@ class ReviewHeatmap extends StatelessWidget {
                     final key = _dateKey(day);
                     final stat = dailyStats[key];
                     final reviews = stat?.reviews ?? 0;
-                    final intensity = HeatmapService.intensityBucket(reviews);
+                    final intensity = _intensityBucket(reviews);
                     return _HeatmapCell(
                       day: day,
                       reviews: reviews,
@@ -136,7 +145,7 @@ class _HeatmapCell extends StatelessWidget {
       child: InkWell(
         onTap: onTap != null ? () => onTap!(day) : null,
         child: Tooltip(
-          message: '${day.toIso8601String().slice(0, 10)}\n$reviews repasas',
+          message: '${day.toIso8601String().substring(0, 10)}\n$reviews repasas',
           child: Container(
             width: 12,
             height: 12,

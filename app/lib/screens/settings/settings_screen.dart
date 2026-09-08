@@ -8,6 +8,7 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants.dart';
 import '../../services/app_info.dart';
@@ -25,6 +26,13 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  Future<void> _addSafPath(String path) async {
+    final prefs = await SharedPreferences.getInstance();
+    final paths = prefs.getStringList('vaults.saf') ?? <String>[];
+    if (!paths.contains(path)) paths.add(path);
+    await prefs.setStringList('vaults.saf', paths);
+  }
+
   AppSettings _settings = const AppSettings();
   bool _loading = true;
 
@@ -215,7 +223,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Future<void> pickAndRefresh() async {
           final path = await VaultSafPicker.pickVault();
           if (path == null) return;
-          await VaultDetector().addSafPath(path);
+          await _addSafPath(path);
           if (!mounted) return;
           Navigator.pop(ctx);
           _showVaultsDialog();  // reabrir con la lista actualizada
@@ -244,9 +252,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     itemBuilder: (_, i) {
                       final v = vaults[i];
                       return ListTile(
-                        leading: Icon(v.detectionMethod == 'saf' ? Icons.folder_shared : Icons.folder),
+                        leading: Icon(v.method == 'saf' ? Icons.folder_shared : Icons.folder),
                         title: Text(v.name),
-                        subtitle: Text('${v.path}\nMétodo: ${v.detectionMethod ?? "auto"}'),
+                        subtitle: Text('${v.path}\nMétodo: ${v.method ?? "auto"}'),
                         isThreeLine: true,
                       );
                     },
