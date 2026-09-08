@@ -185,17 +185,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-flutter-
 
-      # v0.47.3: CRITICAL FIX - el cache de build guardaba APKs viejos
-      # con versionCode/versionName desactualizados. Borra app/build/ para
-      # forzar regeneracion completa de BuildConfig + manifest.
-      - name: Clean stale build cache
+      # v0.47.6: versionCode/versionName se actualiza via gradle.properties
+      # ANTES borrabamos app/build/ aqui, pero eso mata el cache gradle
+      # y los builds tardan 2h+. El gradle.properties + flutter clean
+      # selectivo es suficiente.
+      - name: Clean only app/build (preserve gradle cache)
         run: |
-          echo "=== Removing stale app/build to force versionCode refresh ==="
           rm -rf app/build
-          rm -rf app/.gradle
-          rm -rf app/android/.gradle
           rm -rf app/android/app/build
-          echo "Done"
+          # NO borramos ~/.gradle (eso es lo que tarda tanto)
+          echo "Cleaned app/build only"
 
       # v0.46.7: SKIP flutter clean - confiamos en gradle cache
       # Solo limpiar si los caches no se restauraron
