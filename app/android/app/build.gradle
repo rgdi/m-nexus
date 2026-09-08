@@ -73,7 +73,15 @@ android {
                 println "WARNING: release keystore credentials not found. " +
                         "Use env vars KEYSTORE_STORE_PASSWORD + KEYSTORE_KEY_PASSWORD " +
                         "(CI) or android/key.properties (local). Falling back to debug keystore."
-                storeFile = file("debug.keystore")
+                // v0.47.27: el debug keystore se genera en /home/runner/.android/
+                // por el CI (no en app/android/app/debug.keystore). Lo buscamos
+                // en la ubicación estándar o fallback al path local.
+                def debugKeystore = file("${System.getProperty("user.home")}/.android/debug.keystore")
+                if (debugKeystore.exists()) {
+                    storeFile = debugKeystore
+                } else {
+                    storeFile = file("debug.keystore")
+                }
                 storePassword = "android"
                 keyAlias = "androiddebugkey"
                 keyPassword = "android"
