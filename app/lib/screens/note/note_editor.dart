@@ -95,7 +95,7 @@ class _NoteEditorState extends State<NoteEditor> {
     }
     setState(() {
       _original = note;
-      _titleController.text = note.title;
+      _titleController.text = note.title ?? '';
       _bodyController.text = note.content;
       _isDirty = false;
     });
@@ -153,7 +153,7 @@ class _NoteEditorState extends State<NoteEditor> {
         });
       } else {
         // Edita nota existente
-        await _vault!.writeNote(widget.notePath!, title, body);
+        await _vault!.writeNote(widget.notePath!, body);
         saved = (await _vault!.readNote(widget.notePath!))!;
         _original = saved;
       }

@@ -14,6 +14,7 @@ import 'package:intl/intl.dart';
 import '../../core/theme.dart';
 import '../../services/flashcard_service.dart';
 import '../../services/fsrs_engine.dart';
+import '../../services/heatmap_service.dart';
 import '../../services/vault_service.dart';
 import '../../services/study_stats_service.dart';
 import '../../state/app_state.dart';
@@ -541,7 +542,7 @@ class _RecentNoteCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      note.title.isNotEmpty ? note.title : note.name,
+                      (note.title?.isNotEmpty ?? false) ? note.title! : note.name,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w500,
                       ),

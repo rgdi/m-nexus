@@ -11,12 +11,12 @@ class StudyStatsService {
   /// El backend (Fase 3.D) ya retorna StudyStats; este wrapper se usa
   /// para stats locales en el cliente.
   static StudyStats compute(List<ReviewEvent> events) {
-    return HeatmapService.compute(events);
+    return StudyStats.compute(events);
   }
 
   /// Computa daily stats agrupadas por dia.
   static Map<String, DailyStat> computeDaily(List<ReviewEvent> events) {
-    final stats = HeatmapService.compute(events);
+    final stats = StudyStats.compute(events);
     return {for (final d in stats.daily) d.date: d};
   }
 
