@@ -67,12 +67,37 @@ releases oficiales y distribuirlos como "updates" sobre instalaciones existentes
 - **v0.47.19** — release.yml fail-on-version-mismatch + CI guard para LATEST_TAG vacío.
 - **v0.47.20** — Keystore + key.properties fuera del repo (este release).
 
+### Fixed (v0.47.21 → v0.47.23, una versión por fix)
+
+- **v0.47.21** — Mounted checks antes de setState tras await. 10 sitios en lib/
+  corregidos (setup_wizard, chat_screen, search_screen, settings_screen,
+  note_editor, voice_input_button). El bug: si el usuario navegaba away
+  mientras la operación async corría, setState se ejecutaba en disposed
+  widget → assert error en debug, silent noop en release con pérdida de
+  state updates.
+
+- **v0.47.22** — Path traversal en upload route. `backend/src/routes/upload.ts`
+  usaba req.params.id, body.targetSubdir y body.filename directamente en
+  paths de filesystem sin validación. Un atacante con acceso a la API podía
+  escribir archivos fuera del directorio de uploads (e.g. body.targetSubdir=
+  "../../etc", body.filename="passwd"). Fix: isSafeId() valida id con regex
+  [a-zA-Z0-9_-]{1,128}, body.targetSubdir se sanitiza en init (reemplaza
+  [/\\] → '_' y '..' → '_'), isPathInside() valida que el path resuelto
+  está dentro del directorio permitido. 4 endpoints protegidos.
+
+- **v0.47.23** — Mounted check en flashcard_review._rateCard. Después de
+  approve() + updateMetadata() awaits, _next() llamaba setState sin
+  verificar mounted. Si el usuario salía de la review screen durante el
+  flujo de rate, setState en disposed widget.
+
 ### Verified
 
 - flutter analyze: 0 issues
 - flutter test: 70/70 passing
 - backend tsc: 0 errores
 - backend vitest: 567/574 (7 fallos pre-existentes entorno-dependientes)
+- git history reescrito (v0.47.20): keystore + passwords purgados,
+  force-pushed a origin/main con todos los tags reescritos
 
 Ver AUDIT_REPORT.md para el detalle completo.
 
