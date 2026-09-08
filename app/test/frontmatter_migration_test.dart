@@ -2,10 +2,12 @@
 //
 // La migracion se valida con un vault temporal de .md. Logica del parser
 // y counters se prueban sin necesidad de DB (que requiere flutter_test + drift).
+//
+// v0.47.11: eliminado imports legacy de package:mnexus/db/* (drift removido
+// en v0.46.7). El helper local FrontmatterMigrationHelper ahora retorna
+// FrontmatterResult tipado en lugar de record anónimo.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mnexus/db/frontmatter_migration.dart';
-import 'package:mnexus/db/app_db.dart';
 import 'dart:io';
 
 void main() {
@@ -31,7 +33,6 @@ void main() {
   group('FrontmatterMigration', () {
     test('parses basic note without frontmatter', () async {
       await createNote('simple.md', '# Simple Note\n\nJust some text.');
-      // El parse unit test — sin DB
       final fm = FrontmatterMigrationHelper.parseFrontmatter(
           '# Simple Note\n\nJust some text.');
       expect(fm.frontmatter, isEmpty);
@@ -127,10 +128,10 @@ tags: [anatomia, cardiovascular]
 
 Body content''';
 
-      final (fm, body) = FrontmatterMigrationHelper.parseFrontmatter(noteContent);
+      final result = FrontmatterMigrationHelper.parseFrontmatter(noteContent);
+      final fm = result.frontmatter;
       expect(fm['id'], 'legacy-001');
       expect(fm['type'], 'basic');
-      // Verify it would be detected as a card (has id + question)
       final isCard = fm.containsKey('id') && fm.containsKey('question');
       expect(isCard, isTrue);
     });
@@ -145,7 +146,8 @@ tags: [misc]
 
 Just plain text here.''';
 
-      final (fm, _) = FrontmatterMigrationHelper.parseFrontmatter(noteContent);
+      final result = FrontmatterMigrationHelper.parseFrontmatter(noteContent);
+      final fm = result.frontmatter;
       final isCard = fm.containsKey('id') && fm.containsKey('question');
       expect(isCard, isFalse);
     });
@@ -159,7 +161,6 @@ tags: [a, b]
 ---
 
 # Body''');
-      // Should still parse despite extra blank lines
       expect(result.frontmatter['title'], 'Spaced');
     });
   });
@@ -167,7 +168,7 @@ tags: [a, b]
 
 /// Helper to expose private parse methods for testing
 class FrontmatterMigrationHelper {
-  static (Map<String, String> frontmatter, String body) parseFrontmatter(String content) {
+  static FrontmatterResult parseFrontmatter(String content) {
     return _parseFrontmatterPublic(content);
   }
 
@@ -186,7 +187,6 @@ class FrontmatterMigrationHelper {
     for (final m in regex.allMatches(body)) {
       links.add(m.group(1)!.split('|').first.trim());
     }
-    // Real impl would JSON-encode; for test we return a string
     return links.isEmpty ? '[]' : '["${links.join('", "')}"]';
   }
 
@@ -199,10 +199,9 @@ class FrontmatterMigrationHelper {
     }
   }
 
-  // Public wrapper for the private method
-  static (Map<String, String>, String) _parseFrontmatterPublic(String content) {
+  static FrontmatterResult _parseFrontmatterPublic(String content) {
     final match = RegExp(r'^---\s*\n([\s\S]*?)\n---\s*\n?').firstMatch(content);
-    if (match == null) return ({}, content);
+    if (match == null) return FrontmatterResult(frontmatter: const {}, body: content);
 
     final fm = <String, String>{};
     for (final line in match.group(1)!.split('\n')) {
@@ -212,6 +211,12 @@ class FrontmatterMigrationHelper {
       }
     }
     final body = content.substring(match.end);
-    return (fm, body);
+    return FrontmatterResult(frontmatter: fm, body: body);
   }
+}
+
+class FrontmatterResult {
+  final Map<String, String> frontmatter;
+  final String body;
+  const FrontmatterResult({required this.frontmatter, required this.body});
 }

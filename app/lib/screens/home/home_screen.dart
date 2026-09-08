@@ -24,10 +24,6 @@ import '../note/note_editor.dart';
 import '../vault/vault_browser.dart';
 import '../../services/permissions.dart';
 import '../../widgets/review_heatmap.dart';
-import '../flashcards/flashcard_review.dart';
-import '../flashcards/flashcard_edit.dart';
-import '../note/note_editor.dart';
-import '../vault/vault_browser.dart';
 
 class HomeScreen extends StatefulWidget {
   final VaultService? vault;

@@ -5,7 +5,6 @@
 //          con FSRS después de varios ciclos. El usuario puede dejar el default.
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../services/flashcard_service.dart';
 import '../../state/app_state.dart';

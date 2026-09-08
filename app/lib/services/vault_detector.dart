@@ -57,7 +57,7 @@ class VaultDetector {
 
     // 2) External storage (puede ser lento o no estar disponible)
     try {
-      final ext = await getExternalStorageDirectory()?.timeout(
+      final ext = await getExternalStorageDirectory().timeout(
         const Duration(seconds: 1),
         onTimeout: () => null,
       );

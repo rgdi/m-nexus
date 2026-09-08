@@ -137,19 +137,19 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
             // Stats
             Row(
               children: [
-                Expanded(child: _StatBox(
+                Expanded(child: _statBox(
                   label: 'Downloads',
                   value: deck.downloads.toString(),
                   icon: Icons.download,
                 )),
                 const SizedBox(width: 8),
-                Expanded(child: _StatBox(
+                Expanded(child: _statBox(
                   label: 'Rating',
                   value: deck.rating.toStringAsFixed(1),
                   icon: Icons.star,
                 )),
                 const SizedBox(width: 8),
-                Expanded(child: _StatBox(
+                Expanded(child: _statBox(
                   label: 'Updated',
                   value: _formatDate(deck.updatedAt),
                   icon: Icons.update,
@@ -226,7 +226,7 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
     );
   }
 
-  Widget _StatBox({required String label, required String value, required IconData icon}) {
+  Widget _statBox({required String label, required String value, required IconData icon}) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(

@@ -43,13 +43,35 @@ interface UploadMetadata {
 }
 
 let index: BackupIndex | null = null;
+let indexError: Error | null = null;
 async function getIndex(): Promise<BackupIndex> {
-  if (!index) {
+  if (index) return index;
+  if (indexError) throw indexError;
+  try {
     await mkdir(dirname(config.backupIndexPath), { recursive: true });
     index = await openBackupIndex(config.backupIndexPath);
     await mkdir(config.backupStoragePath, { recursive: true });
+    return index;
+  } catch (e) {
+    indexError = e as Error;
+    throw indexError;
   }
-  return index;
+}
+
+/**
+ * v0.47.11: helper para routes que devuelve una respuesta 503 estructurada
+ * cuando SQLite no está disponible (runtime Node <22 sin better-sqlite3
+ * funcional, etc). Evita el 500 genérico que confunde a los clientes.
+ */
+function sendSqliteUnavailable(reply: FastifyReply, err: unknown): FastifyReply {
+  const msg = err instanceof Error ? err.message : String(err);
+  return reply.code(503).send({
+    code: "SQLITE_UNAVAILABLE",
+    category: "DB",
+    message: "Backup storage no disponible: ningún backend SQLite funcional",
+    hint: "Use Node 22+ (con node:sqlite built-in) o instale better-sqlite3 compatible con su runtime.",
+    context: { detail: msg },
+  });
 }
 
 function deviceFromReq(req: FastifyRequest): string {
@@ -141,7 +163,12 @@ export async function backupRoutes(app: FastifyInstance): Promise<void> {
     await writeFile(fullPath, buf);
 
     // 6) Registrar en el índice
-    const idx = await getIndex();
+    let idx: BackupIndex;
+    try {
+      idx = await getIndex();
+    } catch (e) {
+      return sendSqliteUnavailable(reply, e);
+    }
     const uploadedAt = new Date().toISOString();
     await idx.insert({
       id,
@@ -176,7 +203,12 @@ export async function backupRoutes(app: FastifyInstance): Promise<void> {
   // ─── GET /api/v1/backup/list ─────────────────────────────────────────
   app.get("/list", async (req: FastifyRequest, reply: FastifyReply) => {
     const deviceId = deviceFromReq(req);
-    const idx = await getIndex();
+    let idx: BackupIndex;
+    try {
+      idx = await getIndex();
+    } catch (e) {
+      return sendSqliteUnavailable(reply, e);
+    }
     const all = await idx.listForDevice(deviceId);
     reply.send(all);
   });
@@ -189,7 +221,12 @@ export async function backupRoutes(app: FastifyInstance): Promise<void> {
       reply.code(400).send({ code: "BAD_ID", message: "ID inválido" });
       return;
     }
-    const idx = await getIndex();
+    let idx: BackupIndex;
+    try {
+      idx = await getIndex();
+    } catch (e) {
+      return sendSqliteUnavailable(reply, e);
+    }
     const entry = await idx.get(deviceId, id);
     if (!entry) {
       reply.code(404).send({ code: "NOT_FOUND", message: "Backup no encontrado" });
@@ -227,7 +264,12 @@ export async function backupRoutes(app: FastifyInstance): Promise<void> {
       reply.code(400).send({ code: "BAD_ID", message: "ID inválido" });
       return;
     }
-    const idx = await getIndex();
+    let idx: BackupIndex;
+    try {
+      idx = await getIndex();
+    } catch (e) {
+      return sendSqliteUnavailable(reply, e);
+    }
     const entry = await idx.get(deviceId, id);
     if (!entry) {
       reply.code(404).send({ code: "NOT_FOUND", message: "Backup no encontrado" });

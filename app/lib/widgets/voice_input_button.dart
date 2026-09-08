@@ -12,6 +12,7 @@
 //   )
 
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
@@ -147,10 +148,10 @@ class _VoiceInputButtonState extends State<VoiceInputButton> with SingleTickerPr
             _stopListening();
           }
         },
-        localeId: widget.localeCode ?? _localeForLanguage(widget.language),
         listenOptions: stt.SpeechListenOptions(
           partialResults: true,
           cancelOnError: true,
+          localeId: widget.localeCode ?? _localeForLanguage(widget.language),
         ),
       );
     } else {
@@ -179,15 +180,21 @@ class _VoiceInputButtonState extends State<VoiceInputButton> with SingleTickerPr
         _isProcessing = true;
       });
       try {
-        final audio = await _voiceService.stopRecording();
-        if (audio.lengthInBytes > 0 && widget.backendUrl != null) {
-          final text = await _voiceService.transcribe(
-            audio,
-            backendUrl: widget.backendUrl!,
-            authToken: widget.authToken,
-            language: widget.language,
-          );
-          _insertTranscript(text);
+        final audioPath = await _voiceService.stopRecording();
+        if (audioPath != null && audioPath.isNotEmpty && widget.backendUrl != null) {
+          // Verificar tamaño del archivo (lengthInBytes puede ser null en FS exótico).
+          final file = File(audioPath);
+          final size = await file.length();
+          if (size > 0) {
+            final text = await _voiceService.transcribe(
+              audioPath,
+              mode: TranscriptionMode.remote,
+              backendUrl: widget.backendUrl!,
+              authToken: widget.authToken,
+              language: widget.language,
+            );
+            _insertTranscript(text);
+          }
         }
       } catch (e) {
         debugPrint('Transcription failed: $e');

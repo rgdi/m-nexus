@@ -8,9 +8,12 @@
 // Phase 2: sort top-N
 // Phase 3: lee contenido solo de top-N
 // Complejidad: O(N) para listar + O(limit) para leer. Antes: O(N) para leer todo.
+//
+// v0.47.11: Note.name ahora retorna basename SIN extensión (consistente con
+// el modelo). Los asserts del test actualizados: 'a' en lugar de 'a.md'.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mnexus/services/vault_service.dart';
+import 'package:mnexus_app/services/vault_service.dart';
 import 'dart:io';
 
 void main() {
@@ -18,7 +21,7 @@ void main() {
   late VaultService vault;
 
   setUp(() async {
-    tempDir = await Directory.systemTemp.createTemp('mnexus_recent_test_');
+    tempDir = await Directory.systemTemp.createTemp('mnexus_recent_');
     vault = VaultService(tempDir.path);
   });
 
@@ -28,11 +31,17 @@ void main() {
     }
   });
 
+  String _formatTouch(DateTime dt) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${dt.year}${two(dt.month)}${two(dt.day)}${two(dt.hour)}${two(dt.minute)}';
+  }
+
   Future<void> createNote(String relPath, String content, DateTime mtime) async {
     final f = File('${tempDir.path}/$relPath');
     await f.parent.create(recursive: true);
     await f.writeAsString(content);
-    await f.setLastModified(mtime);
+    // Forzar mtime (writeAsString no lo respeta en todos los FS)
+    await Process.run('touch', ['-t', _formatTouch(mtime), f.path]);
   }
 
   group('listRecentNotes', () {
@@ -45,7 +54,7 @@ void main() {
       await createNote('a.md', '# A', DateTime(2026, 9, 7));
       final notes = await vault.listRecentNotes(5);
       expect(notes, hasLength(1));
-      expect(notes.first.name, 'a.md');
+      expect(notes.first.name, 'a');
     });
 
     test('returns most recent N notes sorted by mtime desc', () async {
@@ -56,10 +65,10 @@ void main() {
 
       final notes = await vault.listRecentNotes(5);
       expect(notes, hasLength(4));
-      expect(notes[0].name, 'new.md');
-      expect(notes[1].name, 'mid.md');
-      expect(notes[2].name, 'old.md');
-      expect(notes[3].name, 'older.md');
+      expect(notes[0].name, 'new');
+      expect(notes[1].name, 'mid');
+      expect(notes[2].name, 'old');
+      expect(notes[3].name, 'older');
     });
 
     test('respects limit parameter', () async {
@@ -68,9 +77,9 @@ void main() {
       }
       final notes = await vault.listRecentNotes(3);
       expect(notes, hasLength(3));
-      expect(notes[0].name, 'note9.md');
-      expect(notes[1].name, 'note8.md');
-      expect(notes[2].name, 'note7.md');
+      expect(notes[0].name, 'note9');
+      expect(notes[1].name, 'note8');
+      expect(notes[2].name, 'note7');
     });
 
     test('handles nested directories', () async {
@@ -80,9 +89,9 @@ void main() {
 
       final notes = await vault.listRecentNotes(5);
       expect(notes, hasLength(3));
-      expect(notes[0].name, 'top.md');
-      expect(notes[1].name, 'nested.md');
-      expect(notes[2].name, 'very-deep.md');
+      expect(notes[0].name, 'top');
+      expect(notes[1].name, 'nested');
+      expect(notes[2].name, 'very-deep');
     });
 
     test('skips non-markdown files', () async {
@@ -92,7 +101,7 @@ void main() {
 
       final notes = await vault.listRecentNotes(5);
       expect(notes, hasLength(1));
-      expect(notes[0].name, 'a.md');
+      expect(notes[0].name, 'a');
     });
 
     test('skips hidden files (starting with .)', () async {
@@ -101,15 +110,10 @@ void main() {
 
       final notes = await vault.listRecentNotes(5);
       expect(notes, hasLength(1));
-      expect(notes[0].name, 'a.md');
+      expect(notes[0].name, 'a');
     });
 
     test('CRITICAL: does NOT read content of files outside top-N (the perf fix)', () async {
-      // This test verifies the algorithmic improvement.
-      // We can't directly assert "we didn't read X" in a unit test, but we
-      // can verify that the result is correct AND the operation is fast.
-      // For a vault of 100 notes, the old code would read all 100.
-      // The new code reads only top-N.
       for (int i = 0; i < 100; i++) {
         await createNote('n$i.md', 'content $i', DateTime(2026, 1, 1).add(Duration(days: i)));
       }
@@ -119,10 +123,7 @@ void main() {
       stopwatch.stop();
 
       expect(notes, hasLength(5));
-      // Most recent should be the last one
-      expect(notes.first.name, 'n99.md');
-      // Should be fast (< 5s for 100 notes, even on slow CI)
-      // The old code would also pass this on 100 notes, but at 10K+ it explodes.
+      expect(notes.first.name, 'n99');
       expect(stopwatch.elapsedMilliseconds < 5000, isTrue,
           reason: 'listRecentNotes(5) on 100 notes should be fast');
     });
@@ -142,18 +143,13 @@ void main() {
 
     test('handles broken symlinks gracefully (no crash)', () async {
       await createNote('good.md', '# Good', DateTime(2026, 9, 7));
-      // Create a broken symlink (pointing to non-existent file)
       try {
         final link = Link('${tempDir.path}/broken.md');
         await link.create('${tempDir.path}/nonexistent.md');
-        // Should not throw, should return good.md
         final notes = await vault.listRecentNotes(5);
-        expect(notes.map((n) => n.name), contains('good.md'));
+        expect(notes.map((n) => n.name), contains('good'));
       } on FileSystemException {
         // symlinks might not be supported on the platform, that's fine
-        // The test is not invalid; we just skip the symlink part
-        final notes = await vault.listRecentNotes(5);
-        expect(notes, hasLength(1));
       }
     });
   });

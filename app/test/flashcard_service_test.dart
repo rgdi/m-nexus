@@ -24,10 +24,13 @@ void main() {
   group('FlashcardService.create', () {
     test('crea tarjeta en Drafts con metadata', () async {
       final svc = FlashcardService(tmpDir.path);
+      // v0.47.1: create() ahora usa approved=true por defecto (Approved dir).
+      // Para testear el path Drafts, forzamos approved=false explícitamente.
       final card = await svc.create(
         question: '¿Cuántas cavidades?',
         answer: '4',
         difficulty: 3,
+        approved: false,
       );
       expect(card.approved, isFalse);
       expect(card.question, '¿Cuántas cavidades?');
@@ -41,8 +44,10 @@ void main() {
   group('FlashcardService.listAll', () {
     test('lista Drafts y Approved', () async {
       final svc = FlashcardService(tmpDir.path);
-      await svc.create(question: 'Q1', answer: 'A1');
-      await svc.create(question: 'Q2', answer: 'A2');
+      // v0.47.1: ambas en Drafts para verificar el comportamiento legacy
+      // (el caso "Approved-only" lo cubre el test approve() de abajo).
+      await svc.create(question: 'Q1', answer: 'A1', approved: false);
+      await svc.create(question: 'Q2', answer: 'A2', approved: false);
       final approvedDir = Directory(p.join(tmpDir.path, AppConstants.flashcardsApproved));
       await approvedDir.create(recursive: true);
       await File(p.join(approvedDir.path, 'manual.md')).writeAsString('''---
@@ -99,8 +104,12 @@ A1
   group('FlashcardService.approve', () {
     test('mueve tarjeta de Drafts a Approved', () async {
       final svc = FlashcardService(tmpDir.path);
-      final card = await svc.create(question: 'Q', answer: 'A');
+      // v0.47.1: create() ahora usa approved=true por defecto (Approved dir).
+      // Para testear approve(), creamos explícitamente en Drafts (approved=false).
+      final card = await svc.create(question: 'Q', answer: 'A', approved: false);
       expect(card.approved, isFalse);
+      // El archivo debe existir en Drafts antes de approve()
+      expect(await File(card.path).exists(), isTrue);
       await svc.approve(card);
       // El archivo en Drafts no debe existir
       expect(await File(card.path).exists(), isFalse);

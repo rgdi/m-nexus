@@ -150,7 +150,7 @@ class Updater extends ChangeNotifier {
     final lastCheck = prefs.getInt(_prefsKeyLastCheck) ?? 0;
     final now = DateTime.now().millisecondsSinceEpoch;
     if (now - lastCheck > config.cacheLifetime.inMilliseconds) return null;
-    final raw = prefs.getString('${_prefsKeyLastCheck}.data');
+    final raw = prefs.getString('$_prefsKeyLastCheck.data');
     if (raw == null) return null;
     try {
       final m = jsonDecode(raw) as Map<String, dynamic>;
@@ -199,7 +199,7 @@ class Updater extends ChangeNotifier {
       'update': result.update?.toJson(),
     };
     await prefs.setString(
-      '${_prefsKeyLastCheck}.data',
+      '$_prefsKeyLastCheck.data',
       jsonEncode(data),
     );
   }

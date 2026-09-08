@@ -15,7 +15,6 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
-import '../models/flashcard.dart';
 import '../services/flashcard_service.dart';
 import '../services/vault_detector.dart';
 import '../services/vault_service.dart';

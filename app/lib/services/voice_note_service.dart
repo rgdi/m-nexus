@@ -57,6 +57,18 @@ enum VoiceNoteState {
   error,       // error
 }
 
+/// Modo de transcripción seleccionable desde la UI.
+enum TranscriptionMode {
+  /// STT local en el dispositivo (offline, requiere speech_to_text disponible).
+  local,
+
+  /// Audio grabado + transcripción server-side con Whisper.
+  remote,
+
+  /// Auto: usa local si está disponible, si no fallback a remote.
+  auto,
+}
+
 /// Interfaz para que tests mockeen la implementación real.
 abstract class VoiceNoteServiceInterface {
   Future<bool> requestPermission();
@@ -71,6 +83,19 @@ abstract class VoiceNoteServiceInterface {
     String? authToken,
     String? deviceId,
   });
+
+  /// Atajo de alto nivel: enruta según [mode] entre local y remote.
+  /// Retorna solo el texto transcrito (helper para widgets que no necesitan
+  /// la metadata completa de [TranscriptionResult]).
+  Future<String> transcribe(
+    String audioPath, {
+    required TranscriptionMode mode,
+    String language = 'es',
+    String? backendUrl,
+    String? authToken,
+    String? deviceId,
+  });
+
   Stream<VoiceNoteState> get stateStream;
   VoiceNoteState get currentState;
 }
@@ -92,7 +117,9 @@ class VoiceNoteService implements VoiceNoteServiceInterface {
   /// Constructor default.
   VoiceNoteService();
 
+  @override
   VoiceNoteState get currentState => _state;
+  @override
   Stream<VoiceNoteState> get stateStream => _stateController.stream;
 
   void _emitState(VoiceNoteState s) {
@@ -246,8 +273,8 @@ class VoiceNoteService implements VoiceNoteServiceInterface {
         final file = File(audioPath);
         if (!await file.exists()) {
           throw AppError.fs(
-            code: 'EC-VOICE-011',
-            message: 'Audio file not found',
+            'EC-VOICE-011',
+            'Audio file not found',
             context: { 'path': audioPath },
           );
         }
@@ -269,24 +296,24 @@ class VoiceNoteService implements VoiceNoteServiceInterface {
 
         if (response.statusCode == 401 || response.statusCode == 403) {
           throw AppError.auth(
-            code: 'EC-VOICE-013',
-            message: 'Authentication failed for transcribe',
+            'EC-VOICE-013',
+            'Authentication failed for transcribe',
             context: { 'statusCode': response.statusCode, 'body': response.body },
             hint: 'Check authToken is valid and not expired',
           );
         }
         if (response.statusCode == 429) {
           throw AppError.net(
-            code: 'EC-VOICE-014',
-            message: 'Rate limit exceeded for transcribe',
+            'EC-VOICE-014',
+            'Rate limit exceeded for transcribe',
             context: { 'statusCode': response.statusCode, 'body': response.body },
             hint: 'Wait and retry; reduce request frequency',
           );
         }
         if (response.statusCode < 200 || response.statusCode >= 300) {
           throw AppError.net(
-            code: 'EC-VOICE-015',
-            message: 'Transcribe failed: HTTP ${response.statusCode}',
+            'EC-VOICE-015',
+            'Transcribe failed: HTTP ${response.statusCode}',
             context: { 'statusCode': response.statusCode, 'body': response.body },
             hint: 'Check backend logs; verify audio format is supported',
           );
@@ -318,6 +345,54 @@ class VoiceNoteService implements VoiceNoteServiceInterface {
     }
     _emitState(VoiceNoteState.done);
     return r.value!;
+  }
+
+  /// Helper de alto nivel: enruta según [mode].
+  /// - [TranscriptionMode.local] → transcribeLocal (STT en dispositivo)
+  /// - [TranscriptionMode.remote] → transcribeRemote (Whisper en backend)
+  /// - [TranscriptionMode.auto] → intenta local primero, fallback a remote
+  @override
+  Future<String> transcribe(
+    String audioPath, {
+    required TranscriptionMode mode,
+    String language = 'es',
+    String? backendUrl,
+    String? authToken,
+    String? deviceId,
+  }) async {
+    if (mode == TranscriptionMode.local) {
+      final r = await transcribeLocal(audioPath: audioPath, language: language);
+      return r.text;
+    }
+    if (mode == TranscriptionMode.remote) {
+      if (backendUrl == null) {
+        throw AppError.cfg(
+          'EC-VOICE-016',
+          'remote mode requires backendUrl',
+          context: { 'audioPath': audioPath },
+        );
+      }
+      final r = await transcribeRemote(
+        audioPath: audioPath,
+        backendUrl: backendUrl,
+        language: language,
+        authToken: authToken,
+        deviceId: deviceId,
+      );
+      return r.text;
+    }
+    // auto: prefer local, fallback a remote
+    final local = await transcribeLocal(audioPath: audioPath, language: language);
+    if (local.text.isNotEmpty) return local.text;
+    if (backendUrl == null) return '';
+    final remote = await transcribeRemote(
+      audioPath: audioPath,
+      backendUrl: backendUrl,
+      language: language,
+      authToken: authToken,
+      deviceId: deviceId,
+    );
+    return remote.text;
   }
 
   void dispose() {
@@ -403,6 +478,19 @@ class MockVoiceNoteService implements VoiceNoteServiceInterface {
     String? deviceId,
   }) async {
     return transcribeLocal(audioPath: audioPath, language: language);
+  }
+
+  @override
+  Future<String> transcribe(
+    String audioPath, {
+    required TranscriptionMode mode,
+    String language = 'es',
+    String? backendUrl,
+    String? authToken,
+    String? deviceId,
+  }) async {
+    final r = await transcribeLocal(audioPath: audioPath, language: language);
+    return r.text;
   }
 
   void dispose() {

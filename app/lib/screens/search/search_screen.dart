@@ -10,7 +10,6 @@
 //   - Highlighting del match en el snippet
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../models/search_result.dart';
 import '../../services/vault_service.dart';
@@ -71,7 +70,7 @@ class _SearchScreenState extends State<SearchScreen> {
       final queryLower = query.toLowerCase();
       final noteResults = allNotes.where((n) =>
         n.content.toLowerCase().contains(queryLower) ||
-        n.title.toLowerCase().contains(queryLower) ||
+        (n.title?.toLowerCase().contains(queryLower) ?? false) ||
         n.name.toLowerCase().contains(queryLower)
       ).take(20).toList();
       // Card/tag search: disabled (no DB), show empty
@@ -83,7 +82,7 @@ class _SearchScreenState extends State<SearchScreen> {
         flat.add(SearchResultItem(
           type: SearchResultType.note,
           path: n.path,
-          title: n.title.isNotEmpty ? n.title : n.name,
+          title: (n.title != null && n.title!.isNotEmpty) ? n.title! : n.name,
           snippet: _generateNoteSnippet(n),
         ));
       }

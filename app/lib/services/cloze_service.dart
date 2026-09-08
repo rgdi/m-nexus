@@ -2,6 +2,8 @@
 //
 // v0.46: port del ClozeService.ts del backend a Dart. Misma logica, mismo output.
 
+import '../models/cloze.dart';
+
 class ClozeService {
   static final _clozeRegex = RegExp(r'\{\{c(\d+)::([^}:]+)(?:::([^}]*))?\}\}');
 
