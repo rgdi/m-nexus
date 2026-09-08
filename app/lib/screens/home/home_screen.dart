@@ -47,7 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _minutesToday = 0;
   double _retention = 0.90;
   List<_RecentNote> _recentNotes = [];
-  Map<String, dynamic> _dailyStats = {};
+  Map<String, DailyStat> _dailyStats = {};
 
   @override
   void initState() {
@@ -349,9 +349,9 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
+        color: color.withOpacity(0.08),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
+        border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -362,7 +362,7 @@ class _StatCard extends StatelessWidget {
               Container(
                 width: 32, height: 32,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.2),
+                  color: color.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon, color: color, size: 18),
@@ -411,7 +411,7 @@ class _DashboardCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
+        border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -465,14 +465,14 @@ class _ActionCard extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
+            border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
           ),
           child: Row(
             children: [
               Container(
                 width: 40, height: 40,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
+                  color: color.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, color: color, size: 20),
@@ -503,7 +503,7 @@ class _ActionCard extends StatelessWidget {
 class _RecentNote {
   final String name;
   final String path;
-  final String title;
+  final String? title;
   final DateTime modified;
   const _RecentNote({required this.name, required this.path, required this.title, required this.modified});
 }
@@ -529,7 +529,7 @@ class _RecentNoteCard extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3)),
+            border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.3)),
           ),
           child: Row(
             children: [

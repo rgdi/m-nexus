@@ -349,7 +349,7 @@ class _ResultTile extends StatelessWidget {
         text: text.substring(idx, idx + query.length),
         style: baseStyle.copyWith(
           fontWeight: FontWeight.bold,
-          backgroundColor: Colors.yellow.withValues(alpha: 0.4),
+          backgroundColor: Colors.yellow.withOpacity(0.4),
         ),
       ));
       start = idx + query.length;

@@ -262,7 +262,7 @@ class _VoiceInputButtonState extends State<VoiceInputButton> with SingleTickerPr
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: Colors.red.withValues(alpha: 0.2),
+                color: Colors.red.withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
             ),

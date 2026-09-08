@@ -109,7 +109,7 @@ class ReviewHeatmap extends StatelessWidget {
     final base = theme.colorScheme.primary;
     if (intensity == 0) return theme.colorScheme.surfaceContainerHighest;
     final alpha = 0.2 + (intensity * 0.2);
-    return base.withValues(alpha: alpha);
+    return base.withOpacity(alpha);
   }
 }
 

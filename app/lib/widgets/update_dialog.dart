@@ -102,7 +102,9 @@ class _UpdateBannerState extends State<UpdateBanner> {
 
   Future<void> _showInstallDialog(BuildContext context) async {
     final theme = Theme.of(context);
-    final update = _updater.lastResult?.update;
+    final result = _updater.lastResult;
+    if (result == null) return;
+    final update = result.update;
     if (update == null) return;
     final confirmed = await showDialog<bool>(
       context: context,
@@ -113,7 +115,7 @@ class _UpdateBannerState extends State<UpdateBanner> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Versión actual: ${update.installedVersion}'),
+              Text('Versión actual: ${result.installedVersion}'),
               const SizedBox(height: 8),
               if (update.notes.isNotEmpty) ...[
                 Text('Cambios:', style: theme.textTheme.labelLarge),
