@@ -19,7 +19,8 @@ const TEST_DIR = join(tmpdir(), `mnexus-backup-test-${Date.now()}`);
 
 // Setear env ANTES de importar nada
 process.env.AUTH_REQUIRED = "true";
-// tests/setup.ts setea JWT_SECRET = "test-secret". Lo respetamos.
+// tests/setup.ts setea JWT_SECRET = "test-secret-...-32chars-min" (v0.47.12).
+// Lo respetamos.
 process.env.BACKUP_STORAGE_PATH = join(TEST_DIR, "backups");
 process.env.BACKUP_INDEX_PATH = join(TEST_DIR, "backups-index.db");
 process.env.MAX_BACKUP_SIZE = String(10 * 1024 * 1024); // 10MB

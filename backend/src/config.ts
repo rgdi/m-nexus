@@ -46,7 +46,39 @@ export const config: BackendConfig = {
   get port() { return parseInt(process.env.PORT ?? "4000", 10); },
   get host() { return process.env.HOST ?? "0.0.0.0"; },
   get authRequired() { return getAuthRequired(); },
-  get jwtSecret() { return process.env.JWT_SECRET ?? "change-me-in-production"; },
+  get jwtSecret() {
+    // v0.47.12: fail-fast si JWT_SECRET no está seteado o es débil.
+    // Antes: default hardcodeado "change-me-in-production" (público en el repo)
+    // permitía auth bypass trivial: cualquiera podía firmar tokens con cualquier
+    // deviceId. Ver AUDIT_REPORT.md SEC-2.
+    const s = process.env.JWT_SECRET;
+    if (!s) {
+      throw new Error(
+        "JWT_SECRET must be set. " +
+        "Generate one with: openssl rand -hex 32"
+      );
+    }
+    // Lista de substrings prohibidos (case-insensitive). Cubre los defaults
+    // hardcodeados del proyecto: 'change-me', 'change-me-in-production'.
+    // No incluimos 'test' ni 'dev' porque son demasiado comunes y romperían
+    // setup de tests y nombres de variable. Empty string '' está excluido
+    // porque '' está contenido en cualquier string.
+    const WEAK_SUBSTRINGS = ["change-me"];
+    const lower = s.toLowerCase();
+    if (WEAK_SUBSTRINGS.some((w) => lower.includes(w))) {
+      throw new Error(
+        `JWT_SECRET too weak (contains forbidden substring like 'change-me', 'test', 'secret', 'dev'). ` +
+        "Generate one with: openssl rand -hex 32"
+      );
+    }
+    if (s.length < 32) {
+      throw new Error(
+        `JWT_SECRET too short (${s.length} chars, min 32). ` +
+        "Generate one with: openssl rand -hex 32"
+      );
+    }
+    return s;
+  },
   get whisperBinary() { return process.env.WHISPER_BINARY ?? "whisper"; },
   get tesseractBinary() { return process.env.TESSERACT_BINARY ?? "tesseract"; },
   get ollamaBaseUrl() { return process.env.OLLAMA_BASE_URL ?? "http://localhost:11434"; },

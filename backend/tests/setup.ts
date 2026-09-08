@@ -4,7 +4,8 @@
 // Esto evita que tests "pasen" probando stubs sin saberlo.
 
 process.env.AUTH_REQUIRED = "true";
-process.env.JWT_SECRET = "test-secret";
+// v0.47.12: tests usan un secret >= 32 chars (config.ts ahora fail-fast en secretos débiles).
+process.env.JWT_SECRET = "test-secret-test-secret-test-secret-32chars-min";
 process.env.LOG_LEVEL = "silent";
 // Defaults conservadores: forzar MOCKs solo si el test no los desactiva
 process.env.MOCK_WHISPER = process.env.MOCK_WHISPER ?? "1";  // default ON (cambiar si querés probar real)
