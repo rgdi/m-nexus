@@ -43,7 +43,13 @@ class NoteEditor extends StatefulWidget {
 class _NoteEditorState extends State<NoteEditor> {
   final _titleController = TextEditingController();
   final _bodyController = TextEditingController();
-  final _bodyFocus = FocusNode();
+  // v0.47.30: focus nodes explícitos + listener que desenfoca el otro campo
+  // cuando uno gana foco. Antes el title TextField no tenía focusNode, así
+  // que cuando el body capturaba el foco, el title no podía recuperarlo al
+  // re-tapear — Flutter lo descartaba porque el GestureDetector del
+  // Expanded del body interceptaba el tap antes de llegar al title.
+  final _titleFocus = FocusNode(debugLabel: 'note-editor-title');
+  final _bodyFocus = FocusNode(debugLabel: 'note-editor-body');
   final _scrollController = ScrollController();
 
   VaultService? _vault;
@@ -69,6 +75,21 @@ class _NoteEditorState extends State<NoteEditor> {
     _titleController.addListener(_onChange);
     _bodyController.addListener(_onChange);
     _bodyFocus.addListener(() => setState(() {}));
+    // v0.47.30: mutually-exclusive focus entre title y body. Cuando el
+    // title gana foco, el body pierde foco y se cierra el teclado del
+    // body (si estaba visible). Viceversa para el body.
+    _titleFocus.addListener(() {
+      if (_titleFocus.hasFocus && _bodyFocus.hasFocus) {
+        _bodyFocus.unfocus();
+      }
+      setState(() {});
+    });
+    _bodyFocus.addListener(() {
+      if (_bodyFocus.hasFocus && _titleFocus.hasFocus) {
+        _titleFocus.unfocus();
+      }
+      setState(() {});
+    });
   }
 
   @override
@@ -76,6 +97,7 @@ class _NoteEditorState extends State<NoteEditor> {
     _autoSave?.cancel();
     _titleController.dispose();
     _bodyController.dispose();
+    _titleFocus.dispose();
     _bodyFocus.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -238,8 +260,16 @@ class _NoteEditorState extends State<NoteEditor> {
           // Title
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            // v0.47.30: tapTargetSize + explicit focusNode. Antes el title
+            // TextField no tenía focusNode y la zona de tap era estrecha;
+            // combinado con el GestureDetector del body Expanded (que
+            // intercepta taps en su área), el title field no recibía taps
+            // cuando el body ya tenía foco. Con focusNode explícito +
+            // mutually-exclusive focus listener (en initState), Flutter
+            // sabe a quién desviar el foco.
             child: TextField(
               controller: _titleController,
+              focusNode: _titleFocus,
               style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
               decoration: const InputDecoration(
                 hintText: 'Título de la nota',
