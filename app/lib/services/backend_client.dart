@@ -23,7 +23,10 @@ const String _prefsKeyBackendUrl = 'mnexus.backend.url';
 const String _prefsKeyAuthToken = 'mnexus.auth.token';
 const String _prefsKeyLastConnected = 'mnexus.backend.last_connected';
 
-const String _defaultBackendUrl = 'http://10.0.2.2:8787';
+// v0.47.15: default port 4000 (alineado con backend/src/config.ts y
+// install/install.sh:DEFAULT_PORT=4000). Antes: 8787 (3 fuentes de verdad
+// distintas, la app no podía conectar al backend por default).
+const String _defaultBackendUrl = 'http://10.0.2.2:4000';
 const Duration _timeout = Duration(seconds: 15);
 
 class BackendConnection {
