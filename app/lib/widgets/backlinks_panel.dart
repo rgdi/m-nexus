@@ -7,8 +7,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-// import '../../db/app_db.dart'; // removed v0.46.7
-import '../../services/wikilink_parser.dart';
+import '../services/wikilink_parser.dart';
 
 class BacklinksPanel extends StatefulWidget {
   final String currentNotePath;

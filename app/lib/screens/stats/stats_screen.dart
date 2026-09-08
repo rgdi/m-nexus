@@ -6,7 +6,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:fl_chart/fl_chart.dart';
-// import '../../db/app_db.dart'; // removed v0.46.7
 import '../../services/study_stats_service.dart';
 import '../../services/heatmap_service.dart';
 import '../../widgets/review_heatmap.dart';

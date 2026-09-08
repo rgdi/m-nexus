@@ -1,7 +1,14 @@
 // FlashcardEdit: crear nueva flashcard.
+//
+// v0.47.0: rediseño completo con estilo cristal limpio.
+// v0.47.0: la "dificultad" ahora es solo orientativa, se evalúa automáticamente
+//          con FSRS después de varios ciclos. El usuario puede dejar el default.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../services/flashcard_service.dart';
+import '../../state/app_state.dart';
 
 class FlashcardEdit extends StatefulWidget {
   final FlashcardService service;
@@ -15,8 +22,9 @@ class FlashcardEdit extends StatefulWidget {
 class _FlashcardEditState extends State<FlashcardEdit> {
   final _question = TextEditingController();
   final _answer = TextEditingController();
-  int _difficulty = 3;
   bool _saving = false;
+  String? _questionError;
+  String? _answerError;
 
   @override
   void dispose() {
@@ -26,38 +34,59 @@ class _FlashcardEditState extends State<FlashcardEdit> {
   }
 
   Future<void> _save() async {
-    if (_question.text.trim().isEmpty || _answer.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pregunta y respuesta son obligatorias')),
+    final q = _question.text.trim();
+    final a = _answer.text.trim();
+    setState(() {
+      _questionError = q.isEmpty ? 'La pregunta es obligatoria' : null;
+      _answerError = a.isEmpty ? 'La respuesta es obligatoria' : null;
+    });
+    if (q.isEmpty || a.isEmpty) return;
+
+    setState(() => _saving = true);
+    try {
+      await widget.service.create(
+        question: q,
+        answer: a,
+        difficulty: 3, // default; FSRS recalcula después
       );
-      return;
+      // Recarga el cache global
+      await AppState.instance.reload();
+      widget.onSaved?.call();
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      setState(() => _saving = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
     }
-    setState(() { _saving = true; });
-    await widget.service.create(
-      question: _question.text.trim(),
-      answer: _answer.text.trim(),
-      difficulty: _difficulty,
-    );
-    widget.onSaved?.call();
-    if (!mounted) return;
-    Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Nueva tarjeta'),
         actions: [
-          FilledButton.icon(
-            onPressed: _saving ? null : _save,
-            icon: _saving
-                ? const SizedBox(width: 16, height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2))
-                : const Icon(Icons.save, size: 18),
-            label: const Text('Guardar'),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilledButton.icon(
+              onPressed: _saving ? null : _save,
+              icon: _saving
+                  ? const SizedBox(width: 16, height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.save, size: 18),
+              label: const Text('Guardar'),
+              style: FilledButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
           ),
-          const SizedBox(width: 8),
         ],
       ),
       body: SingleChildScrollView(
@@ -65,70 +94,121 @@ class _FlashcardEditState extends State<FlashcardEdit> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('Pregunta',
-              style: TextStyle(fontWeight: FontWeight.w600)),
+            // Pregunta
+            _Label('Pregunta'),
             const SizedBox(height: 8),
             TextField(
               controller: _question,
               maxLines: 3,
               minLines: 2,
-              decoration: const InputDecoration(
-                hintText: '¿Cuál es la…?',
+              autofocus: true,
+              style: theme.textTheme.bodyLarge,
+              decoration: InputDecoration(
+                hintText: '¿Cuál es la función principal del diafragma?',
+                errorText: _questionError,
+                filled: true,
+                fillColor: theme.colorScheme.surfaceContainerLow,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.all(16),
               ),
             ),
-            const SizedBox(height: 16),
-            const Text('Respuesta',
-              style: TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            Text(
+              'Tip: usa {{c1::texto oculto}} para cloze',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Respuesta
+            _Label('Respuesta'),
             const SizedBox(height: 8),
             TextField(
               controller: _answer,
-              maxLines: 6,
-              minLines: 3,
-              decoration: const InputDecoration(
-                hintText: 'La respuesta es…',
+              maxLines: 8,
+              minLines: 4,
+              style: theme.textTheme.bodyLarge,
+              decoration: InputDecoration(
+                hintText: 'Separar torax y abdomen, permite la respiración',
+                errorText: _answerError,
+                filled: true,
+                fillColor: theme.colorScheme.surfaceContainerLow,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.all(16),
               ),
             ),
-            const SizedBox(height: 16),
-            const Text('Dificultad inicial',
-              style: TextStyle(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                for (var i = 1; i <= 5; i++)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: ChoiceChip(
-                      label: Text('$i'),
-                      selected: _difficulty == i,
-                      onSelected: (_) => setState(() { _difficulty = i; }),
-                    ),
-                  ),
-              ],
-            ),
+
             const SizedBox(height: 24),
+
+            // Info FSRS
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(8),
+                color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(14),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.info_outline, size: 16),
-                  SizedBox(width: 8),
+                  Icon(Icons.psychology_outlined,
+                      color: theme.colorScheme.primary, size: 20),
+                  const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
-                      'Se guarda en _M-NEXUS/Flashcards/Drafts. '
-                      'Mover a Approved desde la lista para que aparezca en repasos.',
-                      style: TextStyle(fontSize: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Dificultad auto-evaluada',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'FSRS calcula la dificultad real después de unos ciclos. '
+                          'No tienes que configurar nada.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
+
+            const SizedBox(height: 16),
+            Text(
+              'Guardada en _M-NEXUS/Flashcards/Approved',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _Label extends StatelessWidget {
+  final String text;
+  const _Label(this.text);
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
     );
   }
 }

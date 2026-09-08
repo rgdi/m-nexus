@@ -1,16 +1,22 @@
 // M-NEXUS — entry point.
-// v0.42: refactor completo. App standalone, modular, archivos pequeños.
+// v0.47.0: refactor para cargar AppState UNA vez al arranque.
+// Antes: cada screen llamaba VaultDetector + FlashcardService en su initState
+//        (4 screens x 2 scans = 8 lecturas del vault = 30s en cold start).
+// Ahora: 1 init global, todas las screens leen de cache (<100ms).
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'core/constants.dart';
 import 'core/main_shell.dart';
 import 'core/theme.dart';
+import 'screens/setup/setup_wizard.dart';
+import 'screens/setup/onboarding_tutorial.dart';
 import 'services/app_info.dart';
 import 'services/device_id.dart';
 import 'services/device_info.dart';
 import 'services/logger.dart';
 import 'services/settings_service.dart';
+import 'state/app_state.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -42,6 +48,9 @@ void main() async {
       'themeMode': settings.materialThemeMode.name,
       'fontScale': settings.fontScale,
     });
+
+  // Carga global UNA sola vez
+  await AppState.instance.init();
 
   runApp(const MnexusApp());
 }
@@ -90,7 +99,29 @@ class _MnexusAppState extends State<MnexusApp> {
           child: child!,
         );
       },
-      home: const MainShell(),
+      // Si no hay vault, mostrar el setup wizard
+      home: AppState.instance.hasVault
+          ? const MainShell()
+          : const _SetupGate(),
     );
+  }
+}
+
+class _SetupGate extends StatelessWidget {
+  const _SetupGate();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SetupWizard();
+  }
+}
+
+class _TutorialGate extends StatelessWidget {
+  final VoidCallback onFinish;
+  const _TutorialGate({required this.onFinish});
+
+  @override
+  Widget build(BuildContext context) {
+    return OnboardingTutorial(onFinish: onFinish);
   }
 }

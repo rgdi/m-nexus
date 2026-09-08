@@ -1,202 +1,225 @@
 {
   "@@locale": "es",
+
   "appTitle": "M-NEXUS",
 
+  "@@nav": {},
   "navHome": "Inicio",
-  "navDecks": "Mazos",
-  "navNotes": "Notas",
+  "navVault": "Vault",
+  "navCards": "Tarjetas",
   "navStats": "Estadísticas",
   "navSettings": "Ajustes",
 
-  "homeGreeting": "Buenas {timeOfDay}, {name}",
-  "@homeGreeting": {
-    "placeholders": {
-      "timeOfDay": {"type": "String"},
-      "name": {"type": "String"}
-    }
-  },
-
-  "homeTodaysReview": "Repaso de hoy",
-  "homeCardsDue": "{count, plural, =0{Sin tarjetas pendientes} =1{1 tarjeta pendiente} other{{count} tarjetas pendientes}}",
-  "@homeCardsDue": {
+  "@@home": {},
+  "homeGreetingMorning": "Buenos días",
+  "homeGreetingAfternoon": "Buenas tardes",
+  "homeGreetingEvening": "Buenas noches",
+  "homeQuestion": "¿Qué quieres aprender hoy?",
+  "homeStreakDays": "{count, plural, =0{Sin racha} =1{1 día de racha} other{{count} días de racha}}",
+  "@homeStreakDays": {
     "placeholders": {
       "count": {"type": "int"}
     }
   },
-
-  "homeEstimatedTime": "~{minutes} min estimados",
-  "@homeEstimatedTime": {
+  "homeStreakLabel": "Racha",
+  "homeDueLabel": "Para repasar",
+  "homeDueCards": "{count, plural, =0{Sin tarjetas pendientes} =1{1 tarjeta pendiente} other{{count} tarjetas pendientes}}",
+  "@homeDueCards": {
     "placeholders": {
-      "minutes": {"type": "int"}
+      "count": {"type": "int"}
     }
   },
+  "homeTimeLabel": "Tiempo hoy",
+  "homeTimeMinutes": "{count, plural, =0{Sin tiempo} =1{1 minuto} other{{count} minutos}}",
+  "@homeTimeMinutes": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "homeRetentionLabel": "Retención",
+  "homeRetentionPercent": "{percent}%",
+  "@homeRetentionPercent": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "homeActivity": "Actividad",
+  "homeActivitySubtitle": "Últimos 90 días",
+  "homeActions": "Acciones",
+  "homeActionNewNote": "Nueva nota",
+  "homeActionNewNoteSub": "Crea una nota en markdown",
+  "homeActionReview": "Repasar hoy",
+  "homeActionReviewEmpty": "No hay tarjetas pendientes",
+  "homeActionNewCard": "Nueva tarjeta",
+  "homeActionNewCardSub": "Empezar a estudiar",
+  "homeRecent": "Recientes",
+  "homeRecentEmpty": "No hay notas recientes",
 
-  "homeStartReview": "Empezar repaso",
-  "homeRecentNotes": "Notas recientes",
-  "homeNoNotes": "Aún no hay notas. ¡Crea tu primera nota!",
-
-  "reviewProgress": "{current} / {total}",
+  "@@review": {},
+  "reviewProgress": "{current} de {total}",
   "@reviewProgress": {
     "placeholders": {
       "current": {"type": "int"},
       "total": {"type": "int"}
     }
   },
-
   "reviewAgain": "Otra vez",
   "reviewHard": "Difícil",
   "reviewGood": "Bien",
   "reviewEasy": "Fácil",
-  "reviewShortcuts": "Atajos: Espacio para voltear, 1/2/3/4 para calificar",
-  "reviewAgainShort": "1",
-  "reviewHardShort": "2",
-  "reviewGoodShort": "3",
-  "reviewEasyShort": "4",
+  "reviewShortcuts": "Espacio para voltear, 1/2/3/4 para calificar",
+  "reviewShowAnswer": "Mostrar respuesta",
+  "reviewNoCards": "No hay tarjetas pendientes. ¡Bien hecho!",
 
-  "reviewTapToFlip": "👆 Tocá para voltear",
-  "reviewQuestion": "Pregunta",
-  "reviewAnswer": "Respuesta",
-
-  "reviewSummaryTitle": "¡Sesión completada!",
-  "reviewCardsReviewed": "Repasaste {count} tarjetas",
-  "@reviewCardsReviewed": {
+  "@@cards": {},
+  "cardsTitle": "Tarjetas",
+  "cardsEmpty": "No hay tarjetas todavía",
+  "cardsEmptySub": "Crea tu primera tarjeta",
+  "cardsNew": "Nueva tarjeta",
+  "cardsNewSub": "Empezar a estudiar",
+  "cardsTotalDue": "{total} total · {due} para repasar",
+  "@cardsTotalDue": {
     "placeholders": {
-      "count": {"type": "int"}
-    }
-  },
-  "reviewAccuracy": "Precisión: {percent}%",
-  "@reviewAccuracy": {
-    "placeholders": {
-      "percent": {"type": "int"}
-    }
-  },
-  "reviewBack": "Volver",
-
-  "deckAnatomy": "Anatomía",
-  "deckPhysiology": "Fisiología",
-  "deckPharmacology": "Farmacología",
-  "deckPathology": "Patología",
-  "deckDefault": "Por defecto",
-  "deckCount": "{count, plural, =0{Sin tarjetas} =1{1 tarjeta} other{{count} tarjetas}}",
-  "@deckCount": {
-    "placeholders": {
-      "count": {"type": "int"}
+      "total": {"type": "int"},
+      "due": {"type": "int"}
     }
   },
 
-  "searchTitle": "Buscar",
-  "searchPlaceholder": "Buscar notas, tarjetas, tags...",
-  "searchNoResults": "Sin resultados para \"{query}\"",
-  "@searchNoResults": {
-    "placeholders": {
-      "query": {"type": "String"}
-    }
-  },
-  "searchResults": "{count, plural, =0{Sin resultados} =1{1 resultado} other{{count} resultados}}",
-  "@searchResults": {
-    "placeholders": {
-      "count": {"type": "int"}
-    }
-  },
+  "@@newCard": {},
+  "newCardTitle": "Nueva tarjeta",
+  "newCardQuestion": "Pregunta",
+  "newCardQuestionHint": "¿Cuál es la función principal del diafragma?",
+  "newCardAnswer": "Respuesta",
+  "newCardAnswerHint": "Separa el tórax del abdomen, permite la respiración",
+  "newCardClozeTip": "Tip: usa {{c1::texto oculto}} para cloze",
+  "newCardAutoDifficulty": "Dificultad auto-evaluada",
+  "newCardAutoDifficultySub": "FSRS calcula la dificultad real después de unos ciclos. No tienes que configurar nada.",
+  "newCardSave": "Guardar",
+  "newCardSaved": "Tarjeta guardada",
+  "newCardError": "Error al guardar",
 
-  "tagTitle": "Tag: {tag}",
-  "@tagTitle": {
-    "placeholders": {
-      "tag": {"type": "String"}
-    }
-  },
-  "tagNoNotes": "Aún no hay notas con este tag.",
+  "@@vault": {},
+  "vaultTitle": "Vault",
+  "vaultEmpty": "Vault vacío",
+  "vaultEmptySub": "Crea tu primera nota",
+  "vaultSearch": "Buscar en el vault",
 
-  "graphTitle": "Grafo de conocimiento",
-  "graphNodes": "{count} notas",
-  "@graphNodes": {
-    "placeholders": {
-      "count": {"type": "int"}
-    }
-  },
-  "graphEdges": "{count} enlaces",
-  "@graphEdges": {
-    "placeholders": {
-      "count": {"type": "int"}
-    }
-  },
-
-  "statsTitle": "Estadísticas",
-  "statsCurrentStreak": "Racha actual",
-  "statsLongestStreak": "Racha máxima",
-  "statsDays": "{count, plural, =1{1 día} other{{count} días}}",
-  "@statsDays": {
-    "placeholders": {
-      "count": {"type": "int"}
-    }
-  },
-  "statsTotalReviews": "Total de repasos",
-  "statsRetentionRate": "Tasa de retención",
-  "statsNewCards": "Tarjetas nuevas",
-  "statsLearningCards": "Aprendiendo",
-  "statsReviewCards": "Repaso",
-  "statsMatureCards": "Maduras",
-  "statsTimeSpent": "Tiempo de estudio",
-
+  "@@settings": {},
   "settingsTitle": "Ajustes",
-  "settingsLanguage": "Idioma",
-  "settingsLanguageEnglish": "English",
-  "settingsLanguageSpanish": "Español",
-  "settingsLanguagePortuguese": "Português",
+  "settingsGeneral": "General",
+  "settingsVaults": "Vaults",
+  "settingsVaultsSub": "Detectar vault activo",
+  "settingsCalendar": "Calendario",
+  "settingsCalendarSub": "Seleccionar calendario",
+  "settingsBackend": "Backend",
+  "settingsBackendSub": "No configurado",
+  "settingsAppearance": "Apariencia",
   "settingsTheme": "Tema",
   "settingsThemeSystem": "Sistema",
   "settingsThemeLight": "Claro",
   "settingsThemeDark": "Oscuro",
-  "settingsRetentionTarget": "Objetivo de retención",
-  "settingsRetentionHelp": "Mayor = más repasos pero mejor retención",
-  "settingsAbout": "Acerca de",
-  "settingsVersion": "Versión",
+  "settingsFontSize": "Tamaño del texto",
+  "settingsFontSizeValue": "{percent}%",
+  "@settingsFontSizeValue": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "settingsHaptics": "Vibración",
+  "settingsHapticsOn": "Activada",
+  "settingsHapticsOff": "Desactivada",
+  "settingsAdvanced": "Avanzado",
+  "settingsReportBug": "Reportar error",
+  "settingsReportBugSub": "github.com/rgdi/m-nexus/issues",
+  "settingsDocs": "Documentación",
+  "settingsDocsSub": "github.com/rgdi/m-nexus",
+  "settingsChangelog": "Novedades",
+  "settingsChangelogSub": "Versiones",
+  "settingsLanguage": "Idioma",
+  "settingsLanguageSystem": "Sistema",
+  "settingsLanguageEs": "Español",
+  "settingsLanguageEn": "Inglés",
+  "settingsLanguagePt": "Portugués",
 
+  "@@setup": {},
+  "setupWelcomeTitle": "Bienvenido a M-NEXUS",
+  "setupWelcomeSub": "Tu segundo cerebro digital para estudio médico. Vamos a configurarlo en 5 pasos.",
+  "setupFeatureVaultTitle": "Vault local",
+  "setupFeatureVaultSub": "Tus notas en markdown, en tu dispositivo",
+  "setupFeatureCardsTitle": "Tarjetas con FSRS",
+  "setupFeatureCardsSub": "Algoritmo de repetición espaciada de Anki",
+  "setupFeatureOfflineTitle": "Offline-first",
+  "setupFeatureOfflineSub": "Funciona sin internet",
+  "setupVaultTitle": "¿Dónde guardamos tus notas?",
+  "setupVaultSub": "Crea un vault nuevo o selecciona uno existente.",
+  "setupVaultCreate": "Crear nuevo",
+  "setupVaultCreateSub": "Empezar desde cero",
+  "setupVaultSelect": "Seleccionar",
+  "setupVaultSelectSub": "Vault existente",
+  "setupVaultName": "Nombre del vault",
+  "setupVaultNameHint": "Mi Vault",
+  "setupVaultPath": "Se creará en: Documents/{name}",
+  "@setupVaultPath": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "setupVaultNoneDetected": "No se detectaron vaults",
+  "setupVaultNoneDetectedSub": "Vuelve atrás y crea uno nuevo",
+  "setupPermTitle": "Permisos",
+  "setupPermSub": "Otorga los permisos que necesites. Puedes cambiarlos después.",
+  "setupPermStorageTitle": "Almacenamiento",
+  "setupPermStorageSub": "Para leer y escribir notas en tu vault",
+  "setupPermMicroTitle": "Micrófono",
+  "setupPermMicroSub": "Para grabar notas de voz",
+  "setupPermCalendarTitle": "Calendario",
+  "setupPermCalendarSub": "Para vincular repasos a eventos",
+  "setupPermAllow": "Permitir",
+  "setupPermRequestAll": "Solicitar todos",
+  "setupAppearanceTitle": "Apariencia",
+  "setupAppearanceSub": "Personaliza cómo se ve M-NEXUS.",
+  "setupAppearanceTheme": "Tema",
+  "setupAppearanceFontSize": "Tamaño de texto: {percent}%",
+  "@setupAppearanceFontSize": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "setupAppearancePreview": "Vista previa",
+  "setupReadyTitle": "¡Todo listo!",
+  "setupReadySub": "Vault \"{name}\" creado. Empezamos.",
+  "@setupReadySub": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "setupNext": "Siguiente",
+  "setupBack": "Atrás",
+  "setupStart": "Empezar",
+
+  "@@tutorial": {},
+  "tutorialSkip": "Saltar",
+  "tutorialNext": "Siguiente",
+  "tutorialStart": "Empezar",
+  "tutorialNotesTitle": "Notas en Markdown",
+  "tutorialNotesBody": "Tus notas viven como archivos .md en tu vault. Usa [[wikilinks]] para conectar ideas y #tags para organizarlas.",
+  "tutorialCardsTitle": "Tarjetas con FSRS",
+  "tutorialCardsBody": "Crea flashcards con {{c1::cloze}}, básicas o de imagen. La dificultad se ajusta sola: cada vez aciertas, la tarjeta aparece más tarde.",
+  "tutorialRhythmTitle": "Tu ritmo, tu progreso",
+  "tutorialRhythmBody": "El heatmap muestra tu racha diaria, las predicciones del algoritmo te dicen qué repasar hoy, y tú solo decides cuánto.",
+
+  "@@common": {},
   "commonSave": "Guardar",
   "commonCancel": "Cancelar",
   "commonDelete": "Eliminar",
   "commonEdit": "Editar",
   "commonClose": "Cerrar",
-  "commonOK": "OK",
-  "commonYes": "Sí",
-  "commonNo": "No",
-  "commonLoading": "Cargando...",
+  "commonLoading": "Cargando…",
   "commonError": "Error",
   "commonRetry": "Reintentar",
-
-  "voiceListening": "Escuchando...",
-  "voiceProcessing": "Procesando audio...",
-  "voiceError": "Error de reconocimiento de voz",
-  "voiceTapToStart": "Tocar para grabar",
-  "voiceTapToStop": "Tocar para detener",
-
-  "aiChatTitle": "Tutor IA",
-  "aiChatPlaceholder": "Pregunta sobre tus notas...",
-  "aiChatThinking": "Pensando...",
-  "aiChatSources": "Fuentes",
-
-  "marketplaceTitle": "Marketplace",
-  "marketplaceInstall": "Instalar",
-  "marketplaceInstalled": "Instalado",
-  "marketplaceRating": "Calificación",
-  "marketplaceInstalls": "{count, plural, =1{1 instalación} other{{count} instalaciones}}",
-  "@marketplaceInstalls": {
-    "placeholders": {
-      "count": {"type": "int"}
-    }
-  },
-
-  "clozeEditorTitle": "Editor de cloze",
-  "clozeHint": "Envolvé el texto con {syntax} para crear un cloze",
-  "@clozeHint": {
-    "placeholders": {
-      "syntax": {"type": "String"}
-    }
-  },
-  "clozeCount": "{count, plural, =0{Sin clozes} =1{1 cloze} other{{count} clozes}}",
-  "@clozeCount": {
-    "placeholders": {
-      "count": {"type": "int"}
-    }
-  }
+  "commonSearch": "Buscar",
+  "commonYes": "Sí",
+  "commonNo": "No",
+  "commonBack": "Atrás",
+  "commonNext": "Siguiente"
 }
