@@ -15,13 +15,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../services/ai_tutor_client.dart';
+import '../../services/local_tutor_service.dart';
 import '../../models/chat_message.dart';
 
 class ChatScreen extends StatefulWidget {
   final String backendUrl;
   final String? authToken;
   final ValueChanged<String>? onNoteOpen;
-  const ChatScreen({super.key, required this.backendUrl, this.authToken, this.onNoteOpen});
+  // v0.47.33: vaultPath para activar el LocalTutorService cuando
+  // no hay backend. Si vaultPath es null, usa el AiTutorClient (backend).
+  final String? vaultPath;
+  const ChatScreen({super.key, required this.backendUrl, this.authToken, this.onNoteOpen, this.vaultPath});
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -72,15 +76,29 @@ class _ChatScreenState extends State<ChatScreen> {
     _scrollToBottom();
 
     try {
-      final response = await _client.ask(text);
+      // v0.47.33: si tenemos vaultPath, usar LocalTutorService (sin backend).
+      // Esto da respuestas instantáneas basadas en las notas del usuario,
+      // sin depender de un servidor externo.
+      String answer;
+      List<String> sources;
+      if (widget.vaultPath != null) {
+        final localTutor = LocalTutorService(widget.vaultPath!);
+        final localResp = await localTutor.ask(text);
+        answer = localResp.answer;
+        sources = localResp.sources;
+      } else {
+        final response = await _client.ask(text);
+        answer = response.answer;
+        sources = response.sources;
+      }
       // v0.47.21: mounted check tras await. Si el usuario navegó away
       // mientras la AI pensaba, evitar setState en disposed widget.
       if (!mounted) return;
       setState(() {
         _messages.add(ChatMessage(
           role: 'ai',
-          content: response.answer,
-          sources: response.sources,
+          content: answer,
+          sources: sources,
           timestamp: DateTime.now(),
         ));
         _isThinking = false;

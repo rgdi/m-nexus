@@ -51,6 +51,7 @@ class _NoteEditorState extends State<NoteEditor> {
   final _titleFocus = FocusNode(debugLabel: 'note-editor-title');
   final _bodyFocus = FocusNode(debugLabel: 'note-editor-body');
   final _scrollController = ScrollController();
+  final _log = AdvancedLogger.instance;
 
   VaultService? _vault;
   Note? _original;
@@ -177,8 +178,18 @@ class _NoteEditorState extends State<NoteEditor> {
       } else {
         // Edita nota existente
         await _vault!.writeNote(widget.notePath!, body);
-        saved = (await _vault!.readNote(widget.notePath!))!;
-        _original = saved;
+        // v0.47.33: safe null check en readNote. readNote retorna Note?
+        // y el ! lanzaba Null check operator cuando el archivo no existía
+        // por race conditions (e.g., el archivo se borró antes del read).
+        // Ahora logueamos el warning y continuamos con el _original previo.
+        final readResult = await _vault!.readNote(widget.notePath!);
+        if (readResult == null) {
+          _log.warn('note_editor', 'readNote returned null after writeNote',
+              context: {'path': widget.notePath});
+        } else {
+          saved = readResult;
+          _original = saved;
+        }
       }
       // Recarga AppState
       await AppState.instance.reload();
