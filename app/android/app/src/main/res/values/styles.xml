@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  v0.46.8: styles.xml para LaunchTheme y NormalTheme.
+  Estos styles son referenciados por AndroidManifest.xml y son obligatorios
+  para que el build de Gradle/AAPT no falle.
+
+  LaunchTheme: tema que se muestra mientras la app carga (background blanco).
+  NormalTheme: tema que toma el control después de que Flutter carga.
+-->
+<resources>
+    <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="android:windowBackground">@drawable/launch_background</item>
+    </style>
+    <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="android:windowBackground">?android:colorBackground</item>
+    </style>
+</resources>
