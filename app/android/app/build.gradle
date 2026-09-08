@@ -37,8 +37,12 @@ android {
         applicationId = "com.mnexus.app"
         minSdk = 23
         targetSdk = 34
-        versionCode = 29
-        versionName = "0.44.0"
+        // v0.47.3: versionCode/versionName se setean via env vars (CI)
+        // o via gradle.properties (local). NO hardcoded.
+        def vCode = project.findProperty('appVersionCode') ?: '1'
+        def vName = project.findProperty('appVersionName') ?: '0.0.0-dev'
+        versionCode = vCode.toInteger()
+        versionName = vName
     }
 
     buildTypes {

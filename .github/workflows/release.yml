@@ -169,7 +169,6 @@ jobs:
             ~/.gradle/caches
             ~/.gradle/wrapper
             app/android/.gradle
-            app/build
           key: ${{ runner.os }}-gradle-${{ matrix.target }}-${{ hashFiles('app/android/app/build.gradle', 'app/android/build.gradle', 'app/android/settings.gradle', 'app/android/gradle.properties', 'app/pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-gradle-${{ matrix.target }}-
@@ -186,6 +185,18 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-flutter-
 
+      # v0.47.3: CRITICAL FIX - el cache de build guardaba APKs viejos
+      # con versionCode/versionName desactualizados. Borra app/build/ para
+      # forzar regeneracion completa de BuildConfig + manifest.
+      - name: Clean stale build cache
+        run: |
+          echo "=== Removing stale app/build to force versionCode refresh ==="
+          rm -rf app/build
+          rm -rf app/.gradle
+          rm -rf app/android/.gradle
+          rm -rf app/android/app/build
+          echo "Done"
+
       # v0.46.7: SKIP flutter clean - confiamos en gradle cache
       # Solo limpiar si los caches no se restauraron
       - name: Install dependencies
@@ -194,15 +205,18 @@ jobs:
       # v0.46.7: drift codegen removed (drift dependency was removed)
       # If you need it back, add build_runner + drift_dev to dev_dependencies
 
-      # Sync version del pubspec al android build.gradle
+      # Sync version del pubspec al gradle.properties (v0.47.3)
+      # build.gradle lee appVersionCode/appVersionName de gradle.properties.
       - name: Sync version to Android
         run: |
           VERSION=$(grep "^version:" app/pubspec.yaml | head -1 | awk '{print $2}')
           VERSION_NAME=$(echo "$VERSION" | sed 's/+.*//')
           VERSION_CODE=$(echo "$VERSION" | sed 's/.*+//')
           echo "versionName=${VERSION_NAME} versionCode=${VERSION_CODE}"
-          sed -i "s/versionCode = .*/versionCode = ${VERSION_CODE}/" app/android/app/build.gradle
-          sed -i "s/versionName = .*/versionName = \"${VERSION_NAME}\"/" app/android/app/build.gradle
+          sed -i "s|^appVersionCode=.*|appVersionCode=${VERSION_CODE}|" app/android/gradle.properties
+          sed -i "s|^appVersionName=.*|appVersionName=${VERSION_NAME}|" app/android/gradle.properties
+          echo "=== Updated gradle.properties ==="
+          grep "^appVersion" app/android/gradle.properties
 
       # Build APK
       - name: Build ${{ matrix.target }} APK
