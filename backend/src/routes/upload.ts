@@ -7,7 +7,7 @@
 
 import { FastifyInstance } from "fastify";
 import { createWriteStream, existsSync, mkdirSync, statSync, unlinkSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { join, resolve } from "node:path";
 import { createHash } from "node:crypto";
 import { logger, logOp } from "../utils/log.js";
 import { E } from "../utils/errorCodes.js";
@@ -56,6 +56,25 @@ function chunksDir(uploadId: string): string {
   return join(uploadDir(), uploadId);
 }
 
+// v0.47.22: validar IDs de upload antes de usarlos en paths.
+// Antes: req.params.id y body.targetSubdir/filename se concatenaban
+// directamente a paths de filesystem sin validación → path traversal.
+// Un atacante podía enviar filename="../../../etc/passwd" y escribir
+// fuera del directorio de uploads.
+const SAFE_ID_RE = /^[a-z0-9_\-]{1,128}$/i;
+function isSafeId(s: string): boolean {
+  return SAFE_ID_RE.test(s);
+}
+
+// v0.47.22: validar que un path resuelto está dentro de [root].
+// Defensa en profundidad por si isSafeId() se olvida en algún callsite.
+function isPathInside(child: string, parent: string): boolean {
+  const resolvedChild = resolve(child);
+  const resolvedParent = resolve(parent);
+  // Usar separador final para evitar prefix attacks (/foo vs /foobar)
+  return resolvedChild.startsWith(resolvedParent + "/") || resolvedChild === resolvedParent;
+}
+
 export async function uploadRoutes(app: FastifyInstance): Promise<void> {
   // POST /api/v1/upload/init — inicia sesión de upload
   app.post<{
@@ -96,7 +115,9 @@ export async function uploadRoutes(app: FastifyInstance): Promise<void> {
       createdAt: Date.now(),
       expectedSha256: body.expectedSha256,
       metadata: body.metadata,
-      targetSubdir: body.targetSubdir,
+      // v0.47.22: sanitizar targetSubdir antes de almacenar. Reemplazar
+      // cualquier secuencia peligrosa por '_' para prevenir path traversal.
+      targetSubdir: body.targetSubdir?.replace(/[\\\/]/g, "_").replace(/\.\./g, "_") ?? undefined,
     };
     sessions.set(uploadId, session);
     mkdirSync(chunksDir(uploadId), { recursive: true });
@@ -113,6 +134,10 @@ export async function uploadRoutes(app: FastifyInstance): Promise<void> {
   app.put<{ Params: { id: string; n: string } }>(
     "/api/v1/upload/:id/chunk/:n",
     async (req, reply) => {
+      // v0.47.22: validar id antes de usar en paths.
+      if (!isSafeId(req.params.id)) {
+        return reply.code(400).send({ code: "BAD_ID", message: "Invalid upload id" });
+      }
       const session = sessions.get(req.params.id);
       if (!session) return reply.code(404).send({ code: "SESSION_NOT_FOUND" });
       const n = parseInt(req.params.n, 10);
@@ -162,6 +187,9 @@ export async function uploadRoutes(app: FastifyInstance): Promise<void> {
 
   // GET /api/v1/upload/:id/status — ver qué chunks se recibieron
   app.get<{ Params: { id: string } }>("/api/v1/upload/:id/status", async (req, reply) => {
+    if (!isSafeId(req.params.id)) {
+      return reply.code(400).send({ code: "BAD_ID", message: "Invalid upload id" });
+    }
     const session = sessions.get(req.params.id);
     if (!session) return reply.code(404).send({ code: "SESSION_NOT_FOUND" });
     const missing: number[] = [];
@@ -181,6 +209,9 @@ export async function uploadRoutes(app: FastifyInstance): Promise<void> {
   app.post<{ Params: { id: string }; Body: { expectedSha256?: string } }>(
     "/api/v1/upload/:id/complete",
     async (req, reply) => {
+      if (!isSafeId(req.params.id)) {
+        return reply.code(400).send({ code: "BAD_ID", message: "Invalid upload id" });
+      }
       const session = sessions.get(req.params.id);
       if (!session) return reply.code(404).send({ code: "SESSION_NOT_FOUND" });
       // Si el cliente envía expectedSha256 en el complete, lo aceptamos
@@ -196,9 +227,19 @@ export async function uploadRoutes(app: FastifyInstance): Promise<void> {
         });
       }
       // Ensamblar chunks en orden
+      // v0.47.22: defensa en profundidad — validar que targetPath resuelto
+      // está dentro de uploadDir. Aunque targetSubdir/filename ya están
+      // sanitizados en init, validamos el path final.
       const targetDir = join(uploadDir(), "final", session.targetSubdir ?? "");
+      const targetPath = resolve(join(targetDir, session.filename));
+      const allowedRoot = resolve(uploadDir(), "final");
+      if (!isPathInside(targetPath, allowedRoot)) {
+        return reply.code(400).send({
+          code: "BAD_PATH",
+          message: "Resolved target path is outside upload directory",
+        });
+      }
       mkdirSync(targetDir, { recursive: true });
-      const targetPath = join(targetDir, session.filename);
       try {
         const hash = createHash("sha256");
         const out = createWriteStream(targetPath);
@@ -243,6 +284,9 @@ export async function uploadRoutes(app: FastifyInstance): Promise<void> {
 
   // DELETE /api/v1/upload/:id — cancela upload
   app.delete<{ Params: { id: string } }>("/api/v1/upload/:id", async (req, reply) => {
+    if (!isSafeId(req.params.id)) {
+      return reply.code(400).send({ code: "BAD_ID", message: "Invalid upload id" });
+    }
     const session = sessions.get(req.params.id);
     if (session) {
       try {
