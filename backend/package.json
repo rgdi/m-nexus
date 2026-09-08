@@ -1,6 +1,6 @@
 {
   "name": "m-nexus-backend",
-  "version": "0.47.25",
+  "version": "0.47.26",
   "description": "Backend central de M-NEXUS: Whisper (sync+stream), OCR, LLM, embeddings, generación de flashcards, PDF diff, dashboard web. Thin-client architecture.",
   "main": "dist/server.js",
   "type": "module",

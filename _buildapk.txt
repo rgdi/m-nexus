@@ -1,0 +1,604 @@
+﻿2026-09-08T16:17:01.1697142Z Current runner version: '2.337.0'
+2026-09-08T16:17:01.1731573Z ##[group]Runner Image Provisioner
+2026-09-08T16:17:01.1732910Z Hosted Compute Agent
+2026-09-08T16:17:01.1733901Z Version: 20260828.587
+2026-09-08T16:17:01.1735025Z Commit: abac92662cab4cc7352de4f9f9d2e2419aad9c29
+2026-09-08T16:17:01.1736765Z Build Date: 2026-08-28T16:44:25Z
+2026-09-08T16:17:01.1737968Z Worker ID: {d7d93d19-20b5-428b-830c-ef300efade84}
+2026-09-08T16:17:01.1739211Z Azure Region: eastus
+2026-09-08T16:17:01.1740290Z ##[endgroup]
+2026-09-08T16:17:01.1743118Z ##[group]Operating System
+2026-09-08T16:17:01.1744159Z Ubuntu
+2026-09-08T16:17:01.1745178Z 24.04.4
+2026-09-08T16:17:01.1746628Z LTS
+2026-09-08T16:17:01.1747610Z ##[endgroup]
+2026-09-08T16:17:01.1748492Z ##[group]Runner Image
+2026-09-08T16:17:01.1749621Z Image: ubuntu-24.04
+2026-09-08T16:17:01.1750646Z Version: 20260831.293.1
+2026-09-08T16:17:01.1752828Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260831.293/images/ubuntu/Ubuntu2404-Readme.md
+2026-09-08T16:17:01.1755785Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260831.293
+2026-09-08T16:17:01.1757543Z ##[endgroup]
+2026-09-08T16:17:01.1759457Z ##[group]GITHUB_TOKEN Permissions
+2026-09-08T16:17:01.1762156Z Contents: write
+2026-09-08T16:17:01.1763144Z Metadata: read
+2026-09-08T16:17:01.1764166Z ##[endgroup]
+2026-09-08T16:17:01.1767526Z Secret source: Actions
+2026-09-08T16:17:01.1769283Z Prepare workflow directory
+2026-09-08T16:17:01.2239588Z Prepare all required actions
+2026-09-08T16:17:01.2311488Z Getting action download info
+2026-09-08T16:17:01.4619845Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-09-08T16:17:01.5745518Z Download action repository 'actions/setup-java@v4' (SHA:cf277c60eb25467037889841efdb72551f06f6c3)
+2026-09-08T16:17:01.7962439Z Download action repository 'subosito/flutter-action@v2' (SHA:1a449444c387b1966244ae4d4f8c696479add0b2)
+2026-09-08T16:17:01.9031955Z Download action repository 'actions/cache@v4' (SHA:0057852bfaa89a56745cba8c7296529d2fc39830)
+2026-09-08T16:17:01.9953064Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2026-09-08T16:17:02.2547798Z Getting action download info
+2026-09-08T16:17:02.3101511Z Download action repository 'actions/cache@v5' (SHA:caa296126883cff596d87d8935842f9db880ef25)
+2026-09-08T16:17:02.5111507Z Complete job name: Build APKs
+2026-09-08T16:17:02.6174635Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+2026-09-08T16:17:02.6185964Z ##[group]Run actions/checkout@v4
+2026-09-08T16:17:02.6187311Z with:
+2026-09-08T16:17:02.6188144Z   fetch-depth: 0
+2026-09-08T16:17:02.6189047Z   repository: rgdi/m-nexus
+2026-09-08T16:17:02.6198091Z   token: ***
+2026-09-08T16:17:02.6198975Z   ssh-strict: true
+2026-09-08T16:17:02.6199838Z   ssh-user: git
+2026-09-08T16:17:02.6200730Z   persist-credentials: true
+2026-09-08T16:17:02.6201697Z   clean: true
+2026-09-08T16:17:02.6202611Z   sparse-checkout-cone-mode: true
+2026-09-08T16:17:02.6203666Z   fetch-tags: false
+2026-09-08T16:17:02.6204600Z   show-progress: true
+2026-09-08T16:17:02.6205632Z   lfs: false
+2026-09-08T16:17:02.6206502Z   submodules: false
+2026-09-08T16:17:02.6207414Z   set-safe-directory: true
+2026-09-08T16:17:02.6208443Z   allow-unsafe-pr-checkout: false
+2026-09-08T16:17:02.6209768Z ##[endgroup]
+2026-09-08T16:17:02.7278407Z Syncing repository: rgdi/m-nexus
+2026-09-08T16:17:02.7282489Z ##[group]Getting Git version info
+2026-09-08T16:17:02.7284708Z Working directory is '/home/runner/work/m-nexus/m-nexus'
+2026-09-08T16:17:02.7288187Z [command]/usr/bin/git version
+2026-09-08T16:17:02.7366409Z git version 2.55.0
+2026-09-08T16:17:02.7392771Z ##[endgroup]
+2026-09-08T16:17:02.7408379Z Temporarily overriding HOME='/home/runner/work/_temp/b59036b3-bc9e-42f5-9e1a-7b6c382ab468' before making global git config changes
+2026-09-08T16:17:02.7413953Z Adding repository directory to the temporary git global config as a safe directory
+2026-09-08T16:17:02.7417780Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/m-nexus/m-nexus
+2026-09-08T16:17:02.7468751Z Deleting the contents of '/home/runner/work/m-nexus/m-nexus'
+2026-09-08T16:17:02.7474364Z ##[group]Initializing the repository
+2026-09-08T16:17:02.7479291Z [command]/usr/bin/git init /home/runner/work/m-nexus/m-nexus
+2026-09-08T16:17:02.7606066Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-09-08T16:17:02.7609461Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-09-08T16:17:02.7613408Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-09-08T16:17:02.7616944Z hint: call:
+2026-09-08T16:17:02.7618660Z hint:
+2026-09-08T16:17:02.7622099Z hint: 	git config --global init.defaultBranch <name>
+2026-09-08T16:17:02.7624691Z hint:
+2026-09-08T16:17:02.7627526Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-09-08T16:17:02.7630875Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-09-08T16:17:02.7632665Z hint:
+2026-09-08T16:17:02.7633746Z hint: 	git branch -m <name>
+2026-09-08T16:17:02.7634933Z hint:
+2026-09-08T16:17:02.7637567Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-09-08T16:17:02.7640766Z Initialized empty Git repository in /home/runner/work/m-nexus/m-nexus/.git/
+2026-09-08T16:17:02.7644076Z [command]/usr/bin/git remote add origin https://github.com/rgdi/m-nexus
+2026-09-08T16:17:02.7678791Z ##[endgroup]
+2026-09-08T16:17:02.7681565Z ##[group]Disabling automatic garbage collection
+2026-09-08T16:17:02.7683953Z [command]/usr/bin/git config --local gc.auto 0
+2026-09-08T16:17:02.7716708Z ##[endgroup]
+2026-09-08T16:17:02.7719340Z ##[group]Setting up auth
+2026-09-08T16:17:02.7723986Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-09-08T16:17:02.7760645Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-09-08T16:17:02.8156880Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-09-08T16:17:02.8199974Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-09-08T16:17:02.8430422Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-09-08T16:17:02.8471337Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-09-08T16:17:02.8701047Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-09-08T16:17:02.8741698Z ##[endgroup]
+2026-09-08T16:17:02.8743314Z ##[group]Fetching the repository
+2026-09-08T16:17:02.8752720Z [command]/usr/bin/git -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+2026-09-08T16:17:04.4541359Z From https://github.com/rgdi/m-nexus
+2026-09-08T16:17:04.4543034Z  * [new branch]      main       -> origin/main
+2026-09-08T16:17:04.4543798Z  * [new tag]         v0.28.0    -> v0.28.0
+2026-09-08T16:17:04.4544425Z  * [new tag]         v0.29.0    -> v0.29.0
+2026-09-08T16:17:04.4545055Z  * [new tag]         v0.29.1    -> v0.29.1
+2026-09-08T16:17:04.4545894Z  * [new tag]         v0.29.2    -> v0.29.2
+2026-09-08T16:17:04.4546431Z  * [new tag]         v0.29.3    -> v0.29.3
+2026-09-08T16:17:04.4546984Z  * [new tag]         v0.29.4    -> v0.29.4
+2026-09-08T16:17:04.4547554Z  * [new tag]         v0.29.5    -> v0.29.5
+2026-09-08T16:17:04.4548668Z  * [new tag]         v0.29.6    -> v0.29.6
+2026-09-08T16:17:04.4549282Z  * [new tag]         v0.29.7    -> v0.29.7
+2026-09-08T16:17:04.4549932Z  * [new tag]         v0.30.0    -> v0.30.0
+2026-09-08T16:17:04.4550539Z  * [new tag]         v0.31.0    -> v0.31.0
+2026-09-08T16:17:04.4551194Z  * [new tag]         v0.32.0    -> v0.32.0
+2026-09-08T16:17:04.4551862Z  * [new tag]         v0.33.0    -> v0.33.0
+2026-09-08T16:17:04.4552607Z  * [new tag]         v0.34.0    -> v0.34.0
+2026-09-08T16:17:04.4553217Z  * [new tag]         v0.35.0    -> v0.35.0
+2026-09-08T16:17:04.4553825Z  * [new tag]         v0.36.0    -> v0.36.0
+2026-09-08T16:17:04.4554398Z  * [new tag]         v0.37.0    -> v0.37.0
+2026-09-08T16:17:04.4555026Z  * [new tag]         v0.38.0    -> v0.38.0
+2026-09-08T16:17:04.4555989Z  * [new tag]         v0.40.0    -> v0.40.0
+2026-09-08T16:17:04.4556648Z  * [new tag]         v0.41.0    -> v0.41.0
+2026-09-08T16:17:04.4557349Z  * [new tag]         v0.42.0    -> v0.42.0
+2026-09-08T16:17:04.4558045Z  * [new tag]         v0.43.0    -> v0.43.0
+2026-09-08T16:17:04.4558705Z  * [new tag]         v0.44.0    -> v0.44.0
+2026-09-08T16:17:04.4559377Z  * [new tag]         v0.44.1    -> v0.44.1
+2026-09-08T16:17:04.4560077Z  * [new tag]         v0.44.2    -> v0.44.2
+2026-09-08T16:17:04.4560708Z  * [new tag]         v0.44.3    -> v0.44.3
+2026-09-08T16:17:04.4561318Z  * [new tag]         v0.45.0    -> v0.45.0
+2026-09-08T16:17:04.4562058Z  * [new tag]         v0.45.1    -> v0.45.1
+2026-09-08T16:17:04.4562760Z  * [new tag]         v0.45.4    -> v0.45.4
+2026-09-08T16:17:04.4563283Z  * [new tag]         v0.45.5    -> v0.45.5
+2026-09-08T16:17:04.4563808Z  * [new tag]         v0.45.6    -> v0.45.6
+2026-09-08T16:17:04.4564348Z  * [new tag]         v0.45.7    -> v0.45.7
+2026-09-08T16:17:04.4564883Z  * [new tag]         v0.45.8    -> v0.45.8
+2026-09-08T16:17:04.4565844Z  * [new tag]         v0.46.0    -> v0.46.0
+2026-09-08T16:17:04.4566404Z  * [new tag]         v0.46.1    -> v0.46.1
+2026-09-08T16:17:04.4566945Z  * [new tag]         v0.46.9    -> v0.46.9
+2026-09-08T16:17:04.4567489Z  * [new tag]         v0.47.0    -> v0.47.0
+2026-09-08T16:17:04.4568019Z  * [new tag]         v0.47.1    -> v0.47.1
+2026-09-08T16:17:04.4568556Z  * [new tag]         v0.47.11   -> v0.47.11
+2026-09-08T16:17:04.4569089Z  * [new tag]         v0.47.12   -> v0.47.12
+2026-09-08T16:17:04.4569822Z  * [new tag]         v0.47.13   -> v0.47.13
+2026-09-08T16:17:04.4570686Z  * [new tag]         v0.47.14   -> v0.47.14
+2026-09-08T16:17:04.4571056Z  * [new tag]         v0.47.15   -> v0.47.15
+2026-09-08T16:17:04.4571395Z  * [new tag]         v0.47.16   -> v0.47.16
+2026-09-08T16:17:04.4571714Z  * [new tag]         v0.47.17   -> v0.47.17
+2026-09-08T16:17:04.4572034Z  * [new tag]         v0.47.18   -> v0.47.18
+2026-09-08T16:17:04.4572350Z  * [new tag]         v0.47.19   -> v0.47.19
+2026-09-08T16:17:04.4572668Z  * [new tag]         v0.47.2    -> v0.47.2
+2026-09-08T16:17:04.4573949Z [command]/usr/bin/git branch --list --remote origin/main
+2026-09-08T16:17:04.4595000Z   origin/main
+2026-09-08T16:17:04.4607970Z [command]/usr/bin/git rev-parse refs/remotes/origin/main
+2026-09-08T16:17:04.4635672Z 3f0d782c7c1b0a7b2ba9f9803ab1831ba40e818d
+2026-09-08T16:17:04.4647727Z ##[endgroup]
+2026-09-08T16:17:04.4648304Z ##[group]Determining the checkout info
+2026-09-08T16:17:04.4648977Z ##[endgroup]
+2026-09-08T16:17:04.4653420Z [command]/usr/bin/git sparse-checkout disable
+2026-09-08T16:17:04.4706617Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-09-08T16:17:04.4737864Z ##[group]Checking out the ref
+2026-09-08T16:17:04.4742369Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+2026-09-08T16:17:04.5116496Z Switched to a new branch 'main'
+2026-09-08T16:17:04.5121622Z branch 'main' set up to track 'origin/main'.
+2026-09-08T16:17:04.5129610Z ##[endgroup]
+2026-09-08T16:17:04.5176526Z [command]/usr/bin/git log -1 --format=%H
+2026-09-08T16:17:04.5204288Z 3f0d782c7c1b0a7b2ba9f9803ab1831ba40e818d
+2026-09-08T16:17:04.5484175Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+2026-09-08T16:17:04.5486562Z ##[group]Run actions/setup-java@v4
+2026-09-08T16:17:04.5486890Z with:
+2026-09-08T16:17:04.5487137Z   distribution: temurin
+2026-09-08T16:17:04.5487408Z   java-version: 17
+2026-09-08T16:17:04.5487661Z   java-package: jdk
+2026-09-08T16:17:04.5487922Z   check-latest: false
+2026-09-08T16:17:04.5488177Z   server-id: github
+2026-09-08T16:17:04.5488435Z   server-username: GITHUB_ACTOR
+2026-09-08T16:17:04.5488734Z   server-password: GITHUB_TOKEN
+2026-09-08T16:17:04.5489029Z   overwrite-settings: true
+2026-09-08T16:17:04.5489306Z   job-status: success
+2026-09-08T16:17:04.5491817Z   token: ***
+2026-09-08T16:17:04.5492072Z ##[endgroup]
+2026-09-08T16:17:04.7187163Z ##[warning]setup-java v4 is deprecated and will no longer receive updates. Please migrate to actions/setup-java@v5.
+2026-09-08T16:17:04.7194084Z ##[group]Installed distributions
+2026-09-08T16:17:04.7234163Z Resolved Java 17.0.20+1 from tool-cache
+2026-09-08T16:17:04.7234668Z Setting Java 17.0.20+1 as the default
+2026-09-08T16:17:04.7244617Z (node:2328) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-09-08T16:17:04.7245555Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-09-08T16:17:04.7248868Z Creating toolchains.xml for JDK version 17 from temurin
+2026-09-08T16:17:04.7325884Z Writing to /home/runner/.m2/toolchains.xml
+2026-09-08T16:17:04.7326583Z 
+2026-09-08T16:17:04.7326758Z Java configuration:
+2026-09-08T16:17:04.7327138Z   Distribution: temurin
+2026-09-08T16:17:04.7327516Z   Version: 17.0.20+1
+2026-09-08T16:17:04.7328030Z   Path: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-1/x64
+2026-09-08T16:17:04.7328515Z 
+2026-09-08T16:17:04.7328966Z ##[endgroup]
+2026-09-08T16:17:04.7345006Z Creating settings.xml with server-id: github
+2026-09-08T16:17:04.7376525Z Writing to /home/runner/.m2/settings.xml
+2026-09-08T16:17:04.7775646Z ##[group]Run subosito/flutter-action@v2
+2026-09-08T16:17:04.7775970Z with:
+2026-09-08T16:17:04.7776175Z   flutter-version: 3.24.0
+2026-09-08T16:17:04.7776405Z   channel: stable
+2026-09-08T16:17:04.7776606Z   architecture: X64
+2026-09-08T16:17:04.7776807Z   cache: false
+2026-09-08T16:17:04.7777014Z   pub-cache-path: default
+2026-09-08T16:17:04.7777234Z   dry-run: false
+2026-09-08T16:17:04.7777513Z   git-source: https://github.com/flutter/flutter.git
+2026-09-08T16:17:04.7777819Z env:
+2026-09-08T16:17:04.7778111Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-1/x64
+2026-09-08T16:17:04.7778598Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-1/x64
+2026-09-08T16:17:04.7778971Z ##[endgroup]
+2026-09-08T16:17:04.7839703Z ##[start-action display=Make yq tool available on Windows runners;id=__subosito_flutter-action.__run]
+2026-09-08T16:17:04.7852035Z ##[end-action id=__subosito_flutter-action.__run;outcome=skipped;conclusion=skipped;duration_ms=0]
+2026-09-08T16:17:04.7854240Z ##[start-action display=Make setup script executable;id=__subosito_flutter-action.__run_2]
+2026-09-08T16:17:04.7933071Z ##[group]Run chmod +x "$GITHUB_ACTION_PATH/setup.sh"
+2026-09-08T16:17:04.7933492Z [36;1mchmod +x "$GITHUB_ACTION_PATH/setup.sh"[0m
+2026-09-08T16:17:04.7975048Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-09-08T16:17:04.7975612Z env:
+2026-09-08T16:17:04.7975937Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-1/x64
+2026-09-08T16:17:04.7976440Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-1/x64
+2026-09-08T16:17:04.7976837Z ##[endgroup]
+2026-09-08T16:17:04.8078992Z ##[end-action id=__subosito_flutter-action.__run_2;outcome=success;conclusion=success;duration_ms=22]
+2026-09-08T16:17:04.8081586Z ##[start-action display=Set action inputs;id=__subosito_flutter-action.flutter-action]
+2026-09-08T16:17:04.8121787Z ##[group]Run $GITHUB_ACTION_PATH/setup.sh -p \
+2026-09-08T16:17:04.8122165Z [36;1m$GITHUB_ACTION_PATH/setup.sh -p \[0m
+2026-09-08T16:17:04.8122445Z [36;1m  -n '3.24.0' \[0m
+2026-09-08T16:17:04.8122664Z [36;1m  -f '' \[0m
+2026-09-08T16:17:04.8122867Z [36;1m  -a 'X64' \[0m
+2026-09-08T16:17:04.8123077Z [36;1m  -k '' \[0m
+2026-09-08T16:17:04.8123267Z [36;1m  -c '' \[0m
+2026-09-08T16:17:04.8123455Z [36;1m  -l '' \[0m
+2026-09-08T16:17:04.8123652Z [36;1m  -d 'default' \[0m
+2026-09-08T16:17:04.8123984Z [36;1m  -g 'https://github.com/flutter/flutter.git' \[0m
+2026-09-08T16:17:04.8124300Z [36;1m  stable[0m
+2026-09-08T16:17:04.8158412Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-09-08T16:17:04.8158751Z env:
+2026-09-08T16:17:04.8159054Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-1/x64
+2026-09-08T16:17:04.8159541Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-1/x64
+2026-09-08T16:17:04.8159935Z ##[endgroup]
+2026-09-08T16:17:04.9822770Z ##[end-action id=__subosito_flutter-action.flutter-action;outcome=success;conclusion=success;duration_ms=173]
+2026-09-08T16:17:04.9827794Z ##[start-action display=Cache Flutter;id=__subosito_flutter-action.cache-flutter]
+2026-09-08T16:17:04.9832310Z ##[end-action id=__subosito_flutter-action.cache-flutter;outcome=skipped;conclusion=skipped;duration_ms=0]
+2026-09-08T16:17:04.9834343Z ##[start-action display=Cache pub dependencies;id=__subosito_flutter-action.cache-pub]
+2026-09-08T16:17:04.9840875Z ##[end-action id=__subosito_flutter-action.cache-pub;outcome=skipped;conclusion=skipped;duration_ms=0]
+2026-09-08T16:17:04.9842847Z ##[start-action display=Run setup script;id=__subosito_flutter-action.__run_3]
+2026-09-08T16:17:04.9878278Z ##[group]Run $GITHUB_ACTION_PATH/setup.sh \
+2026-09-08T16:17:04.9878620Z [36;1m$GITHUB_ACTION_PATH/setup.sh \[0m
+2026-09-08T16:17:04.9878899Z [36;1m  -n '3.24.0' \[0m
+2026-09-08T16:17:04.9879122Z [36;1m  -a 'x64' \[0m
+2026-09-08T16:17:04.9879448Z [36;1m  -c '/opt/hostedtoolcache/flutter/stable-3.24.0-x64' \[0m
+2026-09-08T16:17:04.9880008Z [36;1m  -d '/home/runner/.pub-cache' \[0m
+2026-09-08T16:17:04.9880293Z [36;1m  stable[0m
+2026-09-08T16:17:04.9916165Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-09-08T16:17:04.9916513Z env:
+2026-09-08T16:17:04.9916822Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-1/x64
+2026-09-08T16:17:04.9917316Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-1/x64
+2026-09-08T16:17:04.9917696Z ##[endgroup]
+2026-09-08T16:17:05.1481297Z   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+2026-09-08T16:17:05.1482721Z                                  Dload  Upload   Total   Spent    Left  Speed
+2026-09-08T16:17:05.1483644Z 
+2026-09-08T16:17:05.4574418Z   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+2026-09-08T16:17:06.4575861Z   3  639M    3 20.2M    0     0  65.4M      0  0:00:09 --:--:--  0:00:09 65.3M
+2026-09-08T16:17:07.4578678Z  34  639M   34  218M    0     0   166M      0  0:00:03  0:00:01  0:00:02  166M
+2026-09-08T16:17:08.1041517Z  72  639M   72  465M    0     0   201M      0  0:00:03  0:00:02  0:00:01  201M
+2026-09-08T16:17:08.1042385Z 100  639M  100  639M    0     0   216M      0  0:00:02  0:00:02 --:--:--  216M
+2026-09-08T16:17:34.0965688Z ##[end-action id=__subosito_flutter-action.__run_3;outcome=success;conclusion=success;duration_ms=29112]
+2026-09-08T16:17:34.1560473Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+2026-09-08T16:17:34.1561799Z ##[group]Run actions/cache@v4
+2026-09-08T16:17:34.1562040Z with:
+2026-09-08T16:17:34.1562246Z   path: ~/.pub-cache
+app/.dart_tool
+
+2026-09-08T16:17:34.1562714Z   key: Linux-pub-
+2026-09-08T16:17:34.1562935Z   restore-keys: Linux-pub-
+
+2026-09-08T16:17:34.1563335Z   enableCrossOsArchive: false
+2026-09-08T16:17:34.1563730Z   fail-on-cache-miss: false
+2026-09-08T16:17:34.1564087Z   lookup-only: false
+2026-09-08T16:17:34.1564404Z   save-always: false
+2026-09-08T16:17:34.1564712Z env:
+2026-09-08T16:17:34.1565468Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-1/x64
+2026-09-08T16:17:34.1566386Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-1/x64
+2026-09-08T16:17:34.1567280Z   FLUTTER_ROOT: /opt/hostedtoolcache/flutter/stable-3.24.0-x64/flutter
+2026-09-08T16:17:34.1567941Z   PUB_CACHE: /home/runner/.pub-cache
+2026-09-08T16:17:34.1568370Z ##[endgroup]
+2026-09-08T16:17:34.2627284Z (node:2554) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-09-08T16:17:34.2628491Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-09-08T16:17:34.3676431Z Cache hit for: Linux-pub-
+2026-09-08T16:17:34.3784203Z (node:2554) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-09-08T16:17:34.8549982Z Received 83468897 of 83468897 (100.0%), 176.9 MBs/sec
+2026-09-08T16:17:34.8550610Z Cache Size: ~80 MB (83468897 B)
+2026-09-08T16:17:34.8662902Z [command]/usr/bin/tar -xf /home/runner/work/_temp/9f8b6b83-5d06-487d-a4eb-77a05a28e98a/cache.tzst -P -C /home/runner/work/m-nexus/m-nexus --use-compress-program unzstd
+2026-09-08T16:17:35.7012509Z Cache restored successfully
+2026-09-08T16:17:35.7124233Z Cache restored from key: Linux-pub-
+2026-09-08T16:17:35.7913461Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+2026-09-08T16:17:35.7914821Z ##[group]Run actions/cache@v4
+2026-09-08T16:17:35.7915090Z with:
+2026-09-08T16:17:35.7915667Z   path: ~/.gradle/caches
+~/.gradle/wrapper
+app/android/.gradle
+
+2026-09-08T16:17:35.7916192Z   key: Linux-gradle-7a6389e73eb94dce337406044466db19ff1dfc4a1b7d78c15826871ba0daaf2e
+2026-09-08T16:17:35.7916645Z   restore-keys: Linux-gradle-
+
+2026-09-08T16:17:35.7916909Z   enableCrossOsArchive: false
+2026-09-08T16:17:35.7917167Z   fail-on-cache-miss: false
+2026-09-08T16:17:35.7917400Z   lookup-only: false
+2026-09-08T16:17:35.7917614Z   save-always: false
+2026-09-08T16:17:35.7917813Z env:
+2026-09-08T16:17:35.7918157Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-1/x64
+2026-09-08T16:17:35.7918650Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-1/x64
+2026-09-08T16:17:35.7919128Z   FLUTTER_ROOT: /opt/hostedtoolcache/flutter/stable-3.24.0-x64/flutter
+2026-09-08T16:17:35.7919509Z   PUB_CACHE: /home/runner/.pub-cache
+2026-09-08T16:17:35.7919766Z ##[endgroup]
+2026-09-08T16:17:35.8951346Z (node:2583) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-09-08T16:17:35.8952355Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-09-08T16:17:35.9562480Z Cache hit for restore-key: Linux-gradle-3f6647e3af15136e3a74281241c05bac4a5946c9224172a02ac1b536806439fd
+2026-09-08T16:17:35.9667184Z (node:2583) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-09-08T16:17:37.0114943Z Received 184549376 of 1681417505 (11.0%), 175.8 MBs/sec
+2026-09-08T16:17:38.0116101Z Received 402653184 of 1681417505 (23.9%), 191.9 MBs/sec
+2026-09-08T16:17:39.0111604Z Received 666894336 of 1681417505 (39.7%), 212.0 MBs/sec
+2026-09-08T16:17:40.0141951Z Received 914358272 of 1681417505 (54.4%), 217.8 MBs/sec
+2026-09-08T16:17:41.0149368Z Received 1182793728 of 1681417505 (70.3%), 225.4 MBs/sec
+2026-09-08T16:17:42.0168517Z Received 1405091840 of 1681417505 (83.6%), 223.1 MBs/sec
+2026-09-08T16:17:43.0165668Z Received 1631584256 of 1681417505 (97.0%), 222.1 MBs/sec
+2026-09-08T16:17:43.1851085Z Received 1681417505 of 1681417505 (100.0%), 223.5 MBs/sec
+2026-09-08T16:17:43.1853527Z Cache Size: ~1604 MB (1681417505 B)
+2026-09-08T16:17:43.1896820Z [command]/usr/bin/tar -xf /home/runner/work/_temp/5d671387-9ea5-4076-8d6d-70201bf926e6/cache.tzst -P -C /home/runner/work/m-nexus/m-nexus --use-compress-program unzstd
+2026-09-08T16:17:51.1336363Z Cache restored successfully
+2026-09-08T16:17:51.2132139Z Cache restored from key: Linux-gradle-3f6647e3af15136e3a74281241c05bac4a5946c9224172a02ac1b536806439fd
+2026-09-08T16:17:51.2323997Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+2026-09-08T16:17:51.2325569Z ##[group]Run actions/cache@v4
+2026-09-08T16:17:51.2325838Z with:
+2026-09-08T16:17:51.2326084Z   path: ~/flutter
+/opt/hostedtoolcache/flutter
+
+2026-09-08T16:17:51.2326411Z   key: Linux-flutter-3.24.0-stable
+2026-09-08T16:17:51.2326689Z   restore-keys: Linux-flutter-
+
+2026-09-08T16:17:51.2326958Z   enableCrossOsArchive: false
+2026-09-08T16:17:51.2327216Z   fail-on-cache-miss: false
+2026-09-08T16:17:51.2327455Z   lookup-only: false
+2026-09-08T16:17:51.2327674Z   save-always: false
+2026-09-08T16:17:51.2327884Z env:
+2026-09-08T16:17:51.2328183Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-1/x64
+2026-09-08T16:17:51.2328706Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-1/x64
+2026-09-08T16:17:51.2329196Z   FLUTTER_ROOT: /opt/hostedtoolcache/flutter/stable-3.24.0-x64/flutter
+2026-09-08T16:17:51.2329582Z   PUB_CACHE: /home/runner/.pub-cache
+2026-09-08T16:17:51.2329843Z ##[endgroup]
+2026-09-08T16:17:51.3456580Z (node:2609) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-09-08T16:17:51.3478920Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-09-08T16:17:51.4109987Z Cache hit for: Linux-flutter-3.24.0-stable
+2026-09-08T16:17:51.4220668Z (node:2609) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-09-08T16:17:52.5516574Z Received 247463936 of 804174986 (30.8%), 214.4 MBs/sec
+2026-09-08T16:17:53.5565659Z Received 507510784 of 804174986 (63.1%), 230.1 MBs/sec
+2026-09-08T16:17:54.5509652Z Received 799980682 of 804174986 (99.5%), 245.9 MBs/sec
+2026-09-08T16:17:54.5978695Z Received 804174986 of 804174986 (100.0%), 243.5 MBs/sec
+2026-09-08T16:17:54.5981134Z Cache Size: ~767 MB (804174986 B)
+2026-09-08T16:17:54.6028064Z [command]/usr/bin/tar -xf /home/runner/work/_temp/586d88d5-7788-4f7c-8617-de2842148046/cache.tzst -P -C /home/runner/work/m-nexus/m-nexus --use-compress-program unzstd
+2026-09-08T16:17:57.9201992Z Cache restored successfully
+2026-09-08T16:17:57.9649210Z Cache restored from key: Linux-flutter-3.24.0-stable
+2026-09-08T16:17:57.9858666Z ##[group]Run rm -rf app/build
+2026-09-08T16:17:57.9859205Z [36;1mrm -rf app/build[0m
+2026-09-08T16:17:57.9859647Z [36;1mrm -rf app/android/app/build[0m
+2026-09-08T16:17:57.9860271Z [36;1mecho "Cleaned app/build only (gradle cache preserved)"[0m
+2026-09-08T16:17:58.0446975Z shell: /usr/bin/bash -e {0}
+2026-09-08T16:17:58.0447292Z env:
+2026-09-08T16:17:58.0447641Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-1/x64
+2026-09-08T16:17:58.0448182Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-1/x64
+2026-09-08T16:17:58.0448695Z   FLUTTER_ROOT: /opt/hostedtoolcache/flutter/stable-3.24.0-x64/flutter
+2026-09-08T16:17:58.0449305Z   PUB_CACHE: /home/runner/.pub-cache
+2026-09-08T16:17:58.0449575Z ##[endgroup]
+2026-09-08T16:17:58.0535130Z Cleaned app/build only (gradle cache preserved)
+2026-09-08T16:17:58.0563794Z ##[group]Run cd app && flutter pub get
+2026-09-08T16:17:58.0564159Z [36;1mcd app && flutter pub get[0m
+2026-09-08T16:17:58.0600292Z shell: /usr/bin/bash -e {0}
+2026-09-08T16:17:58.0600563Z env:
+2026-09-08T16:17:58.0600901Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-1/x64
+2026-09-08T16:17:58.0601432Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-1/x64
+2026-09-08T16:17:58.0601927Z   FLUTTER_ROOT: /opt/hostedtoolcache/flutter/stable-3.24.0-x64/flutter
+2026-09-08T16:17:58.0602322Z   PUB_CACHE: /home/runner/.pub-cache
+2026-09-08T16:17:58.0602593Z ##[endgroup]
+2026-09-08T16:17:58.8589248Z 
+2026-09-08T16:17:58.8602621Z   ╔════════════════════════════════════════════════════════════════════════════╗
+2026-09-08T16:17:58.8603755Z   ║                 Welcome to Flutter! - https://flutter.dev                  ║
+2026-09-08T16:17:58.8604620Z   ║                                                                            ║
+2026-09-08T16:17:58.8605836Z   ║ The Flutter tool uses Google Analytics to anonymously report feature usage ║
+2026-09-08T16:17:58.8606914Z   ║ statistics and basic crash reports. This data is used to help improve      ║
+2026-09-08T16:17:58.8607878Z   ║ Flutter tools over time.                                                   ║
+2026-09-08T16:17:58.8608667Z   ║                                                                            ║
+2026-09-08T16:17:58.8609556Z   ║ Flutter tool analytics are not sent on the very first run. To disable      ║
+2026-09-08T16:17:58.8610172Z   ║ reporting, type 'flutter config --no-analytics'. To display the current    ║
+2026-09-08T16:17:58.8610759Z   ║ setting, type 'flutter config'. If you opt out of analytics, an opt-out    ║
+2026-09-08T16:17:58.8611360Z   ║ event will be sent, and then no further information will be sent by the    ║
+2026-09-08T16:17:58.8611876Z   ║ Flutter tool.                                                              ║
+2026-09-08T16:17:58.8612323Z   ║                                                                            ║
+2026-09-08T16:17:58.8612808Z   ║ By downloading the Flutter SDK, you agree to the Google Terms of Service.  ║
+2026-09-08T16:17:58.8613384Z   ║ The Google Privacy Policy describes how data is handled in this service.   ║
+2026-09-08T16:17:58.8613872Z   ║                                                                            ║
+2026-09-08T16:17:58.8614373Z   ║ Moreover, Flutter includes the Dart SDK, which may send usage metrics and  ║
+2026-09-08T16:17:58.8614909Z   ║ crash reports to Google.                                                   ║
+2026-09-08T16:17:58.8615734Z   ║                                                                            ║
+2026-09-08T16:17:58.8616228Z   ║ Read about data we send with crash reports:                                ║
+2026-09-08T16:17:58.8616817Z   ║ https://flutter.dev/to/crash-reporting                                     ║
+2026-09-08T16:17:58.8617316Z   ║                                                                            ║
+2026-09-08T16:17:58.8617783Z   ║ See Google's privacy policy:                                               ║
+2026-09-08T16:17:58.8618330Z   ║ https://policies.google.com/privacy                                        ║
+2026-09-08T16:17:58.8618837Z   ║                                                                            ║
+2026-09-08T16:17:58.8619323Z   ║ To disable animations in this tool, use                                    ║
+2026-09-08T16:17:58.8619892Z   ║ 'flutter config --no-cli-animations'.                                      ║
+2026-09-08T16:17:58.8620449Z   ╚════════════════════════════════════════════════════════════════════════════╝
+2026-09-08T16:17:58.8620710Z 
+2026-09-08T16:17:59.1867346Z "es": 71 untranslated message(s).
+2026-09-08T16:17:59.1868913Z To see a detailed report, use the untranslated-messages-file 
+2026-09-08T16:17:59.1869858Z option in the l10n.yaml file:
+2026-09-08T16:17:59.1870647Z untranslated-messages-file: desiredFileName.txt
+2026-09-08T16:17:59.1871841Z <other option>: <other selection> 
+2026-09-08T16:17:59.1872376Z 
+2026-09-08T16:17:59.1872546Z 
+2026-09-08T16:17:59.1873038Z This will generate a JSON format file containing all messages that 
+2026-09-08T16:17:59.1886196Z need to be translated.
+2026-09-08T16:17:59.5462493Z Resolving dependencies...
+2026-09-08T16:18:00.5942583Z Downloading packages...
+2026-09-08T16:18:00.6107048Z + args 2.7.0
+2026-09-08T16:18:00.6107660Z + async 2.11.0 (2.13.1 available)
+2026-09-08T16:18:00.6108297Z + boolean_selector 2.1.1 (2.1.2 available)
+2026-09-08T16:18:00.6108942Z + characters 1.3.0 (1.4.1 available)
+2026-09-08T16:18:00.6109564Z + clock 1.1.1 (1.1.3 available)
+2026-09-08T16:18:00.6110111Z + collection 1.18.0 (1.19.1 available)
+2026-09-08T16:18:00.6110694Z + crypto 3.0.7
+2026-09-08T16:18:00.6111179Z + equatable 2.1.0
+2026-09-08T16:18:00.6111697Z + fake_async 1.3.1 (1.3.3 available)
+2026-09-08T16:18:00.6112243Z + ffi 2.1.3 (2.2.0 available)
+2026-09-08T16:18:00.6112743Z + file 7.0.1
+2026-09-08T16:18:00.6113170Z + fixnum 1.1.1
+2026-09-08T16:18:00.6113628Z + fl_chart 0.69.2 (1.2.0 available)
+2026-09-08T16:18:00.6114200Z + flutter 0.0.0 from sdk flutter
+2026-09-08T16:18:00.6114809Z + flutter_lints 4.0.0 (6.0.0 available)
+2026-09-08T16:18:00.6115727Z + flutter_localizations 0.0.0 from sdk flutter
+2026-09-08T16:18:00.6116628Z + flutter_markdown 0.7.7+1 (discontinued replaced by flutter_markdown_plus)
+2026-09-08T16:18:00.6117495Z + flutter_test 0.0.0 from sdk flutter
+2026-09-08T16:18:00.6118140Z + flutter_web_plugins 0.0.0 from sdk flutter
+2026-09-08T16:18:00.6118739Z + http 1.6.0
+2026-09-08T16:18:00.6119193Z + http_parser 4.0.2 (4.1.2 available)
+2026-09-08T16:18:00.6119841Z + intl 0.19.0 (0.20.3 available)
+2026-09-08T16:18:00.6120504Z + json_annotation 4.9.0 (4.12.0 available)
+2026-09-08T16:18:00.6121168Z + leak_tracker 10.0.5 (11.0.2 available)
+2026-09-08T16:18:00.6121879Z + leak_tracker_flutter_testing 3.0.5 (3.0.10 available)
+2026-09-08T16:18:00.6122647Z + leak_tracker_testing 3.0.1 (3.0.2 available)
+2026-09-08T16:18:00.6123110Z + lints 4.0.0 (6.1.0 available)
+2026-09-08T16:18:00.6123407Z + markdown 7.3.0 (7.3.1 available)
+2026-09-08T16:18:00.6123812Z + matcher 0.12.16+1 (0.12.20 available)
+2026-09-08T16:18:00.6124484Z + material_color_utilities 0.11.1 (0.13.1 available)
+2026-09-08T16:18:00.6125125Z + meta 1.15.0 (1.19.0 available)
+2026-09-08T16:18:00.6125973Z + package_info_plus 8.3.1 (10.2.1 available)
+2026-09-08T16:18:00.6126750Z + package_info_plus_platform_interface 3.2.1 (4.1.0 available)
+2026-09-08T16:18:00.6127503Z + path 1.9.0 (1.9.1 available)
+2026-09-08T16:18:00.6128099Z + path_provider 2.1.5 (2.1.6 available)
+2026-09-08T16:18:00.6128764Z + path_provider_android 2.2.15 (2.3.1 available)
+2026-09-08T16:18:00.6129483Z + path_provider_foundation 2.4.1 (2.6.0 available)
+2026-09-08T16:18:00.6130192Z + path_provider_linux 2.2.1 (2.2.2 available)
+2026-09-08T16:18:00.6130931Z + path_provider_platform_interface 2.1.2 (2.1.3 available)
+2026-09-08T16:18:00.6131626Z + path_provider_windows 2.3.0
+2026-09-08T16:18:00.6132292Z + permission_handler 11.4.0 (13.0.2 available)
+2026-09-08T16:18:00.6133059Z + permission_handler_android 12.1.0 (14.1.0 available)
+2026-09-08T16:18:00.6133859Z + permission_handler_apple 9.4.10 (9.6.1 available)
+2026-09-08T16:18:00.6134553Z + permission_handler_html 0.1.4+1
+2026-09-08T16:18:00.6135812Z + permission_handler_platform_interface 4.3.0 (4.4.1 available)
+2026-09-08T16:18:00.6136613Z + permission_handler_windows 0.2.1 (0.2.2 available)
+2026-09-08T16:18:00.6137206Z + platform 3.1.6 (3.2.0 available)
+2026-09-08T16:18:00.6137706Z + plugin_platform_interface 2.1.8
+2026-09-08T16:18:00.6138228Z + shared_preferences 2.5.3 (2.5.5 available)
+2026-09-08T16:18:00.6138823Z + shared_preferences_android 2.4.7 (2.4.28 available)
+2026-09-08T16:18:00.6139465Z + shared_preferences_foundation 2.5.4 (2.5.7 available)
+2026-09-08T16:18:00.6140461Z + shared_preferences_linux 2.4.1
+2026-09-08T16:18:00.6141073Z + shared_preferences_platform_interface 2.4.1 (2.4.2 available)
+2026-09-08T16:18:00.6142033Z + shared_preferences_web 2.4.3
+2026-09-08T16:18:00.6142584Z + shared_preferences_windows 2.4.1
+2026-09-08T16:18:00.6143109Z + sky_engine 0.0.99 from sdk flutter
+2026-09-08T16:18:00.6143644Z + source_span 1.10.0 (1.10.2 available)
+2026-09-08T16:18:00.6144105Z + speech_to_text 7.4.0
+2026-09-08T16:18:00.6144592Z + speech_to_text_platform_interface 2.4.0
+2026-09-08T16:18:00.6145143Z + speech_to_text_windows 1.0.1
+2026-09-08T16:18:00.6145859Z + stack_trace 1.11.1 (1.12.2 available)
+2026-09-08T16:18:00.6146384Z + stream_channel 2.1.2 (2.1.4 available)
+2026-09-08T16:18:00.6146930Z + string_scanner 1.2.0 (1.4.1 available)
+2026-09-08T16:18:00.6147473Z + term_glyph 1.2.1 (1.2.2 available)
+2026-09-08T16:18:00.6148006Z + test_api 0.7.2 (0.7.14 available)
+2026-09-08T16:18:00.6148487Z + typed_data 1.4.0
+2026-09-08T16:18:00.6148959Z + url_launcher 6.3.1 (6.3.2 available)
+2026-09-08T16:18:00.6149498Z + url_launcher_android 6.3.14 (6.3.33 available)
+2026-09-08T16:18:00.6150058Z + url_launcher_ios 6.3.3 (6.4.2 available)
+2026-09-08T16:18:00.6150603Z + url_launcher_linux 3.2.1 (3.2.3 available)
+2026-09-08T16:18:00.6151140Z + url_launcher_macos 3.2.2 (3.2.6 available)
+2026-09-08T16:18:00.6151654Z + url_launcher_platform_interface 2.3.2
+2026-09-08T16:18:00.6152198Z + url_launcher_web 2.3.3 (2.4.3 available)
+2026-09-08T16:18:00.6152769Z + url_launcher_windows 3.1.4 (3.1.6 available)
+2026-09-08T16:18:00.6153320Z + uuid 4.6.0
+2026-09-08T16:18:00.6153730Z + vector_math 2.1.4 (2.4.2 available)
+2026-09-08T16:18:00.6154264Z + vm_service 14.2.4 (15.3.0 available)
+2026-09-08T16:18:00.6154754Z + web 1.1.1
+2026-09-08T16:18:00.6155138Z + win32 5.10.1 (6.4.0 available)
+2026-09-08T16:18:00.6155782Z + xdg_directories 1.1.0
+2026-09-08T16:18:00.6156225Z Changed 80 dependencies!
+2026-09-08T16:18:00.6156701Z 1 package is discontinued.
+2026-09-08T16:18:00.6157769Z 54 packages have newer versions incompatible with dependency constraints.
+2026-09-08T16:18:00.6158777Z Try `flutter pub outdated` for more information.
+2026-09-08T16:18:01.5222785Z ##[group]Run if [[ -n "$MN_KEYSTORE_BASE64" ]]; then
+2026-09-08T16:18:01.5223226Z [36;1mif [[ -n "$MN_KEYSTORE_BASE64" ]]; then[0m
+2026-09-08T16:18:01.5223566Z [36;1m  mkdir -p app/android/keystores[0m
+2026-09-08T16:18:01.5224026Z [36;1m  echo "$MN_KEYSTORE_BASE64" | base64 -d > app/android/keystores/release.keystore[0m
+2026-09-08T16:18:01.5224539Z [36;1m  chmod 600 app/android/keystores/release.keystore[0m
+2026-09-08T16:18:01.5225114Z [36;1m  echo "Keystore restaurado desde secret. Size: $(stat -c %s app/android/keystores/release.keystore) bytes"[0m
+2026-09-08T16:18:01.5226115Z [36;1m  # Guardar passwords en gradle.properties (que el build.gradle lee)[0m
+2026-09-08T16:18:01.5226866Z [36;1m  sed -i "s|^appKeystoreStorePassword=.*|appKeystoreStorePassword=${MN_KEYSTORE_STORE_PASSWORD}|" app/android/gradle.properties[0m
+2026-09-08T16:18:01.5227827Z [36;1m  sed -i "s|^appKeystoreKeyPassword=.*|appKeystoreKeyPassword=${MN_KEYSTORE_KEY_PASSWORD}|" app/android/gradle.properties[0m
+2026-09-08T16:18:01.5228469Z [36;1m  echo "Passwords guardados en gradle.properties"[0m
+2026-09-08T16:18:01.5228806Z [36;1melse[0m
+2026-09-08T16:18:01.5229155Z [36;1m  echo "MN_KEYSTORE_BASE64 no configurado - usando debug keystore (warning)"[0m
+2026-09-08T16:18:01.5229602Z [36;1m  mkdir -p app/android/keystores[0m
+2026-09-08T16:18:01.5230103Z [36;1m  echo "# MN_KEYSTORE_BASE64 not set - using debug keystore" > app/android/keystores/.placeholder[0m
+2026-09-08T16:18:01.5230566Z [36;1mfi[0m
+2026-09-08T16:18:01.5266600Z shell: /usr/bin/bash -e {0}
+2026-09-08T16:18:01.5266874Z env:
+2026-09-08T16:18:01.5267204Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-1/x64
+2026-09-08T16:18:01.5267735Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-1/x64
+2026-09-08T16:18:01.5268416Z   FLUTTER_ROOT: /opt/hostedtoolcache/flutter/stable-3.24.0-x64/flutter
+2026-09-08T16:18:01.5268813Z   PUB_CACHE: /home/runner/.pub-cache
+2026-09-08T16:18:01.5269093Z   MN_KEYSTORE_BASE64: 
+2026-09-08T16:18:01.5269344Z   MN_KEYSTORE_STORE_PASSWORD: 
+2026-09-08T16:18:01.5269620Z   MN_KEYSTORE_KEY_PASSWORD: 
+2026-09-08T16:18:01.5269865Z ##[endgroup]
+2026-09-08T16:18:01.5326435Z MN_KEYSTORE_BASE64 no configurado - usando debug keystore (warning)
+2026-09-08T16:18:01.5365439Z ##[group]Run VERSION=$(grep "^version:" app/pubspec.yaml | head -1 | awk '{print $2}')
+2026-09-08T16:18:01.5366138Z [36;1mVERSION=$(grep "^version:" app/pubspec.yaml | head -1 | awk '{print $2}')[0m
+2026-09-08T16:18:01.5366616Z [36;1mVERSION_NAME=$(echo "$VERSION" | sed 's/+.*//')[0m
+2026-09-08T16:18:01.5366986Z [36;1mVERSION_CODE=$(echo "$VERSION" | sed 's/.*+//')[0m
+2026-09-08T16:18:01.5367412Z [36;1mecho "versionName=${VERSION_NAME} versionCode=${VERSION_CODE}"[0m
+2026-09-08T16:18:01.5367996Z [36;1msed -i "s|^appVersionCode=.*|appVersionCode=${VERSION_CODE}|" app/android/gradle.properties[0m
+2026-09-08T16:18:01.5368674Z [36;1msed -i "s|^appVersionName=.*|appVersionName=${VERSION_NAME}|" app/android/gradle.properties[0m
+2026-09-08T16:18:01.5369190Z [36;1mecho "=== Updated gradle.properties ==="[0m
+2026-09-08T16:18:01.5369566Z [36;1mgrep "^appVersion" app/android/gradle.properties[0m
+2026-09-08T16:18:01.5401797Z shell: /usr/bin/bash -e {0}
+2026-09-08T16:18:01.5402101Z env:
+2026-09-08T16:18:01.5402429Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-1/x64
+2026-09-08T16:18:01.5402951Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-1/x64
+2026-09-08T16:18:01.5403454Z   FLUTTER_ROOT: /opt/hostedtoolcache/flutter/stable-3.24.0-x64/flutter
+2026-09-08T16:18:01.5403854Z   PUB_CACHE: /home/runner/.pub-cache
+2026-09-08T16:18:01.5404124Z ##[endgroup]
+2026-09-08T16:18:01.5521773Z versionName=0.47.25 versionCode=92
+2026-09-08T16:18:01.5551573Z === Updated gradle.properties ===
+2026-09-08T16:18:01.5563420Z appVersionCode=92
+2026-09-08T16:18:01.5563853Z appVersionName=0.47.25
+2026-09-08T16:18:01.5594076Z ##[group]Run set -e
+2026-09-08T16:18:01.5594391Z [36;1mset -e[0m
+2026-09-08T16:18:01.5594616Z [36;1mcd app[0m
+2026-09-08T16:18:01.5594870Z [36;1mecho "=== Building release APK ==="[0m
+2026-09-08T16:18:01.5595549Z [36;1mif [[ ! -f /home/runner/.android/debug.keystore ]]; then[0m
+2026-09-08T16:18:01.5596024Z [36;1m  echo "No hay keystore release ni debug - generando uno temporal"[0m
+2026-09-08T16:18:01.5596444Z [36;1m  mkdir -p /home/runner/.android[0m
+2026-09-08T16:18:01.5596868Z [36;1m  keytool -genkey -v -keystore /home/runner/.android/debug.keystore \[0m
+2026-09-08T16:18:01.5597380Z [36;1m    -storepass android -alias androiddebugkey -keypass android \[0m
+2026-09-08T16:18:01.5597826Z [36;1m    -keyalg RSA -keysize 2048 -validity 10000 \[0m
+2026-09-08T16:18:01.5598229Z [36;1m    -dname "CN=Android Debug,O=Android,C=US" 2>&1 | tail -1[0m
+2026-09-08T16:18:01.5598581Z [36;1mfi[0m
+2026-09-08T16:18:01.5598923Z [36;1m# Si no hay release keystore, copiar el debug como fallback[0m
+2026-09-08T16:18:01.5599372Z [36;1mif [[ ! -f app/android/keystores/release.keystore ]]; then[0m
+2026-09-08T16:18:01.5599908Z [36;1m  cp /home/runner/.android/debug.keystore app/android/keystores/release.keystore[0m
+2026-09-08T16:18:01.5600413Z [36;1m  chmod 600 app/android/keystores/release.keystore[0m
+2026-09-08T16:18:01.5600788Z [36;1m  # Usar passwords del debug keystore[0m
+2026-09-08T16:18:01.5601355Z [36;1m  sed -i "s|^appKeystoreStorePassword=.*|appKeystoreStorePassword=android|" app/android/gradle.properties[0m
+2026-09-08T16:18:01.5602127Z [36;1m  sed -i "s|^appKeystoreKeyPassword=.*|appKeystoreKeyPassword=android|" app/android/gradle.properties[0m
+2026-09-08T16:18:01.5602641Z [36;1mfi[0m
+2026-09-08T16:18:01.5603030Z [36;1mflutter build apk --release --no-tree-shake-icons 2>&1 | tee /tmp/build-release.log[0m
+2026-09-08T16:18:01.5638322Z shell: /usr/bin/bash -e {0}
+2026-09-08T16:18:01.5638813Z env:
+2026-09-08T16:18:01.5639160Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-1/x64
+2026-09-08T16:18:01.5639688Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-1/x64
+2026-09-08T16:18:01.5640202Z   FLUTTER_ROOT: /opt/hostedtoolcache/flutter/stable-3.24.0-x64/flutter
+2026-09-08T16:18:01.5640595Z   PUB_CACHE: /home/runner/.pub-cache
+2026-09-08T16:18:01.5640883Z   GRADLE_OPTS: -Xmx4G
+2026-09-08T16:18:01.5641113Z ##[endgroup]
+2026-09-08T16:18:01.5697671Z === Building release APK ===
+2026-09-08T16:18:01.5698101Z No hay keystore release ni debug - generando uno temporal
+2026-09-08T16:18:02.6877774Z [Storing /home/runner/.android/debug.keystore]
+2026-09-08T16:18:02.6896447Z cp: cannot create regular file 'app/android/keystores/release.keystore': No such file or directory
+2026-09-08T16:18:02.6904748Z ##[error]Process completed with exit code 1.
+2026-09-08T16:18:02.7086734Z Post job cleanup.
+2026-09-08T16:18:02.7150443Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+2026-09-08T16:18:02.7151712Z Post job cleanup.
+2026-09-08T16:18:02.8521565Z (node:2712) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-09-08T16:18:02.8522491Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-09-08T16:18:02.8747147Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+2026-09-08T16:18:02.8749257Z Post job cleanup.
+2026-09-08T16:18:02.9729739Z [command]/usr/bin/git version
+2026-09-08T16:18:02.9772350Z git version 2.55.0
+2026-09-08T16:18:02.9816765Z Temporarily overriding HOME='/home/runner/work/_temp/75c5b392-5d60-4352-b063-08bf00893c4d' before making global git config changes
+2026-09-08T16:18:02.9818085Z Adding repository directory to the temporary git global config as a safe directory
+2026-09-08T16:18:02.9822043Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/m-nexus/m-nexus
+2026-09-08T16:18:02.9863815Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-09-08T16:18:02.9900603Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-09-08T16:18:03.0181539Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-09-08T16:18:03.0232002Z http.https://github.com/.extraheader
+2026-09-08T16:18:03.0245325Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-09-08T16:18:03.0282552Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-09-08T16:18:03.0558505Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-09-08T16:18:03.0587668Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-09-08T16:18:03.1008596Z Cleaning up orphan processes
+2026-09-08T16:18:03.1301360Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/cache@v4, actions/checkout@v4, actions/setup-java@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

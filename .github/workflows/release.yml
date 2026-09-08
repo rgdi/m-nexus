@@ -255,12 +255,13 @@ jobs:
               -dname "CN=Android Debug,O=Android,C=US" 2>&1 | tail -1
           fi
           # Si no hay release keystore, copiar el debug como fallback
-          if [[ ! -f app/android/keystores/release.keystore ]]; then
-            cp /home/runner/.android/debug.keystore app/android/keystores/release.keystore
-            chmod 600 app/android/keystores/release.keystore
+          if [[ ! -f android/keystores/release.keystore ]]; then
+            mkdir -p android/keystores
+            cp /home/runner/.android/debug.keystore android/keystores/release.keystore
+            chmod 600 android/keystores/release.keystore
             # Usar passwords del debug keystore
-            sed -i "s|^appKeystoreStorePassword=.*|appKeystoreStorePassword=android|" app/android/gradle.properties
-            sed -i "s|^appKeystoreKeyPassword=.*|appKeystoreKeyPassword=android|" app/android/gradle.properties
+            sed -i "s|^appKeystoreStorePassword=.*|appKeystoreStorePassword=android|" android/gradle.properties
+            sed -i "s|^appKeystoreKeyPassword=.*|appKeystoreKeyPassword=android|" android/gradle.properties
           fi
           flutter build apk --release --no-tree-shake-icons 2>&1 | tee /tmp/build-release.log
         env:
