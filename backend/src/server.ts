@@ -35,6 +35,9 @@ import { rollbackRoutes } from "./routes/rollback.js";
 import { structuredRoutes } from "./routes/structured.js";
 import { secretsRoutes } from "./routes/secrets.js";
 import { searchRoutes } from "./routes/search.js";
+import { uploadRoutes } from "./routes/upload.js";
+import { registerTranscriptionStreamRoutes } from "./routes/transcriptionStream.js";
+import { fsrsQueueRoutes } from "./routes/fsrsQueue.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -263,12 +266,18 @@ export async function buildServer(): Promise<FastifyInstance> {
   await app.register(structuredRoutes);
   await app.register(secretsRoutes);
   await app.register(searchRoutes);
+  // v0.47.14: registrar las 3 routes que existían pero no estaban montadas.
+  // Ver AUDIT_REPORT.md FUNC-1. Sin esto, /api/v1/upload/*, /transcription/stream
+  // y /api/v1/fsrs/* devolvían 404 en el server real.
+  await app.register(uploadRoutes);
+  await app.register(registerTranscriptionStreamRoutes);
+  await app.register(fsrsQueueRoutes);
 
   logLifecycle("server", "routes registered", {
     routes: [
       "health", "metrics", "audio", "llm", "ocr", "flashcards", "pdf",
       "ws", "auth", "dashboard", "push", "ai", "backup", "rollback",
-      "structured", "secrets", "search",
+      "structured", "secrets", "search", "upload", "transcription", "fsrs",
     ].length,
   });
 
