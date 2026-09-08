@@ -100,7 +100,10 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
     final result = await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => NoteEditor(vaultPath: app.activeVault!.path)),
+      MaterialPageRoute(builder: (_) => NoteEditor(
+        vaultPath: app.activeVault!.path,
+        // notePath: null = crear nueva
+      )),
     );
     if (result == true) await app.reload();
   }
