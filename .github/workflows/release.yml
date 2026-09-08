@@ -64,16 +64,25 @@ jobs:
           fi
           TAG="v${VERSION}"
           BACKEND_VERSION=$(grep '"version"' backend/package.json | head -1 | awk -F'"' '{print $4}')
+          # v0.47.19: FAIL si backend y frontend difieren (antes solo warning).
+          # El install.sh de v0.47.16 genera backend/.env que asume VERSION
+          # consistente. Si difieren, el APK release del frontend apunta a un
+          # backend con código de versión distinta → comportamiento indefinido.
           if [[ -n "$BACKEND_VERSION" && "$BACKEND_VERSION" != "$VERSION" ]]; then
-            echo "::warning::backend (${BACKEND_VERSION}) != frontend (${VERSION})"
+            echo "::error::backend (${BACKEND_VERSION}) != frontend (${VERSION})"
+            echo "::error::Synchronize versions: bump both or roll back one."
+            exit 1
           fi
           LATEST_TAG=$(git tag --list 'v*' --sort=-v:refname | head -1 || echo "")
+          # v0.47.19: si no hay tags v* (repo recién clonado), no imprimir
+          # 'ultimo tag: ' vacío. Usar placeholder descriptivo.
+          LATEST_TAG_DISPLAY="${LATEST_TAG:-<none>}"
           if [[ "$LATEST_TAG" == "$TAG" && "${{ inputs.force }}" != "true" ]]; then
             SHOULD_RELEASE="false"
             echo "Version ${VERSION} ya publicada como ${LATEST_TAG} - skip"
           else
             SHOULD_RELEASE="true"
-            echo "Nueva version: ${TAG} (ultimo tag: ${LATEST_TAG:-ninguno})"
+            echo "Nueva version: ${TAG} (ultimo tag: ${LATEST_TAG_DISPLAY})"
           fi
           {
             echo "version=${VERSION}"
