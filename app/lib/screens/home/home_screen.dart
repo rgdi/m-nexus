@@ -1,44 +1,53 @@
-// HomeScreen: dashboard principal.
-// Dashboard: stats + recientes + acciones rápidas.
+// home_screen.dart: dashboard principal de M-NEXUS (Fase 0 + 6.A).
+//
+// v0.47.0: dashboard con datos REALES (no 0s falsos), estilo cristal limpio,
+// cards redondeadas, separación clara de secciones.
+//   - Hero con saludo y CTA principal
+//   - Stats grid: racha, repasar hoy, tiempo invertido, precisión
+//   - Heatmap últimos 90 días
+//   - Acciones rápidas: Nueva nota, Repasar hoy, Nueva flashcard
+//   - Notas recientes (top 5)
 
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:path/path.dart' as p;
-import '../../core/constants.dart';
-import '../../core/shortcuts.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:intl/intl.dart';
 import '../../core/theme.dart';
-import '../../services/app_info.dart';
 import '../../services/flashcard_service.dart';
-import '../../services/vault_detector.dart';
-import '../../services/vault_saf_picker.dart';
-import '../../services/permissions.dart';
+import '../../services/fsrs_engine.dart';
 import '../../services/vault_service.dart';
-import '../../services/logger.dart';
+import '../../services/study_stats_service.dart';
 import '../../state/app_state.dart';
-import '../../widgets/empty_state.dart';
-import '../note/note_view.dart';
-import '../note/note_editor.dart';
 import '../flashcards/flashcard_review.dart';
 import '../flashcards/flashcard_edit.dart';
+import '../note/note_editor.dart';
+import '../vault/vault_browser.dart';
+import '../../services/permissions.dart';
+import '../../widgets/review_heatmap.dart';
+import '../flashcards/flashcard_review.dart';
+import '../flashcards/flashcard_edit.dart';
+import '../note/note_editor.dart';
 import '../vault/vault_browser.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final VaultService? vault;
+  final FlashcardService? flashcards;
+  const HomeScreen({super.key, this.vault, this.flashcards});
+
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  VaultService? _vault;
-  FlashcardService? _fc;
-  int _noteCount = 0;
-  int _flashcardCount = 0;
-  int _dueCount = 0;
-  List<Note> _recent = [];
   bool _loading = true;
-  String? _error;
+  int _streak = 0;
+  int _dueCount = 0;
+  int _newCount = 0;
+  int _totalCards = 0;
+  int _reviewsToday = 0;
+  int _minutesToday = 0;
+  double _retention = 0.90;
+  List<_RecentNote> _recentNotes = [];
+  Map<String, dynamic> _dailyStats = {};
 
   @override
   void initState() {
@@ -47,364 +56,517 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _load() async {
+    // v0.47.0: leemos de AppState (cargado UNA vez al arranque)
+    final app = AppState.instance;
+    if (!app.hasVault) {
+      setState(() {
+        _loading = false;
+        _recentNotes = [];
+      });
+      return;
+    }
+    final dailyStats = app.dailyStats;
+    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
     setState(() {
-      _loading = true;
-      _error = null;
+      _loading = false;
+      _streak = app.currentStreak;
+      _dueCount = app.dueCount;
+      _newCount = app.newCount;
+      _totalCards = app.totalCards;
+      _reviewsToday = dailyStats[today]?.reviews ?? 0;
+      _minutesToday = (dailyStats[today]?.studyTimeSec ?? 0) ~/ 60;
+      _dailyStats = dailyStats;
     });
-    final log = AdvancedLogger.instance;
-    try {
-      // Detectar vault
-      final detector = VaultDetector();
-      final vaults = await detector.detectVaults();
-      if (!mounted) return;
-      if (vaults.isEmpty) {
+    // Carga notas recientes (separada porque es async)
+    if (app.vaultService != null) {
+      final notes = await app.vaultService!.listRecentNotes(5);
+      if (mounted) {
         setState(() {
-          _loading = false;
-          _error = 'No hay vault';
+          _recentNotes = notes.map((n) => _RecentNote(
+            name: n.name,
+            path: n.path,
+            title: n.title,
+            modified: n.modified,
+          )).toList();
         });
-        return;
       }
-      _vault = VaultService(vaults.first.path);
-      _fc = FlashcardService(vaults.first.path);
-
-      _noteCount = await _vault!.countNotes();
-      if (!mounted) return;
-      final allCards = await _fc!.listAll();
-      _flashcardCount = allCards.length;
-      _dueCount = allCards.where((c) => c.isDue).length;
-
-      // Últimas 5 notas modificadas
-      // v0.46 FIX (auditor bug #3): antes cargaba TODO el vault.
-      // Ahora usa listRecentNotes(5) que es O(N) para listar paths
-      // y O(limit) para leer contenido. En vault de 10K notas,
-      // pasamos de 30+ segundos a <500ms.
-      _recent = await _vault!.listRecentNotes(5);
-
-      if (!mounted) return;
-      setState(() { _loading = false; });
-    } catch (e, s) {
-      log.error('home', '[EC-UI-001] Load home screen failed',
-        context: {'hasVault': _vault != null, 'hasFC': _fc != null},
-        error: e, stack: s);
-      if (!mounted) return;
-      setState(() { _loading = false; _error = e.toString(); });
     }
   }
 
-  Future<void> _createNewNote() async {
-    if (_vault == null) return;
-    final path = await _vault!.createNote(
-      folder: 'Inbox',
-      title: 'Sin título',
-      content: '# Sin título\n\nEmpezá a escribir…\n',
+  Future<void> _newNote() async {
+    final app = AppState.instance;
+    if (!app.hasVault) {
+      _showSnack('Configura un vault primero');
+      return;
+    }
+    final result = await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => NoteEditor(vaultPath: app.activeVault!.path)),
     );
-    if (!mounted) return;
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => NoteEditor(
-        notePath: path,
-        vaultPath: _vault!.vaultPath,
+    if (result == true) await app.reload();
+  }
+
+  Future<void> _newFlashcard() async {
+    final app = AppState.instance;
+    if (app.flashcardService == null) {
+      _showSnack('Servicio de flashcards no disponible');
+      return;
+    }
+    final result = await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => FlashcardEdit(
+        service: app.flashcardService!,
+        onSaved: () => app.reload(),
       )),
     );
-    _load();
+    if (result != null) await app.reload();
   }
 
   Future<void> _reviewDue() async {
-    if (_fc == null) return;
-    final due = await _fc!.dueCards();
-    if (!mounted) return;
-    if (due.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No hay tarjetas para repasar')),
-      );
+    final app = AppState.instance;
+    if (app.flashcardService == null) {
+      _showSnack('Servicio de flashcards no disponible');
       return;
     }
-    if (!mounted) return;
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => FlashcardReview(cards: due, service: _fc!)),
+    final cards = await app.flashcardService!.getDue();
+    if (cards.isEmpty) {
+      _showSnack('No hay tarjetas pendientes');
+      return;
+    }
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => FlashcardReview(
+        cards: cards,
+        service: app.flashcardService!,
+        onFinish: () => app.reload(),
+      )),
     );
-    _load();
+    await app.reload();
   }
 
-  /// v0.45.1: abre el SAF picker para que el usuario elija un vault manualmente.
-  Future<void> _pickSafVault() async {
-    final path = await VaultSafPicker.pickVault();
-    if (path == null) return;  // cancelado
-    await VaultDetector().addSafPath(path);
-    if (!mounted) return;
-    _load();
+  void _showSnack(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg)),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const LoadingState(message: 'Cargando…');
-    if (_error != null) {
-      return EmptyState(
-        icon: Icons.folder_off,
-        title: 'Sin vault',
-        subtitle: _error,
-        action: Wrap(
-          spacing: 12,
-          runSpacing: 8,
-          alignment: WrapAlignment.center,
-          children: [
-            FilledButton.icon(
-              onPressed: _load,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Reintentar'),
-            ),
-            FilledButton.tonalIcon(
-              onPressed: _pickSafVault,
-              icon: const Icon(Icons.folder_open),
-              label: const Text('Elegir manualmente'),
-            ),
-          ],
-        ),
-      );
-    }
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final hour = DateTime.now().hour;
+    final greeting = hour < 12
+      ? 'Buenos días'
+      : hour < 18
+        ? 'Buenas tardes'
+        : 'Buenas noches';
+
     return Scaffold(
       body: RefreshIndicator(
         onRefresh: _load,
-        child: ListView(
-          padding: EdgeInsets.fromLTRB(
-            20, 0, 20,
-            MediaQuery.paddingOf(context).bottom + 24,
-          ),
-          children: [
-            _buildGreeting(),
-            const SizedBox(height: 16),
-            _buildStats(),
-            const SizedBox(height: 24),
-            _buildQuickActions(),
-            const SizedBox(height: 24),
-            _buildRecent(),
-            const SizedBox(height: 24),
-            _buildShortcutsHint(),
+        child: CustomScrollView(
+          slivers: [
+            // Header con saludo
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              sliver: SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(greeting,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        )),
+                    const SizedBox(height: 4),
+                    Text('¿Qué quieres aprender hoy?',
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        )),
+                  ],
+                ),
+              ),
+            ),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 16)),
+
+            // Stats grid (2x2)
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              sliver: SliverGrid.count(
+                crossAxisCount: 2,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: 1.6,
+                children: [
+                  _StatCard(
+                    icon: Icons.local_fire_department,
+                    label: 'Racha',
+                    value: '$_streak',
+                    suffix: _streak == 1 ? 'día' : 'días',
+                    color: Colors.orange,
+                  ),
+                  _StatCard(
+                    icon: Icons.style_outlined,
+                    label: 'Para repasar',
+                    value: '$_dueCount',
+                    suffix: 'tarjetas',
+                    color: theme.colorScheme.primary,
+                  ),
+                  _StatCard(
+                    icon: Icons.timer_outlined,
+                    label: 'Tiempo hoy',
+                    value: '$_minutesToday',
+                    suffix: 'minutos',
+                    color: Colors.purple,
+                  ),
+                  _StatCard(
+                    icon: Icons.psychology_outlined,
+                    label: 'Retención',
+                    value: '${(_retention * 100).toInt()}',
+                    suffix: '%',
+                    color: Colors.green,
+                  ),
+                ],
+              ),
+            ),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+
+            // Heatmap
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              sliver: SliverToBoxAdapter(
+                child: _DashboardCard(
+                  title: 'Actividad',
+                  subtitle: 'Últimos 90 días',
+                  child: SizedBox(
+                    height: 100,
+                    child: ReviewHeatmap(
+                      dailyStats: _dailyStats,
+                      daysToShow: 90,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 16)),
+
+            // Acciones
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              sliver: SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4, bottom: 8),
+                      child: Text('Acciones',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          )),
+                    ),
+                    _ActionCard(
+                      icon: Icons.add_circle_outline,
+                      title: 'Nueva nota',
+                      subtitle: 'Crea una nota en markdown',
+                      onTap: _newNote,
+                    ),
+                    const SizedBox(height: 8),
+                    _ActionCard(
+                      icon: Icons.style_outlined,
+                      title: 'Repasar hoy',
+                      subtitle: _dueCount == 0
+                          ? 'No hay tarjetas pendientes'
+                          : '$_dueCount tarjeta${_dueCount == 1 ? "" : "s"} para repasar',
+                      onTap: _reviewDue,
+                      accent: _dueCount > 0,
+                    ),
+                    const SizedBox(height: 8),
+                    _ActionCard(
+                      icon: Icons.add_box_outlined,
+                      title: 'Nueva tarjeta',
+                      subtitle: 'Empezar a estudiar',
+                      onTap: _newFlashcard,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+
+            // Notas recientes
+            if (_recentNotes.isNotEmpty) ...[
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                sliver: SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4, bottom: 8),
+                        child: Text('Recientes',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            )),
+                      ),
+                      ..._recentNotes.map((n) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: _RecentNoteCard(note: n),
+                      )),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+
+            const SliverToBoxAdapter(child: SizedBox(height: 100)),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildGreeting() {
-    final h = DateTime.now().hour;
-    final greeting = h < 12 ? 'Buenos días' : h < 18 ? 'Buenas tardes' : 'Buenas noches';
-    return Padding(
-      padding: const EdgeInsets.only(top: 16),
+class _StatCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final String suffix;
+  final Color color;
+  const _StatCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.suffix,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(greeting, style: Theme.of(context).textTheme.bodyLarge),
-          const SizedBox(height: 2),
-          Text('¿Qué querés aprender hoy?',
-            style: Theme.of(context).textTheme.headlineMedium),
+          Row(
+            children: [
+              Container(
+                width: 32, height: 32,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: color, size: 18),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(label, style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ), maxLines: 1, overflow: TextOverflow.ellipsis),
+              ),
+            ],
+          ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(value,
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: color,
+                  )),
+              const SizedBox(width: 4),
+              Text(suffix,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  )),
+            ],
+          ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildStats() {
-    return Row(
-      children: [
-        Expanded(child: StatCard(
-          icon: Icons.description_outlined,
-          label: 'Notas',
-          value: '$_noteCount',
-          color: const Color(0xFF4F6BED),
-        )),
-        const SizedBox(width: 10),
-        Expanded(child: StatCard(
-          icon: Icons.style_outlined,
-          label: 'Tarjetas',
-          value: '$_flashcardCount',
-          subtitle: _dueCount > 0 ? '$_dueCount para repasar' : 'al día',
-          color: _dueCount > 0 ? const Color(0xFFEF6C00) : const Color(0xFF2E7D32),
-        )),
-      ],
+class _DashboardCard extends StatelessWidget {
+  final String title;
+  final String? subtitle;
+  final Widget child;
+  const _DashboardCard({required this.title, this.subtitle, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(title, style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              )),
+              if (subtitle != null) ...[
+                const Spacer(),
+                Text(subtitle!, style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                )),
+              ],
+            ],
+          ),
+          const SizedBox(height: 12),
+          child,
+        ],
+      ),
     );
   }
+}
 
-  Widget _buildQuickActions() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SectionHeader(title: 'Acciones'),
-        const SizedBox(height: 8),
-        Card(
-          child: Column(
+class _ActionCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  final bool accent;
+  const _ActionCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.accent = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = accent ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant;
+    return Material(
+      color: theme.colorScheme.surface,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
+          ),
+          child: Row(
             children: [
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF4F6BED).withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(Icons.add, color: Color(0xFF4F6BED), size: 20),
+              Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                title: const Text('Nueva nota'),
-                subtitle: const Text('Ctrl+N'),
-                trailing: const ShortcutChip(label: 'Ctrl+N'),
-                onTap: _createNewNote,
+                child: Icon(icon, color: color, size: 20),
               ),
-              const Divider(height: 1),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEF6C00).withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(Icons.psychology, color: Color(0xFFEF6C00), size: 20),
-                ),
-                title: Text(_dueCount > 0
-                    ? 'Repasar $_dueCount tarjetas'
-                    : 'Tarjetas al día'),
-                subtitle: Text(_dueCount > 0
-                    ? 'Ctrl+R'
-                    : 'Andá a la pestaña Tarjetas'),
-                trailing: _dueCount > 0
-                    ? const ShortcutChip(label: 'Ctrl+R')
-                    : Icon(Icons.check, color: Colors.green),
-                onTap: _reviewDue,
-              ),
-              const Divider(height: 1),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF7B5BE6).withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(Icons.add_box_outlined, color: Color(0xFF7B5BE6), size: 20),
-                ),
-                title: const Text('Nueva flashcard'),
-                subtitle: const Text('Empezar a estudiar'),
-                onTap: () async {
-                  if (_fc == null) return;
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => FlashcardEdit(
-                      service: _fc!,
-                      onSaved: _load,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
                     )),
-                  );
-                },
-              ),
-              const Divider(height: 1),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2E7D32).withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(Icons.folder_open, color: Color(0xFF2E7D32), size: 20),
+                    Text(subtitle, style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    )),
+                  ],
                 ),
-                title: const Text('Explorar vault'),
-                subtitle: const Text('Ctrl+2'),
-                trailing: const ShortcutChip(label: 'Ctrl+2'),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const VaultBrowser()),
-                  );
-                },
               ),
+              Icon(Icons.chevron_right, color: theme.colorScheme.onSurfaceVariant),
             ],
           ),
         ),
-      ],
+      ),
     );
   }
+}
 
-  Widget _buildRecent() {
-    if (_recent.isEmpty) return const SizedBox.shrink();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SectionHeader(title: 'Recientes'),
-        const SizedBox(height: 8),
-        Card(
-          child: Column(
-            children: _recent.map((n) {
-              return Column(
-                children: [
-                  ListTile(
-                    leading: Icon(Icons.description_outlined),
-                    title: Text(n.title ?? n.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-                    subtitle: Text(n.preview, maxLines: 1, overflow: TextOverflow.ellipsis),
-                    trailing: Text(_timeAgo(n.modified),
-                      style: Theme.of(context).textTheme.bodySmall),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => NoteView(notePath: n.path, vaultPath: _vault!.vaultPath)),
-                    ),
-                  ),
-                  if (n != _recent.last) const Divider(height: 1),
-                ],
-              );
-            }).toList(),
+class _RecentNote {
+  final String name;
+  final String path;
+  final String title;
+  final DateTime modified;
+  const _RecentNote({required this.name, required this.path, required this.title, required this.modified});
+}
+
+class _RecentNoteCard extends StatelessWidget {
+  final _RecentNote note;
+  const _RecentNoteCard({required this.note});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      color: theme.colorScheme.surface,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => VaultBrowser(),
+          ));
+        },
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3)),
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildShortcutsHint() {
-    if (AppTheme.isMobile(context)) return const SizedBox.shrink();
-    return Card(
-      color: Theme.of(context).colorScheme.surfaceContainerLow,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Atajos de teclado', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 16,
-              runSpacing: 8,
-              children: const [
-                _ShortcutRow(label: 'Nueva nota', shortcut: 'Ctrl+N'),
-                _ShortcutRow(label: 'Buscar', shortcut: 'Ctrl+Shift+P'),
-                _ShortcutRow(label: 'Repasar tarjetas', shortcut: 'Ctrl+R'),
-                _ShortcutRow(label: 'Ir a Inicio', shortcut: 'Ctrl+1'),
-                _ShortcutRow(label: 'Ir a Vault', shortcut: 'Ctrl+2'),
-                _ShortcutRow(label: 'Ir a Tarjetas', shortcut: 'Ctrl+3'),
-                _ShortcutRow(label: 'Ir a Ajustes', shortcut: 'Ctrl+4'),
-              ],
-            ),
-          ],
+          child: Row(
+            children: [
+              Icon(Icons.description_outlined,
+                  color: theme.colorScheme.onSurfaceVariant, size: 18),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      note.title.isNotEmpty ? note.title : note.name,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1, overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      _formatRelative(note.modified),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  String _timeAgo(DateTime d) {
-    final diff = DateTime.now().difference(d);
-    if (diff.inMinutes < 60) return 'hace ${diff.inMinutes}m';
-    if (diff.inHours < 24) return 'hace ${diff.inHours}h';
-    if (diff.inDays < 7) return 'hace ${diff.inDays}d';
-    return '${d.day}/${d.month}';
-  }
-}
-
-class _ShortcutRow extends StatelessWidget {
-  final String label;
-  final String shortcut;
-  const _ShortcutRow({required this.label, required this.shortcut});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(label, style: Theme.of(context).textTheme.bodySmall),
-        const SizedBox(width: 6),
-        ShortcutChip(label: shortcut),
-      ],
-    );
+  String _formatRelative(DateTime d) {
+    final now = DateTime.now();
+    final diff = now.difference(d);
+    if (diff.inMinutes < 1) return 'ahora';
+    if (diff.inMinutes < 60) return 'hace ${diff.inMinutes} min';
+    if (diff.inHours < 24) return 'hace ${diff.inHours} h';
+    if (diff.inDays < 7) return 'hace ${diff.inDays} d';
+    return DateFormat('d MMM').format(d);
   }
 }

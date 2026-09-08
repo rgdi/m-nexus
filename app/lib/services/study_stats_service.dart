@@ -3,8 +3,8 @@
 // v0.46: wrapper de HeatmapService.backend para uso en app.
 // Mismas estructuras + computa heatmap aggregation desde eventos.
 
-import '../../services/heatmap_service.dart';
-import '../../models/heatmap.dart';
+import 'heatmap_service.dart';
+import '../models/heatmap.dart';
 
 class StudyStatsService {
   /// Computa stats agregadas desde una lista de ReviewEvent.

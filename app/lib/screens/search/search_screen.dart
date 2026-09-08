@@ -12,7 +12,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-// import '../../db/app_db.dart'; // removed v0.46.7
 import '../../models/search_result.dart';
 import '../../services/vault_service.dart';
 
