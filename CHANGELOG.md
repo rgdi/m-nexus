@@ -9,6 +9,75 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.
 
 ---
 
+## [v0.47.20] - 2026-09-08 — Security hardening round
+
+**🔴 CRITICAL: Android keystore + passwords fueron commiteados al repo público en v0.32.**
+**Este release los elimina. El keystore actual debe considerarse COMPROMETIDO.**
+
+### SECURITY ALERT — acción requerida para releases futuros
+
+El keystore `app/android/keystores/mnexus-release.keystore` y el archivo
+`app/android/key.properties` con passwords (`storePassword=mnexus2024`,
+`keyPassword=mnexus2024`) estuvieron commiteados al repo público desde v0.32.
+
+**Impacto real:** Cualquiera podía firmar APKs con el mismo certificado que las
+releases oficiales y distribuirlos como "updates" sobre instalaciones existentes
+(Android reconoce mismo signing cert).
+
+**Mitigación aplicada en v0.47.20:**
+1. `app/android/keystores/mnexus-release.keystore` BORRADO del repo
+2. `app/android/key.properties` reemplazado por template (sin credenciales)
+3. `.gitignore` excluye `android/keystores/`, `android/key.properties`, `*.jks`, `*.keystore`
+4. `app/android/app/build.gradle` lee credentials desde env vars (`KEYSTORE_STORE_PASSWORD`,
+   `KEYSTORE_KEY_PASSWORD`) con fallback a `key.properties` (local dev) y finalmente a
+   debug keystore (con warning)
+5. `.github/workflows/release.yml` decodifica `secrets.MN_KEYSTORE_BASE64` y restaura
+   el keystore en el runner antes del build
+
+**Acción requerida para el maintainer:**
+1. Generar nuevo keystore fuera del repo:
+   ```bash
+   keytool -genkeypair -keystore release.keystore -alias mnexus \
+     -keyalg RSA -keysize 2048 -validity 10000 \
+     -dname "CN=M-NEXUS, OU=Mobile, O=RGDI, L=BA, ST=CABA, C=AR"
+   ```
+2. Codificar a base64: `base64 -w0 release.keystore`
+3. Configurar GitHub Secrets del repo rgdi/m-nexus:
+   - `MN_KEYSTORE_BASE64` = base64 del keystore
+   - `MN_KEYSTORE_STORE_PASSWORD` = password del store
+   - `MN_KEYSTORE_KEY_PASSWORD` = password de la key
+4. La primera release firmada con el nuevo keystore será reconocida como "NEW APP"
+   por usuarios existentes (cambio de signing cert). Esto es intencional — forzar
+   a los usuarios a actualizar desde una fuente verificada.
+
+### Fixed (v0.47.12 → v0.47.20, una versión por fix)
+
+- **v0.47.12** — JWT_SECRET fail-fast. `backend/src/config.ts` getter ahora lanza
+  si JWT_SECRET no está seteado o es débil (contiene 'change-me', length<32).
+- **v0.47.13** — SecretManager devMode inversion. `NODE_ENV !== "production"`
+  cambiaba a `NODE_ENV === "development"` con opt-in `MNEXUS_DEV_MODE=1`.
+- **v0.47.14** — Orphan routes registered. `uploadRoutes`, `registerTranscriptionStreamRoutes`,
+  `fsrsQueueRoutes` ahora se registran en `server.ts`.
+- **v0.47.15** — Port mismatch 8787 → 4000. `app/lib/services/backend_client.dart`
+  default backend URL.
+- **v0.47.16** — install.sh genera .env con JWT_SECRET random. `openssl rand -hex 32`,
+  chmod 600.
+- **v0.47.17** — build.gradle.kts huérfano borrado.
+- **v0.47.18** — engines.node actualizado de >=20 a >=22 (node:sqlite requirement).
+- **v0.47.19** — release.yml fail-on-version-mismatch + CI guard para LATEST_TAG vacío.
+- **v0.47.20** — Keystore + key.properties fuera del repo (este release).
+
+### Verified
+
+- flutter analyze: 0 issues
+- flutter test: 70/70 passing
+- backend tsc: 0 errores
+- backend vitest: 567/574 (7 fallos pre-existentes entorno-dependientes)
+
+Ver AUDIT_REPORT.md para el detalle completo.
+
+---
+
 ## [v0.47.11] - 2026-09-08 — Quality + FSRS correctness
 
 **Audit round: 156 → 0 flutter analyze issues · 70/70 flutter tests passing · backend graceful degradation**

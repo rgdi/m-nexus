@@ -45,9 +45,53 @@ android {
         versionName = vName
     }
 
+    // v0.47.20: signing config lee desde key.properties o env vars (CI).
+    // Si las credenciales no están disponibles, fallback a debug keystore
+    // (con warning) para que builds locales sin secrets funcionen.
+    signingConfigs {
+        release {
+            // Prioridad: 1) env vars (CI), 2) key.properties (local dev)
+            def storeFilePath = System.getenv("KEYSTORE_FILE") ?: file("keystores/release.keystore").absolutePath
+            def storePass = System.getenv("KEYSTORE_STORE_PASSWORD")
+            def keyAliasName = System.getenv("KEYSTORE_KEY_ALIAS") ?: "mnexus"
+            def keyPass = System.getenv("KEYSTORE_KEY_PASSWORD")
+
+            // Si no hay env vars, intentar leer desde key.properties
+            if (storePass == null || keyPass == null) {
+                def keyPropsFile = rootProject.file("key.properties")
+                if (keyPropsFile.exists()) {
+                    def keyProps = new Properties()
+                    keyPropsFile.withInputStream { keyProps.load(it) }
+                    if (storePass == null) storePass = keyProps.getProperty("storePassword")
+                    if (keyPass == null) keyPass = keyProps.getProperty("keyPassword")
+                }
+            }
+
+            // Si tras todo seguimos sin credenciales, fallback a debug keystore
+            // para que builds locales sin secrets funcionen (con warning).
+            if (storePass == null || keyPass == null) {
+                println "WARNING: release keystore credentials not found. " +
+                        "Use env vars KEYSTORE_STORE_PASSWORD + KEYSTORE_KEY_PASSWORD " +
+                        "(CI) or android/key.properties (local). Falling back to debug keystore."
+                storeFile = file("debug.keystore")
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+            } else {
+                storeFile = file(storeFilePath)
+                storePassword = storePass
+                keyAlias = keyAliasName
+                keyPassword = keyPass
+            }
+        }
+    }
+
     buildTypes {
         release {
-            signingConfig = signingConfigs.debug
+            // v0.47.20: usa release signing config (firmado con keystore real)
+            // en lugar de debug. Si las credenciales no están, el fallback
+            // automático arriba usa debug keystore.
+            signingConfig = signingConfigs.release
             minifyEnabled = false
             shrinkResources = false
         }

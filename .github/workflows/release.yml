@@ -198,6 +198,22 @@ jobs:
       - name: Install dependencies
         run: cd app && flutter pub get
 
+      # v0.47.20: inyectar release keystore desde GitHub Secrets.
+      # El keystore se commitea como base64 (MN_KEYSTORE_BASE64) y los passwords
+      # como secrets separados (MN_KEYSTORE_STORE_PASSWORD, MN_KEYSTORE_KEY_PASSWORD).
+      # Si los secrets no están configurados, el build.gradle cae a debug keystore
+      # (con warning) para que CI no rompa builds de desarrollo.
+      # Ver AUDIT_REPORT.md SEC-1.
+      - name: Setup release keystore
+        if: ${{ secrets.MN_KEYSTORE_BASE64 != '' }}
+        env:
+          MN_KEYSTORE_BASE64: ${{ secrets.MN_KEYSTORE_BASE64 }}
+        run: |
+          mkdir -p app/android/keystores
+          echo "$MN_KEYSTORE_BASE64" | base64 -d > app/android/keystores/release.keystore
+          chmod 600 app/android/keystores/release.keystore
+          echo "Keystore restaurado desde secret. Size: $(stat -c %s app/android/keystores/release.keystore) bytes"
+
       # Sync version del pubspec al gradle.properties
       - name: Sync version to Android
         run: |
@@ -219,6 +235,11 @@ jobs:
           flutter build apk --release --no-tree-shake-icons 2>&1 | tee /tmp/build-release.log
         env:
           GRADLE_OPTS: "-Xmx4G"
+          # v0.47.20: pasar passwords del keystore como env vars (gradle las lee).
+          KEYSTORE_FILE: ${{ github.workspace }}/app/android/keystores/release.keystore
+          KEYSTORE_KEY_ALIAS: mnexus
+          KEYSTORE_STORE_PASSWORD: ${{ secrets.MN_KEYSTORE_STORE_PASSWORD }}
+          KEYSTORE_KEY_PASSWORD: ${{ secrets.MN_KEYSTORE_KEY_PASSWORD }}
 
       # Build debug APK (reusa cache de gradle del release)
       - name: Build debug APK
