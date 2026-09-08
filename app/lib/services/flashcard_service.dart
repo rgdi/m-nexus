@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import '../core/constants.dart';
 import 'vault_service.dart';
+import 'exams_service.dart';
 import '../utils/error_codes.dart';
 import '../utils/safe_call.dart';
 import 'logger.dart';
@@ -167,6 +168,61 @@ class FlashcardService {
   Future<List<Flashcard>> dueCards() async {
     final all = await listAll();
     return all.where((c) => c.isDue).toList();
+  }
+
+  /// v0.47.36: cards priorizadas por proximidad de exámenes.
+  ///
+  /// Algoritmo:
+  ///   1. Carga exámenes próximos
+  ///   2. Para cada flashcard, calcula el boost basado en:
+  ///      - ¿Su source_note está en topics de un examen próximo?
+  ///      - boost = AppConstants.examPriorityBoost(daysUntilExam)
+  ///   3. Ordena: cards con boost > 1.0 van primero
+  ///
+  /// El boost se aplica al due-date: si una card tiene boost 2.0,
+  /// se considera "due" 2x más temprano.
+  Future<List<Flashcard>> dueCardsPrioritized({DateTime? now}) async {
+    final n = now ?? DateTime.now();
+    final all = await listAll();
+
+    // Cargar exámenes próximos
+    final examsService = ExamsService();
+    final upcoming = await examsService.upcoming(vaultPath, now: n);
+
+    return all.where((c) => c.isDue).map((c) {
+      // Calcular boost máximo aplicable a esta card
+      var maxBoost = 1.0;
+      for (final exam in upcoming) {
+        // ¿La card tiene source_note que mencione algún topic del examen?
+        if (c.path.toLowerCase().contains(
+            exam.subjectId.toLowerCase())) {
+          final daysUntil = exam.daysUntil(n);
+          if (daysUntil >= 0) {
+            final boost = AppConstants.examPriorityBoost(daysUntil);
+            if (boost > maxBoost) maxBoost = boost;
+          }
+        }
+      }
+      // Aplicar boost: simular que nextReview ocurrió antes
+      final adjustedDue = c.nextReview == null
+          ? n
+          : c.nextReview!.subtract(
+              Duration(
+                minutes: ((1 - 1.0 / maxBoost) * 60 * 24).toInt(),
+              ),
+            );
+      final boosted = c.copyWith(nextReview: adjustedDue);
+      return MapEntry(boosted, maxBoost);
+    }).where((entry) {
+      // Aplicar boost para decidir si está due
+      return entry.key.isDue;
+    }).map((e) => e.key).toList()
+      ..sort((a, b) {
+        // Ordenar por nextReview ascendente (más antiguo primero)
+        if (a.nextReview == null) return -1;
+        if (b.nextReview == null) return 1;
+        return a.nextReview!.compareTo(b.nextReview!);
+      });
   }
 
   /// Crea una nueva flashcard.
