@@ -139,7 +139,7 @@ class VaultService {
         if (n != null) notes.add(n);
       }
       return notes;
-    }, hint: 'limit=$limit');
+    }, hint: 'limit=$limit') ?? [];
   }
 
   Future<VaultNode> _buildNode(Directory dir, String relPath) async {

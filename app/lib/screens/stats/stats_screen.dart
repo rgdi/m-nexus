@@ -6,14 +6,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../../db/app_db.dart';
+// import '../../db/app_db.dart'; // removed v0.46.7
 import '../../services/study_stats_service.dart';
 import '../../services/heatmap_service.dart';
 import '../../widgets/review_heatmap.dart';
 
 class StatsScreen extends StatefulWidget {
-  final AppDb db;
-  const StatsScreen({super.key, required this.db});
+  const StatsScreen({super.key});
 
   @override
   State<StatsScreen> createState() => _StatsScreenState();
@@ -33,14 +32,13 @@ class _StatsScreenState extends State<StatsScreen> {
     final now = DateTime.now();
     final start = now.subtract(const Duration(days: 365));
     _statsFuture = _loadStats(start, now);
-    _byStateFuture = widget.db.countCardsByState();
+    // v0.46.7: empty byState since drift DB was removed
+    _byStateFuture = Future.value({0: 0, 1: 0, 2: 0, 3: 0});
   }
 
   Future<StudyStats> _loadStats(DateTime start, DateTime end) async {
-    final reviews = await widget.db.getReviewsBetween(start, end);
-    return StudyStatsService.compute(reviews.map((r) => ReviewEvent(
-      timestamp: r.reviewedAt.millisecondsSinceEpoch,
-    )).toList());
+    // v0.46.7: empty stats since drift DB was removed
+    return StudyStatsService.compute(<ReviewEvent>[]);
   }
 
   @override
