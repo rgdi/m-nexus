@@ -4,7 +4,6 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -112,8 +111,8 @@ class _NoteEditorState extends State<NoteEditor> {
   Future<void> _autoSavePersist() async {
     // Autosave only saves to SharedPreferences for crash recovery
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('${_autosaveKey}.title', _titleController.text);
-    await prefs.setString('${_autosaveKey}.body', _bodyController.text);
+    await prefs.setString('$_autosaveKey.title', _titleController.text);
+    await prefs.setString('$_autosaveKey.body', _bodyController.text);
   }
 
   Future<void> _save() async {

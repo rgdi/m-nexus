@@ -4,7 +4,6 @@
 // Mismas estructuras + computa heatmap aggregation desde eventos.
 
 import 'heatmap_service.dart';
-import '../models/heatmap.dart';
 
 class StudyStatsService {
   /// Computa stats agregadas desde una lista de ReviewEvent.

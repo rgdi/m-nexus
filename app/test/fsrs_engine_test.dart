@@ -5,7 +5,7 @@
 // debe ser identico al del backend.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mnexus/services/fsrs_engine.dart';
+import 'package:mnexus_app/services/fsrs_engine.dart';
 
 void main() {
   group('FsrsCard JSON roundtrip', () {
@@ -51,7 +51,7 @@ void main() {
       // 0.6 - 2.4 * (1-3) = 0.6 + 4.8 = 5.4
       final fsrs = FsrsEngine.fsrs5();
       var card = FsrsEngine.emptyCard();
-      fsrs._initDsForTest(card, FsrsRating.again);
+      fsrs.initDsForTest(card, FsrsRating.again);
       expect(card.difficulty, closeTo(5.4, 0.01));
     });
 
@@ -59,7 +59,7 @@ void main() {
       // 0.6 - 2.4 * (2-3) = 0.6 + 2.4 = 3.0
       final fsrs = FsrsEngine.fsrs5();
       var card = FsrsEngine.emptyCard();
-      fsrs._initDsForTest(card, FsrsRating.hard);
+      fsrs.initDsForTest(card, FsrsRating.hard);
       expect(card.difficulty, closeTo(3.0, 0.01));
     });
 
@@ -67,7 +67,7 @@ void main() {
       // 0.6 - 2.4 * 0 = 0.6 → clamped to 1.0
       final fsrs = FsrsEngine.fsrs5();
       var card = FsrsEngine.emptyCard();
-      fsrs._initDsForTest(card, FsrsRating.good);
+      fsrs.initDsForTest(card, FsrsRating.good);
       expect(card.difficulty, closeTo(1.0, 0.01));
     });
 
@@ -75,7 +75,7 @@ void main() {
       // 0.6 - 2.4 * 1 = -1.8 → clamped to 1.0
       final fsrs = FsrsEngine.fsrs5();
       var card = FsrsEngine.emptyCard();
-      fsrs._initDsForTest(card, FsrsRating.easy);
+      fsrs.initDsForTest(card, FsrsRating.easy);
       expect(card.difficulty, closeTo(1.0, 0.01));
     });
   });
@@ -84,28 +84,28 @@ void main() {
     test('Again: S0 = w[0] = 0.4', () {
       final fsrs = FsrsEngine.fsrs5();
       var card = FsrsEngine.emptyCard();
-      fsrs._initDsForTest(card, FsrsRating.again);
+      fsrs.initDsForTest(card, FsrsRating.again);
       expect(card.stability, closeTo(0.4, 0.01));
     });
 
     test('Hard: S0 = w[6] = 0.86', () {
       final fsrs = FsrsEngine.fsrs5();
       var card = FsrsEngine.emptyCard();
-      fsrs._initDsForTest(card, FsrsRating.hard);
+      fsrs.initDsForTest(card, FsrsRating.hard);
       expect(card.stability, closeTo(0.86, 0.01));
     });
 
     test('Good: S0 = w[7] = 0.01', () {
       final fsrs = FsrsEngine.fsrs5();
       var card = FsrsEngine.emptyCard();
-      fsrs._initDsForTest(card, FsrsRating.good);
+      fsrs.initDsForTest(card, FsrsRating.good);
       expect(card.stability, closeTo(0.01, 0.01));
     });
 
     test('Easy: S0 = w[8] = 1.49', () {
       final fsrs = FsrsEngine.fsrs5();
       var card = FsrsEngine.emptyCard();
-      fsrs._initDsForTest(card, FsrsRating.easy);
+      fsrs.initDsForTest(card, FsrsRating.easy);
       expect(card.stability, closeTo(1.49, 0.01));
     });
   });
@@ -113,18 +113,18 @@ void main() {
   group('forgetting curve R(t, S)', () {
     test('R(0, S) = 1.0 (no time elapsed = perfect recall)', () {
       final fsrs = FsrsEngine.fsrs5();
-      expect(fsrs._forgettingCurveForTest(0, 10), closeTo(1.0, 0.001));
+      expect(fsrs.forgettingCurveForTest(0, 10), closeTo(1.0, 0.001));
     });
 
     test('R(t=9S, S) = 0.5 (half-life)', () {
       // 9S is the half-life of the curve
       final fsrs = FsrsEngine.fsrs5();
-      expect(fsrs._forgettingCurveForTest(90, 10), closeTo(0.5, 0.001));
+      expect(fsrs.forgettingCurveForTest(90, 10), closeTo(0.5, 0.001));
     });
 
     test('R(S=0, t) = 0 (no stability = instant forgetting)', () {
       final fsrs = FsrsEngine.fsrs5();
-      expect(fsrs._forgettingCurveForTest(1, 0), 0.0);
+      expect(fsrs.forgettingCurveForTest(1, 0), 0.0);
     });
   });
 
@@ -180,10 +180,13 @@ void main() {
       final r3 = fsrs.repeat(card, t2);
       card = r3.good;
 
-      // Stability should grow
+      // Stability debe crecer monotónicamente con cada Good.
+      // v0.47.11: para S inicial muy pequeño (S_0=0.01), el intervalo
+      // (_nextInterval con ceil) puede quedar en 1 día en las primeras reviews.
+      // Por eso solo verificamos que la stability crece, no el interval.
       expect(card.stability, greaterThan(r1.good.stability));
-      expect(r2.good.scheduledDays, greaterThan(r1.good.scheduledDays));
-      expect(r3.good.scheduledDays, greaterThan(r2.good.scheduledDays));
+      expect(r2.good.stability, greaterThan(r1.good.stability));
+      expect(r3.good.stability, greaterThan(r2.good.stability));
     });
 
     test('lapse: Again after several Goods: stability drops, lapses++', () {
@@ -227,9 +230,10 @@ void main() {
       final t = DateTime.utc(2026, 9, 7, 12, 0, 0);
       final newCard = fsrs.repeat(card, t).easy;
       // stability: 1.49, difficulty: clamped to 1
-      // I = 9*1.49*0.111 = 1.49 → 1
+      // I = 9*1.49*0.111 ≈ 1.49. v0.47.11: _nextInterval usa ceil (no round)
+      // para no colapsar intervalos pequeños → ceil(1.49) = 2.
       expect(newCard.stability, closeTo(1.49, 0.01));
-      expect(newCard.scheduledDays, 1);
+      expect(newCard.scheduledDays, 2);
     });
   });
 
@@ -250,20 +254,11 @@ void main() {
       // Right after review
       expect(fsrs.currentRetrievability(card, t0), closeTo(1.0, 0.001));
 
-      // 9*S days later (half-life): R = 0.5
-      final halfLife = t0.add(Duration(days: 9 * card.stability.round()));
+      // Half-life del modelo FSRS: t = 9*S days (no redondeado).
+      // Para S ≈ 0.01 (inicial tras Good), half-life ≈ 0.09 días — muy corto,
+      // pero la fórmula R(t,S) = (1 + t/(9*S))^(-1) sigue valiendo.
+      final halfLife = t0.add(Duration(milliseconds: (9 * card.stability * 24 * 3600 * 1000).round()));
       expect(fsrs.currentRetrievability(card, halfLife), closeTo(0.5, 0.05));
     });
   });
-}
-
-// Extension para acceder a metodos privados en tests (white-box)
-extension FsrsTestAccess on FsrsEngine {
-  void _initDsForTest(FsrsCard card, FsrsRating rating) {
-    _initDs(card, rating);
-  }
-
-  double _forgettingCurveForTest(double t, double s) {
-    return _forgettingCurve(t, s);
-  }
 }

@@ -16,8 +16,10 @@
 //   state = {New, Learning, Review, Relearning}
 //   reps = # reviews exitosos
 //   lapses = # veces que la respuesta fue Again
+
+import 'dart:math' as math;
+import 'package:flutter/foundation.dart' show visibleForTesting;
 //   lastReview = timestamp del último review
-//   due = timestamp del próximo review
 //   scheduledDays = intervalo en días
 //   elapsedDays = días desde el último review
 //
@@ -36,8 +38,6 @@
 //   w[17] = retrievability factor for stability
 //   w[18] = stability factor for difficulty
 //   w[19..20] = short-term adjustments
-
-import 'dart:math' as math;
 
 enum FsrsState { newCard, learning, review, relearning }
 
@@ -120,10 +120,16 @@ class FsrsEngine {
   /// predicted next interval for each rating (so the UI can show
   /// "Good: 7d, Hard: 3d, etc" before the user picks).
   FsrsReviewResult repeat(FsrsCard card, DateTime now) {
-    // Predict for all 4 ratings so the UI can display them
+    // Predict for all 4 ratings so the UI can display them.
+    // CRITICAL: copy the card before each rating prediction — _next() mutates
+    // the card in place (assigns difficulty, stability, elapsedDays, etc).
+    // Without the copy, the 4 predictions would chain (Again → Hard → Good →
+    // Easy each start from the previous rating's mutated state), producing
+    // identical-ish results instead of the 4 distinct predictions the UI needs.
     final results = <FsrsRating, FsrsCard>{};
     for (final r in FsrsRating.values) {
-      results[r] = _next(card, r, now);
+      final c = card.copy();
+      results[r] = _next(c, r, now);
     }
     return FsrsReviewResult(
       card: card,
@@ -207,6 +213,10 @@ class FsrsEngine {
     card.stability = _initialStability(rating);
   }
 
+  /// Test-only entry point para [_initDs].
+  @visibleForTesting
+  void initDsForTest(FsrsCard card, FsrsRating rating) => _initDs(card, rating);
+
   /// Initial difficulty for a new card (clamped to 1-10).
   double _initialDifficulty(FsrsRating rating) {
     final d = w[1] - w[2] * (rating.value - 3);
@@ -234,6 +244,10 @@ class FsrsEngine {
     final factor = t / (9.0 * s);
     return math.pow(1 + factor, -1).toDouble();
   }
+
+  /// Test-only entry point para [_forgettingCurve].
+  @visibleForTesting
+  double forgettingCurveForTest(double t, double s) => _forgettingCurve(t, s);
 
   /// Next difficulty with mean reversion toward w[4].
   double _nextDifficulty(double currentD, FsrsRating rating) {
@@ -269,7 +283,9 @@ class FsrsEngine {
     if (s <= 0) return 0;
     // Solve: (1 + I / (9S))^(-1) = retention  →  I = 9S * (retention^(-1) - 1)
     final i = 9.0 * s * (math.pow(requestRetention, -1).toDouble() - 1.0);
-    return math.max(1, i.round());
+    // v0.47.11: usar ceil en lugar de round para no colapsar intervalos pequeños
+    // (S=0.256 con retention=0.9 da i≈0.26 → round=0 → max(1,0)=1 siempre).
+    return math.max(1, i.ceil());
   }
 
   /// Clamp difficulty to valid range 1-10.
@@ -280,8 +296,8 @@ class FsrsEngine {
   /// Compute retrievability now given last review and current stability.
   double currentRetrievability(FsrsCard card, DateTime now) {
     if (card.lastReview == null || card.stability == 0) return 1.0;
-    final days = now.difference(card.lastReview!).inDays;
-    return _forgettingCurve(days.toDouble(), card.stability);
+    final days = now.difference(card.lastReview!).inHours / 24.0;
+    return forgettingCurveForTest(days, card.stability);
   }
 }
 
@@ -325,6 +341,23 @@ class FsrsCard {
     required this.state,
     this.lastReview,
   });
+
+  /// Deep copy para previews de predicciones sin mutar el original.
+  /// v0.47.11: necesario porque FsrsEngine.repeat() llama _next() 4 veces
+  /// (una por rating) y _next() muta los campos in-place.
+  FsrsCard copy() {
+    return FsrsCard(
+      due: due,
+      stability: stability,
+      difficulty: difficulty,
+      elapsedDays: elapsedDays,
+      scheduledDays: scheduledDays,
+      reps: reps,
+      lapses: lapses,
+      state: state,
+      lastReview: lastReview,
+    );
+  }
 
   /// JSON serialization (roundtrip con backend).
   Map<String, dynamic> toJson() {

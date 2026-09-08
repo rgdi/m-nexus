@@ -62,25 +62,92 @@ interface SqliteDatabase {
 async function loadSqlite(): Promise<{
   DatabaseSync: new (path: string) => SqliteDatabase;
 }> {
-  // createRequire permite cargar módulos built-in de Node sin que el bundler
-  // (Vite) intente resolverlos. Esto es compatible con Node 22+ runtime
-  // y con tests que usan Vite como test runner.
+  // Estrategia en cascada:
+  //   1) node:sqlite (built-in en Node 22+, zero-deps)
+  //   2) sqlite (npm package opcional, pnpm install sqlite)
+  //   3) better-sqlite3 (npm dep ya declarada) — si el binding nativo es
+  //      compatible con el runtime de Node actual
+  //
+  // v0.47.11: Antes de este fix, si ninguna opción estaba disponible el código
+  // lanzaba un error genérico que se traducía en HTTP 500 sin contexto.
+  // Ahora probamos cada alternativa y reportamos el motivo exacto del fallo.
   const { createRequire } = await import("node:module");
   const req = createRequire(import.meta.url);
+  const attempts: string[] = [];
+  // 1) built-in node:sqlite (Node 22+)
   try {
     const mod = req("node:sqlite");
-    return mod as { DatabaseSync: new (path: string) => SqliteDatabase };
-  } catch (e1) {
-    try {
-      const mod = req("sqlite");
+    if (mod && typeof mod.DatabaseSync === "function") {
       return mod as { DatabaseSync: new (path: string) => SqliteDatabase };
-    } catch (e2) {
-      throw new Error(
-        `node:sqlite no disponible. Node 22+ requerido (Runtime: ${process.version}). ` +
-        `Error 1: ${(e1 as Error).message}. Error 2: ${(e2 as Error).message}`
-      );
     }
+    attempts.push("node:sqlite: DatabaseSync no exportado");
+  } catch (e1) {
+    attempts.push(`node:sqlite: ${(e1 as Error).message}`);
   }
+  // 2) optional `sqlite` package
+  try {
+    const mod = req("sqlite");
+    if (mod && typeof mod.DatabaseSync === "function") {
+      return mod as { DatabaseSync: new (path: string) => SqliteDatabase };
+    }
+    attempts.push("sqlite package: DatabaseSync no exportado");
+  } catch (e2) {
+    attempts.push(`sqlite package: ${(e2 as Error).message}`);
+  }
+  // 3) better-sqlite3 fallback
+  try {
+    const mod = req("better-sqlite3");
+    const Database = (mod as { Database?: new (p: string) => unknown }).Database;
+    if (typeof Database !== "function") {
+      attempts.push("better-sqlite3: Database no es constructor");
+    } else {
+      // Adapter: better-sqlite3 expone `new Database(path)` (sin Sync)
+      // y `prepare(...).run/get/all` síncronos. Mapeamos al contrato
+      // `DatabaseSync` que espera el caller de este módulo.
+      const adapter = {
+        DatabaseSync: class DatabaseSync {
+          private readonly db: {
+            exec(sql: string): void;
+            prepare(sql: string): SqliteStatement;
+            close(): void;
+          };
+          constructor(filePath: string) {
+            const DatabaseCtor = Database as new (p: string) => unknown;
+            const inst = new DatabaseCtor(filePath) as {
+              exec(sql: string): void;
+              prepare(sql: string): {
+                run(...p: unknown[]): unknown;
+                get(...p: unknown[]): unknown;
+                all(...p: unknown[]): unknown[];
+              };
+              close(): void;
+            };
+            this.db = {
+              exec: (sql) => inst.exec(sql),
+              prepare: (sql) => {
+                const stmt = inst.prepare(sql);
+                return {
+                  run: (...p) => { stmt.run(...p); },
+                  get: (...p) => stmt.get(...p),
+                  all: (...p) => stmt.all(...p),
+                };
+              },
+              close: () => inst.close(),
+            };
+          }
+          exec(sql: string) { this.db.exec(sql); }
+          prepare(sql: string) { return this.db.prepare(sql); }
+          close() { this.db.close(); }
+        } as unknown as new (path: string) => SqliteDatabase,
+      };
+      return adapter;
+    }
+  } catch (e3) {
+    attempts.push(`better-sqlite3: ${(e3 as Error).message}`);
+  }
+  throw new Error(
+    `Ningún backend SQLite funcional. Runtime: ${process.version}. Intentos: ${attempts.join(" | ")}`
+  );
 }
 
 export async function openBackupIndex(path: string): Promise<BackupIndex> {
