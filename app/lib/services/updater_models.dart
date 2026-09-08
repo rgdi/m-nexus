@@ -64,7 +64,16 @@ class AppUpdate {
         publishedAt: DateTime.fromMillisecondsSinceEpoch(0),
         isPrerelease: false,
       );
+
+  /// v0.47.2: true si esta version es mas nueva que la instalada.
+  bool isNewer(String? installedVersion) {
+    if (installedVersion == null || installedVersion.isEmpty) return false;
+    return compareVersions(latestVersion, installedVersion) > 0;
   }
+
+  /// v0.47.2: alias del release body (compatibilidad con UI).
+  String get notes => body;
+}
 
   /// v0.46: serializa a JSON para persistir en SharedPreferences cache.
   /// Roundtrip con AppUpdate.fromGithub() debe dar instancia equivalente.

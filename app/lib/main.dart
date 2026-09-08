@@ -16,6 +16,8 @@ import 'services/device_info.dart';
 import 'services/logger.dart';
 import 'services/settings_service.dart';
 import 'state/app_state.dart';
+import 'state/updater_service.dart';
+import 'widgets/update_dialog.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -62,6 +64,11 @@ void main() async {
   AppState.instance.init().catchError((e) {
     AdvancedLogger.instance.error('app', 'AppState.init failed', error: e);
   });
+
+  // v0.47.2: inicia el auto-updater en background
+  // Chequea GitHub cada 6h y muestra dialog si hay update
+  // ignore: discarded_futures
+  UpdaterService.instance.start();
 
   runApp(const MnexusApp());
 }
@@ -117,7 +124,7 @@ class _MnexusAppState extends State<MnexusApp> {
 
 /// v0.47.1: root gate inteligente que cambia de UI segun el estado de AppState.
 ///   - Si no hay vault: setup wizard
-///   - Si hay vault: MainShell
+///   - Si hay vault: MainShell + UpdateBanner (si hay update)
 ///   - Mientras AppState se inicializa: skeleton (no pantalla de "Cargando..." infinito)
 class _RootGate extends StatefulWidget {
   const _RootGate();
@@ -131,8 +138,6 @@ class _RootGateState extends State<_RootGate> {
     super.initState();
     // Escucha cambios en AppState para cambiar UI cuando esté listo
     AppState.instance.addListener(_onAppStateChanged);
-    // Si despues de 100ms AppState sigue cargando, no esperamos
-    // (la UI ya muestra algo)
   }
 
   void _onAppStateChanged() {
@@ -149,13 +154,19 @@ class _RootGateState extends State<_RootGate> {
   Widget build(BuildContext context) {
     final app = AppState.instance;
     if (app.hasVault) {
-      return const MainShell();
+      // MainShell con banner de update encima
+      return Column(
+        children: [
+          const UpdateBanner(),
+          const Expanded(child: MainShell()),
+        ],
+      );
     }
     // Si no tiene vault pero ya termino de cargar → setup wizard
     if (app.initialLoaded) {
       return const _SetupWithTutorialGate();
     }
-    // Mientras carga: skeleton mínimo (nada de "Cargando..." infinito)
+    // Mientras carga: skeleton mínimo
     return const _BootSkeleton();
   }
 }
