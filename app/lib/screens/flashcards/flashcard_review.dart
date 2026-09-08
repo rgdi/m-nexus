@@ -392,6 +392,8 @@ class _FlashcardReviewState extends State<FlashcardReview> {
     // FSRS state is now managed entirely in-memory via widget.service
     // and re-persisted via the FlashcardService (markdown frontmatter).
 
+    // v0.47.23: mounted check antes de _next() (que llama setState).
+    if (!mounted) return;
     _next();
   }
 
