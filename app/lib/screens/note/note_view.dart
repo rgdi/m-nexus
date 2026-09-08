@@ -10,6 +10,7 @@ import '../../core/theme.dart';
 import '../../services/logger.dart';
 import '../../services/vault_service.dart';
 import '../../utils/safe_call.dart';
+import '../../widgets/backlinks_panel.dart';
 import '../../widgets/empty_state.dart';
 import 'note_editor.dart';
 
@@ -30,7 +31,6 @@ class NoteView extends StatefulWidget {
 
 class _NoteViewState extends State<NoteView> {
   Note? _note;
-  List<Note> _backlinks = [];
   bool _loading = true;
   String? _error;
 
@@ -47,11 +47,6 @@ class _NoteViewState extends State<NoteView> {
     try {
       final service = VaultService(widget.vaultPath);
       _note = await service.readNote(widget.notePath);
-      if (!mounted) return;
-      if (_note != null) {
-        _backlinks = await service.backlinks(_note!.relPath);
-        log.debug('note_view', 'backlinks loaded', context: {'count': _backlinks.length});
-      }
     } catch (e, s) {
       log.error('note_view', '[EC-NOTE-001] Load note failed',
         context: {'path': widget.notePath, 'vault': widget.vaultPath}, error: e, stack: s);
@@ -124,25 +119,23 @@ class _NoteViewState extends State<NoteView> {
               _handleLink(href);
             },
           ),
-          if (_backlinks.isNotEmpty) ...[
-            const SizedBox(height: 32),
-            const Divider(),
-            const SizedBox(height: 8),
-            Text('Backlinks (${_backlinks.length})',
-              style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            ..._backlinks.map((b) => ListTile(
-              leading: const Icon(Icons.arrow_back, size: 16),
-              title: Text(b.title ?? b.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-              onTap: () => Navigator.push(
+          // v0.47.28: panel de backlinks (siempre se muestra, vacío si no hay)
+          const SizedBox(height: 32),
+          const Divider(),
+          const SizedBox(height: 8),
+          BacklinksPanel(
+            currentNotePath: widget.notePath,
+            vaultPath: widget.vaultPath,
+            onNoteOpen: (path) {
+              Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => NoteView(
-                  notePath: b.path,
+                  notePath: path,
                   vaultPath: widget.vaultPath,
                 )),
-              ),
-            )),
-          ],
+              );
+            },
+          ),
         ],
       ),
     );

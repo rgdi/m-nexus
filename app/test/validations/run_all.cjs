@@ -28,6 +28,7 @@ const validations = [
   'validate_backlinks.cjs',
   'validate_transcribe.cjs',
   'validate_release.cjs',
+  'validate_v47_28.cjs',
 ];
 
 console.log('='.repeat(60));

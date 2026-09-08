@@ -1,21 +1,31 @@
 // backlinks_panel.dart: panel de backlinks para note_view (Fase 2.B.3).
 //
-// v0.46: muestra las notas que tienen [[wikilinks]] apuntando a la nota actual.
-// v0.46.7: simplificado para no depender de AppDb (drift removido).
-// Muestra empty state por ahora; los backlinks se pueden computar
-// en runtime escaneando el vault cuando se carga una nota.
+// v0.47.28: integración real con VaultService.backlinks().
+// Antes era un stub que retornaba lista vacía. Ahora:
+//   1. Llama VaultService.backlinks(relPath) que escanea el vault
+//   2. Filtra por nombre de archivo (sin extension) con NFD normalize
+//   3. Genera snippet de contexto: la línea con el [[wikilink]]
+//   4. Expone onNoteOpen callback para navegar a la nota
 
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:path/path.dart' as p;
+import '../services/vault_service.dart';
 import '../services/wikilink_parser.dart';
 
 class BacklinksPanel extends StatefulWidget {
+  /// Path absoluto de la nota actual.
   final String currentNotePath;
+
+  /// Path absoluto del vault (necesario para construir VaultService).
+  final String vaultPath;
+
+  /// Callback al tocar un backlink. Recibe el path absoluto de la nota origen.
   final ValueChanged<String>? onNoteOpen;
 
   const BacklinksPanel({
     super.key,
     required this.currentNotePath,
+    required this.vaultPath,
     this.onNoteOpen,
   });
 
@@ -35,46 +45,89 @@ class _BacklinksPanelState extends State<BacklinksPanel> {
   @override
   void didUpdateWidget(BacklinksPanel old) {
     super.didUpdateWidget(old);
-    if (old.currentNotePath != widget.currentNotePath) {
+    if (old.currentNotePath != widget.currentNotePath ||
+        old.vaultPath != widget.vaultPath) {
       _backlinksFuture = _loadBacklinks();
     }
   }
 
+  /// Escanea el vault buscando notas que tengan un [[wikilink]] apuntando
+  /// a la nota actual. Genera un snippet de contexto con la línea del link.
+  ///
+  /// Performance: O(n) sobre el vault. Para vaults grandes (>10k notas) considerar
+  /// migrar a un índice inverso. Por ahora acepta la latencia.
   Future<List<BacklinkResult>> _loadBacklinks() async {
-    // v0.46.7: stub - returns empty list.
-    // Backlinks would normally query the drift DB (AppDb.getAllNotes())
-    // and filter by links_json. With drift removed, we show empty
-    // state. To restore, integrate VaultService.listRecentNotes() and
-    // parse wikilinks on the fly.
-    return <BacklinkResult>[];
+    final vault = VaultService(widget.vaultPath);
+    final relPath = p.relative(widget.currentNotePath, from: widget.vaultPath);
+    final candidates = await vault.backlinks(relPath);
+
+    final results = <BacklinkResult>[];
+    final targetBasename = p.basenameWithoutExtension(widget.currentNotePath);
+    final targetBasenameNfd = _stripAccents(targetBasename.toLowerCase());
+    final targetRelNoExt = p.withoutExtension(relPath).toLowerCase();
+    final targetRelNoExtNfd = _stripAccents(targetRelNoExt);
+
+    for (final note in candidates) {
+      // VaultService.backlinks() usa search('[[target]]') que es aproximado.
+      // Filtramos manualmente para asegurar match exacto (con NFD).
+      final links = WikilinkParser.parse(note.content);
+      final matchedLink = links.firstWhere(
+        (l) {
+          if (l.isEmbed) return false;
+          final t = _stripAccents(l.target.toLowerCase());
+          return t == targetBasenameNfd ||
+              t == targetRelNoExt ||
+              t == targetRelNoExtNfd;
+        },
+        orElse: () => const Wikilink(target: ''),
+      );
+      if (matchedLink.target.isEmpty) continue;
+
+      // Generar snippet: la línea que contiene el wikilink
+      final snippet = _extractSnippet(note.content, matchedLink);
+
+      results.add(BacklinkResult(
+        sourcePath: note.path,
+        sourceTitle: note.name,
+        contextSnippet: snippet,
+      ));
+    }
+
+    // Ordenar por título para estabilidad
+    results.sort((a, b) => a.sourceTitle.compareTo(b.sourceTitle));
+    return results;
   }
 
-  List<String> _parseLinksJson(String json) {
-    // Simple JSON array parser (avoiding dart:convert dep here for clarity)
-    if (json.isEmpty || json == '[]') return [];
-    final inner = json.substring(1, json.length - 1); // strip [ ]
-    if (inner.trim().isEmpty) return [];
-    return inner
-        .split(',')
-        .map((s) => s.trim().replaceAll(RegExp(r'^"|"$'), ''))
-        .where((s) => s.isNotEmpty)
-        .toList();
+  /// Extrae la línea que contiene el wikilink, sin markdown.
+  String _extractSnippet(String content, Wikilink link) {
+    final lines = content.split('\n');
+    final pattern = RegExp(RegExp.escape('[[${link.target}'));
+    for (final line in lines) {
+      if (pattern.hasMatch(line)) {
+        // Strip markdown emphasis
+        var clean = line
+            .replaceAll(RegExp(r'\*\*([^*]+)\*\*'), r'$1')  // bold
+            .replaceAll(RegExp(r'\*([^*]+)\*'), r'$1')        // italic
+            .replaceAll(RegExp(r'`([^`]+)`'), r'$1')          // code
+            .trim();
+        if (clean.length > 80) {
+          clean = '${clean.substring(0, 77)}...';
+        }
+        return clean;
+      }
+    }
+    return '';
   }
 
-  bool _linkMatches(String link, String targetBasename, String targetPath) {
-    // Strip alias: [[A|display]] → A
-    final target = link.split('|').first.trim();
-    // Normalize: lowercase + NFD (strip accents)
-    final normalized = target.toLowerCase().normalizeNfc();
-    return normalized == targetBasename.toLowerCase() ||
-        normalized == targetPath.toLowerCase() ||
-        normalized == '${targetPath.toLowerCase()}.md';
-  }
-
-  String _linkDisplay(String link) {
-    final parts = link.split('|');
-    if (parts.length > 1) return parts[1].trim();
-    return parts[0].trim();
+  /// Elimina diacríticos (NFD strip) para matching robusto.
+  String _stripAccents(String s) {
+    const accents = 'áéíóúñÁÉÍÓÚÑàèìòùÀÈÌÒÙäëïöüÄËÏÖÜ';
+    const without = 'aeiounAEIOUNaeiouAEIOUaeiouAEIOU';
+    var out = s;
+    for (var i = 0; i < accents.length; i++) {
+      out = out.replaceAll(accents[i], without[i]);
+    }
+    return out;
   }
 
   void _refresh() {
@@ -85,7 +138,6 @@ class _BacklinksPanelState extends State<BacklinksPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
 
     return Card(
@@ -124,8 +176,10 @@ class _BacklinksPanelState extends State<BacklinksPanel> {
                   );
                 }
                 if (snapshot.hasError) {
-                  return Text('Error: ${snapshot.error}',
-                      style: TextStyle(color: theme.colorScheme.error, fontSize: 12));
+                  return Text(
+                    'Error: ${snapshot.error}',
+                    style: TextStyle(color: theme.colorScheme.error, fontSize: 12),
+                  );
                 }
                 final results = snapshot.data ?? [];
                 if (results.isEmpty) {
@@ -173,14 +227,16 @@ class _BacklinksPanelState extends State<BacklinksPanel> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  Text(
-                    r.contextSnippet,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.disabledColor,
+                  if (r.contextSnippet.isNotEmpty)
+                    Text(
+                      r.contextSnippet,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.disabledColor,
+                        fontStyle: FontStyle.italic,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
                 ],
               ),
             ),
@@ -201,12 +257,4 @@ class BacklinkResult {
     required this.sourceTitle,
     required this.contextSnippet,
   });
-}
-
-// Helper extension for NFC normalization (used in matching)
-extension _StringNormalize on String {
-  String normalizeNfc() {
-    // Simple NFD → NFC reverse (we strip accents by removing combining marks)
-    return toLowerCase();
-  }
 }
