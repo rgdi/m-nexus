@@ -19,6 +19,7 @@ import '../../services/logger.dart';
 import '../../services/permissions.dart';
 import '../../services/vault_detector.dart';
 import '../../services/vault_service.dart';
+import '../../utils/error_codes.dart';
 import '../../utils/safe_call.dart';
 import 'onboarding_tutorial.dart';
 
