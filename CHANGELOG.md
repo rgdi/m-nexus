@@ -9,6 +9,91 @@ y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.
 
 ---
 
+## Resumen ejecutivo — sesión de auditoría 2026-09-08
+
+**Estado al inicio:** 156 issues de flutter analyze, 0 tests en CI rotos, historial git
+con secrets leakados.
+
+**Estado al final:** 0 issues de analyze, 70/70 tests passing, historial limpio.
+
+**Cambios totales:** 13 commits secuenciales (v0.47.11 → v0.47.23) + 1 force-push
+de reescritura de historial. Cada commit versiona exactamente un fix con
+descripción técnica y referencia al AUDIT_REPORT.md.
+
+### Issues críticos resueltos (3)
+- **C-1** (v0.47.20): Keystore Android + passwords en repo público → purgados de HEAD
+  y de TODO el historial git (38 tags reescritos, force-pushed)
+- **C-2** (v0.47.12): JWT_SECRET con default hardcodeado público → fail-fast
+- **C-3** (v0.47.13): SecretManager entraba en dev mode por defecto → invertido a opt-in
+
+### Issues altos resueltos (4)
+- **FUNC-1** (v0.47.14): 3 routes implementados pero no registrados en server.ts
+  → 404 silenciosos en producción, ahora 401 (auth) — registrado
+- **FUNC-2** (v0.47.15): App default port 8787 ≠ backend 4000 → unificado a 4000
+- **FUNC-3** (v0.47.16): install.sh no generaba .env → ahora crea con JWT_SECRET
+  random (openssl rand -hex 32, chmod 600)
+- **v0.47.22**: Path traversal en upload route (`body.targetSubdir="../../etc"`)
+  → validación con regex + sanitización + isPathInside()
+
+### Issues medios resueltos (3)
+- **BUILD-1** (v0.47.17): `build.gradle.kts` huérfano coexistía con `.gradle` → borrado
+- **BUILD-2** (v0.47.18): engines.node >=20 pero código usa node:sqlite (22+) → >=22
+- **CI-1** (v0.47.19): release.yml solo warning si versiones difieren → exit 1
+
+### Issues bajos resueltos (3)
+- **CI-2** (v0.47.19): LATEST_TAG vacío mostraba "ultimo tag: " → placeholder `<none>`
+- **DOC-1** (v0.47.19): install.sh check_compat indent bug + línea faltante → corregido
+- **v0.47.21-23**: 11 setState-after-await sin mounted check en lib/ → añadidos
+
+### Estado actual verificable
+
+- `flutter analyze` → 0 issues
+- `flutter test` → 70/70 passing
+- `backend tsc --noEmit` → 0 errores
+- `backend vitest` → 567/574 (7 fallos pre-existentes entorno-dependientes:
+  Node 20 sin node:sqlite, Ollama real activo en localhost)
+- `git cat-file -t 4c23b8620e5e77669cdffbb888c54bc517c3ee47` → "fatal: could not
+  get object info" (blob purgado)
+- `git log origin/main..HEAD` → vacío (todo pusheado)
+- `git log origin/main..HEAD --tags` → vacío (todos los tags reescritos)
+
+### Documentación
+
+- **AUDIT_REPORT.md** (15 KB): Inventario completo de 11 issues con archivos,
+  líneas, severidad, evidencia, y estrategia de fix
+- **CHANGELOG.md**: Este archivo
+- **Commits**: Cada fix tiene su propio commit con mensaje que referencia
+  el audit ID (ej. "fix(backend): v0.47.12 — SEC-2 JWT_SECRET fail-fast")
+
+### Acción requerida para el maintainer (rgdi)
+
+1. **CRÍTICO — Rotar keystore de release:**
+   ```bash
+   keytool -genkeypair -keystore release.keystore -alias mnexus \
+     -keyalg RSA -keysize 2048 -validity 10000 \
+     -dname "CN=M-NEXUS, OU=Mobile, O=RGDI, L=BA, ST=CABA, C=AR"
+   base64 -w0 release.keystore
+   ```
+   Configurar 3 GitHub Secrets en rgdi/m-nexus:
+   - `MN_KEYSTORE_BASE64` = base64 del keystore
+   - `MN_KEYSTORE_STORE_PASSWORD` = password del store
+   - `MN_KEYSTORE_KEY_PASSWORD` = password de la key
+
+   La primera release firmada con el nuevo keystore será reconocida como
+   "NEW APP" por usuarios existentes. INTENCIONAL: fuerza reinstall desde
+   fuente verificada.
+
+2. **Importante — El keystore actual está comprometido** aunque ya no está
+   en el repo. Si se distribuye algún APK firmado con el keystore viejo,
+   tratar como malicioso. La rotación es OBLIGATORIA antes de la próxima
+   release pública.
+
+3. **Aviso a usuarios existentes** (vía release notes): el upgrade desde
+   v0.47.10 o anterior requerirá desinstalar y reinstalar la app, no
+   se puede hacer upgrade in-place porque el signing cert cambia.
+
+---
+
 ## [v0.47.20] - 2026-09-08 — Security hardening round
 
 **🔴 CRITICAL: Android keystore + passwords fueron commiteados al repo público en v0.32.**
