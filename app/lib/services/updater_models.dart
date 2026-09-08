@@ -73,7 +73,6 @@ class AppUpdate {
 
   /// v0.47.2: alias del release body (compatibilidad con UI).
   String get notes => body;
-}
 
   /// v0.46: serializa a JSON para persistir en SharedPreferences cache.
   /// Roundtrip con AppUpdate.fromGithub() debe dar instancia equivalente.

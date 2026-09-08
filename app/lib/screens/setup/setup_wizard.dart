@@ -17,6 +17,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../core/theme.dart';
 import '../../services/logger.dart';
 import '../../services/permissions.dart';
+import '../../services/vault_detector.dart';
 import '../../services/vault_service.dart';
 import '../../utils/safe_call.dart';
 import 'onboarding_tutorial.dart';
@@ -79,7 +80,7 @@ class _SetupWizardState extends State<SetupWizard> {
       component: 'setup',
       code: 'EC-SETUP-001',
       message: 'setup wizard save failed',
-      category: ErrorCategory.config,
+      category: ErrorCategory.cfg,
       op: () async {
         // 1. Si eligió crear vault, lo creamos
         if (_isCreatingVault) {
@@ -152,9 +153,9 @@ Usa `[[Nota]]` para enlazar: [[anatomia]]
   }
 
   Future<void> _requestPerms() async {
-    final storageGranted = await PermissionsService.requestStorage();
-    final microGranted = await PermissionsService.requestMicrophone();
-    final calendarGranted = await PermissionsService.requestCalendar();
+    final storageGranted = await PermissionsService.request("storage").then((s) => s.granted);
+    final microGranted = await PermissionsService.request("microphone").then((s) => s.granted);
+    final calendarGranted = await PermissionsService.request("calendar").then((s) => s.granted);
     setState(() {
       _permStorage = storageGranted;
       _permMicro = microGranted;
@@ -260,13 +261,13 @@ Usa `[[Nota]]` para enlazar: [[anatomia]]
                 end: Alignment.bottomRight,
                 colors: [
                   theme.colorScheme.primary,
-                  theme.colorScheme.primary.withValues(alpha: 0.6),
+                  theme.colorScheme.primary.withOpacity(0.6),
                 ],
               ),
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                  color: theme.colorScheme.primary.withOpacity(0.3),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
@@ -413,7 +414,7 @@ Usa `[[Nota]]` para enlazar: [[anatomia]]
             subtitle: 'Para leer y escribir notas en tu vault',
             granted: _permStorage,
             onRequest: () async {
-              final ok = await PermissionsService.requestStorage();
+              final ok = await PermissionsService.request("storage").then((s) => s.granted);
               setState(() => _permStorage = ok);
             },
           ),
@@ -424,7 +425,7 @@ Usa `[[Nota]]` para enlazar: [[anatomia]]
             subtitle: 'Para grabar notas de voz',
             granted: _permMicro,
             onRequest: () async {
-              final ok = await PermissionsService.requestMicrophone();
+              final ok = await PermissionsService.request("microphone").then((s) => s.granted);
               setState(() => _permMicro = ok);
             },
           ),
@@ -435,7 +436,7 @@ Usa `[[Nota]]` para enlazar: [[anatomia]]
             subtitle: 'Para vincular repasos a eventos',
             granted: _permCalendar,
             onRequest: () async {
-              final ok = await PermissionsService.requestCalendar();
+              final ok = await PermissionsService.request("calendar").then((s) => s.granted);
               setState(() => _permCalendar = ok);
             },
           ),
@@ -671,8 +672,8 @@ class _DetectedVaultsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return FutureBuilder<List<DetectedVault>>(
-      future: VaultDetector.scan(),
+    return FutureBuilder<List<VaultInfo>>(
+      future: VaultDetector().detectVaults(),
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());

@@ -25,7 +25,7 @@ class _OnboardingTutorialState extends State<OnboardingTutorial> {
 
   static const _slides = <_SlideData>[
     _SlideData(
-      icon: Icons.create_note_outlined,
+      icon: Icons.note_add_outlined,
       title: 'Notas en Markdown',
       body: 'Tus notas viven como archivos .md en tu vault. Usa [[wikilinks]] para conectar ideas y #tags para organizarlas.',
       accent: 0xFF4F6BED,
@@ -80,13 +80,13 @@ class _OnboardingTutorialState extends State<OnboardingTutorial> {
                               end: Alignment.bottomRight,
                               colors: [
                                 Color(s.accent),
-                                Color(s.accent).withValues(alpha: 0.7),
+                                Color(s.accent).withOpacity(0.7),
                               ],
                             ),
                             borderRadius: BorderRadius.circular(36),
                             boxShadow: [
                               BoxShadow(
-                                color: Color(s.accent).withValues(alpha: 0.4),
+                                color: Color(s.accent).withOpacity(0.4),
                                 blurRadius: 24,
                                 offset: const Offset(0, 12),
                               ),

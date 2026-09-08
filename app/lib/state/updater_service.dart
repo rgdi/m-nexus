@@ -37,8 +37,10 @@ class UpdaterService extends ChangeNotifier {
   UpdateCheckResult? get lastResult => _updater.lastResult;
   bool get hasUpdate {
     final r = _updater.lastResult;
-    if (r == null || r.update == null) return false;
-    return r.update.isNewer(r.installedVersion);
+    if (r == null) return false;
+    final u = r.update;
+    if (u == null) return false;
+    return u.isNewer(r.installedVersion);
   }
   bool get isChecking => _updater.isChecking;
 
