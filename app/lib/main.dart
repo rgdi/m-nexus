@@ -4,6 +4,7 @@
 // que aparecia durante 30s en cold start.
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'core/constants.dart';
 import 'core/main_shell.dart';
@@ -44,6 +45,29 @@ void main() async {
     appVersion: info.fullVersion,
     osVersion: osVersion,
   );
+
+  // v0.47.12-debug: capturar TODOS los errores de Flutter y volcarlos al log file.
+  // Sin esto, un null check operator en un widget build solo muestra pantalla
+  // roja de ErrorWidget sin stack trace en logcat (especialmente en release).
+  FlutterError.onError = (FlutterErrorDetails details) {
+    final log = AdvancedLogger.instance;
+    log.error(
+      'flutter.error',
+      '[EC-FLUTTER-001] ${details.exceptionAsString()}',
+      context: {
+        'library': details.library,
+        'context': details.context?.toDescription(),
+      },
+      error: details.exception,
+      stack: details.stack,
+    );
+    FlutterError.presentError(details);  // también muestra el error en pantalla
+  };
+  PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+    AdvancedLogger.instance.error('flutter.unhandled',
+      '[EC-FLUTTER-002] uncaught async error', error: error, stack: stack);
+    return true;  // marcar como manejado
+  };
   AdvancedLogger.instance.info('app', '[EC-LIFECYCLE-002] ${AppConstants.name} starting',
     context: {
       'version': info.fullVersion,
@@ -109,6 +133,11 @@ class _MnexusAppState extends State<MnexusApp> {
       themeMode: s.materialThemeMode,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
+      // v0.47.12: configurar AppLocalizations. Sin esto, AppLocalizations.of()
+      // retorna null y el `!` interno lanza "Null check operator used on a null value"
+      // (reproducido en A063 con debug build + FlutterError.onError).
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       builder: (ctx, child) {
         return MediaQuery(
           data: MediaQuery.of(ctx).copyWith(
