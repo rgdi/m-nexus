@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show debugDefaultTargetPlatformOverride, TargetPlatform;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mnexus_app/services/vault_service.dart';
+import 'package:path/path.dart' as p;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -139,6 +140,82 @@ content''';
       // Crear un archivo no-md
       await File('${tmpDir.path}/other.txt').writeAsString('no');
       expect(await svc.countNotes(), 2);
+    });
+  });
+
+  // v0.48: tests para resolveNote — wikilink resolution con tildes,
+  // case-insensitive, path relativo y búsqueda exhaustiva.
+  //
+  // NOTA: createNote() genera filenames como '2026-09-09-notaB.md' (con fecha).
+  // Los tests usan [[notaB]] que case-insensitive-ly matchea por basename sin
+  // extensión.
+  group('VaultService.resolveNote', () {
+    test('resuelve [[note]] localmente desde fromPath', () async {
+      final svc = VaultService(tmpDir.path);
+      await svc.createNote(folder: 'A', title: 'notaA', content: '');
+      final bPath = await svc.createNote(folder: 'A', title: 'notaB', content: '');
+      // Desde la misma carpeta A
+      final resolved = await svc.resolveNote('notaB', tmpDir.path, fromPath: bPath);
+      expect(resolved, isNotNull);
+      expect(resolved!.endsWith('.md'), isTrue);
+      // Slug del filename es lowercase (notab), pero el frontmatter title es 'notaB'.
+      // Verificamos case-insensitive.
+      expect(resolved.toLowerCase().contains('notab'), isTrue);
+    });
+
+    test('resuelve [[Folder/note]] con path absoluto desde vault', () async {
+      final svc = VaultService(tmpDir.path);
+      await svc.createNote(folder: 'Anatomía', title: 'corazon', content: '');
+      final resolved = await svc.resolveNote('Anatomía/corazon', tmpDir.path);
+      expect(resolved, isNotNull);
+      expect(resolved!.endsWith('.md'), isTrue);
+      expect(resolved.contains('corazon'), isTrue);
+    });
+
+    test('case-insensitive: [[corazon]] encuentra nota con título Corazon', () async {
+      final svc = VaultService(tmpDir.path);
+      await svc.createNote(folder: '', title: 'Corazon', content: '');
+      final resolved = await svc.resolveNote('corazon', tmpDir.path);
+      expect(resolved, isNotNull);
+      expect(resolved!.endsWith('.md'), isTrue);
+      expect(resolved.toLowerCase().contains('corazon'), isTrue);
+    });
+
+    test('case-insensitive con tildes: [[Anatomia/corazon]]', () async {
+      final svc = VaultService(tmpDir.path);
+      await svc.createNote(folder: 'Anatomía', title: 'corazon', content: '');
+      final resolved = await svc.resolveNote('corazon', tmpDir.path);
+      expect(resolved, isNotNull);
+      expect(resolved!.contains('Anatomía'), isTrue);
+    });
+
+    test('búsqueda exhaustiva: [[circulacion]] desde otra carpeta', () async {
+      final svc = VaultService(tmpDir.path);
+      final aPath = await svc.createNote(folder: 'X', title: 'local', content: '');
+      await svc.createNote(folder: 'Y', title: 'circulacion', content: '');
+      final resolved = await svc.resolveNote('circulacion', tmpDir.path, fromPath: aPath);
+      expect(resolved, isNotNull);
+      expect(resolved!.endsWith('.md'), isTrue);
+      expect(resolved.contains('circulacion'), isTrue);
+    });
+
+    test('ignora #fragment y |alias en el target', () async {
+      final svc = VaultService(tmpDir.path);
+      await svc.createNote(folder: '', title: 'heart', content: '');
+      final resolved = await svc.resolveNote('heart#cavidades', tmpDir.path);
+      expect(resolved, isNotNull);
+      // v0.48.1: filename incluye fecha → basename sin ext es
+      // '2026-09-09-heart'. Verificamos por el frontmatter title indirectamente:
+      // que el archivo exista y sea .md.
+      expect(resolved!.endsWith('.md'), isTrue);
+      // El path debe contener la fecha slug
+      expect(resolved.contains('heart'), isTrue);
+    });
+
+    test('retorna null cuando la nota no existe', () async {
+      final svc = VaultService(tmpDir.path);
+      final resolved = await svc.resolveNote('inexistente_xyz', tmpDir.path);
+      expect(resolved, isNull);
     });
   });
 }

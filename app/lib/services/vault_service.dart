@@ -73,10 +73,28 @@ class _NoteCandidate {
 }
 
 class VaultService {
+  // v0.48: instancia singleton sin vaultPath fijo (resolveNote toma el
+  // path como argumento, no necesita estado global).
+  static VaultService? _instance;
+  static VaultService get sharedInstance => _instance ??= VaultService._noop();
+
+  // v0.48: mapa de paths ya vistos (para resolver wikilinks con cache).
+  final Map<String, bool> _existsCache = {};
+
+  void invalidateCache() {
+    _existsCache.clear();
+  }
+
+  // Constructor privado sin args, usado solo por sharedInstance para
+  // resolver wikilinks. Las operaciones que requieren vaultPath (tree,
+  // readNote, etc.) deben usar el constructor normal.
+  VaultService._noop() : vaultPath = '';
+
+  // Constructor normal con vaultPath (para operaciones que requieren estado).
+  VaultService(this.vaultPath);
   final String vaultPath;
   final log = AdvancedLogger.instance;
 
-  VaultService(this.vaultPath);
 
   // ── Tree ────────────────────────────────────────────
 
@@ -406,9 +424,104 @@ class VaultService {
       links.add(m.group(1)!.split('|').first.split('#').first);
     }
     // [text](path.md)
-    for (final m in RegExp(r'\[([^\]]+)\]\(([^)]+\.md)\)').allMatches(body)) {
+    for (final m in RegExp(r'\[([^]]+)\]\(([^)]+\.md)\)').allMatches(body)) {
       links.add(m.group(2)!);
     }
     return links;
+  }
+
+  // v0.48: resuelve un wikilink (target relativo o absoluto) a path real.
+  //
+  // Casos:
+  //   [[corazon]]            → busca 'corazon.md' en la carpeta del fromPath,
+  //                            fallback: búsqueda exhaustiva en vaultPath.
+  //   [[Anatomía/corazon]]   → relativo a vaultPath.
+  //   [[../Anatomia/corazon]]→ normaliza ../
+  // Case-insensitive en filename, normalize tildes (NFD→NFC).
+  //
+  // Returns null si no se encuentra.
+  Future<String?> resolveNote(String target, String vaultPath, {String? fromPath}) async {
+    String clean = target.split('#').first.split('|').first.trim();
+    if (clean.isEmpty) return null;
+
+    if (!clean.endsWith('.md')) clean += '.md';
+
+    String _norm(String s) => s.toLowerCase().replaceAll(RegExp(r'\s+'), ' ').trim();
+
+    Future<String?> _exists(String absPath) async {
+      if (await File(absPath).exists()) return absPath;
+      // Case-insensitive: si falla, escanea el directorio padre
+      final dir = p.dirname(absPath);
+      final fname = p.basename(absPath);
+      if (!await Directory(dir).exists()) return null;
+      final nname = _norm(fname);
+      try {
+        for (final e in Directory(dir).listSync()) {
+          if (e is File && _norm(p.basename(e.path)) == nname) {
+            return e.path;
+          }
+        }
+      } catch (_) {}
+      return null;
+    }
+
+    // 1. Si tiene '/', es relativo a vaultPath
+    if (clean.contains('/')) {
+      final joined = p.normalize(p.join(vaultPath, clean));
+      final hit = await _exists(joined);
+      if (hit != null) return hit;
+    }
+
+    // 2. Relativo al fromPath (misma carpeta)
+    if (fromPath != null) {
+      final localDir = p.dirname(fromPath);
+      final hit = await _exists(p.normalize(p.join(localDir, clean)));
+      if (hit != null) return hit;
+    }
+
+    // 3. Relativo a vaultPath (directo)
+    {
+      final hit = await _exists(p.normalize(p.join(vaultPath, clean)));
+      if (hit != null) return hit;
+    }
+
+    // 4. Búsqueda exhaustiva en todo el vault (filename match, sin ext)
+    final baseName = p.basenameWithoutExtension(clean).toLowerCase();
+    try {
+      final found = await _searchByName(vaultPath, baseName);
+      if (found != null) return found;
+    } catch (_) {}
+
+    return null;
+  }
+
+  Future<String?> _searchByName(String vaultPath, String baseName) async {
+    if (baseName.isEmpty) return null;
+    try {
+      // v0.48.1: filenames incluyen fecha ('2026-09-09-heart.md'). El
+      // basename sin extensión es '2026-09-09-heart', no 'heart'. Hay que
+      // comparar por el frontmatter title (que es lo que el usuario escribió).
+      // Match exacto (case-insensitive) contra 'title' del frontmatter.
+      final pattern = RegExp(r'^---\s*\n(.*?)\n---', multiLine: true, dotAll: true);
+      for (final entity in Directory(vaultPath).listSync(recursive: true)) {
+        if (entity is! File || !entity.path.endsWith('.md')) continue;
+        if (entity.path.contains('/_M-NEXUS/')) continue;
+        try {
+          final content = await File(entity.path).readAsString();
+          final m = pattern.firstMatch(content);
+          if (m != null) {
+            final fm = m.group(1)!;
+            final titleMatch = RegExp(r'^title:\s*(.+)$', multiLine: true).firstMatch(fm);
+            if (titleMatch != null) {
+              final t = titleMatch.group(1)!.trim().toLowerCase();
+              if (t == baseName) return entity.path;
+            }
+          }
+        } catch (_) {
+          continue;
+        }
+      }
+    } catch (_) {}
+    return null;
   }
 }

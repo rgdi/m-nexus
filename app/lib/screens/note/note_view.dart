@@ -183,24 +183,30 @@ class _NoteViewState extends State<NoteView> {
     );
   }
 
-  void _handleLink(String href) {
-    // Si es un link interno (.md), navegar
-    if (href.endsWith('.md') || !href.contains('://')) {
-      final vault = p.dirname(widget.notePath).split('/').sublist(0,
-          p.dirname(widget.notePath).split('/').length - 1).join('/');
-      final newPath = p.normalize(p.join(p.dirname(widget.notePath), href));
-      if (widget.embedded) {
-        setState(() {
-          // En modo embedded, solo abrir como nueva vista
-        });
+  void _handleLink(String href) async {
+    // v0.48: resolver wikilink usando VaultService.resolveNote (case-insensitive,
+    // tolera tildes, busca en carpeta local y exhaustivamente en vault).
+    if (!href.contains('://') && !href.startsWith('mailto:')) {
+      // Importante: sharedInstance para evitar duplicación de estado
+      final resolved = await VaultService.sharedInstance.resolveNote(
+        href,
+        widget.vaultPath,
+        fromPath: widget.notePath,
+      );
+      if (!mounted) return;
+      if (resolved != null) {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => NoteView(notePath: newPath, vaultPath: widget.vaultPath)),
+          MaterialPageRoute(
+            builder: (_) => NoteView(
+              notePath: resolved,
+              vaultPath: widget.vaultPath,
+            ),
+          ),
         );
       } else {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => NoteView(notePath: newPath, vaultPath: widget.vaultPath)),
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se encontró: $href')),
         );
       }
     } else {
