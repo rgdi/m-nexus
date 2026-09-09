@@ -1,76 +1,74 @@
 # Plan de tareas M-NEXUS v0.48
 
-## Estado actual
-- Branch: main, HEAD = b6e0787 (v0.47.36)
-- Tests: 70/70 passing
+## Estado actual (v0.48.4)
+- Branch: main, HEAD = 83d2e98 (v0.48.4)
+- Tests: 81/81 passing (4 handwriting + 6 daily + 7 resolveNote + 64 existentes)
 - Analyze: 0 issues
-- Device: A063 con APK debug instalado, vault Mi_Vault con 3 asignaturas y 5 flashcards
-- Backend: m-nexus en nuc:192.168.1.83:4100
+- Backend: en nuc:192.168.1.83:4100 con Node 22 + tsx + Ollama + Whisper
+- Device A063: APK v0.48.4 instalado, vault Mi_Vault con 3 asignaturas, 5 flashcards, daily notes funcionando
 
-## FASE 1: Backend LLM real (Ollama + Whisper)
-- [ ] Instalar Ollama en el nuc
-- [ ] Descargar modelo (recomendado: phi3:mini, llama3.2:3b o qwen2.5:3b — 2-4GB RAM)
-- [ ] Configurar OPENAI-compatible endpoint en backend
-- [ ] Instalar whisper.cpp o faster-whisper para transcripciones
-- [ ] Endpoint /api/v1/audio/transcribe funcional con Whisper
-- [ ] Verificar AITutorService usa Ollama cuando está disponible
+## ✅ COMPLETADO (v0.48.1 — v0.48.4)
 
-## FASE 2: App - Handwriting/Sketch (Samsung Notes style)
-- [ ] Custom Painter widget para dibujar sobre notas
-- [ ] Stroke storage en la nota (canvas como PNG o SVG)
-- [ ] Tools: pen, highlighter, eraser, colors, undo/redo
-- [ ] Anotaciones overlay (flechas, formas, círculos)
-- [ ] Image embed en notas con anotaciones
-- [ ] Persistence: las anotaciones se guardan con la nota
+### FASE 1 — Backend LLM real (Ollama + Whisper)
+- ✅ Ollama instalado en nuc (puerto 11434)
+- ✅ Modelo llama3.2:3b descargado (~2GB)
+- ✅ Modelo nomic-embed-text (RAG embeddings)
+- ✅ Whisper wrapper CLI (Python faster-whisper) en backend/scripts/whisper
+- ✅ Endpoint /api/v1/ai/tutor funcional con LLM real
+- ✅ /api/v1/health reporta providers disponibles
+- ✅ Better-sqlite3 fix (LazySearchService) + Node 22 install
 
-## FASE 3: App - Bug fixes + polish
-- [ ] Wikilinks clickeables funcionales (_handleLink path resolution)
-- [ ] Quick link from card to note (onNoteOpen en FlashcardReview)
-- [ ] vault_browser refresh (FileSystemWatcher o pull-to-refresh)
-- [ ] Bug: vault_browser notes subfolder expand (no responde)
-- [ ] Bug: setup wizard sanitize nombre con tildes
-- [ ] Bug: home recientes abren NoteView (verificar v0.47.31 sigue OK)
-- [ ] Bug: search field en vault_browser responde
-- [ ] Bug: title field focus (verificar v0.47.30 sigue OK)
+### FASE 3 — Bug fixes
+- ✅ v0.48.1: VaultService.resolveNote() — wikilinks case-insensitive + tildes
+- ✅ v0.48.1: _handleLink usa resolveNote (path resolution real)
+- ✅ v0.48.2: VaultService.sharedInstance singleton + invalidateCache
+- ✅ v0.48.2: vault_browser pull-to-refresh + botón refresh + clear search
+- ✅ v0.48.3: FlashcardReview.onNoteOpen + onMediaOpen + vaultPath
+- ✅ v0.48.3: Flashcard.sourceNote field + parseo en _parseCard
+- ✅ v0.48.3: Sketch frontmatter persistence (writeNote reescribe)
 
-## FASE 4: App - Performance y accesibilidad
-- [ ] LazyList en flashcards_list (puede haber 1000s)
-- [ ] Performance overlay en debug
-- [ ] Accessibility labels (semantics)
-- [ ] Reduce motion support
-- [ ] High contrast support
+### FASE 2 — Handwriting (Samsung Notes style)
+- ✅ v0.48.4: HandwritingCanvas widget (pen/highlighter/eraser, 5 colors, 3 widths, undo/redo)
+- ✅ v0.48.4: Stroke JSON serialization (tool, color, width, points)
+- ✅ v0.48.4: NoteSketchScreen (modal full-screen, persist via frontmatter.sketches)
+- ✅ v0.48.4: Botón "Dibujar" en note_view AppBar
+- ✅ v0.48.4: PopScope guard (aviso si hay cambios sin guardar)
 
-## FASE 5: App - Features avanzadas (Obsidian/Anki/RemNote inspired)
-- [ ] Image picker para notas (image_picker package)
-- [ ] Image occlusion flashcards (FSRS-aware)
-- [ ] Audio recording con waveform visualization
-- [ ] Spaced repetition statistics detalladas (Anki-style)
-- [ ] Heatmap mejor (Anki-style activity grid)
-- [ ] Card templates (cloze, basic, type-in)
+### FASE 6 — Daily Notes
+- ✅ v0.48.4: DailyNoteService (openOrCreate, listAll, listDates)
+- ✅ v0.48.4: Template con secciones (Tareas/Notas/Ideas/Para repasar)
+- ✅ v0.48.4: Action card "Nota diaria" en home con día de la semana
+- ✅ v0.48.4: Tests 6/6 passing
 
-## FASE 6: App - UI/UX polish (RemNote style)
-- [ ] Daily notes auto-creadas
-- [ ] Command palette (Ctrl+K style)
-- [ ] Recent files in home
-- [ ] Tag explorer
-- [ ] Graph view (visual representation)
-- [ ] Outline view (TOC) en notas
+### FASE 6 — Command Palette (Ctrl+K)
+- ✅ v0.48.4: CommandPaletteDialog (6 acciones)
+- ✅ v0.48.4: CommandPaletteShortcuts widget (Ctrl+K binding)
+- ✅ v0.48.4: Filtro fuzzy sobre title/subtitle
+- ✅ v0.48.4: Búsqueda + Enter para ejecutar
 
-## FASE 7: Testing empírico exhaustivo
-- [ ] Build + install cada cambio
-- [ ] Crear vault con asignaturas + notas + flashcards reales
-- [ ] Probar flow completo: crear nota → cloze → generar flashcards → aprobar → repasar
-- [ ] Probar FSRS con boost por exámenes
-- [ ] Probar chat AI con LLM real (RAG funcionando)
-- [ ] Probar transcription de audio (Whisper)
-- [ ] Probar handwriting/dibujo en notas
-- [ ] Probar wikilinks clickeables
-- [ ] Probar image picker + image occlusion
-- [ ] Comparar con RemNote/Obsidian/Anki feature-by-feature
+## ⏳ EN PROGRESO (v0.48.5+)
 
-## FASE 8: Métricas y evaluación
-- [ ] Definir KPIs (success rate RAG, accuracy FSRS boost, latency chat AI)
-- [ ] Medir baseline antes de cambios
-- [ ] Evaluar cada feature con criterios objetivos
-- [ ] Iterar y reescribir si resultados < 80%
-- [ ] Documentar resultados
+### FASE 5 — Image picker (delegado a subagente)
+- [ ] image_picker integration en note_editor
+- [ ] Copia a _M-NEXUS/images/<uuid>.<ext>
+- [ ] Inserta markdown ![alt](path) en cursor
+
+### FASE 5 — Image occlusion (delegado a subagente)
+- [ ] POST /api/v1/flashcards/image-occlusion endpoint
+- [ ] Crear flashcard con mediaPath + mediaType='image'
+
+### FASE 8 — RAG evaluation metrics (delegado a subagente)
+- [ ] test_rag_eval.ts con 8 preguntas médicas
+- [ ] Scoring: keywords, attribution, length
+- [ ] Markdown table output con success rate
+
+## 📋 PENDIENTE (testing físico)
+
+### FASE 7 — Testing empírico exhaustivo (delegado a subagente)
+- [ ] Repasar hoy → 4 botones FSRS funcionan
+- [ ] Vault browser muestra Anatomía/Fisiología/Bioquímica con notas
+- [ ] Wikilink [[circulacion]] navega correctamente
+- [ ] Handwriting canvas abre + dibuja + guarda
+- [ ] Daily note abre con secciones Tareas/Notas
+- [ ] Tarjetas tab muestra 5 flashcards
+- [ ] Ajustes → Avanzado tiene 4 nuevos tiles
