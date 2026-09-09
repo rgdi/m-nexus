@@ -24,6 +24,8 @@ import '../note/note_editor.dart';
 import '../note/note_view.dart';
 import '../../services/permissions.dart';
 import '../../widgets/review_heatmap.dart';
+import '../../services/daily_note_service.dart';
+import '../../widgets/command_palette_dialog.dart';
 
 class HomeScreen extends StatefulWidget {
   final VaultService? vault;
@@ -118,6 +120,62 @@ class _HomeScreenState extends State<HomeScreen> {
       )),
     );
     if (result != null) await app.reload();
+  }
+
+  /// v0.48: abrir la nota diaria de hoy (crea si no existe).
+  Future<void> _openDailyNote() async {
+    final app = AppState.instance;
+    if (!app.hasVault) {
+      _showSnack('Configura un vault primero');
+      return;
+    }
+    final svc = DailyNoteService(app.activeVault!.path);
+    final path = await svc.openOrCreate();
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => NoteView(
+        notePath: path,
+        vaultPath: app.activeVault!.path,
+      )),
+    );
+    if (mounted) await app.reload();
+  }
+
+  /// v0.48: command palette (Ctrl+K) — acciones rápidas.
+  Future<void> _showCommandPalette() async {
+    final app = AppState.instance;
+    if (!app.hasVault) {
+      _showSnack('Configura un vault primero');
+      return;
+    }
+    final action = await showDialog<String>(
+      context: context,
+      builder: (_) => const CommandPaletteDialog(),
+    );
+    if (action == null || !mounted) return;
+    switch (action) {
+      case 'new_note':
+        await _newNote();
+        break;
+      case 'open_daily':
+        await _openDailyNote();
+        break;
+      case 'review_due':
+        await _reviewDue();
+        break;
+      case 'new_flashcard':
+        await _newFlashcard();
+        break;
+      case 'open_vault':
+        // Cambiar a tab Vault (índice 1).
+        // Lo hacemos a través del shell si está disponible.
+        // Por simplicidad, navegamos manualmente.
+        Navigator.of(context).pushNamed('/vault');
+        break;
+      case 'settings':
+        Navigator.of(context).pushNamed('/settings');
+        break;
+    }
   }
 
   Future<void> _reviewDue() async {
@@ -293,6 +351,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       title: 'Nueva tarjeta',
                       subtitle: 'Empezar a estudiar',
                       onTap: _newFlashcard,
+                    ),
+                    const SizedBox(height: 8),
+                    // v0.48: nota diaria de hoy.
+                    _ActionCard(
+                      icon: Icons.today_outlined,
+                      title: 'Nota diaria',
+                      subtitle: DateFormat('EEEE d MMMM', 'es_ES').format(DateTime.now()),
+                      onTap: _openDailyNote,
                     ),
                   ],
                 ),

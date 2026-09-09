@@ -13,6 +13,7 @@ import '../../utils/safe_call.dart';
 import '../../widgets/backlinks_panel.dart';
 import '../../widgets/empty_state.dart';
 import 'note_editor.dart';
+import 'note_sketch_screen.dart';
 
 class NoteView extends StatefulWidget {
   final String notePath;
@@ -96,6 +97,20 @@ class _NoteViewState extends State<NoteView> {
               );
             },
             tooltip: 'Copiar',
+          ),
+          // v0.48: botón para abrir el canvas de handwriting sobre la nota.
+          IconButton(
+            icon: const Icon(Icons.brush),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => NoteSketchScreen(
+                  notePath: widget.notePath,
+                  vaultPath: widget.vaultPath,
+                )),
+              );
+            },
+            tooltip: 'Dibujar / Anotar',
           ),
         ],
       ),
