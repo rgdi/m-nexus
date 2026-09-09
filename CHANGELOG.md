@@ -94,6 +94,42 @@ descripción técnica y referencia al AUDIT_REPORT.md.
 
 ---
 
+## [v0.48.4] - 2026-09-09 — Integración end-to-end + features avanzadas
+
+### Backend — Integración con LLM real
+- **Ollama** corriendo en `nucserver:11434` con `llama3.2:3b` (chat) + `nomic-embed-text` (embeddings RAG).
+- **Whisper** via `faster-whisper` Python wrapper (`backend/scripts/whisper`) → expone CLI compatible con backend.
+- **Endpoint `/api/v1/ai/tutor`** creado y conectado a LLM real (no stub).
+- **LazySearchService** envuelve `better-sqlite3` (que segfaulta en Node 20) para que el tutor funcione aunque la DB falle.
+- **Node 22** instalado en `~/node-v22.11.0-linux-x64/` (el backend requiere ≥22).
+- **Backend smoke test**: pregunta "¿Qué es el corazón?" → respuesta LLM correcta, confidence 0.85.
+
+### App — Bug fixes críticos
+- **v0.48.1** `VaultService.resolveNote()` — wikilinks case-insensitive + case-folding, tolera tildes, búsqueda exhaustiva por frontmatter title. 7 tests nuevos, 18/18 passing.
+- **v0.48.1** `_handleLink` en note_view usa `resolveNote()` (ya no path-arithmetic roto).
+- **v0.48.2** `vault_browser` — pull-to-refresh + botón refresh + clear search icon.
+- **v0.48.2** `VaultService.sharedInstance` singleton + `invalidateCache()` para re-escaneo.
+- **v0.48.3** `FlashcardReview.onNoteOpen` + `onMediaOpen` + `vaultPath` para abrir nota fuente de la card actual.
+- **v0.48.3** `Flashcard.sourceNote` field + parsing desde frontmatter `source_note:`.
+
+### App — Features nuevas
+- **v0.48.4** **Handwriting/Sketch (Samsung Notes style)**: `HandwritingCanvas` widget con pen, highlighter, eraser, 5 colors, 3 widths, undo/redo. `NoteSketchScreen` modal persiste strokes como JSON en frontmatter `sketches:`. Botón brush en AppBar de note_view.
+- **v0.48.4** **Daily Notes (RemNote/Obsidian style)**: `DailyNoteService.openOrCreate()` crea nota del día si no existe en `Mi_Vault/Daily/YYYY-MM-DD.md`. Template con secciones Tareas/Notas/Ideas/Para repasar. Action card "Nota diaria" en home.
+- **v0.48.4** **Command Palette (Ctrl+K)**: `CommandPaletteDialog` con 6 acciones (nueva nota, abrir daily, repasar, nueva tarjeta, vault, settings). Filtro fuzzy. `CommandPaletteShortcuts` widget para binding Ctrl+K.
+- **v0.48.4** Backend default URL cambiada a `http://192.168.1.83:4100` (nuc, antes era emulador 10.0.2.2:4000).
+
+### Tests
+- **81/81 passing** (4 handwriting + 6 daily + 7 resolveNote + 64 existentes).
+- **flutter analyze: 0 issues**.
+
+### Métricas empíricas v0.48.4 (FASE 7)
+- Home screen: 5 tarjetas pendientes detectadas, racha 1 día, retención 90%, backend conectado ✓
+- Action cards: Nueva nota / Repasar hoy (5 cards) / Nueva tarjeta / Nota diaria (miércoles 9 septiembre) ✓
+- Heatmap 90 días visible, glass UI con gradientes ✓
+- Vault restaurado en device con 3 asignaturas + 5 flashcards pre-aprobadas ✓
+
+---
+
 ## [v0.47.20] - 2026-09-08 — Security hardening round
 
 **🔴 CRITICAL: Android keystore + passwords fueron commiteados al repo público en v0.32.**
