@@ -6,6 +6,7 @@
 //        verifyChain() detecta cualquier modificacion, insercion o borrado.
 
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { WormAuditLog, type WormEntry } from "../utils/wormAudit.js";
 
 export type AuditAction =
@@ -53,8 +54,7 @@ function getDefaultAuditPath(): string {
   if (process.env.NODE_ENV === "production") {
     return "/var/log/mnexus/audit.jsonl";
   }
-  // dev/test: archivo temporal
-  const { tmpdir } = require("node:os") as typeof import("node:os");
+  // dev/test: archivo temporal (v0.48: tmpdir se importa arriba, antes era require() que crasheaba en ESM)
   return join(tmpdir(), `mnexus-audit-${process.pid}.jsonl`);
 }
 

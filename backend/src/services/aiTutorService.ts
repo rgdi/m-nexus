@@ -2,15 +2,18 @@
 //
 // v0.46: tutor médico que responde preguntas del usuario usando
 // contexto de las notas del vault (Retrieval Augmented Generation).
-//
 // Diseño:
 //   1. Usuario pregunta algo
 //   2. Buscamos notas relevantes (FTS5)
 //   3. Top-k notas se incluyen como contexto
 //   4. LLM genera respuesta con el contexto
 //   5. Si no hay LLM disponible, fallback a extract-based answer
+//
+// v0.48: usa LLMService real de services/llm.ts (Ollama local) en
+// lugar del stub interno.
 
-import { SearchService } from "./searchService";
+import { SearchService } from "./searchService.js";
+import { LLMService, type ChatRequest } from "./llm.js";
 
 export interface TutorContext {
   /** Query del usuario */
@@ -62,6 +65,16 @@ export class AITutorService {
    */
   async ask(query: string, topK = 5): Promise<TutorResponse> {
     const context = await this.retrieveContext(query, topK);
+    return this.askWithContext(query, context);
+  }
+
+  /**
+   * v0.48: genera respuesta con un contexto pre-computado.
+   * Útil cuando el contexto se computó en otro lado (cliente Flutter,
+   * vector store externo, etc.) y no queremos que el backend haga
+   * FTS5 search sobre el vault del dispositivo.
+   */
+  async askWithContext(query: string, context: TutorContext): Promise<TutorResponse> {
     if (context.snippets.length === 0) {
       return {
         query,
@@ -87,17 +100,22 @@ ${context.snippets.map((s, i) => `[${i + 1}] ${s.path}\n${s.snippet}`).join("\n\
     const userPrompt = `Pregunta: ${query}\n\nRespuesta:`;
 
     try {
-      const llmResponse = await this.llmService.generate({
-        system: systemPrompt,
-        user: userPrompt,
-        maxTokens: 600,
+      // v0.48: usar LLMService real de services/llm.ts (Ollama/OpenRouter).
+      const chatReq: ChatRequest = {
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        model: process.env.OLLAMA_MODEL ?? "llama3.2:3b",
         temperature: 0.3,
-      });
+        maxTokens: 600,
+      };
+      const llmResponse = await this.llmService.chat(chatReq);
 
-      if (llmResponse.text && llmResponse.text.length > 0) {
+      if (llmResponse.content && llmResponse.content.length > 0) {
         return {
           query,
-          answer: llmResponse.text,
+          answer: llmResponse.content,
           sources: context.relevantNotes,
           confidence: 0.85,
           source: "llm",
@@ -111,7 +129,7 @@ ${context.snippets.map((s, i) => `[${i + 1}] ${s.path}\n${s.snippet}`).join("\n\
     const best = context.snippets[0];
     return {
       query,
-      answer: `Información encontrada en ${best.path}:\n\n${best.snippet}\n\n(Añade una API key de LLM para respuestas generadas por IA.)`,
+      answer: `Información encontrada en ${best.path}:\n\n${best.snippet}\n\n(Añade Ollama configurado o API key para respuestas generadas por IA.)`,
       sources: [best.path],
       confidence: 0.5,
       source: "extractive",
@@ -137,62 +155,25 @@ Contexto:
 ${context.snippets.map((s, i) => `[${i + 1}] ${s.path}\n${s.snippet}`).join("\n\n")}`;
 
     try {
-      const response = await this.llmService.generate({
-        system: systemPrompt,
-        user: `Genera ${count} preguntas:`,
-        maxTokens: 800,
+      const chatReq: ChatRequest = {
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: `Genera ${count} preguntas:` },
+        ],
+        model: process.env.OLLAMA_MODEL ?? "llama3.2:3b",
         temperature: 0.5,
-      });
-
-      return parseQuizQuestions(response.text, context.relevantNotes);
+        maxTokens: 800,
+      };
+      const response = await this.llmService.chat(chatReq);
+      return parseQuizQuestions(response.content, context.relevantNotes);
     } catch {
       return [];
     }
   }
 }
 
-interface LLMRequest {
-  system: string;
-  user: string;
-  maxTokens?: number;
-  temperature?: number;
-}
-
-interface LLMResponse {
-  text: string;
-  model?: string;
-  usage?: { promptTokens: number; completionTokens: number };
-}
-
-/**
- * LLMService fallback (mock interface).
- * En producción, este servicio se conecta a OpenAI/Anthropic/Ollama.
- * Aquí proporcionamos una implementación stub que usa heurística para
- * que los tests funcionen sin key de API.
- */
-export class LLMService {
-  async generate(req: LLMRequest): Promise<LLMResponse> {
-    // Si hay una key de OpenAI configurada, hacer HTTP request real
-    if (process.env.OPENAI_API_KEY) {
-      return await this.generateOpenAI(req);
-    }
-    if (process.env.OLLAMA_HOST) {
-      return await this.generateOllama(req);
-    }
-    // Sin key: retornar string vacío → el caller hace fallback
-    return { text: "" };
-  }
-
-  private async generateOpenAI(req: LLMRequest): Promise<LLMResponse> {
-    // En producción: HTTP POST a https://api.openai.com/v1/chat/completions
-    // Por simplicidad, retornamos vacío (no se ejecuta en sandbox)
-    return { text: "" };
-  }
-
-  private async generateOllama(req: LLMRequest): Promise<LLMResponse> {
-    return { text: "" };
-  }
-}
+// v0.48: el LLMService stub interno se eliminó. Ahora usamos el real
+// de services/llm.ts (Ollama local o OpenRouter). Ver el import arriba.
 
 function parseQuizQuestions(text: string, sources: string[]): Array<{ question: string; answer: string; source: string }> {
   if (!text) return [];

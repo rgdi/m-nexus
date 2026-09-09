@@ -1,10 +1,15 @@
 // v0.28: Rutas HTTP para AI (vault eval, proposals, knowledge graph, quiz).
 // v0.46: proposalsV2 usa LLM real (Ollama/OpenRouter) con fallback heurístico.
 // v0.46: /fsrs/review usa ts-fsrs real (no la implementación con W hardcoded).
+// v0.48: /ai/tutor endpoint que conecta AITutorService (RAG) con el frontend.
 
 import { FastifyInstance } from "fastify";
 import { evaluateVault, type NoteSnapshotInput, type VaultEvaluationResult } from "../services/vaultEval.js";
 import { generateProposalsV2, type GenerateProposalsInput, type GenerateProposalsResult, clearProposalCache } from "../services/proposalsV2.js";
+import { AITutorService, type TutorContext } from "../services/aiTutorService.js";
+import { LazySearchService } from "../services/lazySearchService.js";
+import { SearchService } from "../services/searchService.js";
+import { LLMService } from "../services/llm.js";
 import type { Proposal } from "../services/proposalsTypes.js";
 import {
   KnowledgeGraph, addConcept, getConcept, findByTerm, allConcepts,
@@ -268,6 +273,72 @@ export async function aiRoutes(app: FastifyInstance): Promise<void> {
             intervalDays: reviewed.card.scheduled_days,
             log: reviewed.log,
           };
+        },
+      });
+      if (!r.success || !r.value) throw r.error!;
+      return r.value;
+    },
+  );
+
+  // ── v0.48: AI Tutor (RAG sobre notas) ────────────────────────
+  // Endpoint usado por el frontend Flutter (ai_tutor_client.dart).
+  // Estrategia:
+  //   1. Recibe { question, context?, history? }
+  //   2. Si hay context (cliente ya buscó notas relevantes), usa directo
+  //   3. Si no, intenta SearchService → falla rápido si no hay vault
+  //   4. Llama a LLMService (Ollama local) con el contexto
+  //   5. Si falla → fallback extractivo
+  app.post<{ Body: { question: string; context?: string; history?: Array<{ role: string; content: string }> } }>(
+    "/tutor",
+    async (req) => {
+      const { question, context } = req.body;
+      if (!question || typeof question !== "string" || question.trim().length === 0) {
+        throw E.val("EC-TUTOR-001", "question es requerido", {
+          context: { bodyKeys: Object.keys(req.body ?? {}) },
+          hint: "Send { question: 'tu pregunta' }",
+        });
+      }
+      const r = await safeCallAsync({
+        component: "tutor",
+        code: "EC-TUTOR-002",
+        message: "tutor endpoint failed",
+        context: { questionLen: question.length, hasContext: !!context },
+        op: async () => {
+          // Construir contexto. Prioridad: client-provided context > vault search
+          let snippets: Array<{ path: string; snippet: string; score: number }> = [];
+          let relevantNotes: string[] = [];
+          if (context && context.trim().length > 0) {
+            // El cliente (LocalTutorService) ya buscó y envió el contexto.
+            // Lo usamos como "best snippet" para el fallback extractivo.
+            snippets = [{ path: "(client-provided context)", snippet: context, score: 1.0 }];
+            relevantNotes = ["(client-provided context)"];
+          } else {
+            // Sin contexto del cliente → intentar RAG local con el vault del backend.
+            // Esto solo funciona si el backend tiene acceso al vault, lo cual
+            // típicamente NO es el caso (vault está en el dispositivo). Por eso
+            // devolvemos "empty" y el cliente cae al LocalTutorService.
+            snippets = [];
+            relevantNotes = [];
+          }
+          const ctx: TutorContext = {
+            query: question,
+            relevantNotes,
+            snippets,
+          };
+          const response = await new AITutorService(
+            // v0.48: LazySearchService no crashea si better-sqlite3 falla.
+            // Si falla → returns []. El flujo con context forneado por el cliente
+            // funciona igual (snippets del cliente, no del backend search).
+            new LazySearchService() as unknown as SearchService,
+            new LLMService(),
+          ).askWithContext(question, ctx);
+          logOp("tutor", "ask", true, {
+            questionLen: question.length,
+            sourceCount: response.sources.length,
+            confidence: response.confidence,
+            source: response.source,
+          });
+          return response;
         },
       });
       if (!r.success || !r.value) throw r.error!;
