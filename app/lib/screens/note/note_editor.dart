@@ -3,10 +3,13 @@
 // Antes: requeria notePath obligatorio, lo que causaba crash al crear desde home.
 
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../core/shortcuts.dart';
 import '../../core/theme.dart';
@@ -52,6 +55,7 @@ class _NoteEditorState extends State<NoteEditor> {
   final _bodyFocus = FocusNode(debugLabel: 'note-editor-body');
   final _scrollController = ScrollController();
   final _log = AdvancedLogger.instance;
+  final ImagePicker _imagePicker = ImagePicker();
 
   VaultService? _vault;
   Note? _original;
@@ -229,6 +233,24 @@ class _NoteEditorState extends State<NoteEditor> {
     _bodyFocus.requestFocus();
   }
 
+  /// Opens the image picker, copies the chosen file into
+  /// `<vaultPath>/_M-NEXUS/images/<uuid>.<ext>`, and inserts a markdown
+  /// image reference `![alt](relative_path)` at the current cursor
+  /// position.
+  ///
+  /// Exposed as a top-level helper (see [pickAndInsertImage]) so the
+  /// behaviour can be exercised by unit tests with a mocked
+  /// [ImagePicker].
+  Future<void> _pickAndInsertImage() async {
+    await pickAndInsertImage(
+      picker: _imagePicker,
+      vaultPath: widget.vaultPath,
+      bodyController: _bodyController,
+      bodyFocus: _bodyFocus,
+      log: _log,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -236,6 +258,11 @@ class _NoteEditorState extends State<NoteEditor> {
       appBar: AppBar(
         title: Text(_isNewNote ? 'Nueva nota' : (_titleController.text.isEmpty ? 'Editar' : _titleController.text)),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.image_outlined),
+            onPressed: _pickAndInsertImage,
+            tooltip: 'Insertar imagen',
+          ),
           IconButton(
             icon: Icon(_showPreview ? Icons.edit : Icons.preview),
             onPressed: () => setState(() => _showPreview = !_showPreview),
@@ -375,4 +402,90 @@ class _ToolbarBtn extends StatelessWidget {
       tooltip: '',
     );
   }
+}
+
+/// Image subfolder inside the vault's `_M-NEXUS/` directory.
+const String _kImagesDir = '_M-NEXUS/images';
+
+const Uuid _uuidGen = Uuid();
+
+/// Opens the image picker, copies the chosen file into
+/// `<vaultPath>/_M-NEXUS/images/<uuid>.<ext>`, and inserts a markdown
+/// image reference `![alt](relative_path)` at the current cursor
+/// position inside [bodyController].
+///
+/// This is a pure function (no `BuildContext`, no implicit
+/// dependencies) so unit tests can drive it with a mocked [picker].
+Future<void> pickAndInsertImage({
+  required ImagePicker picker,
+  required String vaultPath,
+  required TextEditingController bodyController,
+  required FocusNode bodyFocus,
+  AdvancedLogger? log,
+}) async {
+  final XFile? picked;
+  try {
+    picked = await picker.pickImage(source: ImageSource.gallery);
+  } catch (e, st) {
+    log?.error('note_editor', 'image_picker.pickImage threw',
+        error: e, stack: st);
+    return;
+  }
+  if (picked == null) {
+    // User dismissed the picker — silent no-op.
+    return;
+  }
+
+  final ext = p.extension(picked.path).toLowerCase();
+  final safeExt = ext.isEmpty ? '.png' : ext;
+  final id = _uuidGen.v4();
+  final filename = '$id$safeExt';
+  final imagesDir = Directory(p.join(vaultPath, _kImagesDir));
+  try {
+    if (!await imagesDir.exists()) {
+      await imagesDir.create(recursive: true);
+    }
+  } catch (e, st) {
+    log?.error('note_editor', 'imagesDir.create failed',
+        error: e, stack: st,
+        context: {'path': imagesDir.path});
+    return;
+  }
+
+  final dest = File(p.join(imagesDir.path, filename));
+  try {
+    await File(picked.path).copy(dest.path);
+  } catch (e, st) {
+    log?.error('note_editor', 'image copy failed',
+        error: e, stack: st,
+        context: {'src': picked.path, 'dst': dest.path});
+    return;
+  }
+
+  final relativePath = '$_kImagesDir/$filename';
+  final alt = 'image';
+  final markdown = '![$alt]($relativePath)';
+  _insertAtCursor(bodyController, bodyFocus, markdown);
+}
+
+/// Inserts [text] into [controller] at the current selection, leaving
+/// the cursor immediately after the inserted text.
+void _insertAtCursor(
+  TextEditingController controller,
+  FocusNode focus,
+  String text,
+) {
+  final sel = controller.selection;
+  final base = controller.text;
+  final start = sel.start < 0 ? base.length : sel.start;
+  final end = sel.start < 0 ? base.length : sel.end;
+  final before = base.substring(0, start);
+  final after = base.substring(end);
+  final newText = '$before$text$after';
+  final caret = start + text.length;
+  controller.value = TextEditingValue(
+    text: newText,
+    selection: TextSelection.collapsed(offset: caret),
+  );
+  focus.requestFocus();
 }

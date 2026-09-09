@@ -127,7 +127,7 @@ class _NoteViewState extends State<NoteView> {
           _buildFrontmatter(note.frontmatter),
           if (note.frontmatter.isNotEmpty) const SizedBox(height: 16),
           MarkdownBody(
-            data: note.content.isEmpty ? '_(vacío)_' : note.content,
+            data: _preprocessWikilinks(note.content.isEmpty ? '_(vacío)_' : note.content),
             selectable: true,
             onTapLink: (text, href, title) {
               if (href == null) return;
@@ -229,5 +229,59 @@ class _NoteViewState extends State<NoteView> {
         SnackBar(content: Text('Link: $href')),
       );
     }
+  }
+
+  /// v0.48.5: pre-procesa el contenido markdown para que [[wikilinks]] se
+  /// conviertan en links markdown estándar [title](target.md). Sin esto,
+  /// flutter_markdown los muestra como texto plano.
+  ///
+  /// Formatos soportados:
+  ///   [[note]]              → [note](note.md)
+  ///   [[note|alias]]        → [alias](note.md)  (alias replaces displayed text)
+  ///   [[folder/note#sec]]   → [folder/note#sec](folder/note.md)  (anchor preservado)
+  String _preprocessWikilinks(String content) {
+    return WikilinkPreprocessor.process(content);
+  }
+}
+
+/// v0.48.5: utility class para pre-procesar wikilinks. Expuesto estáticamente
+/// para poder testear sin instanciar NoteView.
+class WikilinkPreprocessor {
+  WikilinkPreprocessor._();
+
+  /// Pre-procesa el contenido markdown convirtiendo [[wikilinks]] en links.
+  static String process(String content) {
+    return content.replaceAllMapped(
+      RegExp(r'\[\[([^\]\n]+)\]\]'),
+      (match) {
+        final raw = match.group(1)!.trim();
+        if (raw.isEmpty) return match.group(0)!;
+        // Split en alias: target|display
+        final pipeIdx = raw.indexOf('|');
+        final String target;
+        final String display;
+        if (pipeIdx > 0) {
+          target = raw.substring(0, pipeIdx).trim();
+          display = raw.substring(pipeIdx + 1).trim();
+        } else {
+          target = raw;
+          display = raw;
+        }
+        // Si tiene fragmento (#section), lo separamos
+        String file = target;
+        String fragment = '';
+        final hashIdx = target.indexOf('#');
+        if (hashIdx >= 0) {
+          file = target.substring(0, hashIdx);
+          fragment = target.substring(hashIdx); // incluye el '#'
+        }
+        // Añadir .md si no lo tiene
+        if (!file.endsWith('.md')) {
+          file = '$file.md';
+        }
+        final href = fragment.isEmpty ? file : '$file$fragment';
+        return '[$display]($href)';
+      },
+    );
   }
 }

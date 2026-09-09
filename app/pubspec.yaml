@@ -17,7 +17,9 @@ dependencies:
   # CORE - USED in lib/ (verified with grep)
   # =========================================================================
   # Permisos y archivos
-  path_provider: ^2.1.4
+  path_provider: ^2.1.2
+  # Image picker (insert images into the note editor)
+  image_picker: ^1.0.7
   # HTTP client
   http: ^1.2.2
   # Path manipulation
