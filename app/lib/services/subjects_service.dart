@@ -84,9 +84,13 @@ class SubjectsService {
     if (!await f.exists()) return [];
     try {
       final raw = await f.readAsString();
-      final list = jsonDecode(raw) as List;
+      final decoded = jsonDecode(raw);
+      // Aceptar tanto Array como {subjects: [...]} para flexibilidad.
+      final list = decoded is List ? decoded : (decoded as Map<String, dynamic>)['subjects'] as List;
       return list.map((j) => Subject.fromJson(j as Map<String, dynamic>)).toList();
-    } catch (_) {
+    } catch (e) {
+      // ignore: avoid_print
+      print('SubjectsService.loadAll: parse error: $e');
       return [];
     }
   }

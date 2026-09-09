@@ -72,9 +72,13 @@ class ExamsService {
     if (!await f.exists()) return [];
     try {
       final raw = await f.readAsString();
-      final list = jsonDecode(raw) as List;
+      final decoded = jsonDecode(raw);
+      // Aceptar tanto Array como {exams: [...]} para flexibilidad.
+      final list = decoded is List ? decoded : (decoded as Map<String, dynamic>)['exams'] as List;
       return list.map((j) => Exam.fromJson(j as Map<String, dynamic>)).toList();
-    } catch (_) {
+    } catch (e) {
+      // ignore: avoid_print
+      print('ExamsService.loadAll: parse error: $e');
       return [];
     }
   }
