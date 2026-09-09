@@ -23,6 +23,10 @@ class Flashcard {
   // Si está presente, se renderiza como Image/GIF en el review.
   final String? mediaPath;
   final String? mediaType; // 'image', 'gif', 'video'
+  // v0.48.3: ruta de la nota de la que se generó automáticamente.
+  // Si es null, la card fue creada manualmente.
+  // Path absoluto (resuelto al cargar la card).
+  final String? sourceNote;
   // v0.46: FSRS fields (mismo shape que backend, nullable para compat legacy)
   final double stability;        // S en FSRS
   final double retrievability;    // R en FSRS
@@ -43,6 +47,7 @@ class Flashcard {
     this.nextReview,
     this.mediaPath,
     this.mediaType,
+    this.sourceNote,
     this.stability = 0.0,
     this.retrievability = 1.0,
     this.reps = 0,
@@ -64,6 +69,7 @@ class Flashcard {
     bool? approved,
     String? mediaPath,
     String? mediaType,
+    String? sourceNote,
     double? stability,
     double? retrievability,
     int? reps,
@@ -83,6 +89,7 @@ class Flashcard {
       approved: approved ?? this.approved,
       mediaPath: mediaPath ?? this.mediaPath,
       mediaType: mediaType ?? this.mediaType,
+      sourceNote: sourceNote ?? this.sourceNote,
       stability: stability ?? this.stability,
       retrievability: retrievability ?? this.retrievability,
       reps: reps ?? this.reps,
@@ -398,6 +405,12 @@ ${card.answer}
         difficulty: int.tryParse(fm['difficulty'] ?? '3') ?? 3,
         nextReview: DateTime.tryParse(fm['nextReview'] ?? ''),
         approved: approved,
+        // v0.48.3: source_note del frontmatter (puede ser path absoluto
+        // o relativo al vault). La nota fuente se persiste desde
+        // createCard().
+        sourceNote: fm['source_note'],
+        mediaPath: fm['media_path'],
+        mediaType: fm['media_type'],
       );
     } catch (e) {
       log.warn('fc', 'Parse failed', context: {'path': f.path});

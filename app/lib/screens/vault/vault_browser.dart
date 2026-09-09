@@ -26,12 +26,18 @@ class _VaultBrowserState extends State<VaultBrowser> {
   bool _loading = true;
   String? _selectedRelPath;
   String _filter = '';
-  
+  final TextEditingController _searchCtrl = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -60,6 +66,22 @@ class _VaultBrowserState extends State<VaultBrowser> {
     setState(() { _loading = false; });
   }
 
+  /// v0.48.2: refrescar el árbol desde disco (pull-to-refresh o botón).
+  Future<void> _refreshVault() async {
+    if (_vault == null) return;
+    final log = AdvancedLogger.instance;
+    log.info('vault_browser', 'refresh requested');
+    _vault!.invalidateCache();
+    final tree = await _vault!.loadTree();
+    if (!mounted) return;
+    setState(() {
+      _tree = tree;
+    });
+    log.info('vault_browser', 'refresh done', context: {
+      'children': tree.children.length,
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) return const LoadingState(message: 'Cargando vault…');
@@ -79,6 +101,11 @@ class _VaultBrowserState extends State<VaultBrowser> {
         title: Text(p.basename(_vault!.vaultPath)),
         actions: [
           IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _refreshVault,
+            tooltip: 'Recargar vault',
+          ),
+          IconButton(
             icon: const Icon(Icons.add),
             onPressed: _createNote,
             tooltip: 'Nueva nota',
@@ -90,16 +117,31 @@ class _VaultBrowserState extends State<VaultBrowser> {
           Padding(
             padding: const EdgeInsets.all(12),
             child: TextField(
-              decoration: const InputDecoration(
+              controller: _searchCtrl,
+              decoration: InputDecoration(
                 hintText: 'Buscar en vault…',
-                prefixIcon: Icon(Icons.search),
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchCtrl.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchCtrl.clear();
+                          setState(() => _filter = '');
+                        },
+                      )
+                    : null,
                 isDense: true,
               ),
               onChanged: (v) => setState(() => _filter = v.toLowerCase()),
             ),
           ),
           const Divider(height: 1),
-          Expanded(child: _buildTree(_tree!, initiallyExpanded: true)),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _refreshVault,
+              child: _buildTree(_tree!, initiallyExpanded: true),
+            ),
+          ),
         ],
       ),
     );
@@ -127,7 +169,12 @@ class _VaultBrowserState extends State<VaultBrowser> {
                   ),
                 ),
                 const Divider(height: 1),
-                Expanded(child: _buildTree(_tree!, initiallyExpanded: true)),
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: _refreshVault,
+                    child: _buildTree(_tree!, initiallyExpanded: true),
+                  ),
+                ),
               ],
             ),
           ),

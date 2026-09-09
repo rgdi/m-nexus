@@ -28,6 +28,13 @@ class FlashcardReview extends StatefulWidget {
   final FlashcardService service;
   final FsrsEngine? fsrs; // Opcional: inyectar engine (default fsrs5)
   final VoidCallback? onFinish;
+  // v0.48.3: callback cuando el usuario quiere abrir la nota fuente.
+  final void Function(String sourceNotePath)? onNoteOpen;
+  // v0.48.3: callback para abrir imagen/vídeo embebido en la card.
+  final void Function(String mediaPath)? onMediaOpen;
+  // v0.48.3: vaultPath para resolver sourceNote (puede ser absoluto o
+  // relativo). Si no se da, sourceNote se trata como absoluto.
+  final String? vaultPath;
 
   const FlashcardReview({
     super.key,
@@ -35,6 +42,9 @@ class FlashcardReview extends StatefulWidget {
     required this.service,
     this.fsrs,
     this.onFinish,
+    this.onNoteOpen,
+    this.onMediaOpen,
+    this.vaultPath,
   });
 
   @override
@@ -48,6 +58,33 @@ class _FlashcardReviewState extends State<FlashcardReview> {
   int _incorrect = 0;
   DateTime? _cardStartTime;
   late FsrsEngine _fsrs;
+
+  /// v0.48.3: nota fuente resuelta (absoluta) de la card actual.
+  String? get _currentSourceNote {
+    if (_index >= widget.cards.length) return null;
+    final card = widget.cards[_index];
+    final src = card.sourceNote;
+    if (src == null || src.isEmpty) return null;
+    if (widget.vaultPath == null || widget.vaultPath!.isEmpty) return src;
+    // Si es relativa, unirla con vaultPath.
+    if (!src.startsWith('/')) {
+      return '${widget.vaultPath}/$src';
+    }
+    return src;
+  }
+
+  /// v0.48.3: path de media embebido de la card actual.
+  String? get _currentMediaPath {
+    if (_index >= widget.cards.length) return null;
+    final card = widget.cards[_index];
+    final mp = card.mediaPath;
+    if (mp == null || mp.isEmpty) return null;
+    if (widget.vaultPath == null || widget.vaultPath!.isEmpty) return mp;
+    if (!mp.startsWith('/')) {
+      return '${widget.vaultPath}/$mp';
+    }
+    return mp;
+  }
 
   @override
   void initState() {
@@ -77,6 +114,28 @@ class _FlashcardReviewState extends State<FlashcardReview> {
       appBar: AppBar(
         title: Text('${_index + 1} / ${widget.cards.length}'),
         actions: [
+          // v0.48.3: botón para abrir la nota fuente de la card actual.
+          if (widget.onNoteOpen != null && _currentSourceNote != null)
+            IconButton(
+              icon: const Icon(Icons.open_in_new),
+              tooltip: 'Ver nota fuente',
+              onPressed: () {
+                final src = _currentSourceNote!;
+                if (src.isEmpty) return;
+                widget.onNoteOpen!(src);
+              },
+            ),
+          // v0.48.3: botón para abrir media embebido en la card.
+          if (widget.onMediaOpen != null && _currentMediaPath != null)
+            IconButton(
+              icon: const Icon(Icons.image),
+              tooltip: 'Ver imagen',
+              onPressed: () {
+                final mp = _currentMediaPath!;
+                if (mp.isEmpty) return;
+                widget.onMediaOpen!(mp);
+              },
+            ),
           if (_index > 0)
             IconButton(
               icon: const Icon(Icons.arrow_back),
