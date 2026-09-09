@@ -1,8 +1,13 @@
 // MainShell: navigation adaptativa con bottom nav (mobile) /
 // NavigationRail (tablet/desktop).
+//
+// v0.49: mobile usa FloatingDock glass en lugar de NavigationBar nativo;
+// cada página recibe AppBackground en su Scaffold.
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../core/design_tokens.dart';
+import '../widgets/glass_widgets.dart';
 import 'theme.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/vault/vault_browser.dart';
@@ -22,10 +27,14 @@ class _MainShellState extends State<MainShell> {
   int _index = 0;
 
   static const _destinations = [
-    _NavDest(Icons.home_outlined, Icons.home, 'Inicio', HomeScreen()),
-    _NavDest(Icons.folder_outlined, Icons.folder, 'Vault', VaultBrowser()),
-    _NavDest(Icons.style_outlined, Icons.style, 'Tarjetas', FlashcardsList()),
-    _NavDest(Icons.settings_outlined, Icons.settings, 'Ajustes', SettingsScreen()),
+    _NavDest(
+        Icons.home_outlined, Icons.home_rounded, 'Inicio', HomeScreen()),
+    _NavDest(
+        Icons.folder_outlined, Icons.folder_rounded, 'Vault', VaultBrowser()),
+    _NavDest(Icons.style_outlined, Icons.style_rounded, 'Tarjetas',
+        FlashcardsList()),
+    _NavDest(Icons.settings_outlined, Icons.settings_rounded, 'Ajustes',
+        SettingsScreen()),
   ];
 
   @override
@@ -59,17 +68,26 @@ class _MainShellState extends State<MainShell> {
 
   Widget _buildMobile(BuildContext context) {
     return Scaffold(
-      body: SafeArea(child: _destinations[_index].page),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() { _index = i; }),
-        destinations: _destinations
-            .map((d) => NavigationDestination(
-                  icon: Icon(d.icon),
-                  selectedIcon: Icon(d.activeIcon),
-                  label: d.label,
-                ))
-            .toList(),
+      // AppBackground envuelve la página activa + un Stack permite el dock
+      // flotante por encima sin afectar el contenido.
+      body: Stack(
+        children: [
+          // Página activa (cada una ya trae su AppBackground si quiere)
+          Positioned.fill(child: _destinations[_index].page),
+          // Floating dock en la parte inferior
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: FloatingDock(
+              currentIndex: _index,
+              onTap: (i) => setState(() { _index = i; }),
+              items: _destinations
+                  .map((d) => DockItem(icon: d.icon, label: d.label))
+                  .toList(),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -81,34 +99,35 @@ class _MainShellState extends State<MainShell> {
         children: [
           NavigationRail(
             extended: extended,
-            minExtendedWidth: 180,
+            minExtendedWidth: 200,
             selectedIndex: _index,
             onDestinationSelected: (i) => setState(() { _index = i; }),
             labelType: extended
                 ? NavigationRailLabelType.none
                 : NavigationRailLabelType.all,
             leading: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    width: 36, height: 36,
+                    width: 38, height: 38,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFF4F6BED), Color(0xFF7B5BE6)],
+                        colors: [Color(0xFF5B5BD6), Color(0xFF8B5CF6)],
                       ),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(11),
+                      boxShadow: MxShadows.md,
                     ),
                     alignment: Alignment.center,
                     child: const Text('M',
                       style: TextStyle(color: Colors.white,
-                        fontWeight: FontWeight.bold, fontSize: 18)),
+                        fontWeight: FontWeight.w800, fontSize: 19)),
                   ),
                   if (extended) ...[
                     const SizedBox(width: 12),
                     const Text('M-NEXUS',
-                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
                   ],
                 ],
               ),

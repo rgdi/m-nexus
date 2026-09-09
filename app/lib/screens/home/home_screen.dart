@@ -11,13 +11,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
-import '../../core/theme.dart';
+import '../../core/design_tokens.dart';
 import '../../services/flashcard_service.dart';
 import '../../services/fsrs_engine.dart';
 import '../../services/heatmap_service.dart';
 import '../../services/vault_service.dart';
 import '../../services/study_stats_service.dart';
 import '../../state/app_state.dart';
+import '../../widgets/glass_widgets.dart';
 import '../flashcards/flashcard_review.dart';
 import '../flashcards/flashcard_edit.dart';
 import '../note/note_editor.dart';
@@ -209,6 +210,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final hour = DateTime.now().hour;
     final greeting = hour < 12
       ? 'Buenos días'
@@ -216,176 +218,286 @@ class _HomeScreenState extends State<HomeScreen> {
         ? 'Buenas tardes'
         : 'Buenas noches';
 
+    final subtitle = _dueCount > 0
+        ? '$_dueCount tarjeta${_dueCount == 1 ? "" : "s"} para repasar hoy'
+        : _streak > 0
+            ? 'Llevas $_streak día${_streak == 1 ? "" : "s"} de racha 🔥'
+            : 'Empieza con una sesión corta de 5 minutos';
+
     return Scaffold(
       body: RefreshIndicator(
         onRefresh: _load,
+        color: scheme.primary,
         child: CustomScrollView(
           slivers: [
-            // Header con saludo
+            // ── HERO BANNER ──
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              padding: const EdgeInsets.fromLTRB(
+                  MxSpacing.lg, MxSpacing.lg, MxSpacing.lg, MxSpacing.lg),
               sliver: SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(greeting,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        )),
-                    const SizedBox(height: 4),
-                    Text('¿Qué quieres aprender hoy?',
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        )),
-                  ],
+                child: HeroCard(
+                  gradient: scheme.brightness == Brightness.dark
+                      ? MxColors.heroGradientDark
+                      : MxColors.heroGradientLight,
+                  height: 200,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.wb_sunny_outlined,
+                                      color: Colors.white.withOpacity(0.7),
+                                      size: 16,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      greeting,
+                                      style: theme.textTheme.bodyMedium?.copyWith(
+                                        color: Colors.white.withOpacity(0.85),
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  '¿Qué quieres aprender hoy?',
+                                  style: theme.textTheme.headlineMedium?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: -0.5,
+                                    height: 1.15,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.18),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.3),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: const Center(
+                              child: Text('🧠', style: TextStyle(fontSize: 20)),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Icon(Icons.auto_awesome, color: Colors.white.withOpacity(0.7), size: 14),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              subtitle,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: Colors.white.withOpacity(0.92),
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
 
-            const SliverToBoxAdapter(child: SizedBox(height: 16)),
-
-            // Stats grid (2x2)
+            // ── STATS GRID 2×2 ──
             SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: MxSpacing.lg),
               sliver: SliverGrid.count(
                 crossAxisCount: 2,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 1.6,
+                mainAxisSpacing: MxSpacing.md,
+                crossAxisSpacing: MxSpacing.md,
+                childAspectRatio: 1.65,
                 children: [
-                  _StatCard(
-                    icon: Icons.local_fire_department,
+                  StatCard(
+                    icon: Icons.local_fire_department_rounded,
                     label: 'Racha',
                     value: '$_streak',
                     suffix: _streak == 1 ? 'día' : 'días',
-                    color: Colors.orange,
+                    gradient: MxColors.statStreak,
                   ),
-                  _StatCard(
-                    icon: Icons.style_outlined,
+                  StatCard(
+                    icon: Icons.style_rounded,
                     label: 'Para repasar',
                     value: '$_dueCount',
                     suffix: 'tarjetas',
-                    color: theme.colorScheme.primary,
+                    gradient: MxColors.statCards,
+                    onTap: _dueCount > 0 ? _reviewDue : null,
                   ),
-                  _StatCard(
+                  StatCard(
                     icon: Icons.timer_outlined,
                     label: 'Tiempo hoy',
                     value: '$_minutesToday',
-                    suffix: 'minutos',
-                    color: Colors.purple,
+                    suffix: 'min',
+                    gradient: MxColors.statTime,
                   ),
-                  _StatCard(
-                    icon: Icons.psychology_outlined,
+                  StatCard(
+                    icon: Icons.psychology_rounded,
                     label: 'Retención',
                     value: '${(_retention * 100).toInt()}',
                     suffix: '%',
-                    color: Colors.green,
+                    gradient: MxColors.statRetention,
                   ),
                 ],
               ),
             ),
 
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+            const SliverToBoxAdapter(child: SizedBox(height: MxSpacing.xl)),
 
-            // Heatmap
+            // ── HEATMAP ──
             SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: MxSpacing.lg),
               sliver: SliverToBoxAdapter(
-                child: _DashboardCard(
-                  title: 'Actividad',
-                  subtitle: 'Últimos 90 días',
-                  child: SizedBox(
-                    // v0.47.31: height dinámico según daysToShow.
-                    // Antes era height: 100 fijo, lo que provocaba
-                    // "BOTTOM OVERFLOWED BY 22 PIXELS" porque el contenido
-                    // real era ~130px (7 rows × 14px + legend ~24px + gap).
-                    // Fórmula: rows × (cellHeight + 2*padding) + legendHeight + gap
-                    height: 7 * 14.0 + 8 + 24,
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: ReviewHeatmap(
-                        dailyStats: _dailyStats,
-                        daysToShow: 90,
+                child: GlassCard(
+                  borderRadius: MxRadius.xl,
+                  padding: const EdgeInsets.all(MxSpacing.lg),
+                  shadows: MxShadows.sm,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.calendar_view_month_rounded, size: 18),
+                          const SizedBox(width: MxSpacing.sm),
+                          Text(
+                            'Actividad',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            'Últimos 90 días',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
+                      const SizedBox(height: MxSpacing.md),
+                      SizedBox(
+                        height: 7 * 14.0 + 8 + 24,
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: ReviewHeatmap(
+                            dailyStats: _dailyStats,
+                            daysToShow: 90,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ),
 
-            const SliverToBoxAdapter(child: SizedBox(height: 16)),
+            const SliverToBoxAdapter(child: SizedBox(height: MxSpacing.xl)),
 
-            // Acciones
+            // ── ACCIONES ──
             SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: MxSpacing.lg),
               sliver: SliverToBoxAdapter(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.only(left: 4, bottom: 8),
-                      child: Text('Acciones',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          )),
+                      padding: const EdgeInsets.only(
+                          left: MxSpacing.xs, bottom: MxSpacing.md),
+                      child: SectionHeader(
+                        title: 'Acciones rápidas',
+                        subtitle: 'Empieza una sesión o crea contenido',
+                      ),
                     ),
-                    _ActionCard(
-                      icon: Icons.add_circle_outline,
+                    ActionCard(
+                      icon: Icons.add_circle_outline_rounded,
                       title: 'Nueva nota',
-                      subtitle: 'Crea una nota en markdown',
+                      subtitle: 'Markdown con cloze, imágenes y dibujo',
                       onTap: _newNote,
                     ),
-                    const SizedBox(height: 8),
-                    _ActionCard(
-                      icon: Icons.style_outlined,
+                    const SizedBox(height: MxSpacing.sm),
+                    ActionCard(
+                      icon: Icons.style_rounded,
                       title: 'Repasar hoy',
                       subtitle: _dueCount == 0
                           ? 'No hay tarjetas pendientes'
-                          : '$_dueCount tarjeta${_dueCount == 1 ? "" : "s"} para repasar',
-                      onTap: _reviewDue,
+                          : '$_dueCount tarjeta${_dueCount == 1 ? "" : "s"} listas',
+                      trailing: _dueCount > 0 ? '$_dueCount' : null,
                       accent: _dueCount > 0,
+                      onTap: _reviewDue,
                     ),
-                    const SizedBox(height: 8),
-                    _ActionCard(
-                      icon: Icons.add_box_outlined,
-                      title: 'Nueva tarjeta',
-                      subtitle: 'Empezar a estudiar',
-                      onTap: _newFlashcard,
-                    ),
-                    const SizedBox(height: 8),
-                    // v0.48: nota diaria de hoy.
-                    _ActionCard(
+                    const SizedBox(height: MxSpacing.sm),
+                    ActionCard(
                       icon: Icons.today_outlined,
                       title: 'Nota diaria',
-                      subtitle: DateFormat('EEEE d MMMM', 'es_ES').format(DateTime.now()),
+                      subtitle: DateFormat('EEEE d MMMM', 'es_ES')
+                          .format(DateTime.now()),
                       onTap: _openDailyNote,
+                    ),
+                    const SizedBox(height: MxSpacing.sm),
+                    ActionCard(
+                      icon: Icons.add_box_outlined,
+                      title: 'Nueva tarjeta',
+                      subtitle: 'Añade una flashcard manualmente',
+                      onTap: _newFlashcard,
+                    ),
+                    const SizedBox(height: MxSpacing.sm),
+                    ActionCard(
+                      icon: Icons.keyboard_command_key_rounded,
+                      title: 'Command palette',
+                      subtitle: 'Ctrl+K para acciones rápidas',
+                      onTap: _showCommandPalette,
                     ),
                   ],
                 ),
               ),
             ),
 
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+            const SliverToBoxAdapter(child: SizedBox(height: MxSpacing.xl)),
 
-            // Notas recientes
+            // ── NOTAS RECIENTES ──
             if (_recentNotes.isNotEmpty) ...[
               SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.fromLTRB(
+                    MxSpacing.lg, 0, MxSpacing.lg, MxSpacing.xl),
                 sliver: SliverToBoxAdapter(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.only(left: 4, bottom: 8),
-                        child: Text('Recientes',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            )),
+                        padding: const EdgeInsets.only(
+                            left: MxSpacing.xs, bottom: MxSpacing.md),
+                        child: SectionHeader(
+                          title: 'Recientes',
+                          subtitle: 'Notas que tocaste recientemente',
+                        ),
                       ),
                       ..._recentNotes.map((n) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: _RecentNoteCard(note: n),
-                      )),
+                            padding: const EdgeInsets.only(
+                                bottom: MxSpacing.sm),
+                            child: _RecentNoteCard(note: n),
+                          )),
                     ],
                   ),
                 ),
