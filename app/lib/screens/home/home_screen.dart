@@ -29,6 +29,7 @@ import '../note/note_editor.dart';
 import '../note/note_view.dart';
 import '../recording/recording_screen.dart';
 import '../attachments/attachments_screen.dart';
+import '../whiteboard/whiteboards_list_screen.dart';
 import '../../services/permissions.dart';
 import '../../widgets/review_heatmap.dart';
 import '../../services/daily_note_service.dart';
@@ -238,6 +239,18 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     await Navigator.push(context, MaterialPageRoute(
       builder: (_) => AttachmentsScreen(vaultPath: app.activeVault!.path),
+    ));
+  }
+
+  /// v0.49.17: abre la lista de whiteboards
+  Future<void> _openWhiteboards() async {
+    final app = AppState.instance;
+    if (!app.hasVault) {
+      _showSnack('Configura un vault primero');
+      return;
+    }
+    await Navigator.push(context, MaterialPageRoute(
+      builder: (_) => WhiteboardsListScreen(vaultPath: app.activeVault!.path),
     ));
   }
 
@@ -730,6 +743,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       title: 'Adjuntos',
                       subtitle: 'PDFs, presentaciones, imagenes',
                       onTap: _openAttachments,
+                    ),
+                    const SizedBox(height: MxSpacing.sm),
+                    // v0.49.17: whiteboards / mind maps
+                    ActionCard(
+                      icon: Icons.account_tree_rounded,
+                      title: 'Whiteboards',
+                      subtitle: 'Mapas mentales y diagramas',
+                      onTap: _openWhiteboards,
                     ),
                     const SizedBox(height: MxSpacing.sm),
                     ActionCard(

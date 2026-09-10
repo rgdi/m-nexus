@@ -365,4 +365,30 @@ class CalendarService {
       return false;
     }
   }
+
+  /// v0.49.16: crea un evento en el calendario. Retorna el eventId o -1.
+  /// Usado para registrar clases grabadas en el calendario del dispositivo.
+  Future<int> createEvent({
+    required String title,
+    String description = '',
+    required DateTime begin,
+    required DateTime end,
+    int? calendarId,
+  }) async {
+    if (!_isAndroid) return -1;
+    if (!await isPermissionGranted()) return -1;
+    try {
+      final id = await _channel.invokeMethod<int>('createEvent', {
+        'title': title,
+        'description': description,
+        'beginMs': begin.millisecondsSinceEpoch,
+        'endMs': end.millisecondsSinceEpoch,
+        'calendarId': calendarId,
+      });
+      return id ?? -1;
+    } catch (e) {
+      AdvancedLogger.instance.warn('calendar', 'createEvent failed', error: e.toString());
+      return -1;
+    }
+  }
 }
