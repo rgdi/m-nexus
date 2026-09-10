@@ -183,6 +183,26 @@ class _FlashcardsListState extends State<FlashcardsList> {
                             color: c.isDue ? Colors.red : null,
                           ),
                         ),
+                        // v0.49.7: tap en la card abre edit
+                        onTap: () {
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (_) => FlashcardEdit(
+                              service: _service!,
+                              existing: c,
+                              onSaved: _load,
+                            ),
+                          ));
+                        },
+                        // v0.49.7: long-press repasa solo esta card
+                        onLongPress: () {
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (_) => FlashcardReview(
+                              cards: [c],
+                              service: _service!,
+                              onFinish: _load,
+                            ),
+                          ));
+                        },
                         trailing: PopupMenuButton<String>(
                           onSelected: (a) async {
                             if (a == 'delete') {
@@ -191,9 +211,21 @@ class _FlashcardsListState extends State<FlashcardsList> {
                             } else if (a == 'approve' && !c.approved) {
                               await _service!.approve(c);
                               _load();
+                            } else if (a == 'review') {
+                              Navigator.push(context, MaterialPageRoute(
+                                builder: (_) => FlashcardReview(
+                                  cards: [c],
+                                  service: _service!,
+                                  onFinish: _load,
+                                ),
+                              ));
                             }
                           },
                           itemBuilder: (_) => [
+                            const PopupMenuItem(
+                              value: 'review',
+                              child: Text('Repasar esta'),
+                            ),
                             if (!c.approved)
                               const PopupMenuItem(
                                 value: 'approve',
@@ -205,15 +237,6 @@ class _FlashcardsListState extends State<FlashcardsList> {
                             ),
                           ],
                         ),
-                        onTap: () {
-                          Navigator.push(context, MaterialPageRoute(
-                            builder: (_) => FlashcardReview(
-                              cards: [c],
-                              service: _service!,
-                              onFinish: _load,
-                            ),
-                          ));
-                        },
                       );
                     },
                   ),
