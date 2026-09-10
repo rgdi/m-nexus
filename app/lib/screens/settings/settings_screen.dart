@@ -21,9 +21,12 @@ import '../../state/app_state.dart';
 import '../ai/chat_screen.dart';
 import '../subjects/subjects_screen.dart';
 import '../exams/exams_screen.dart';
+import '../daily/daily_notes_screen.dart';
+import '../attachments/attachments_screen.dart';
 import '../review_queue/review_queue_screen.dart';
 import '../review_queue/generate_flashcards_screen.dart';
 import 'changelog_view.dart';
+import 'logs_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -114,6 +117,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
               subtitle: _settings.enableHaptics ? 'Activada' : 'Desactivada',
               onTap: _toggleHaptics),
           ]),
+          _buildSection(title: 'Contenido', tiles: [
+            _Tile(icon: Icons.school, title: 'Asignaturas',
+              subtitle: 'Estructura el vault por materia',
+              onTap: () {
+                final app = AppState.instance;
+                if (app.activeVault == null) return;
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => SubjectsScreen(vaultPath: app.activeVault!.path),
+                ));
+              }),
+            _Tile(icon: Icons.event_note, title: 'Exámenes',
+              subtitle: 'Programa fechas y temario',
+              onTap: () {
+                final app = AppState.instance;
+                if (app.activeVault == null) return;
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => ExamsScreen(vaultPath: app.activeVault!.path),
+                ));
+              }),
+            _Tile(icon: Icons.today, title: 'Daily Notes',
+              subtitle: 'Notas diarias con calendario',
+              onTap: () {
+                final app = AppState.instance;
+                if (app.activeVault == null) return;
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => DailyNotesScreen(vaultPath: app.activeVault!.path),
+                ));
+              }),
+            _Tile(icon: Icons.attach_file, title: 'Adjuntos',
+              subtitle: 'PDFs, presentaciones, imagenes',
+              onTap: () {
+                final app = AppState.instance;
+                if (app.activeVault == null) return;
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => AttachmentsScreen(vaultPath: app.activeVault!.path),
+                ));
+              }),
+          ]),
           _buildSection(title: 'Avanzado', tiles: [
             // v0.47.33: AI Tutor (Local) — usa LocalTutorService que corre
             // en cliente sin backend, basado en las notas del vault.
@@ -126,26 +167,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     backendUrl: _settings.backendUrl ?? '',
                     vaultPath: app.activeVault?.path,
                   ),
-                ));
-              }),
-            // v0.47.36: Asignaturas (estructura del vault).
-            _Tile(icon: Icons.school, title: 'Asignaturas',
-              subtitle: 'Estructura el vault por materia',
-              onTap: () {
-                final app = AppState.instance;
-                if (app.activeVault == null) return;
-                Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => SubjectsScreen(vaultPath: app.activeVault!.path),
-                ));
-              }),
-            // v0.47.38: Exámenes programados.
-            _Tile(icon: Icons.event_note, title: 'Exámenes',
-              subtitle: 'Programa fechas y temario',
-              onTap: () {
-                final app = AppState.instance;
-                if (app.activeVault == null) return;
-                Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => ExamsScreen(vaultPath: app.activeVault!.path),
                 ));
               }),
             // v0.47.37: Generar flashcards desde notas.
@@ -178,6 +199,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               subtitle: 'Versiones',
               onTap: () => Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const ChangelogView()))),
+            // v0.49.15: visor de logs estructurados
+            _Tile(icon: Icons.terminal, title: 'Logs',
+              subtitle: 'Visor de logs de la app',
+              onTap: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const LogsScreen()))),
           ]),
           const SizedBox(height: 24),
           Center(
