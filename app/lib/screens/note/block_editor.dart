@@ -18,6 +18,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
+import 'package:flutter_math_fork/flutter_math.dart';
+import 'package:flutter_highlight/flutter_highlight.dart';
+import 'package:flutter_highlight/themes/github.dart';
 import '../../core/design_tokens.dart';
 import '../../services/vault_service.dart';
 import '../../services/logger.dart';
@@ -39,6 +42,7 @@ enum BlockType {
   table,
   math,
   image,
+  columns,
 }
 
 extension BlockTypeMeta on BlockType {
@@ -58,6 +62,7 @@ extension BlockTypeMeta on BlockType {
       case BlockType.table: return 'Tabla';
       case BlockType.math: return 'Fórmula';
       case BlockType.image: return 'Imagen';
+      case BlockType.columns: return 'Columnas';
     }
   }
 
@@ -77,6 +82,7 @@ extension BlockTypeMeta on BlockType {
       case BlockType.table: return Icons.table_chart_outlined;
       case BlockType.math: return Icons.calculate_outlined;
       case BlockType.image: return Icons.image_outlined;
+      case BlockType.columns: return Icons.view_column_outlined;
     }
   }
 
@@ -96,6 +102,7 @@ extension BlockTypeMeta on BlockType {
       case BlockType.table: return 'Celda';
       case BlockType.math: return 'LaTeX: E=mc^2';
       case BlockType.image: return 'URL o adjuntar';
+      case BlockType.columns: return '2 columnas';
     }
   }
 }
@@ -111,6 +118,14 @@ class Block {
   String? emoji;
   // para image: ruta local
   String? imagePath;
+  // v0.50: para code: language (dart, python, js, etc)
+  String? language;
+  // v0.50: para comments: lista de comentarios por bloque
+  List<BlockComment> comments;
+  // v0.50: para columns: lista de columnas, cada una es una lista de bloques
+  List<List<Block>>? columnChildren;
+  // v0.50: para columns: ratio (eg [0.5, 0.5] o [0.7, 0.3])
+  List<double>? columnRatios;
 
   Block({
     required this.id,
@@ -120,11 +135,45 @@ class Block {
     this.tableRows,
     this.emoji,
     this.imagePath,
-  });
+    this.language,
+    List<BlockComment>? comments,
+    this.columnChildren,
+    this.columnRatios,
+  }) : comments = comments ?? <BlockComment>[];
 
   factory Block.paragraph() => Block(id: _newId(), type: BlockType.paragraph);
   static String _newId() => 'b-${DateTime.now().microsecondsSinceEpoch}-${_counter++}';
   static int _counter = 0;
+}
+
+/// v0.50: comentario ancla do a un bloque
+class BlockComment {
+  final String id;
+  final String text;
+  final String author;
+  final DateTime createdAt;
+  final String? replyTo;
+  BlockComment({
+    required this.id,
+    required this.text,
+    required this.author,
+    required this.createdAt,
+    this.replyTo,
+  });
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'text': text,
+    'author': author,
+    'createdAt': createdAt.toIso8601String(),
+    'replyTo': replyTo,
+  };
+  factory BlockComment.fromJson(Map j) => BlockComment(
+    id: j['id'] as String,
+    text: j['text'] as String,
+    author: j['author'] as String,
+    createdAt: DateTime.parse(j['createdAt'] as String),
+    replyTo: j['replyTo'] as String?,
+  );
 }
 
 class BlockEditor extends StatefulWidget {
@@ -247,6 +296,48 @@ class _BlockEditorState extends State<BlockEditor> {
         out.add(Block(id: Block._newId(), type: BlockType.code, text: code.toString().trimRight()));
       } else if (l.trim() == '---' || l.trim() == '***') {
         out.add(Block(id: Block._newId(), type: BlockType.divider));
+      } else if (l.trim() == ':::columns' || l.trim() == ':::columns-2') {
+        // v0.50: multi-column block. Lee las lineas siguientes hasta ':::'
+        final cols = <List<Block>>[];
+        cols.add(<Block>[]);
+        i++;
+        while (i < lines.length && lines[i].trim() != ':::') {
+          final cl = lines[i];
+          if (cl.trim() == ':::col') {
+            cols.add(<Block>[]);
+          } else if (cl.trim() == ':::col-3') {
+            // soporte 3 columnas si se anade mas
+            while (cols.length < 3) cols.add(<Block>[]);
+            cols.last.add(Block(id: Block._newId(), type: BlockType.paragraph, text: cl));
+          } else {
+            // Parse recursivo simple: si es heading/paragraph/etc
+            if (cl.startsWith('# ')) {
+              cols.last.add(Block(id: Block._newId(), type: BlockType.heading1, text: cl.substring(2)));
+            } else if (cl.startsWith('## ')) {
+              cols.last.add(Block(id: Block._newId(), type: BlockType.heading2, text: cl.substring(3)));
+            } else if (cl.isEmpty) {
+              // skip
+            } else {
+              cols.last.add(Block(id: Block._newId(), type: BlockType.paragraph, text: cl));
+            }
+          }
+          i++;
+        }
+        // Filtra columnas vacias
+        final nonEmpty = cols.where((c) => c.isNotEmpty).toList();
+        if (nonEmpty.isNotEmpty) {
+          out.add(Block(
+            id: Block._newId(),
+            type: BlockType.columns,
+            columnChildren: nonEmpty,
+            columnRatios: List.generate(nonEmpty.length, (_) => 1.0 / nonEmpty.length),
+          ));
+        } else {
+          out.add(Block(id: Block._newId(), type: BlockType.columns,
+            columnChildren: [[Block.paragraph()], [Block.paragraph()]],
+            columnRatios: [0.5, 0.5],
+          ));
+        }
       } else {
         out.add(Block(id: Block._newId(), type: BlockType.paragraph, text: l));
       }
@@ -283,6 +374,23 @@ class _BlockEditorState extends State<BlockEditor> {
           break;
         case BlockType.math: buf.writeln('\$\$${b.text}\$\$'); break;
         case BlockType.image: buf.writeln('![${b.text}](${b.imagePath ?? ""})'); break;
+        case BlockType.columns:
+          buf.writeln(':::columns');
+          if (b.columnChildren != null) {
+            for (final col in b.columnChildren!) {
+              buf.writeln(':::col');
+              for (final c in col) {
+                switch (c.type) {
+                  case BlockType.heading1: buf.writeln('# ${c.text}'); break;
+                  case BlockType.heading2: buf.writeln('## ${c.text}'); break;
+                  case BlockType.paragraph: buf.writeln(c.text); break;
+                  default: buf.writeln(c.text); break;
+                }
+              }
+            }
+          }
+          buf.writeln(':::');
+          break;
         case BlockType.paragraph: buf.writeln(b.text); break;
       }
       buf.writeln();
@@ -822,19 +930,7 @@ class _BlockEditorState extends State<BlockEditor> {
         );
         break;
       case BlockType.code:
-        child = Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHigh,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: TextField(
-            controller: c, focusNode: focus,
-            style: const TextStyle(fontFamily: 'monospace', fontSize: 14),
-            decoration: const InputDecoration(border: InputBorder.none, hintText: 'Código'),
-            maxLines: null, onSubmitted: (_) => _onEnter(block),
-          ),
-        );
+        child = _buildCodeBlock(block, c, focus, theme);
         break;
       case BlockType.callout:
         child = Container(
@@ -867,26 +963,13 @@ class _BlockEditorState extends State<BlockEditor> {
         );
         break;
       case BlockType.math:
-        child = Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: theme.colorScheme.outline),
-          ),
-          child: TextField(
-            controller: c, focusNode: focus,
-            style: const TextStyle(fontFamily: 'monospace', fontStyle: FontStyle.italic),
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-              hintText: 'LaTeX: E=mc^2',
-            ),
-            maxLines: null, onSubmitted: (_) => _onEnter(block),
-          ),
-        );
+        child = _buildMathBlock(block, c, focus, theme);
         break;
       case BlockType.table:
         child = _buildTableBlock(block, theme);
+        break;
+      case BlockType.columns:
+        child = _buildColumnsBlock(block, theme);
         break;
       case BlockType.image:
         child = _buildImageBlock(block, c, focus, theme);
@@ -954,6 +1037,57 @@ class _BlockEditorState extends State<BlockEditor> {
                   ),
                 );
               }),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  /// v0.50: multi-column layout (similar a AFFiNE/Notion)
+  Widget _buildColumnsBlock(Block block, ThemeData theme) {
+    if (block.columnChildren == null) {
+      block.columnChildren = [[Block.paragraph()], [Block.paragraph()]];
+      block.columnRatios = [0.5, 0.5];
+    }
+    final cols = block.columnChildren!;
+    final ratios = block.columnRatios ?? List.generate(cols.length, (_) => 1.0 / cols.length);
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: List.generate(cols.length, (i) {
+          return Expanded(
+            flex: (ratios[i] * 100).round(),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                border: i == 0 ? null : Border(left: BorderSide(color: theme.colorScheme.outlineVariant)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: cols[i].map((c) {
+                  final cc = _controllerFor(c);
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: TextField(
+                      controller: cc,
+                      style: theme.textTheme.bodyMedium,
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        isDense: true,
+                        hintText: 'Texto columna ${i + 1}',
+                      ),
+                      onChanged: (v) => c.text = v,
+                    ),
+                  );
+                }).toList(),
+              ),
             ),
           );
         }),
@@ -1121,6 +1255,156 @@ class _BlockEditorState extends State<BlockEditor> {
     }
   }
 
+  /// v0.50: code block con syntax highlight usando flutter_highlight
+  Widget _buildCodeBlock(Block block, TextEditingController c, FocusNode focus, ThemeData theme) {
+    final isEditing = focus.hasFocus;
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E1E),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header con selector de lenguaje
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.3),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.code, size: 12, color: Colors.white70),
+                const SizedBox(width: 6),
+                _CodeLanguagePicker(
+                  current: block.language ?? 'plaintext',
+                  onChanged: (lang) => setState(() => block.language = lang),
+                ),
+                const Spacer(),
+                if (block.text.isNotEmpty)
+                  IconButton(
+                    icon: const Icon(Icons.copy, size: 14, color: Colors.white70),
+                    onPressed: () {
+                      // v0.50: copy to clipboard
+                      // Clipboard.setData(ClipboardData(text: block.text));
+                    },
+                  ),
+              ],
+            ),
+          ),
+          // Body
+          if (isEditing)
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: TextField(
+                controller: c, focusNode: focus,
+                style: const TextStyle(
+                  fontFamily: 'monospace', fontSize: 13, color: Colors.white,
+                ),
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  hintText: '// código',
+                  hintStyle: TextStyle(color: Colors.white38),
+                ),
+                maxLines: null,
+                minLines: 3,
+                onSubmitted: (_) => _onEnter(block),
+              ),
+            )
+          else
+            InkWell(
+              onTap: () => focus.requestFocus(),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                child: block.text.isEmpty
+                  ? const Text('// pulsa para escribir código',
+                      style: TextStyle(color: Colors.white38, fontFamily: 'monospace', fontSize: 13))
+                  : HighlightView(
+                      // v0.50: syntax highlight real
+                      text: block.text,
+                      language: block.language ?? 'plaintext',
+                      theme: githubTheme,
+                      padding: EdgeInsets.zero,
+                    ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// v0.50: math block con preview live usando flutter_math_fork
+  Widget _buildMathBlock(Block block, TextEditingController c, FocusNode focus, ThemeData theme) {
+    final isEditing = focus.hasFocus;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: theme.colorScheme.outline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.calculate, size: 14, color: theme.colorScheme.tertiary),
+              const SizedBox(width: 6),
+              Text('LaTeX', style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w600)),
+              const Spacer(),
+              if (block.text.isNotEmpty && !isEditing)
+                IconButton(
+                  icon: const Icon(Icons.edit, size: 14),
+                  onPressed: () => focus.requestFocus(),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (isEditing)
+            TextField(
+              controller: c, focusNode: focus,
+              style: const TextStyle(fontFamily: 'monospace', fontStyle: FontStyle.italic),
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                hintText: 'E=mc^2',
+              ),
+              maxLines: null,
+              onSubmitted: (_) => _onEnter(block),
+            )
+          else if (block.text.isEmpty)
+            InkWell(
+              onTap: () => focus.requestFocus(),
+              child: Text(
+                'Pulsa para añadir LaTeX',
+                style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+              ),
+            )
+          else
+            InkWell(
+              onTap: () => focus.requestFocus(),
+              child: Math.tex(
+                block.text,
+                textStyle: TextStyle(fontSize: 18, color: theme.colorScheme.onSurface),
+                mathStyle: MathStyle.text,
+                onErrorFallback: (err) => Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.errorContainer,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text('Error LaTeX: $err',
+                    style: TextStyle(color: theme.colorScheme.onErrorContainer, fontSize: 12)),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   int _numberedIndex(Block block) {
     final idx = _blocks.indexOf(block);
     int count = 0;
@@ -1151,4 +1435,36 @@ class _SlashItem {
   final bool isAi;
   final VoidCallback onTap;
   _SlashItem({required this.icon, required this.label, required this.onTap, this.isAi = false});
+}
+
+/// v0.50: language picker para code blocks
+class _CodeLanguagePicker extends StatelessWidget {
+  final String current;
+  final ValueChanged<String> onChanged;
+  const _CodeLanguagePicker({required this.current, required this.onChanged});
+
+  static const _languages = [
+    'plaintext', 'dart', 'python', 'javascript', 'typescript', 'java',
+    'kotlin', 'swift', 'c', 'cpp', 'csharp', 'go', 'rust', 'sql',
+    'json', 'yaml', 'xml', 'html', 'css', 'bash', 'shell', 'markdown',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return DropdownButton<String>(
+      value: current,
+      dropdownColor: const Color(0xFF2D2D2D),
+      isDense: true,
+      underline: const SizedBox.shrink(),
+      style: const TextStyle(color: Colors.white, fontSize: 12),
+      iconEnabledColor: Colors.white70,
+      items: _languages.map((l) => DropdownMenuItem(
+        value: l,
+        child: Text(l),
+      )).toList(),
+      onChanged: (v) {
+        if (v != null) onChanged(v);
+      },
+    );
+  }
 }

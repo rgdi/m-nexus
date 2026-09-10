@@ -1,6 +1,6 @@
 name: mnexus_app
 description: "M-NEXUS — Tu segundo cerebro digital. Notas, flashcards, calendar. Standalone (Android + Web)."
-version: 0.49.19+121
+version: 0.50.0+122
 publish_to: "none"
 
 environment:
@@ -59,11 +59,22 @@ dependencies:
   # Voice recording (audio files for class)
   record: ^5.0.5
   # PDF viewer (in-app PDF rendering)
-  # pdfx: ^2.6.0
+  pdfx: ^2.6.0
   # Audio playback (preview)
   audioplayers: ^6.1.0
   # File picker (for import dialog)
   file_picker: ^8.1.2
+  # Math rendering (LaTeX)
+  flutter_math_fork: ^0.7.2
+  # Code syntax highlight
+  flutter_highlight: ^0.7.0
+  # Markdown widgets adicionales (TOC, etc)
+  # markdown_widget: ^2.3.2
+  # HTML rendering (export)
+  flutter_html: ^3.0.0-beta.2
+  # PDF generation
+  pdf: ^3.10.8
+  printing: ^5.11.1
 
   # =========================================================================
   # OPTIONAL - Uncomment when needed
