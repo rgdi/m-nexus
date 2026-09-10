@@ -16,6 +16,7 @@ import '../../services/subjects_service.dart';
 import '../../services/exams_service.dart';
 import '../../services/calendar_service.dart';
 import '../../services/daily_note_service.dart';
+import '../../services/transcription_queue.dart';
 import '../../services/logger.dart';
 import '../../state/app_state.dart';
 import '../note/note_view.dart';
@@ -271,9 +272,14 @@ ${_selectedExam != null ? '\n**Examen:** ${_selectedExam!.title} (${_selectedExa
         AdvancedLogger.instance.warn('recording', 'createEvent failed', error: e.toString());
       }
 
-      // 5. Si transcribeAfter, kick off transcription (pendiente)
+      // 5. v0.50.1: encolar transcripcion en background
       if (_transcribeAfter) {
-        // TODO v0.50: encolar transcripcion en background
+        try {
+          final queue = TranscriptionQueue(widget.vaultPath);
+          await queue.enqueue(notePath, destPath);
+        } catch (e) {
+          AdvancedLogger.instance.warn('recording', 'transcribe enqueue failed', error: e.toString());
+        }
       }
 
       await AppState.instance.reload();

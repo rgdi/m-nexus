@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import '../../services/attachments_service.dart';
+import '../../widgets/audio_player_widget.dart';
 
 class AttachmentsScreen extends StatefulWidget {
   final String vaultPath;
@@ -268,8 +269,13 @@ class _AttachmentsScreenState extends State<AttachmentsScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Vista PPTX: arrastra el archivo a Google Slides/Office Online para previsualizarlo')),
           );
+        } else if (att.extension == '.mp3' || att.extension == '.wav' || att.extension == '.m4a') {
+          // v0.50.1: audio player
+          Navigator.push(context, MaterialPageRoute(
+            builder: (_) => _AudioPlayerScreen(attachment: att),
+          ));
         } else {
-          // Audio u otro: solo info
+          // Otro: solo info
           showDialog(
             context: context,
             builder: (ctx) => AlertDialog(
@@ -519,6 +525,35 @@ class _ImagePreviewScreen extends StatelessWidget {
               child: Text('No se pudo cargar: $err'),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// v0.50.1: audio player con audioplayers
+class _AudioPlayerScreen extends StatelessWidget {
+  final Attachment attachment;
+  const _AudioPlayerScreen({required this.attachment});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(attachment.displayTitle)),
+      body: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.audiotrack, size: 96, color: Colors.purple),
+            const SizedBox(height: 24),
+            Text(attachment.name, style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 8),
+            Text('${(attachment.sizeBytes / 1024).toStringAsFixed(1)} KB',
+              style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: 32),
+            AudioPlayerWidget(audioPath: attachment.path, autoplay: false),
+          ],
         ),
       ),
     );

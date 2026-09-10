@@ -27,6 +27,7 @@ import '../review_queue/review_queue_screen.dart';
 import '../review_queue/generate_flashcards_screen.dart';
 import 'changelog_view.dart';
 import 'logs_screen.dart';
+import '../recording/transcription_queue_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -204,6 +205,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
               subtitle: 'Visor de logs de la app',
               onTap: () => Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const LogsScreen()))),
+            // v0.50.1: cola de transcripcion Whisper
+            _Tile(icon: Icons.queue_music, title: 'Transcripciones',
+              subtitle: 'Cola de audio a texto',
+              onTap: () {
+                final app = AppState.instance;
+                if (app.activeVault == null) return;
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => TranscriptionQueueScreen(vaultPath: app.activeVault!.path),
+                ));
+              }),
           ]),
           const SizedBox(height: 24),
           Center(
