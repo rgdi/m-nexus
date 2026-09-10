@@ -26,6 +26,8 @@ import '../flashcards/flashcard_review.dart';
 import '../flashcards/flashcard_edit.dart';
 import '../note/note_editor.dart';
 import '../note/note_view.dart';
+import '../recording/recording_screen.dart';
+import '../attachments/attachments_screen.dart';
 import '../../services/permissions.dart';
 import '../../widgets/review_heatmap.dart';
 import '../../services/daily_note_service.dart';
@@ -211,6 +213,31 @@ class _HomeScreenState extends State<HomeScreen> {
       )),
     );
     if (mounted) await app.reload();
+  }
+
+  /// v0.49.12: abre el grabador de clases
+  Future<void> _openRecorder() async {
+    final app = AppState.instance;
+    if (!app.hasVault) {
+      _showSnack('Configura un vault primero');
+      return;
+    }
+    await Navigator.push(context, MaterialPageRoute(
+      builder: (_) => RecordingScreen(vaultPath: app.activeVault!.path),
+    ));
+    if (mounted) await app.reload();
+  }
+
+  /// v0.49.11: abre la galeria de adjuntos
+  Future<void> _openAttachments() async {
+    final app = AppState.instance;
+    if (!app.hasVault) {
+      _showSnack('Configura un vault primero');
+      return;
+    }
+    await Navigator.push(context, MaterialPageRoute(
+      builder: (_) => AttachmentsScreen(vaultPath: app.activeVault!.path),
+    ));
   }
 
   /// v0.48: command palette (Ctrl+K) — acciones rápidas.
@@ -681,6 +708,23 @@ class _HomeScreenState extends State<HomeScreen> {
                       subtitle: DateFormat('EEEE d MMMM', 'es_ES')
                           .format(DateTime.now()),
                       onTap: _openDailyNote,
+                    ),
+                    const SizedBox(height: MxSpacing.sm),
+                    // v0.49.12: grabar clase con contexto automatico
+                    ActionCard(
+                      icon: Icons.mic_rounded,
+                      title: 'Grabar clase',
+                      subtitle: 'Audio + asignatura + examen',
+                      accent: true,
+                      onTap: _openRecorder,
+                    ),
+                    const SizedBox(height: MxSpacing.sm),
+                    // v0.49.11: adjuntos del vault
+                    ActionCard(
+                      icon: Icons.attach_file_rounded,
+                      title: 'Adjuntos',
+                      subtitle: 'PDFs, presentaciones, imagenes',
+                      onTap: _openAttachments,
                     ),
                     const SizedBox(height: MxSpacing.sm),
                     ActionCard(
