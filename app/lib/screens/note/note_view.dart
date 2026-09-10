@@ -1,6 +1,7 @@
 // NoteView: pantalla de lectura.
 // Vista de nota: frontmatter, contenido, backlinks al final.
 
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -9,11 +10,15 @@ import '../../core/shortcuts.dart';
 import '../../core/theme.dart';
 import '../../services/logger.dart';
 import '../../services/vault_service.dart';
+import '../../services/attachments_service.dart';
 import '../../utils/safe_call.dart';
 import '../../widgets/backlinks_panel.dart';
+import '../../widgets/attachment_references_panel.dart';
 import '../../widgets/empty_state.dart';
+import '../attachments/attachments_screen.dart';
 import 'note_editor.dart';
 import 'note_sketch_screen.dart';
+import 'block_editor.dart';
 
 class NoteView extends StatefulWidget {
   final String notePath;
@@ -73,6 +78,23 @@ class _NoteViewState extends State<NoteView> {
       appBar: AppBar(
         title: Text(note.title ?? note.name, overflow: TextOverflow.ellipsis),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.dashboard_customize_outlined),
+            onPressed: () async {
+              // v0.49.9: editar con block editor
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => BlockEditor(
+                  vaultPath: widget.vaultPath,
+                  notePath: note.path,
+                  initialTitle: note.title,
+                )),
+              );
+              if (!mounted) return;
+              _load();
+            },
+            tooltip: 'Editar con bloques',
+          ),
           IconButton(
             icon: const Icon(Icons.edit),
             onPressed: () async {
@@ -138,6 +160,23 @@ class _NoteViewState extends State<NoteView> {
           const SizedBox(height: 32),
           const Divider(),
           const SizedBox(height: 8),
+          // v0.49.11: adjuntos referenciados (PDFs, imagenes, audios)
+          AttachmentReferencesPanel(
+            vaultPath: widget.vaultPath,
+            noteContent: note.content,
+            onAttachmentOpen: (att) {
+              if (att.isImage) {
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => _ImageFullScreen(path: att.path),
+                ));
+              } else {
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => AttachmentsScreen(vaultPath: widget.vaultPath),
+                ));
+              }
+            },
+          ),
+          const SizedBox(height: 16),
           BacklinksPanel(
             currentNotePath: widget.notePath,
             vaultPath: widget.vaultPath,
@@ -202,6 +241,13 @@ class _NoteViewState extends State<NoteView> {
     // v0.48: resolver wikilink usando VaultService.resolveNote (case-insensitive,
     // tolera tildes, busca en carpeta local y exhaustivamente en vault).
     if (!href.contains('://') && !href.startsWith('mailto:')) {
+      // v0.49.11: si el target termina en .pdf/.pptx/.png/etc, abrir como attachment
+      final ext = p.extension(href).toLowerCase();
+      const attachmentExts = {'.pdf', '.pptx', '.ppt', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.mp3', '.wav', '.m4a'};
+      if (attachmentExts.contains(ext)) {
+        _openAttachment(href);
+        return;
+      }
       // Importante: sharedInstance para evitar duplicación de estado
       final resolved = await VaultService.sharedInstance.resolveNote(
         href,
@@ -227,6 +273,63 @@ class _NoteViewState extends State<NoteView> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Link: $href')),
+      );
+    }
+  }
+
+  /// v0.49.11: abre un attachment (PDF, imagen, audio, etc) desde un link
+  void _openAttachment(String relOrName) async {
+    // Construir path absoluto
+    String absPath;
+    if (p.isAbsolute(relOrName)) {
+      absPath = relOrName;
+    } else {
+      // Buscar en vault por relPath o nombre
+      final svc = AttachmentsService(widget.vaultPath);
+      final all = await svc.listAll();
+      final match = all.firstWhere(
+        (a) => a.relPath == relOrName || a.name == relOrName,
+        orElse: () => Attachment(
+          path: p.join(widget.vaultPath, relOrName),
+          relPath: relOrName,
+          name: p.basename(relOrName),
+          extension: p.extension(relOrName),
+          sizeBytes: 0,
+          modified: DateTime.now(),
+        ),
+      );
+      absPath = match.path;
+    }
+    if (!await File(absPath).exists()) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Archivo no encontrado: $relOrName')),
+      );
+      return;
+    }
+    if (!mounted) return;
+    final ext = p.extension(absPath).toLowerCase();
+    final att = Attachment(
+      path: absPath,
+      relPath: relOrName,
+      name: p.basename(absPath),
+      extension: ext,
+      sizeBytes: await File(absPath).length(),
+      modified: (await File(absPath).stat()).modified,
+    );
+    if (ext == '.pdf' || ext == '.pptx') {
+      Navigator.push(context, MaterialPageRoute(
+        builder: (_) => AttachmentsScreen(
+          vaultPath: widget.vaultPath,
+        ),
+      ));
+    } else if (['.png', '.jpg', '.jpeg', '.gif', '.webp'].contains(ext)) {
+      Navigator.push(context, MaterialPageRoute(
+        builder: (_) => _ImageFullScreen(path: absPath),
+      ));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Abierto: $relOrName')),
       );
     }
   }
@@ -282,6 +385,37 @@ class WikilinkPreprocessor {
         final href = fragment.isEmpty ? file : '$file$fragment';
         return '[$display]($href)';
       },
+    );
+  }
+}
+
+/// v0.49.11: fullscreen image viewer (InteractiveViewer para zoom)
+class _ImageFullScreen extends StatelessWidget {
+  final String path;
+  const _ImageFullScreen({required this.path});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        title: Text(p.basename(path), overflow: TextOverflow.ellipsis),
+      ),
+      body: Center(
+        child: InteractiveViewer(
+          maxScale: 6,
+          child: Image.file(
+            File(path),
+            errorBuilder: (ctx, err, st) => Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text('No se pudo cargar: $err',
+                style: const TextStyle(color: Colors.white)),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

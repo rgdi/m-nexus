@@ -345,4 +345,118 @@ export async function aiRoutes(app: FastifyInstance): Promise<void> {
       return r.value;
     },
   );
+
+  // v0.49.11: AI summarize + extract flashcards from attachment text (PDF/PPT)
+  app.post<{ Body: { text?: string; fileName?: string; maxCards?: number; maxSummaryLen?: number } }>(
+    "/summarize",
+    async (req) => {
+      const { text, fileName, maxCards = 10, maxSummaryLen = 800 } = req.body ?? {};
+      if (!text || typeof text !== "string" || text.trim().length === 0) {
+        throw E.val("EC-AI-201", "text is required", {
+          hint: "Send { text: 'extracted PDF/PPT text', fileName: 'clase1.pdf' }",
+        });
+      }
+
+      const r = await safeCallAsync({
+        component: "ai-summarize",
+        code: "EC-AI-202",
+        message: "summarize failed",
+        context: { textLen: text.length, fileName, maxCards, maxSummaryLen },
+        op: async () => {
+          // Try LLM first; fall back to extractive.
+          let summary = "";
+          let cards: Array<{ front: string; back: string }> = [];
+
+          try {
+            const llm = new LLMService();
+            const prompt = `Resume el siguiente texto en maximo ${maxSummaryLen} caracteres, en espanol, en 3-5 puntos clave con viñetas.\n\nTEXTO:\n${text.slice(0, 4000)}`;
+            const llmResp = await llm.chat({
+              messages: [{ role: "user", content: prompt }],
+              temperature: 0.2,
+              maxTokens: 600,
+            });
+            summary = llmResp.content;
+
+            const cardsPrompt = `Del siguiente texto, genera hasta ${maxCards} pares pregunta/respuesta de estudio en formato JSON estricto: [{"front":"pregunta","back":"respuesta"},...]. Las preguntas deben cubrir los conceptos mas importantes. Sin explicaciones extra, solo el JSON.\n\nTEXTO:\n${text.slice(0, 4000)}`;
+            const cardsResp = await llm.chat({
+              messages: [{ role: "user", content: cardsPrompt }],
+              temperature: 0.3,
+              maxTokens: 1000,
+            });
+            // Extract JSON
+            const m = /\[.*\]/s.exec(cardsResp.content);
+            if (m) {
+              try {
+                cards = JSON.parse(m[0]);
+              } catch {
+                cards = [];
+              }
+            }
+          } catch (e) {
+            // LLM no disponible → fallback extractivo
+            summary = _extractiveSummary(text, maxSummaryLen);
+            cards = _extractiveFlashcards(text, maxCards);
+          }
+
+          if (!summary) summary = _extractiveSummary(text, maxSummaryLen);
+          if (cards.length === 0) cards = _extractiveFlashcards(text, maxCards);
+
+          return {
+            fileName: fileName ?? null,
+            summary,
+            cards,
+            source: "ai",
+            stats: {
+              inputLen: text.length,
+              summaryLen: summary.length,
+              cardCount: cards.length,
+            },
+          };
+        },
+      });
+      if (!r.success || !r.value) throw r.error!;
+      return r.value;
+    },
+  );
+}
+
+/**
+ * v0.49.11: extractive summary (fallback cuando LLM no esta disponible).
+ * Devuelve las N primeras frases, hasta maxLen caracteres.
+ */
+function _extractiveSummary(text: string, maxLen: number): string {
+  const sentences = text.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 10);
+  const out: string[] = [];
+  let total = 0;
+  for (const s of sentences) {
+    if (total + s.length > maxLen) break;
+    out.push(s);
+    total += s.length;
+  }
+  return out.join(' ').trim() || text.slice(0, maxLen);
+}
+
+/**
+ * v0.49.11: extractive flashcards: busca frases con '?', o construye
+ * Q/A de las primeras oraciones.
+ */
+function _extractiveFlashcards(text: string, max: number): Array<{ front: string; back: string }> {
+  const out: Array<{ front: string; back: string }> = [];
+  // Patrón 1: preguntas con ?
+  const questions = text.split(/(?<=[?])\s+/).filter(s => s.includes('?') && s.length < 200);
+  for (const q of questions.slice(0, max)) {
+    // La respuesta = la frase siguiente (si esta en la lista)
+    out.push({ front: q.trim(), back: '(revisar texto fuente)' });
+  }
+  // Patrón 2: si no hay preguntas, hacer "Que dice X?" de la primera frase
+  if (out.length === 0) {
+    const sentences = text.split(/(?<=[.!?])\s+/).filter(s => s.length > 20);
+    for (let i = 0; i < Math.min(max, sentences.length - 1); i += 2) {
+      out.push({
+        front: `Resume: ${sentences[i].slice(0, 80)}...?`,
+        back: sentences[i + 1] || sentences[i],
+      });
+    }
+  }
+  return out;
 }
