@@ -21,6 +21,7 @@ import 'package:path/path.dart' as p;
 import '../../core/design_tokens.dart';
 import '../../services/vault_service.dart';
 import '../../services/logger.dart';
+import '../../services/ai_copilot.dart';
 import '../../state/app_state.dart';
 
 enum BlockType {
@@ -988,7 +989,45 @@ class _BlockEditorState extends State<BlockEditor> {
   }
 
   Widget _buildSlashMenu(ThemeData theme, Block block) {
-    final items = BlockType.values.where((t) => t != BlockType.divider).toList();
+    final items = <_SlashItem>[
+      // Tipos de bloque
+      ...BlockType.values.where((t) => t != BlockType.divider).map((t) =>
+        _SlashItem(
+          icon: t.icon,
+          label: t.label,
+          onTap: () {
+            final c = _controllers[block.id];
+            if (c != null && c.text == '/') c.text = '';
+            _changeBlockType(block, t);
+          },
+        ),
+      ),
+      // v0.49.18: AI commands
+      _SlashItem(
+        icon: Icons.psychology,
+        label: 'AI: Resumir',
+        isAi: true,
+        onTap: () => _runAiCommand(block, 'summarize'),
+      ),
+      _SlashItem(
+        icon: Icons.psychology,
+        label: 'AI: Preguntas',
+        isAi: true,
+        onTap: () => _runAiCommand(block, 'questions'),
+      ),
+      _SlashItem(
+        icon: Icons.psychology,
+        label: 'AI: Outline',
+        isAi: true,
+        onTap: () => _runAiCommand(block, 'outline'),
+      ),
+      _SlashItem(
+        icon: Icons.psychology,
+        label: 'AI: Traducir EN',
+        isAi: true,
+        onTap: () => _runAiCommand(block, 'translate', targetLang: 'ingles'),
+      ),
+    ];
     return Container(
       margin: const EdgeInsets.only(left: 24, bottom: 4),
       padding: const EdgeInsets.all(4),
@@ -998,29 +1037,30 @@ class _BlockEditorState extends State<BlockEditor> {
         boxShadow: MxShadows.md,
       ),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxHeight: 280),
+        constraints: const BoxConstraints(maxHeight: 320),
         child: GridView.count(
           shrinkWrap: true,
           crossAxisCount: 2,
           childAspectRatio: 4,
-          children: items.map((t) {
+          children: items.map((it) {
             return InkWell(
-              onTap: () {
-                // Quitar el '/' del bloque y cambiar tipo
-                final c = _controllers[block.id];
-                if (c != null && c.text == '/') c.text = '';
-                _changeBlockType(block, t);
-              },
+              onTap: it.onTap,
               borderRadius: BorderRadius.circular(6),
               child: Padding(
                 padding: const EdgeInsets.all(8),
                 child: Row(
                   children: [
-                    Icon(t.icon, size: 18, color: theme.colorScheme.primary),
+                    Icon(it.icon,
+                      size: 18,
+                      color: it.isAi ? theme.colorScheme.tertiary : theme.colorScheme.primary,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text(t.label,
-                        style: theme.textTheme.bodyMedium,
+                      child: Text(it.label,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: it.isAi ? theme.colorScheme.tertiary : null,
+                          fontWeight: it.isAi ? FontWeight.w600 : null,
+                        ),
                         maxLines: 1, overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -1032,6 +1072,53 @@ class _BlockEditorState extends State<BlockEditor> {
         ),
       ),
     );
+  }
+
+  /// v0.49.18: ejecuta un comando AI y reemplaza el bloque con el resultado
+  Future<void> _runAiCommand(Block block, String command, {String? targetLang}) async {
+    final c = _controllers[block.id];
+    if (c != null && c.text == '/') c.text = '';
+    setState(() {
+      block.text = '⏳ Generando con IA...';
+    });
+    try {
+      final copilot = AICopilot(
+        backendUrl: widget.vaultPath.isNotEmpty ? null : null, // usar SharedPreferences si se quiere
+        vaultContext: await _loadVaultContext(),
+      );
+      final result = await copilot.run('/ai $command', targetLang: targetLang);
+      if (!mounted) return;
+      setState(() {
+        block.text = result;
+        block.type = BlockType.paragraph;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        block.text = 'Error: $e';
+      });
+    }
+  }
+
+  /// v0.49.18: carga los primeros N chars del vault para contexto
+  Future<String> _loadVaultContext() async {
+    try {
+      final dir = Directory(widget.vaultPath);
+      if (!await dir.exists()) return '';
+      final buf = StringBuffer();
+      await for (final entity in dir.list(recursive: false)) {
+        if (entity is File && entity.path.endsWith('.md')) {
+          final content = await entity.readAsString();
+          buf.writeln('## ${p.basename(entity.path)}');
+          buf.writeln(content.substring(0, content.length.clamp(0, 500)));
+          buf.writeln();
+        }
+        if (buf.length > 3000) break;
+      }
+      return buf.toString();
+    } catch (_) {
+      return '';
+    }
   }
 
   int _numberedIndex(Block block) {
@@ -1055,4 +1142,13 @@ class _Template {
   final IconData icon;
   final List<Block> blocks;
   _Template({required this.name, required this.description, required this.icon, required this.blocks});
+}
+
+/// v0.49.18: item del slash menu
+class _SlashItem {
+  final IconData icon;
+  final String label;
+  final bool isAi;
+  final VoidCallback onTap;
+  _SlashItem({required this.icon, required this.label, required this.onTap, this.isAi = false});
 }
