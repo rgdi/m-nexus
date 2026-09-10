@@ -27,7 +27,9 @@ import '../review_queue/review_queue_screen.dart';
 import '../review_queue/generate_flashcards_screen.dart';
 import 'changelog_view.dart';
 import 'logs_screen.dart';
+import 'ai_settings_screen.dart';
 import '../recording/transcription_queue_screen.dart';
+import '../databases/databases_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -155,6 +157,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   builder: (_) => AttachmentsScreen(vaultPath: app.activeVault!.path),
                 ));
               }),
+            // v0.51: linked databases (Notion-style queries)
+            _Tile(icon: Icons.table_chart_outlined, title: 'Bases de datos',
+              subtitle: 'Vistas filtradas del vault',
+              onTap: () {
+                final app = AppState.instance;
+                if (app.activeVault == null) return;
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => DatabasesScreen(vaultPath: app.activeVault!.path),
+                ));
+              }),
           ]),
           _buildSection(title: 'Avanzado', tiles: [
             // v0.47.33: AI Tutor (Local) — usa LocalTutorService que corre
@@ -215,6 +227,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   builder: (_) => TranscriptionQueueScreen(vaultPath: app.activeVault!.path),
                 ));
               }),
+            // v0.51: AI multi-modelo
+            _Tile(icon: Icons.psychology_alt, title: 'Configuración AI',
+              subtitle: 'Ollama, OpenAI, Anthropic, OpenRouter',
+              onTap: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const AiSettingsScreen()))),
           ]),
           const SizedBox(height: 24),
           Center(

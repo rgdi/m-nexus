@@ -26,6 +26,7 @@ import '../../services/vault_service.dart';
 import '../../services/logger.dart';
 import '../../services/ai_copilot.dart';
 import '../../services/version_history_service.dart';
+import '../../services/embed_service.dart';
 import '../../widgets/outline_sidebar.dart';
 import '../../widgets/threaded_comments_panel.dart';
 import '../../state/app_state.dart';
@@ -46,6 +47,7 @@ enum BlockType {
   math,
   image,
   columns,
+  embed,
 }
 
 extension BlockTypeMeta on BlockType {
@@ -66,6 +68,7 @@ extension BlockTypeMeta on BlockType {
       case BlockType.math: return 'Fórmula';
       case BlockType.image: return 'Imagen';
       case BlockType.columns: return 'Columnas';
+      case BlockType.embed: return 'Embed';
     }
   }
 
@@ -86,6 +89,7 @@ extension BlockTypeMeta on BlockType {
       case BlockType.math: return Icons.calculate_outlined;
       case BlockType.image: return Icons.image_outlined;
       case BlockType.columns: return Icons.view_column_outlined;
+      case BlockType.embed: return Icons.embed_rounded;
     }
   }
 
@@ -106,6 +110,7 @@ extension BlockTypeMeta on BlockType {
       case BlockType.math: return 'LaTeX: E=mc^2';
       case BlockType.image: return 'URL o adjuntar';
       case BlockType.columns: return '2 columnas';
+      case BlockType.embed: return 'YouTube, gist, ...';
     }
   }
 }
@@ -129,6 +134,10 @@ class Block {
   List<List<Block>>? columnChildren;
   // v0.50: para columns: ratio (eg [0.5, 0.5] o [0.7, 0.3])
   List<double>? columnRatios;
+  // v0.51: para embed: URL del recurso
+  String? embedUrl;
+  // v0.51: para embed: tipo detectado (youtube, twitter, gist, ...)
+  String? embedType;
 
   Block({
     required this.id,
@@ -142,6 +151,8 @@ class Block {
     List<BlockComment>? comments,
     this.columnChildren,
     this.columnRatios,
+    this.embedUrl,
+    this.embedType,
   }) : comments = comments ?? <BlockComment>[];
 
   factory Block.paragraph() => Block(id: _newId(), type: BlockType.paragraph);
@@ -344,6 +355,17 @@ class _BlockEditorState extends State<BlockEditor> {
             columnRatios: [0.5, 0.5],
           ));
         }
+      } else if (l.trim().startsWith(':::embed ')) {
+        // v0.51: embed block
+        final url = l.trim().substring(9).trim();
+        final info = EmbedService.detect(url);
+        out.add(Block(
+          id: Block._newId(),
+          type: BlockType.embed,
+          text: url,
+          embedUrl: url,
+          embedType: info?.type ?? 'iframe',
+        ));
       } else {
         out.add(Block(id: Block._newId(), type: BlockType.paragraph, text: l));
       }
@@ -380,6 +402,7 @@ class _BlockEditorState extends State<BlockEditor> {
           break;
         case BlockType.math: buf.writeln('\$\$${b.text}\$\$'); break;
         case BlockType.image: buf.writeln('![${b.text}](${b.imagePath ?? ""})'); break;
+        case BlockType.embed: buf.writeln(':::embed ${b.embedUrl ?? b.text}'); break;
         case BlockType.columns:
           buf.writeln(':::columns');
           if (b.columnChildren != null) {
@@ -1076,6 +1099,9 @@ class _BlockEditorState extends State<BlockEditor> {
       case BlockType.columns:
         child = _buildColumnsBlock(block, theme);
         break;
+      case BlockType.embed:
+        child = _buildEmbedBlock(block, c, focus, theme);
+        break;
       case BlockType.image:
         child = _buildImageBlock(block, c, focus, theme);
         break;
@@ -1198,6 +1224,184 @@ class _BlockEditorState extends State<BlockEditor> {
         }),
       ),
     );
+  }
+
+  /// v0.51: embed block con preview offline (YouTube, Twitter, etc)
+  /// Muestra thumbnail + titulo + link, no requiere WebView.
+  Widget _buildEmbedBlock(Block block, TextEditingController c, FocusNode focus, ThemeData theme) {
+    final url = block.embedUrl ?? block.text;
+    final info = EmbedService.detect(url);
+
+    if (url.isEmpty) {
+      // Modo edicion
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: theme.colorScheme.outline),
+        ),
+        child: TextField(
+          controller: c, focusNode: focus,
+          decoration: const InputDecoration(
+            border: InputBorder.none,
+            hintText: 'Pega URL: YouTube, Twitter, Gist, ...',
+          ),
+          onChanged: (v) {
+            block.text = v;
+            final detected = EmbedService.detect(v);
+            block.embedUrl = v;
+            block.embedType = detected?.type;
+          },
+        ),
+      );
+    }
+
+    // Modo vista: preview card
+    final type = info?.type ?? 'iframe';
+    final iconData = switch (type) {
+      'youtube' => Icons.play_circle_filled_rounded,
+      'twitter' => Icons.alternate_email_rounded,
+      'gist' => Icons.code_rounded,
+      'codepen' => Icons.code_rounded,
+      'spotify' => Icons.music_note_rounded,
+      'vimeo' => Icons.video_library_rounded,
+      'loom' => Icons.videocam_rounded,
+      'image' => Icons.image_rounded,
+      _ => Icons.link_rounded,
+    };
+    final color = switch (type) {
+      'youtube' => Colors.red,
+      'twitter' => Colors.lightBlue,
+      'gist' => Colors.purple,
+      'codepen' => Colors.black,
+      'spotify' => Colors.green,
+      'vimeo' => Colors.teal,
+      'loom' => Colors.deepPurple,
+      'image' => Colors.orange,
+      _ => theme.colorScheme.primary,
+    };
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+            ),
+            child: Row(
+              children: [
+                Icon(iconData, size: 16, color: color),
+                const SizedBox(width: 6),
+                Text(type.toUpperCase(),
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: color)),
+                const Spacer(),
+                if (info != null)
+                  Text('${info.width}x${info.height}',
+                    style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant)),
+                IconButton(
+                  icon: const Icon(Icons.edit, size: 14),
+                  onPressed: () => focus.requestFocus(),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, size: 14),
+                  onPressed: () {
+                    setState(() {
+                      _blocks.remove(block);
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+          // Body
+          InkWell(
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Embed: $url')),
+              );
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  Container(
+                    width: 80, height: 60,
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Icon(iconData, color: color, size: 32),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _embedTitle(url, type),
+                          style: TextStyle(fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface),
+                          maxLines: 1, overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          url,
+                          style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant, fontFamily: 'monospace'),
+                          maxLines: 2, overflow: TextOverflow.ellipsis,
+                        ),
+                        if (info != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            'Embed URL: ${info.embedUrl}',
+                            style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant, fontStyle: FontStyle.italic),
+                            maxLines: 1, overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// v0.51: extrae un titulo legible de una URL embed
+  String _embedTitle(String url, String type) {
+    switch (type) {
+      case 'youtube':
+        final m = RegExp(r'youtube\.com/watch\?v=([a-zA-Z0-9_-]{11})').firstMatch(url);
+        return m != null ? 'YouTube: ${m.group(1)}' : 'YouTube';
+      case 'twitter':
+        return 'Tweet';
+      case 'gist':
+        return 'GitHub Gist';
+      case 'codepen':
+        return 'CodePen';
+      case 'spotify':
+        return 'Spotify';
+      case 'vimeo':
+        return 'Vimeo';
+      case 'loom':
+        return 'Loom';
+      case 'image':
+        return 'Imagen (Imgur)';
+      default:
+        return 'Link';
+    }
   }
 
   Widget _buildImageBlock(Block block, TextEditingController c, FocusNode f, ThemeData theme) {

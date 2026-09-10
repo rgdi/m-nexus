@@ -346,6 +346,72 @@ export async function aiRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
+  // v0.51: chat multi-modelo. Acepta provider explicito o autodetect por model.
+  app.post<{
+    Body: {
+      messages: Array<{ role: "system" | "user" | "assistant"; content: string }>;
+      model?: string;
+      provider?: "ollama" | "openai" | "anthropic" | "openrouter";
+      temperature?: number;
+      maxTokens?: number;
+    };
+  }>(
+    "/llm/chat",
+    async (req) => {
+      const { messages, model, provider, temperature, maxTokens } = req.body ?? {};
+      if (!Array.isArray(messages) || messages.length === 0) {
+        throw E.val("EC-LLM-CHAT-001", "messages es requerido", {
+          hint: "Send { messages: [{role:'user', content:'hola'}] }",
+        });
+      }
+      const r = await safeCallAsync({
+        component: "llm-chat",
+        code: "EC-LLM-CHAT-002",
+        message: "llm chat failed",
+        context: { provider, model, messageCount: messages.length },
+        op: async () => {
+          const llm = new LLMService();
+          const resp = await llm.chat({ messages, model, provider, temperature, maxTokens });
+          return { content: resp.content, model: resp.model, usage: resp.usage };
+        },
+      });
+      if (!r.success || !r.value) throw r.error!;
+      return r.value;
+    },
+  );
+
+  // v0.51: lista los providers disponibles (configurados con API keys)
+  app.get("/llm/providers", async () => {
+    return {
+      providers: [
+        {
+          id: "ollama",
+          name: "Ollama (local)",
+          available: process.env.OLLAMA_BASE_URL != null,
+          models: ["llama3.2", "llama3.2:70b", "qwen2.5:7b", "mistral", "phi3", "gemma2:9b"],
+        },
+        {
+          id: "openai",
+          name: "OpenAI",
+          available: process.env.OPENAI_API_KEY != null,
+          models: ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo", "o1-preview"],
+        },
+        {
+          id: "anthropic",
+          name: "Anthropic",
+          available: process.env.ANTHROPIC_API_KEY != null,
+          models: ["claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022", "claude-3-opus-20240229"],
+        },
+        {
+          id: "openrouter",
+          name: "OpenRouter",
+          available: process.env.OPENROUTER_API_KEY != null,
+          models: ["anthropic/claude-3.5-sonnet", "openai/gpt-4o", "google/gemini-pro-1.5", "meta-llama/llama-3.1-405b-instruct"],
+        },
+      ],
+    };
+  });
+
   // v0.49.11: AI summarize + extract flashcards from attachment text (PDF/PPT)
   app.post<{ Body: { text?: string; fileName?: string; maxCards?: number; maxSummaryLen?: number } }>(
     "/summarize",
