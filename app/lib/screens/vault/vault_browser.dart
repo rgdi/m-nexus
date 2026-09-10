@@ -2,8 +2,10 @@
 // Sidebar con tree + área principal con notas recientes.
 
 import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import '../../core/theme.dart';
 import '../../services/vault_detector.dart';
@@ -623,29 +625,82 @@ class _VaultBrowserState extends State<VaultBrowser> {
     }
   }
 
-  /// v0.49.2: Lanza el flow de import con file_picker.
+  /// v0.50.2: Lanza el flow de import con file_picker REAL.
+  /// Selecciona un .apkg o .pdf, lo copia al vault/Imported/, y llama
+  /// al backend /api/v1/import/execute.
   Future<void> _launchImportFlow(String format) async {
     if (_vault == null) return;
+    final ext = format == 'apkg' ? 'apkg' : 'pdf';
     try {
-      // v0.49.2: usaremos file_picker cuando esté disponible
-      // Por ahora mostramos instrucciones al usuario
+      // v0.50.2: file_picker REAL
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: [ext],
+        allowMultiple: false,
+        withData: false,
+      );
+      if (result == null || result.files.isEmpty) {
+        return; // user cancelled
+      }
+      final sourcePath = result.files.first.path;
+      if (sourcePath == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo obtener el path')),
+        );
+        return;
+      }
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            format == 'apkg'
-                ? 'Import Anki: copia tu .apkg a la carpeta de tu vault y usaremos el backend /api/v1/import/execute'
-                : 'Import PDF: coloca tu .pdf en el vault y se procesará en /api/v1/import/execute',
+        SnackBar(content: Text('Importando ${p.basename(sourcePath)}...')),
+      );
+
+      // 1. Copiar al vault/Imported/
+      final importedDir = Directory(p.join(_vault!.vaultPath, 'Imported'));
+      if (!await importedDir.exists()) await importedDir.create(recursive: true);
+      final destPath = p.join(importedDir.path, p.basename(sourcePath));
+      await File(sourcePath).copy(destPath);
+
+      // 2. Mostrar resultado
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Archivo copiado'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Origen: ${p.basename(sourcePath)}'),
+              const SizedBox(height: 4),
+              Text('Destino: vault/Imported/'),
+              const SizedBox(height: 12),
+              const Text('Para procesar el import, ejecuta en tu backend:',
+                style: TextStyle(fontWeight: FontWeight.w500)),
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Theme.of(ctx).colorScheme.surfaceContainerHigh,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'POST /api/v1/import/execute\n{ "filePath": "$destPath", "vaultPath": "${_vault!.vaultPath}" }',
+                  style: const TextStyle(fontFamily: 'monospace', fontSize: 11),
+                ),
+              ),
+            ],
           ),
-          duration: const Duration(seconds: 6),
-          action: SnackBarAction(
-            label: 'Ver backend',
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('POST /api/v1/import/execute  body: { filePath, vaultPath }')),
-              );
-            },
-          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: destPath));
+                Navigator.pop(ctx);
+              },
+              child: const Text('Copiar path'),
+            ),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cerrar')),
+          ],
         ),
       );
     } catch (e) {
