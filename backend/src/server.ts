@@ -278,6 +278,24 @@ export async function buildServer(): Promise<FastifyInstance> {
   // v0.51: CRDT sync (Yjs-based collaborative editing)
   const { crdtRoutes } = await import("./routes/crdt.js");
   await app.register(crdtRoutes, { prefix: "/api/v1/crdt" });
+  // v0.60 (P1.4): Web Clipper (HTML→MD y URL→MD)
+  const { clipRoutes } = await import("./routes/clip.js");
+  await app.register(clipRoutes, { prefix: "/api/v1" });
+  // v0.60 (P1.11): AnkiHub marketplace real
+  const { marketplaceRealRoutes } = await import("./routes/marketplaceReal.js");
+  await app.register(marketplaceRealRoutes, { prefix: "/api/v1" });
+  // v0.60 (P2.1): PDF highlights
+  const { pdfAnnotationRoutes } = await import("./routes/pdfAnnotation.js");
+  await app.register(pdfAnnotationRoutes, { prefix: "/api/v1" });
+  // v0.60 (P2.2): Handwriting recognition
+  const { handwritingRoutes } = await import("./routes/handwriting.js");
+  await app.register(handwritingRoutes, { prefix: "/api/v1" });
+  // v0.60 (P2.3): Auto-backup
+  const { autoBackupRoutes } = await import("./routes/autoBackup.js");
+  await app.register(autoBackupRoutes, { prefix: "/api/v1" });
+  // v0.60 (P2.4): Themes
+  const { themesRoutes } = await import("./routes/themes.js");
+  await app.register(themesRoutes, { prefix: "/api/v1" });
 
   logLifecycle("server", "routes registered", {
     routes: [

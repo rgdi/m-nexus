@@ -65,6 +65,12 @@ extension FsrsRatingValue on FsrsRating {
 }
 
 /// Default FSRS-5 parameters (21 values)
+/// v0.60 (P0.8): public para FsrsOptimizer
+const List<double> defaultParameters = [
+  0.4, 0.6, 2.4, 5.8, 4.93, 0.94, 0.86, 0.01, 1.49, 0.13, 0.29, 2.31,
+  1.26, 0.1, 0.17, 0.87, 3.01, 0.19, 0.51, 1.17, 0.0,
+];
+
 const List<double> _fsrs5DefaultW = [
   0.4, 0.6, 2.4, 5.8, 4.93, 0.94, 0.86, 0.01, 1.49, 0.13, 0.29, 2.31,
   1.26, 0.1, 0.17, 0.87, 3.01, 0.19, 0.51, 1.17, 0.0,

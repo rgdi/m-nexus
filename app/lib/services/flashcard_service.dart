@@ -195,6 +195,85 @@ class FlashcardService {
     return null;
   }
 
+  /// v0.60 (P1.2): detecta "leeches" — cards que fallan mucho.
+  /// Heuristica: lapses >= 8 Y reps >= 10 Y ratio > 0.25.
+  Future<List<Flashcard>> detectLeeches({int minLapses = 8, int minReps = 10, double maxRatio = 0.25}) async {
+    final all = await listAll();
+    return all.where((c) {
+      return c.lapses >= minLapses &&
+             c.reps >= minReps &&
+             (c.lapses / c.reps) > maxRatio;
+    }).toList();
+  }
+
+  /// v0.60 (P1.2): marca una card como leech (mueve a Drafts para revision).
+  Future<void> markAsLeech(Flashcard c) async {
+    final src = File(c.path);
+    if (!await src.exists()) return;
+    final draftsDir = Directory(p.join(vaultPath, AppConstants.flashcardsDrafts));
+    if (!await draftsDir.exists()) await draftsDir.create(recursive: true);
+    final dst = File(p.join(draftsDir.path, p.basename(c.path)));
+    await FileLock.run(c.path, () async {
+      await src.copy(dst.path);
+      await src.delete();
+    });
+    AdvancedLogger.instance.info('fc', 'marked as leech', context: {'id': c.id});
+  }
+
+  /// v0.60 (P1.2): "cramming" — devuelve cards sin schedule, para repaso rapido.
+  /// Carga todas las cards (incl. drafts + burned) y las baraja.
+  Future<List<Flashcard>> cram({int limit = 20, bool includeDrafts = true, bool includeBurned = true}) async {
+    final all = await listAll();
+    final filtered = all.where((c) {
+      // v0.60: state 4 = burned (excluido por defecto)
+      if (!includeBurned && c.state == 4) return false;
+      if (!includeDrafts && !c.approved) return false;
+      return true;
+    }).toList();
+    filtered.shuffle();
+    return filtered.take(limit).toList();
+  }
+
+  /// v0.60 (P1.2): marca una card como "burned" (state=4, ya no aparece en reviews).
+  Future<void> markAsBurned(Flashcard c) async {
+    if (c.state == 4) return;
+    // state=4: persistir en frontmatter
+    try {
+      final content = await File(c.path).readAsString();
+      if (!content.startsWith('---')) return;
+      final end = content.indexOf('---', 3);
+      if (end <= 0) return;
+      final fm = content.substring(3, end);
+      final newFm = fm.contains('fsrs_state:')
+        ? fm.replaceAll(RegExp(r'fsrs_state:\s*\d+'), 'fsrs_state: 4')
+        : '$fm\nfsrs_state: 4\nburned: true';
+      final newContent = '---$newFm---${content.substring(end + 3)}';
+      await FileLock.run(c.path, () async {
+        await File(c.path).writeAsString(newContent);
+      });
+      AdvancedLogger.instance.info('fc', 'marked as burned', context: {'id': c.id});
+    } catch (e) {
+      AdvancedLogger.instance.warn('fc', 'markAsBurned failed', error: e.toString());
+    }
+  }
+
+  /// v0.60 (P1.2): restaura una card burned (state=2, vuelve a reviews).
+  Future<void> unmarkBurned(Flashcard c) async {
+    try {
+      final content = await File(c.path).readAsString();
+      if (!content.startsWith('---')) return;
+      final newContent = content
+        .replaceAll(RegExp(r'fsrs_state:\s*4\n?'), 'fsrs_state: 2\n')
+        .replaceAll(RegExp(r'burned:\s*true\n?'), '');
+      await FileLock.run(c.path, () async {
+        await File(c.path).writeAsString(newContent);
+      });
+      AdvancedLogger.instance.info('fc', 'unmarked burned', context: {'id': c.id});
+    } catch (e) {
+      AdvancedLogger.instance.warn('fc', 'unmarkBurned failed', error: e.toString());
+    }
+  }
+
   /// v0.60 (P0.3): actualiza una card en disco por id, sin recargar todo.
   /// Devuelve la Flashcard actualizada o null si no existe.
   Future<Flashcard?> updateCard(Flashcard updated) async {

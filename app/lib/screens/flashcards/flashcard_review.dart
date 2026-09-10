@@ -20,6 +20,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../services/flashcard_service.dart';
 import '../../services/fsrs_engine.dart';
+import '../../services/fsrs_optimizer.dart';
 import '../../widgets/empty_state.dart';
 import 'dart:async';
 
@@ -446,6 +447,26 @@ class _FlashcardReviewState extends State<FlashcardReview> {
       difficulty: newDifficulty,
       nextReview: newNextReview,
     );
+
+    // v0.60 (P0.8): log review for FSRS optimizer
+    if (widget.vaultPath != null) {
+      try {
+        final optimizer = FsrsOptimizer(widget.vaultPath!);
+        await optimizer.logReview(ReviewLog(
+          cardId: card.id,
+          rating: rating,
+          reviewedAt: now,
+          deltaDays: oldCard.elapsedDays,
+          prevStability: oldCard.stability,
+          prevDifficulty: oldCard.difficulty,
+          nextStability: newCard.stability,
+          nextDifficulty: newCard.difficulty,
+          wasCorrect: rating != FsrsRating.again,
+        ));
+      } catch (e) {
+        // Silencioso: el optimizer es best-effort
+      }
+    }
 
     // v0.46.7: DB persistence removed (drift/SQLite deprecated)
     // FSRS state is now managed entirely in-memory via widget.service

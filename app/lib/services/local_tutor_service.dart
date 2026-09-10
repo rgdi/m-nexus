@@ -1,23 +1,20 @@
 // local_tutor_service.dart: AI tutor simulado que corre en cliente.
 //
 // v0.47.33: implementación LOCAL del RAG tutor que NO requiere backend.
-// Usa las notas del vault como contexto y responde con heurísticas
-// (extracción de keywords + construcción de respuesta con fragmentos).
-//
-// El usuario pidió:
-//   "simulación de rag ia (sin llm real), pero pregunta y respuesta
-//    en la app (tutor socratico, chat de ia, sobre un concepto o
-//    semejante que basado en las notas del vault guardadas)"
+// v0.60 (P0.7): usa SemanticSearch (TF-IDF + RRF) en vez de substring matching.
+// El index persiste en disco y se reusa entre sesiones.
 //
 // Estrategia:
 //   1. Usuario pregunta algo
-//   2. Buscamos notas relevantes (FTS-style: substring match)
-//   3. Si hay notas: retornamos el mejor snippet + links + explicación heurística
-//   4. Si no hay notas: retornamos respuesta socrática tipo "qué sabes tú sobre X?"
+//   2. SemanticSearch.index() construye/reusa el TF-IDF index
+//   3. search() devuelve los top-K resultados combinados (TF-IDF + keyword)
+//   4. Si hay resultados: retornamos snippets con score combinado
+//   5. Si no hay resultados: retornamos respuesta socrática
 //
 // Esta clase se puede inyectar en lugar de AiTutorClient en chat_screen.
 
 import 'dart:math';
+import '../services/semantic_search.dart';
 import '../services/vault_service.dart';
 
 class LocalTutorResponse {
@@ -36,8 +33,8 @@ class LocalTutorResponse {
 
 class LocalTutorService {
   final String vaultPath;
-  final VaultService _vault;
-  LocalTutorService(this.vaultPath) : _vault = VaultService(vaultPath);
+  final SemanticSearch _search;
+  LocalTutorService(this.vaultPath) : _search = SemanticSearch(vaultPath);
 
   /// Pregunta al tutor local. Busca notas relevantes y construye respuesta.
   Future<LocalTutorResponse> ask(String question) async {
@@ -51,9 +48,9 @@ class LocalTutorService {
       );
     }
 
-    // 1) Listar todas las notas y buscar matches por keyword
-    final notes = await _vault.listRecentNotes(1000);
-    if (notes.isEmpty) {
+    // 1) v0.60 (P0.7): busqueda hibrida TF-IDF + keyword + RRF
+    final results = await _search.search(q, topK: 5);
+    if (results.isEmpty) {
       return LocalTutorResponse(
         answer: _socraticReply(q),
         sources: [],
@@ -62,70 +59,32 @@ class LocalTutorService {
       );
     }
 
-    // 2) Scoring: contar cuántas keywords de la pregunta aparecen en cada nota
-    final keywords = _extractKeywords(q);
-    if (keywords.isEmpty) {
-      return LocalTutorResponse(
-        answer: _socraticReply(q),
-        sources: [],
-        confidence: 0.1,
-        mode: 'socratic',
-      );
-    }
-
-    final scored = <_NoteScore>[];
-    for (final note in notes) {
-      final content = (note.content + ' ' + (note.title ?? '')).toLowerCase();
-      var score = 0;
-      final hits = <String>{};
-      for (final kw in keywords) {
-        if (content.contains(kw)) {
-          score += content.split(kw).length - 1;
-          hits.add(kw);
-        }
-      }
-      if (score > 0) {
-        scored.add(_NoteScore(note, score, hits));
-      }
-    }
-
-    // 3) Si no hay matches: socrático
-    if (scored.isEmpty) {
-      return LocalTutorResponse(
-        answer: _socraticReply(q),
-        sources: [],
-        confidence: 0.1,
-        mode: 'socratic',
-      );
-    }
-
-    // 4) Ordenar por score y tomar top-3
-    scored.sort((a, b) => b.score.compareTo(a.score));
-    final top = scored.take(3).toList();
-
-    // 5) Construir respuesta extractiva con los mejores snippets
+    // 2) Construir respuesta extractiva con los mejores snippets
     final answer = StringBuffer()
       ..writeln('Basándome en tus notas, encontré esto relevante:')
       ..writeln('');
 
-    for (var i = 0; i < top.length; i++) {
-      final s = top[i];
-      final preview = _makePreview(s.note.content, keywords);
+    for (var i = 0; i < results.length; i++) {
+      final r = results[i];
+      final title = r.meta['title'] as String? ?? r.notePath.split('/').last;
+      final tfidf = r.meta['tfidf'] as double? ?? 0.0;
+      final kw = r.meta['keyword'] as double? ?? 0.0;
       answer
-        ..writeln('📄 **${s.note.title ?? s.note.name}** (${s.hits.length}/${keywords.length} keywords)')
-        ..writeln('   $preview')
+        ..writeln('📄 **$title** (RRF: ${r.score.toStringAsFixed(3)}, tf-idf: ${tfidf.toStringAsFixed(2)}, kw: ${kw.toStringAsFixed(0)})')
+        ..writeln('   ${r.snippet}')
         ..writeln('');
     }
 
-    // 6) Pregunta de seguimiento socrática para profundizar
+    // 3) Pregunta de seguimiento socrática
+    final topTitle = results.first.meta['title'] as String? ?? results.first.notePath.split('/').last;
     answer
       ..writeln('---')
-      ..writeln(_socraticFollowUp(q, top.first.note.title ?? top.first.note.name));
+      ..writeln(_socraticFollowUp(q, topTitle));
 
     return LocalTutorResponse(
       answer: answer.toString(),
-      sources: top.map((s) => s.note.relPath).toList(),
-      confidence: min(1.0, top.first.score / keywords.length / 2),
+      sources: results.map((r) => r.notePath).toList(),
+      confidence: min(1.0, results.first.score * 2),
       mode: 'extractive',
     );
   }
@@ -152,31 +111,13 @@ class LocalTutorService {
     return words.toList();
   }
 
+  // v0.60 (P0.7): _makePreview y _NoteScore fueron reemplazados por
+  // SemanticSearch. Las dejo comentadas para referencia historica.
+  /*
   String _makePreview(String content, List<String> keywords) {
-    // Encontrar la primera línea que contenga alguna keyword
-    final lines = content.split('\n');
-    for (final line in lines) {
-      final lower = line.toLowerCase();
-      for (final kw in keywords) {
-        if (lower.contains(kw)) {
-          // Limpiar markdown básico
-          var clean = line
-              .replaceAll(RegExp(r'#+\s'), '')
-              .replaceAll(RegExp(r'\*+'), '')
-              .replaceAll(RegExp(r'`'), '')
-              .trim();
-          if (clean.length > 200) {
-            clean = '${clean.substring(0, 200)}…';
-          }
-          return clean;
-        }
-      }
-    }
-    // Si no encuentra nada, mostrar las primeras 200 chars
-    var clean = content.replaceAll(RegExp(r'#+\s'), '').trim();
-    if (clean.length > 200) clean = '${clean.substring(0, 200)}…';
-    return clean;
+    ...
   }
+  */
 
   String _socraticReply(String question) {
     return 'No encuentro notas sobre "${_trimForEcho(question)}" en tu vault. '
@@ -202,9 +143,3 @@ class LocalTutorService {
   }
 }
 
-class _NoteScore {
-  final Note note;
-  final int score;
-  final Set<String> hits;
-  _NoteScore(this.note, this.score, this.hits);
-}
