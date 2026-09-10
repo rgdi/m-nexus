@@ -25,6 +25,9 @@ import '../../core/design_tokens.dart';
 import '../../services/vault_service.dart';
 import '../../services/logger.dart';
 import '../../services/ai_copilot.dart';
+import '../../services/version_history_service.dart';
+import '../../widgets/outline_sidebar.dart';
+import '../../widgets/threaded_comments_panel.dart';
 import '../../state/app_state.dart';
 
 enum BlockType {
@@ -189,11 +192,14 @@ class BlockEditor extends StatefulWidget {
 class _BlockEditorState extends State<BlockEditor> {
   final _titleController = TextEditingController();
   final _scrollController = ScrollController();
+  final GlobalKey _scrollKey = GlobalKey();
   final Map<String, TextEditingController> _controllers = {};
   final Map<String, FocusNode> _focusNodes = {};
   final List<Block> _blocks = [];
   String? _slashMenuFor; // id del bloque con menu abierto
   bool _saving = false;
+  bool _showOutline = false;
+  bool _showComments = false;
   String? _loadedFrom;
   late final VaultService _vault;
 
@@ -492,7 +498,13 @@ class _BlockEditorState extends State<BlockEditor> {
         : _titleController.text.trim();
       final fm = '---\ntitle: $title\ntype: block-note\ncreated: ${DateTime.now().toIso8601String()}\n---\n\n';
       final content = fm + body;
+
+      // v0.50.1: snapshot ANTES de sobreescribir (si ya existia)
       if (_loadedFrom != null) {
+        try {
+          final history = VersionHistoryService(widget.vaultPath);
+          await history.snapshot(_loadedFrom!);
+        } catch (_) {}
         await _vault.writeNote(_loadedFrom!, content);
       } else {
         await _vault.createNote(folder: 'Inbox', title: title, content: content);
@@ -515,10 +527,22 @@ class _BlockEditorState extends State<BlockEditor> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final hasNotePath = _loadedFrom != null;
     return Scaffold(
       appBar: AppBar(
         title: Text(_titleController.text.isEmpty ? 'Editor de bloques' : _titleController.text),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.toc),
+            tooltip: 'Outline',
+            onPressed: _toggleOutline,
+          ),
+          if (hasNotePath)
+            IconButton(
+              icon: const Icon(Icons.forum_outlined),
+              tooltip: 'Comentarios',
+              onPressed: _toggleComments,
+            ),
           IconButton(
             icon: const Icon(Icons.dashboard_customize_outlined),
             tooltip: 'Templates',
@@ -558,23 +582,76 @@ class _BlockEditorState extends State<BlockEditor> {
               onChanged: (_) => setState(() {}),
             ),
           ),
-          // Reorderable list of blocks
+          // Reorderable list of blocks + sidebar opcional
           Expanded(
-            child: ReorderableListView.builder(
-              scrollController: _scrollController,
-              padding: const EdgeInsets.fromLTRB(8, 8, 8, 100),
-              buildDefaultDragHandles: false,
-              onReorder: _onReorder,
-              itemCount: _blocks.length,
-              itemBuilder: (context, idx) {
-                final block = _blocks[idx];
-                return _buildDraggableBlock(block, idx, theme);
-              },
+            child: Row(
+              children: [
+                Expanded(
+                  child: KeyedSubtree(
+                    key: _scrollKey,
+                    child: ReorderableListView.builder(
+                      scrollController: _scrollController,
+                      padding: const EdgeInsets.fromLTRB(8, 8, 8, 100),
+                      buildDefaultDragHandles: false,
+                      onReorder: _onReorder,
+                      itemCount: _blocks.length,
+                      itemBuilder: (context, idx) {
+                        final block = _blocks[idx];
+                        return _buildDraggableBlock(block, idx, theme);
+                      },
+                    ),
+                  ),
+                ),
+                if (_showOutline)
+                  SizedBox(
+                    width: 280,
+                    child: OutlineSidebar(
+                      entries: _computeOutline(),
+                      currentIndex: 0,
+                      onJump: _jumpToBlock,
+                      onClose: _toggleOutline,
+                    ),
+                  ),
+                if (_showComments && _loadedFrom != null)
+                  SizedBox(
+                    width: 320,
+                    child: ThreadedCommentsPanel(
+                      notePath: _loadedFrom!,
+                      blockContexts: _blockContexts(),
+                      onClose: _toggleComments,
+                    ),
+                  ),
+              ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  /// v0.50.1: outline entries de los blocks actuales
+  List<OutlineEntry> _computeOutline() {
+    final out = <OutlineEntry>[];
+    for (int i = 0; i < _blocks.length; i++) {
+      final b = _blocks[i];
+      if (b.type == BlockType.heading1) out.add(OutlineEntry(level: 1, text: b.text, blockIndex: i));
+      if (b.type == BlockType.heading2) out.add(OutlineEntry(level: 2, text: b.text, blockIndex: i));
+      if (b.type == BlockType.heading3) out.add(OutlineEntry(level: 3, text: b.text, blockIndex: i));
+    }
+    return out;
+  }
+
+  /// v0.50.1: blockId -> preview text para comments panel
+  Map<String, String> _blockContexts() {
+    final out = <String, String>{};
+    for (final b in _blocks) {
+      if (b.text.isNotEmpty) {
+        out[b.id] = b.text;
+      } else {
+        out[b.id] = '[${b.type.label}]';
+      }
+    }
+    return out;
   }
 
   /// v0.49.9: cada bloque con su handle de drag a la izquierda
@@ -626,6 +703,34 @@ class _BlockEditorState extends State<BlockEditor> {
   }
 
   /// v0.49.9: templates gallery (Notion-style)
+  /// v0.50.1: toggle outline sidebar
+  void _toggleOutline() {
+    setState(() {
+      _showOutline = !_showOutline;
+      if (_showOutline) _showComments = false;
+    });
+  }
+
+  /// v0.50.1: toggle comments panel
+  void _toggleComments() {
+    setState(() {
+      _showComments = !_showComments;
+      if (_showComments) _showOutline = false;
+    });
+  }
+
+  /// v0.50.1: scroll al bloque con el heading
+  void _jumpToBlock(int blockIndex) {
+    if (blockIndex < 0 || blockIndex >= _blocks.length) return;
+    final id = _blocks[blockIndex].id;
+    final ctx = _scrollKey.currentContext;
+    if (ctx != null) {
+      Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 300));
+    }
+    // Opcional: focus
+    _focusFor(_blocks[blockIndex]).requestFocus();
+  }
+
   void _showTemplatesSheet() {
     showModalBottomSheet(
       context: context,

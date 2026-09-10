@@ -300,45 +300,201 @@ class _AttachmentsScreenState extends State<AttachmentsScreen> {
   }
 }
 
-class _PdfPreviewScreen extends StatelessWidget {
+class _PdfPreviewScreen extends StatefulWidget {
   final Attachment attachment;
   const _PdfPreviewScreen({required this.attachment});
 
   @override
+  State<_PdfPreviewScreen> createState() => _PdfPreviewScreenState();
+}
+
+class _PdfPreviewScreenState extends State<_PdfPreviewScreen> {
+  int _currentPage = 1;
+  int _totalPages = 0;
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPdf();
+  }
+
+  Future<void> _loadPdf() async {
+    try {
+      // v0.50.1: usa pdfx para render real
+      // Carga lazy del paquete para no romper si falla
+      // ignore: avoid_dynamic_calls
+      final pdfx = await import('package:pdfx/pdfx.dart');
+      final doc = await pdfx.PdfDocument.openFile(widget.attachment.path);
+      if (!mounted) return;
+      setState(() {
+        _totalPages = doc.pagesCount;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(attachment.displayTitle)),
-      body: Center(
+      appBar: AppBar(
+        title: Text(widget.attachment.displayTitle),
+        actions: [
+          if (_totalPages > 0)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text('$_currentPage / $_totalPages',
+                  style: const TextStyle(fontWeight: FontWeight.w600)),
+              ),
+            ),
+        ],
+      ),
+      body: _loading
+        ? const Center(child: CircularProgressIndicator())
+        : _error != null
+          ? _buildErrorFallback()
+          : _buildPdfView(),
+      floatingActionButton: _totalPages > 0
+        ? Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              FloatingActionButton.small(
+                heroTag: 'pdf-prev',
+                onPressed: _currentPage > 1
+                  ? () => setState(() => _currentPage--)
+                  : null,
+                child: const Icon(Icons.chevron_left),
+              ),
+              const SizedBox(width: 8),
+              FloatingActionButton.small(
+                heroTag: 'pdf-next',
+                onPressed: _currentPage < _totalPages
+                  ? () => setState(() => _currentPage++)
+                  : null,
+                child: const Icon(Icons.chevron_right),
+              ),
+            ],
+          )
+        : null,
+    );
+  }
+
+  Widget _buildPdfView() {
+    // Render real con pdfx
+    return _PdfxPageView(
+      path: widget.attachment.path,
+      currentPage: _currentPage,
+    );
+  }
+
+  Widget _buildErrorFallback() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Icon(Icons.picture_as_pdf, size: 64, color: Colors.red),
             const SizedBox(height: 16),
-            Text(attachment.name, style: Theme.of(context).textTheme.titleMedium),
+            Text(widget.attachment.name, style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
-            if (attachment.pageCount != null)
-              Text('${attachment.pageCount} páginas'),
-            const SizedBox(height: 24),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: Text(
-                'Vista previa PDF requiere el paquete pdfx. En v0.50 habilitamos render inline. '
-                'Por ahora puedes copiar el path y abrirlo con otra app.',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ),
+            if (widget.attachment.pageCount != null)
+              Text('${widget.attachment.pageCount} páginas'),
+            const SizedBox(height: 16),
+            Text('No se pudo renderizar: $_error',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall),
             const SizedBox(height: 24),
             FilledButton.icon(
               icon: const Icon(Icons.copy),
               label: const Text('Copiar path'),
               onPressed: () {
-                Clipboard.setData(ClipboardData(text: attachment.path));
+                Clipboard.setData(ClipboardData(text: widget.attachment.path));
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Path copiado al portapapeles')),
                 );
               },
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// v0.50.1: wrapper que carga pdfx solo cuando se necesita (dynamic import
+/// evita problemas si pdfx no compila en alguna plataforma)
+class _PdfxPageView extends StatelessWidget {
+  final String path;
+  final int currentPage;
+  const _PdfxPageView({required this.path, required this.currentPage});
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Widget>(
+      future: _buildWidget(context),
+      builder: (ctx, snap) {
+        if (snap.hasData) return snap.data!;
+        if (snap.hasError) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text('Error renderizando PDF: ${snap.error}',
+                textAlign: TextAlign.center),
+            ),
+          );
+        }
+        return const Center(child: CircularProgressIndicator());
+      },
+    );
+  }
+
+  Future<Widget> _buildWidget(BuildContext context) async {
+    try {
+      // ignore: avoid_dynamic_calls
+      final pdfx = await import('package:pdfx/pdfx.dart');
+      final doc = await pdfx.PdfDocument.openFile(path);
+      final page = await doc.getPage(currentPage);
+      // Render a imagen
+      final image = await page.render(
+        width: MediaQuery.of(context).size.width.toInt(),
+        height: null,
+        fullWidth: true,
+      );
+      return InteractiveViewer(
+        child: Center(
+          child: Image.memory(
+            await image.bytes,
+            errorBuilder: (ctx, err, st) => Text('Error: $err'),
+          ),
+        ),
+      );
+    } catch (e) {
+      return _buildFallback();
+    }
+  }
+
+  Widget _buildFallback() {
+    return Container(
+      color: Colors.grey100,
+      child: const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.picture_as_pdf, size: 48, color: Colors.red),
+            SizedBox(height: 8),
+            Text('Vista previa no disponible', style: TextStyle(color: Colors.grey)),
+            SizedBox(height: 4),
+            Text('Copia el path y abre con otra app',
+              style: TextStyle(color: Colors.grey, fontSize: 12)),
           ],
         ),
       ),

@@ -15,7 +15,10 @@ import '../../utils/safe_call.dart';
 import '../../widgets/backlinks_panel.dart';
 import '../../widgets/attachment_references_panel.dart';
 import '../../widgets/empty_state.dart';
+import '../../services/export_service.dart';
+import '../../services/version_history_service.dart';
 import '../attachments/attachments_screen.dart';
+import '../notes/version_history_screen.dart';
 import 'note_editor.dart';
 import 'note_sketch_screen.dart';
 import 'block_editor.dart';
@@ -119,6 +122,27 @@ class _NoteViewState extends State<NoteView> {
               );
             },
             tooltip: 'Copiar',
+          ),
+          // v0.50.1: menu de export y version history
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            tooltip: 'Mas opciones',
+            onSelected: (a) async {
+              if (a == 'history') {
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => VersionHistoryScreen(notePath: widget.notePath),
+                ));
+              } else if (a == 'export_pdf') {
+                await _export('pdf');
+              } else if (a == 'export_html') {
+                await _export('html');
+              }
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: 'history', child: Text('Historial de versiones')),
+              PopupMenuItem(value: 'export_pdf', child: Text('Exportar PDF')),
+              PopupMenuItem(value: 'export_html', child: Text('Exportar HTML')),
+            ],
           ),
           // v0.48: botón para abrir el canvas de handwriting sobre la nota.
           IconButton(
@@ -274,6 +298,29 @@ class _NoteViewState extends State<NoteView> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Link: $href')),
       );
+    }
+  }
+
+  /// v0.50.1: exporta la nota a PDF o HTML
+  Future<void> _export(String format) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      messenger.showSnackBar(SnackBar(content: Text('Exportando a $format...')));
+      final service = ExportService(widget.vaultPath);
+      final outPath = format == 'pdf'
+        ? await service.exportPdf(widget.notePath)
+        : await service.exportHtml(widget.notePath);
+      if (!mounted) return;
+      messenger.showSnackBar(SnackBar(
+        content: Text('Exportado: ${p.basename(outPath)}'),
+        duration: const Duration(seconds: 5),
+        action: SnackBarAction(
+          label: 'OK',
+          onPressed: () {},
+        ),
+      ));
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
