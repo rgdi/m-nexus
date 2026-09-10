@@ -358,6 +358,15 @@ class _BlockEditorState extends State<BlockEditor> {
     }
   }
 
+  /// v0.49.9: drag&drop reordering via ReorderableListView
+  void _onReorder(int oldIndex, int newIndex) {
+    setState(() {
+      if (newIndex > oldIndex) newIndex--;
+      final item = _blocks.removeAt(oldIndex);
+      _blocks.insert(newIndex, item);
+    });
+  }
+
   void _onBackspaceEmpty(Block b) {
     if (b.text.isEmpty) {
       _deleteBlock(b);
@@ -402,6 +411,11 @@ class _BlockEditorState extends State<BlockEditor> {
         title: Text(_titleController.text.isEmpty ? 'Editor de bloques' : _titleController.text),
         actions: [
           IconButton(
+            icon: const Icon(Icons.dashboard_customize_outlined),
+            tooltip: 'Templates',
+            onPressed: _showTemplatesSheet,
+          ),
+          IconButton(
             icon: const Icon(Icons.add_rounded),
             tooltip: 'Añadir bloque',
             onPressed: () => _addBlockAfter(_blocks.last, BlockType.paragraph),
@@ -418,32 +432,253 @@ class _BlockEditorState extends State<BlockEditor> {
           ),
         ],
       ),
-      body: ListView(
-        controller: _scrollController,
-        padding: const EdgeInsets.all(16),
+      body: Column(
         children: [
-          // Title
-          TextField(
-            controller: _titleController,
-            style: theme.textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.w700,
+          // Title (no draggable)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: TextField(
+              controller: _titleController,
+              style: theme.textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                hintText: 'Título',
+              ),
+              onChanged: (_) => setState(() {}),
             ),
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-              hintText: 'Título',
-            ),
-            onChanged: (_) => setState(() {}),
           ),
-          const SizedBox(height: 16),
-          // Blocks
-          ..._blocks.asMap().entries.map((entry) {
-            final idx = entry.key;
-            final block = entry.value;
-            return _buildBlock(block, idx, theme);
-          }),
+          // Reorderable list of blocks
+          Expanded(
+            child: ReorderableListView.builder(
+              scrollController: _scrollController,
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 100),
+              buildDefaultDragHandles: false,
+              onReorder: _onReorder,
+              itemCount: _blocks.length,
+              itemBuilder: (context, idx) {
+                final block = _blocks[idx];
+                return _buildDraggableBlock(block, idx, theme);
+              },
+            ),
+          ),
         ],
       ),
     );
+  }
+
+  /// v0.49.9: cada bloque con su handle de drag a la izquierda
+  Widget _buildDraggableBlock(Block block, int idx, ThemeData theme) {
+    final controller = _controllerFor(block);
+    final focus = _focusFor(block);
+    final children = <Widget>[];
+
+    if (_slashMenuFor == block.id) {
+      children.add(_buildSlashMenu(theme, block));
+    }
+
+    children.add(
+      KeyedSubtree(
+        key: ValueKey('block-${block.id}'),
+        child: _renderBlock(block, controller, focus, theme),
+      ),
+    );
+
+    return Padding(
+      key: ValueKey('block-wrap-${block.id}'),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Drag handle
+          ReorderableDragStartListener(
+            index: idx,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 8, right: 4),
+              child: MouseRegion(
+                cursor: SystemMouseCursors.grab,
+                child: Icon(Icons.drag_indicator,
+                  size: 16,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: children,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// v0.49.9: templates gallery (Notion-style)
+  void _showTemplatesSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.3,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (ctx, scroll) => _buildTemplatesPanel(ctx, scroll),
+      ),
+    );
+  }
+
+  Widget _buildTemplatesPanel(BuildContext ctx, ScrollController scroll) {
+    final theme = Theme.of(ctx);
+    final templates = _getTemplates();
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 8),
+            width: 40, height: 4,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.outline,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Icon(Icons.dashboard_customize, color: theme.colorScheme.primary),
+                const SizedBox(width: 8),
+                Text('Templates', style: theme.textTheme.titleLarge),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              controller: scroll,
+              itemCount: templates.length,
+              itemBuilder: (ctx, i) {
+                final t = templates[i];
+                return ListTile(
+                  leading: Container(
+                    width: 48, height: 48,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(t.icon, color: theme.colorScheme.onPrimaryContainer),
+                  ),
+                  title: Text(t.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text(t.description),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _applyTemplate(t);
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// v0.49.9: aplica un template (limpia bloques actuales y crea nuevos)
+  void _applyTemplate(_Template t) {
+    setState(() {
+      _blocks.clear();
+      _blocks.addAll(t.blocks.map((b) {
+        final nb = Block(id: Block._newId(), type: b.type, text: b.text);
+        nb.checked = b.checked;
+        nb.tableRows = b.tableRows;
+        nb.emoji = b.emoji;
+        return nb;
+      }));
+    });
+  }
+
+  static List<_Template> _getTemplates() {
+    return [
+      _Template(
+        name: 'Nota de estudio',
+        description: 'Título, objetivo, secciones de temas, tareas, revisión',
+        icon: Icons.school_rounded,
+        blocks: [
+          Block(id: 't1', type: BlockType.heading2, text: 'Objetivo'),
+          Block(id: 't2', type: BlockType.paragraph, text: '¿Qué quiero aprender hoy?'),
+          Block(id: 't3', type: BlockType.heading2, text: 'Temas'),
+          Block(id: 't4', type: BlockType.bulletList, text: 'Tema 1'),
+          Block(id: 't5', type: BlockType.bulletList, text: 'Tema 2'),
+          Block(id: 't6', type: BlockType.divider),
+          Block(id: 't7', type: BlockType.heading2, text: 'Tareas'),
+          Block(id: 't8', type: BlockType.todo, text: 'Repasar flashcards'),
+          Block(id: 't9', type: BlockType.todo, text: 'Hacer resumen'),
+          Block(id: 't10', type: BlockType.divider),
+          Block(id: 't11', type: BlockType.heading2, text: 'Repaso programado'),
+          Block(id: 't12', type: BlockType.paragraph, text: 'Mañana 10 min, en 3 días, en 1 semana'),
+        ],
+      ),
+      _Template(
+        name: 'Tabla comparativa',
+        description: 'Tabla de N filas para comparar conceptos',
+        icon: Icons.table_chart_rounded,
+        blocks: [
+          Block(id: 't1', type: BlockType.heading2, text: 'Comparación'),
+          Block(id: 't2', type: BlockType.table, tableRows: [
+            ['Concepto', 'A', 'B', 'C'],
+            ['', '', '', ''],
+            ['', '', '', ''],
+          ]),
+        ],
+      ),
+      _Template(
+        name: 'Daily meeting',
+        description: 'Ayer, hoy, blockers (estilo scrum)',
+        icon: Icons.event_note_rounded,
+        blocks: [
+          Block(id: 't1', type: BlockType.heading2, text: '✅ Ayer'),
+          Block(id: 't2', type: BlockType.bulletList, text: 'Hecho 1'),
+          Block(id: 't3', type: BlockType.bulletList, text: 'Hecho 2'),
+          Block(id: 't4', type: BlockType.heading2, text: '🎯 Hoy'),
+          Block(id: 't5', type: BlockType.bulletList, text: 'Tarea 1'),
+          Block(id: 't6', type: BlockType.bulletList, text: 'Tarea 2'),
+          Block(id: 't7', type: BlockType.heading2, text: '🚧 Blockers'),
+          Block(id: 't8', type: BlockType.paragraph, text: 'Nada por ahora'),
+        ],
+      ),
+      _Template(
+        name: 'Lección',
+        description: 'Estructura pedagógica: objetivos, conceptos, ejemplos, autoevaluación',
+        icon: Icons.menu_book_rounded,
+        blocks: [
+          Block(id: 't1', type: BlockType.callout, emoji: '🎯', text: 'Objetivo: al final de esta lección serás capaz de...'),
+          Block(id: 't2', type: BlockType.heading2, text: 'Conceptos clave'),
+          Block(id: 't3', type: BlockType.bulletList, text: 'Concepto 1'),
+          Block(id: 't4', type: BlockType.bulletList, text: 'Concepto 2'),
+          Block(id: 't5', type: BlockType.divider),
+          Block(id: 't6', type: BlockType.heading2, text: 'Ejemplos'),
+          Block(id: 't7', type: BlockType.paragraph, text: 'Ejemplo 1: ...'),
+          Block(id: 't8', type: BlockType.divider),
+          Block(id: 't9', type: BlockType.heading2, text: 'Autoevaluación'),
+          Block(id: 't10', type: BlockType.todo, text: '¿Entiendo X?'),
+          Block(id: 't11', type: BlockType.todo, text: '¿Puedo explicar Y?'),
+        ],
+      ),
+      _Template(
+        name: 'Página en blanco',
+        description: 'Empezar desde cero',
+        icon: Icons.notes_rounded,
+        blocks: [
+          Block(id: 't1', type: BlockType.paragraph, text: ''),
+        ],
+      ),
+    ];
   }
 
   Widget _buildBlock(Block block, int idx, ThemeData theme) {
@@ -451,7 +686,6 @@ class _BlockEditorState extends State<BlockEditor> {
     final focus = _focusFor(block);
     final children = <Widget>[];
 
-    // Slash menu (muestra debajo del bloque si esta abierto)
     if (_slashMenuFor == block.id) {
       children.add(_buildSlashMenu(theme, block));
     }
@@ -812,4 +1046,13 @@ class _BlockEditorState extends State<BlockEditor> {
     }
     return count;
   }
+}
+
+/// v0.49.9: template definition (para el gallery)
+class _Template {
+  final String name;
+  final String description;
+  final IconData icon;
+  final List<Block> blocks;
+  _Template({required this.name, required this.description, required this.icon, required this.blocks});
 }
