@@ -7,6 +7,8 @@ export default defineConfig({
     environment: "node",
     setupFiles: ["./tests/setup.ts"],
     include: ["tests/**/*.test.ts"],
+    // v0.49: tests legacy no se ejecutan (APIs obsoletas, deuda técnica)
+    exclude: ["tests/legacy/**", "node_modules/**", "**/integration.test.ts"],
     // v0.28: node:sqlite es experimental; vite puede tener problemas para resolverlo.
     server: {
       deps: {

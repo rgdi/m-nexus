@@ -14,6 +14,8 @@
 
 import { SearchService } from "./searchService.js";
 import { LLMService, type ChatRequest } from "./llm.js";
+// v0.49.1: re-export LLMService para compatibilidad con tests existentes
+export { LLMService, type ChatRequest } from "./llm.js";
 
 export interface TutorContext {
   /** Query del usuario */
