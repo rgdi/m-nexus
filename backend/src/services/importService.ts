@@ -1,10 +1,14 @@
 // importService.ts: importers de PDF, Anki, Notion, Obsidian, Roam (Fase 6).
 //
 // v0.46: extrae texto de PDFs, importa APKG (Anki), parsea exports de
-// Notion/Obsidian/Roam. Sin dependencias externas (parsing nativo).
+// Notion/Obsidian/Roam.
+// v0.49.2: APKG import REAL con adm-zip + better-sqlite3.
+//          Parsea collection.anki2 (SQLite) y extrae notes + cards + deck metadata.
 
 import { readFileSync, existsSync } from "node:fs";
 import { extname } from "node:path";
+import AdmZip from "adm-zip";
+import Database from "better-sqlite3";
 
 export interface ImportResult {
   /** Tipo de fuente */
@@ -108,18 +112,187 @@ export class ImportService {
    * Importa un Anki deck (.apkg is a zip with collection.anki2 SQLite).
    * Sin zip parsing lib, retornamos error explicativo.
    */
+  /**
+   * v0.49.2: APKG import REAL.
+   *
+   * APKG = zip que contiene:
+   *  - collection.anki2 (SQLite con tablas: col, notes, cards, decks, tags)
+   *  - media (mapeo JSON nombre -> archivo)
+   *  - 0/1/2/... (archivos multimedia, ej. imagenes)
+   *
+   * Retornamos: notes (markdown con frontmatter) + SRS cards.
+   */
   importAnki(filePath: string): ImportResult {
-    return {
+    if (!existsSync(filePath)) {
+      return {
+        source: "anki",
+        notes: [],
+        tags: [],
+        wikilinks: [],
+        srsCards: 0,
+        errors: [`APKG file not found: ${filePath}`],
+        bytes: 0,
+      };
+    }
+
+    const result: ImportResult = {
       source: "anki",
       notes: [],
       tags: [],
       wikilinks: [],
       srsCards: 0,
-      errors: [
-        "Anki .apkg import requires unzipping and parsing SQLite. Install 'better-sqlite3' and 'yauzl' for full support. File detected: " + this.basename(filePath),
-      ],
+      errors: [],
       bytes: 0,
     };
+
+    try {
+      // 1. Abrir como zip
+      const zip = new AdmZip(filePath);
+      const entries = zip.getEntries();
+
+      // 2. Encontrar collection.anki2
+      const collectionEntry = entries.find(
+        (e) => e.entryName === "collection.anki2" || e.entryName === "collection.anki21",
+      );
+      if (!collectionEntry) {
+        result.errors.push("APKG does not contain collection.anki2 — invalid Anki export?");
+        return result;
+      }
+
+      // 3. Extraer a temp file y abrir con better-sqlite3
+      const fs = require("node:fs") as typeof import("node:fs");
+      const os = require("node:os") as typeof import("node:os");
+      const path = require("node:path") as typeof import("node:path");
+
+      const tmpPath = path.join(os.tmpdir(), `apkg-${Date.now()}-${Math.random().toString(36).slice(2)}.anki2`);
+      fs.writeFileSync(tmpPath, collectionEntry.getData());
+
+      let db: any;
+      try {
+        db = new Database(tmpPath, { readonly: true });
+      } catch (e) {
+        result.errors.push(`Failed to open collection.anki2: ${(e as Error).message}`);
+        try { fs.unlinkSync(tmpPath); } catch {}
+        return result;
+      }
+
+      try {
+        // 4. Leer tablas
+        const colRows = db.prepare("SELECT id, decks, models, tags, mod FROM col").all() as any[];
+        const col = colRows[0] || {};
+
+        // Parse JSON fields
+        let decks: Record<string, any> = {};
+        let models: Record<string, any> = {};
+        try { decks = JSON.parse(col.decks || "{}"); } catch {}
+        try { models = JSON.parse(col.models || "{}"); } catch {}
+
+        // 5. Leer notes
+        const noteRows = db.prepare(
+          "SELECT id, guid, mid, mod, usn, tags, flds, sfld, csum, flags, data FROM notes"
+        ).all() as any[];
+
+        // 6. Leer cards
+        const cardRows = db.prepare(
+          "SELECT id, nid, did, ord, mod, usn, type, queue, due, ivl, factor, reps, lapses, left, odue, odid, flags, data FROM cards"
+        ).all() as any[];
+
+        // Map nid -> cards[]
+        const cardsByNid = new Map<number, any[]>();
+        for (const c of cardRows) {
+          if (!cardsByNid.has(c.nid)) cardsByNid.set(c.nid, []);
+          cardsByNid.get(c.nid)!.push(c);
+        }
+
+        // 7. Por cada note, generar markdown
+        for (const note of noteRows) {
+          const fields = (note.flds || "").split("\x1f");
+          const model = models[note.mid] || {};
+          const fieldNames: string[] = (model.flds || []).map((f: any) => f.name);
+
+          // Render frontmatter con Anki metadata
+          const tags = (note.tags || "").trim()
+            ? (note.tags as string).split(" ").filter((t) => t.length > 0)
+            : [];
+
+          // Front + Back del model
+          let front = "";
+          let back = "";
+          if (fieldNames.length > 0 && fields.length > 0) {
+            front = fields[0] || "";
+            back = fields.length > 1 ? fields[1] : "";
+          } else {
+            front = fields[0] || note.sfld || "";
+          }
+
+          // Convert HTML/media refs a markdown
+          const stripHtml = (s: string) => s
+            .replace(/<br\s*\/?>/g, "\n")
+            .replace(/<[^>]+>/g, "")
+            .trim();
+          front = stripHtml(front);
+          back = stripHtml(back);
+
+          // Generar contenido markdown tipo Obsidian
+          const fm = [
+            "---",
+            `anki_id: ${note.id}`,
+            `anki_guid: ${note.guid}`,
+            `model: ${model.name || "Unknown"}`,
+            `imported_from: anki`,
+            `imported_at: ${new Date().toISOString()}`,
+            ...(tags.length > 0 ? [`tags: [${tags.join(", ")}]`] : []),
+            "---",
+            "",
+            `# ${front}`,
+            "",
+            back ? `${back}\n` : "",
+            "",
+          ].join("\n");
+
+          // Path dentro del vault: usa tags + slug del front
+          const slug = front
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, "")
+            .replace(/\s+/g, "-")
+            .substring(0, 60);
+          const folder = tags.length > 0 ? `Imported/${tags[0]}` : "Imported";
+          const path = `${folder}/${slug || `note-${note.id}`}.md`;
+
+          result.notes.push({
+            path,
+            content: fm,
+            frontmatter: {
+              anki_id: String(note.id),
+              model: model.name || "Unknown",
+              tags: tags.join(","),
+            },
+          });
+
+          // Tags
+          for (const t of tags) {
+            if (!result.tags.includes(t)) result.tags.push(t);
+          }
+
+          // SRS cards count
+          const cards = cardsByNid.get(note.id) || [];
+          result.srsCards += cards.length;
+        }
+      } finally {
+        try { db.close(); } catch {}
+        try { fs.unlinkSync(tmpPath); } catch {}
+      }
+
+      // Stats
+      result.bytes = readFileSync(filePath).length;
+      if (result.errors.length === 0 && result.notes.length === 0) {
+        result.errors.push("APKG parsed but no notes found");
+      }
+    } catch (e) {
+      result.errors.push(`APKG parse failed: ${(e as Error).message}`);
+    }
+
+    return result;
   }
 
   /**

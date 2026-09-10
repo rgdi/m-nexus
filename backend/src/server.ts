@@ -38,6 +38,7 @@ import { searchRoutes } from "./routes/search.js";
 import { uploadRoutes } from "./routes/upload.js";
 import { registerTranscriptionStreamRoutes } from "./routes/transcriptionStream.js";
 import { fsrsQueueRoutes } from "./routes/fsrsQueue.js";
+import { importRoutes } from "./routes/import.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -272,6 +273,8 @@ export async function buildServer(): Promise<FastifyInstance> {
   await app.register(uploadRoutes);
   await app.register(registerTranscriptionStreamRoutes);
   await app.register(fsrsQueueRoutes);
+  // v0.49.2: import (APKG, PDF, Notion, Roam, Obsidian)
+  await app.register(importRoutes, { prefix: "/api/v1/import" });
 
   logLifecycle("server", "routes registered", {
     routes: [
