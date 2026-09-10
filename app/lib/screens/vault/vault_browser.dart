@@ -1,6 +1,7 @@
 // VaultBrowser: árbol de archivos del vault.
 // Sidebar con tree + área principal con notas recientes.
 
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
@@ -100,6 +101,16 @@ class _VaultBrowserState extends State<VaultBrowser> {
       appBar: AppBar(
         title: Text(p.basename(_vault!.vaultPath)),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.create_new_folder_outlined),
+            onPressed: _createFolder,
+            tooltip: 'Nueva carpeta',
+          ),
+          IconButton(
+            icon: const Icon(Icons.file_upload_outlined),
+            onPressed: _showImportDialog,
+            tooltip: 'Importar (Anki/PDF)',
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _refreshVault,
@@ -248,6 +259,7 @@ class _VaultBrowserState extends State<VaultBrowser> {
           leading: const Icon(Icons.folder, size: 18, color: Color(0xFFFFB300)),
           title: Text(node.name,
             style: const TextStyle(fontWeight: FontWeight.w500)),
+          onLongPress: () => _showFolderContextMenu(node),
           children: node.children.map((c) => _buildTree(c)).toList(),
         ),
       );
@@ -271,7 +283,251 @@ class _VaultBrowserState extends State<VaultBrowser> {
         ),
       ),
       onTap: () => _openNote(node),
+      onLongPress: () => _showNoteContextMenu(node),
     );
+  }
+
+  // v0.49.2: menu contextual para notas (rename, move, delete)
+  Future<void> _showNoteContextMenu(VaultNode node) async {
+    if (_vault == null) return;
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit_outlined),
+              title: const Text('Renombrar'),
+              onTap: () => Navigator.pop(ctx, 'rename'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.drive_file_move_outlined),
+              title: const Text('Mover a...'),
+              onTap: () => Navigator.pop(ctx, 'move'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline, color: Colors.red),
+              title: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+              onTap: () => Navigator.pop(ctx, 'delete'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || action == null) return;
+    if (action == 'rename') await _renameNote(node);
+    if (action == 'move') await _moveNote(node);
+    if (action == 'delete') await _deleteNote(node);
+  }
+
+  // v0.49.2: menu contextual para carpetas
+  Future<void> _showFolderContextMenu(VaultNode node) async {
+    if (_vault == null) return;
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit_outlined),
+              title: const Text('Renombrar carpeta'),
+              onTap: () => Navigator.pop(ctx, 'rename'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline, color: Colors.red),
+              title: const Text('Eliminar carpeta', style: TextStyle(color: Colors.red)),
+              onTap: () => Navigator.pop(ctx, 'delete'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || action == null) return;
+    if (action == 'rename') await _renameFolder(node);
+    if (action == 'delete') await _deleteFolder(node);
+  }
+
+  Future<void> _renameNote(VaultNode node) async {
+    if (_vault == null) return;
+    final controller = TextEditingController(
+      text: node.name.replaceAll('.md', ''),
+    );
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Renombrar nota'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'Nuevo nombre'),
+          onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: const Text('Renombrar'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || newName == null || newName.isEmpty) return;
+    try {
+      final absPath = p.join(_vault!.vaultPath, node.relPath);
+      await _vault!.renameNote(absPath, newName);
+      _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
+  }
+
+  Future<void> _moveNote(VaultNode node) async {
+    if (_vault == null) return;
+    final folders = await _listFolders();
+    if (!mounted) return;
+    if (folders.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No hay carpetas en el vault')),
+      );
+      return;
+    }
+    final dest = await showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Mover a...'),
+        children: folders
+            .map((f) => SimpleDialogOption(
+                  onPressed: () => Navigator.pop(ctx, f),
+                  child: Text(f.isEmpty ? 'Raíz' : f),
+                ))
+            .toList(),
+      ),
+    );
+    if (!mounted || dest == null) return;
+    try {
+      final name = node.name;
+      final absSrc = p.join(_vault!.vaultPath, node.relPath);
+      final absDest = p.join(_vault!.vaultPath, dest, name);
+      await _vault!.moveNote(absSrc, absDest);
+      _load();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Movido a ${dest.isEmpty ? 'Raíz' : dest}')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
+  }
+
+  Future<List<String>> _listFolders() async {
+    if (_vault == null) return [];
+    final folders = <String>[];
+    final root = Directory(_vault!.vaultPath);
+    await for (final entity in root.list(recursive: true, followLinks: false)) {
+      if (entity is Directory) {
+        final rel = p.relative(entity.path, from: _vault!.vaultPath);
+        if (rel != '.' && !rel.startsWith('.') && !rel.contains('attachments')) {
+          folders.add(rel);
+        }
+      }
+    }
+    return folders;
+  }
+
+  Future<void> _deleteNote(VaultNode node) async {
+    if (_vault == null) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('¿Eliminar nota?'),
+        content: Text('"${node.name}" se eliminará permanentemente.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    try {
+      final absPath = p.join(_vault!.vaultPath, node.relPath);
+      await _vault!.deleteNote(absPath);
+      _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
+  }
+
+  Future<void> _renameFolder(VaultNode node) async {
+    if (_vault == null) return;
+    final controller = TextEditingController(text: node.name);
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Renombrar carpeta'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'Nuevo nombre'),
+          onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: const Text('Renombrar'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || newName == null || newName.isEmpty || newName == node.name) return;
+    try {
+      final parent = p.dirname(node.relPath);
+      final newRel = parent == '.' ? newName : p.join(parent, newName);
+      final absSrc = p.join(_vault!.vaultPath, node.relPath);
+      final absDest = p.join(_vault!.vaultPath, newRel);
+      await _vault!.moveNote(absSrc, absDest);
+      _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
+  }
+
+  Future<void> _deleteFolder(VaultNode node) async {
+    if (_vault == null) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('¿Eliminar carpeta?'),
+        content: Text('"${node.name}" y todo su contenido se eliminarán.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Eliminar todo'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    try {
+      final absPath = p.join(_vault!.vaultPath, node.relPath);
+      await _vault!.deleteFolder(absPath, recursive: true);
+      _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
   }
 
   bool _matchesFilter(VaultNode n) {
@@ -289,6 +545,112 @@ class _VaultBrowserState extends State<VaultBrowser> {
       );
     } else {
       setState(() { _selectedRelPath = n.relPath; });
+    }
+  }
+
+  Future<void> _createFolder() async {
+    if (_vault == null) return;
+    final controller = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Nueva carpeta'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'Nombre de la carpeta'),
+          onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: const Text('Crear'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || name == null || name.isEmpty) return;
+    try {
+      await _vault!.createFolder(name);
+      _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
+  }
+
+  /// v0.49.2: Dialog de import — redirige a un menu con opciones.
+  Future<void> _showImportDialog() async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text('Importar a vault', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+            ),
+            ListTile(
+              leading: const Icon(Icons.style, color: Color(0xFF1976D2)),
+              title: const Text('Anki (.apkg)'),
+              subtitle: const Text('Importa un mazo Anki con todas sus cards y tags'),
+              onTap: () => Navigator.pop(ctx, 'apkg'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.picture_as_pdf, color: Color(0xFFD32F2F)),
+              title: const Text('PDF (.pdf)'),
+              subtitle: const Text('Convierte un PDF en notas markdown'),
+              onTap: () => Navigator.pop(ctx, 'pdf'),
+            ),
+            const SizedBox(height: 8),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'Próximamente: Notion, Roam, Obsidian, CSV',
+                style: TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || action == null) return;
+    if (action == 'apkg' || action == 'pdf') {
+      _launchImportFlow(action);
+    }
+  }
+
+  /// v0.49.2: Lanza el flow de import con file_picker.
+  Future<void> _launchImportFlow(String format) async {
+    if (_vault == null) return;
+    try {
+      // v0.49.2: usaremos file_picker cuando esté disponible
+      // Por ahora mostramos instrucciones al usuario
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            format == 'apkg'
+                ? 'Import Anki: copia tu .apkg a la carpeta de tu vault y usaremos el backend /api/v1/import/execute'
+                : 'Import PDF: coloca tu .pdf en el vault y se procesará en /api/v1/import/execute',
+          ),
+          duration: const Duration(seconds: 6),
+          action: SnackBarAction(
+            label: 'Ver backend',
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('POST /api/v1/import/execute  body: { filePath, vaultPath }')),
+              );
+            },
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 

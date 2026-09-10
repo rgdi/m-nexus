@@ -2,7 +2,7 @@
 
 import { describe, it, expect, beforeEach } from "vitest";
 import { ImportService } from "../src/services/importService";
-import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, writeFileSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -161,5 +161,87 @@ Más texto sin card`;
     const path = writeTemp("multi.json", JSON.stringify(notion));
     const result = await service.importFile(path);
     expect(result.notes).toHaveLength(3);
+  });
+});
+
+import AdmZip from "adm-zip";
+import Database from "better-sqlite3";
+
+// v0.49.2: APKG parsing tests using real AdmZip + better-sqlite3
+describe("ImportService - APKG parsing (v0.49.2)", () => {
+  function buildApkg(dbPath: string): Buffer {
+    const db = new Database(dbPath);
+    db.exec(`
+      CREATE TABLE col (id INTEGER PRIMARY KEY, decks TEXT, models TEXT, tags TEXT, mod INTEGER);
+      CREATE TABLE notes (id INTEGER PRIMARY KEY, guid TEXT, mid INTEGER, mod INTEGER, usn INTEGER, tags TEXT, flds TEXT, sfld TEXT, csum INTEGER, flags INTEGER, data TEXT);
+      CREATE TABLE cards (id INTEGER PRIMARY KEY, nid INTEGER, did INTEGER, ord INTEGER, mod INTEGER, usn INTEGER, type INTEGER, queue INTEGER, due INTEGER, ivl INTEGER, factor INTEGER, reps INTEGER, lapses INTEGER, "left" INTEGER, odue INTEGER, odid INTEGER, flags INTEGER, data TEXT);
+    `);
+
+    const models = {
+      "1607392319": { name: "Basic", flds: [{ name: "Front" }, { name: "Back" }] },
+    };
+    const decks = { "1": { id: 1, name: "Default" } };
+    db.prepare("INSERT INTO col (id, decks, models, tags, mod) VALUES (1, ?, ?, ?, 0)").run(
+      JSON.stringify(decks), JSON.stringify(models), "{}",
+    );
+    db.prepare(
+      "INSERT INTO notes (id, guid, mid, mod, usn, tags, flds, sfld, csum, flags, data) VALUES (1, 'abc', 1607392319, 0, 0, ' biology ', ?, 'Powerhouse', 0, 0, 'data1')",
+    ).run("Powerhouse\x1fMitochondrion");
+    db.prepare(
+      "INSERT INTO notes (id, guid, mid, mod, usn, tags, flds, sfld, csum, flags, data) VALUES (2, 'def', 1607392319, 0, 0, ' bio dna ', ?, 'DNA', 0, 0, 'data2')",
+    ).run("DNA\x1fDeoxyribonucleic acid");
+    db.prepare(
+      'INSERT INTO cards (id, nid, did, ord, mod, usn, type, queue, due, ivl, factor, reps, lapses, "left", odue, odid, flags, data) VALUES (1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)',
+    ).run();
+    db.prepare(
+      'INSERT INTO cards (id, nid, did, ord, mod, usn, type, queue, due, ivl, factor, reps, lapses, "left", odue, odid, flags, data) VALUES (2, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)',
+    ).run();
+    db.close();
+
+    const zip = new AdmZip();
+    // v0.49.2: usamos addFile (no addLocalFile) para que el nombre sea EXACTO
+    zip.addFile("collection.anki2", readFileSync(dbPath));
+    return zip.toBuffer();
+  }
+
+  it("parses a real .apkg with adm-zip + better-sqlite3", async () => {
+    const service = new ImportService();
+    const tmpDb = join(tmpdir(), `apkg-test-${Date.now()}.anki2`);
+    writeFileSync(tmpDb, buildApkg(tmpDb));
+    const result = service.importAnki(tmpDb);
+    rmSync(tmpDb, { force: true });
+
+    expect(result.errors).toHaveLength(0);
+    expect(result.notes).toHaveLength(2);
+    expect(result.srsCards).toBe(2);
+
+    // Note 1: Powerhouse
+    const n1 = result.notes.find((n) => n.frontmatter?.anki_id === "1")!;
+    expect(n1).toBeDefined();
+    expect(n1.content).toContain("# Powerhouse");
+    expect(n1.content).toContain("Mitochondrion");
+    expect(n1.path).toContain("Imported/biology/");
+    expect(n1.frontmatter!.model).toBe("Basic");
+
+    // Note 2: DNA
+    const n2 = result.notes.find((n) => n.frontmatter?.anki_id === "2")!;
+    expect(n2.content).toContain("# DNA");
+    expect(n2.path).toContain("Imported/bio/");
+  });
+
+  it("returns error for non-existent APKG file", async () => {
+    const service = new ImportService();
+    const result = service.importAnki("/tmp/does-not-exist-12345.apkg");
+    expect(result.errors.length).toBeGreaterThan(0);
+    expect(result.notes).toHaveLength(0);
+  });
+
+  it("returns error for invalid APKG (random bytes)", async () => {
+    const service = new ImportService();
+    const tmpApkg = join(tmpdir(), `bad-${Date.now()}.apkg`);
+    writeFileSync(tmpApkg, Buffer.from("not a real apkg"));
+    const result = service.importAnki(tmpApkg);
+    rmSync(tmpApkg, { force: true });
+    expect(result.errors.length).toBeGreaterThan(0);
   });
 });

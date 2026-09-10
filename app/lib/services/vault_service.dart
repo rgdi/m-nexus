@@ -256,6 +256,63 @@ class VaultService {
     }
   }
 
+  /// v0.49.2: Mueve una nota (o carpeta) a una nueva ubicacion.
+  /// Renombra si source.parent == dest.parent.
+  /// Retorna el nuevo path absoluto.
+  Future<String> moveNote(String sourceAbs, String destAbs) async {
+    final r = await safeCallAsync<String>(
+      component: 'vault',
+      code: 'EC-VAULT-010',
+      message: 'moveNote failed',
+      category: ErrorCategory.vault,
+      context: {'from': sourceAbs, 'to': destAbs, 'vault': vaultPath},
+      hint: 'Check source exists, dest not exists, parent dir of dest exists',
+      op: () async {
+        final src = File(sourceAbs);
+        if (!await src.exists()) {
+          throw Exception('Source not found: $sourceAbs');
+        }
+        final dest = File(destAbs);
+        if (await dest.exists()) {
+          throw Exception('Destination already exists: $destAbs');
+        }
+        // Crear parent dir si no existe
+        await dest.parent.create(recursive: true);
+        await src.rename(destAbs);
+        log.info('vault', 'Move', context: {'from': sourceAbs, 'to': destAbs});
+        return destAbs;
+      },
+    );
+    if (!r.success) throw r.error!;
+    return r.value!;
+  }
+
+  /// v0.49.2: Renombra una nota (sin cambiar de carpeta).
+  Future<String> renameNote(String sourceAbs, String newName) async {
+    final parent = p.dirname(sourceAbs);
+    final ext = p.extension(sourceAbs);
+    final newAbs = p.join(parent, '$newName$ext');
+    return moveNote(sourceAbs, newAbs);
+  }
+
+  /// v0.49.2: Elimina una nota.
+  Future<void> deleteNote(String absPath) async {
+    final r = await safeCallAsync<void>(
+      component: 'vault',
+      code: 'EC-VAULT-011',
+      message: 'deleteNote failed',
+      category: ErrorCategory.vault,
+      context: {'path': absPath, 'vault': vaultPath},
+      op: () async {
+        final f = File(absPath);
+        if (await f.exists()) await f.delete();
+        log.info('vault', 'Delete note', context: {'path': absPath});
+      },
+    );
+    if (!r.success) throw r.error!;
+  }
+
+
   /// Crea una nota nueva con frontmatter.
   Future<String> createNote({
     required String folder,
@@ -306,6 +363,60 @@ class VaultService {
     );
     if (!r.success) throw r.error!;
     return r.value!;
+  }
+
+  /// v0.49.2: Crea una carpeta dentro del vault.
+  /// Retorna el path absoluto de la carpeta creada.
+  Future<String> createFolder(String relPath) async {
+    final r = await safeCallAsync<String>(
+      component: 'vault',
+      code: 'EC-VAULT-012',
+      message: 'createFolder failed',
+      category: ErrorCategory.vault,
+      context: {'relPath': relPath, 'vault': vaultPath},
+      hint: 'Check vault path, no existing folder with same name, valid name',
+      op: () async {
+        final abs = p.join(vaultPath, relPath);
+        final dir = Directory(abs);
+        if (await dir.exists()) {
+          throw Exception('Folder already exists: $relPath');
+        }
+        await dir.create(recursive: true);
+        log.info('vault', 'Created folder', context: {'path': abs});
+        return abs;
+      },
+    );
+    if (!r.success) throw r.error!;
+    return r.value!;
+  }
+
+  /// v0.49.2: Elimina una carpeta y todo su contenido.
+  Future<void> deleteFolder(String absPath, {bool recursive = false}) async {
+    final r = await safeCallAsync<void>(
+      component: 'vault',
+      code: 'EC-VAULT-013',
+      message: 'deleteFolder failed',
+      category: ErrorCategory.vault,
+      context: {'path': absPath, 'recursive': recursive, 'vault': vaultPath},
+      hint: 'Folder must be empty unless recursive=true',
+      op: () async {
+        final dir = Directory(absPath);
+        if (!await dir.exists()) {
+          throw Exception('Folder not found: $absPath');
+        }
+        if (recursive) {
+          await dir.delete(recursive: true);
+        } else {
+          final contents = await dir.list().toList();
+          if (contents.isNotEmpty) {
+            throw Exception('Folder not empty (${contents.length} items). Use recursive=true to force.');
+          }
+          await dir.delete();
+        }
+        log.info('vault', 'Deleted folder', context: {'path': absPath, 'recursive': recursive});
+      },
+    );
+    if (!r.success) throw r.error!;
   }
 
   /// Búsqueda full-text en todas las notas del vault.
