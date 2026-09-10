@@ -1,6 +1,9 @@
-// DailyNoteService: crea/apertura de notas diarias (RemNote/Obsidian style).
+// DailyNoteService: crea/apertura de notas diarias (Notion/Obsidian style).
 //
 // v0.48: cada día se abre una nota automáticamente con la fecha como título.
+// v0.49.6: template Notion-style con más sections (calendario, asignatura,
+//   previous/next day, FSRS due today, tasks, notes, ideas, log).
+//
 // Estructura:
 //   Mi_Vault/Daily/2026-09-09.md
 //
@@ -9,8 +12,10 @@
 //   type: daily
 //   date: 2026-09-09
 //   created: 2026-09-09T00:00:00Z
+//   weekday: 2 (martes)
+//   month: 2026-09
 //
-// Body: template con sections (Tareas, Notas, Ideas, Anki).
+// Body: template Notion-style.
 
 import 'dart:io';
 import 'package:path/path.dart' as p;
@@ -40,6 +45,11 @@ class DailyNoteService {
     return path;
   }
 
+  /// v0.49.6: abre cualquier daily note (pasada o futura), creándola si no existe.
+  Future<String> openAnyDate(DateTime date) async {
+    return openOrCreate(date: date);
+  }
+
   /// v0.48: lista de paths de todas las notas diarias (más recientes primero).
   Future<List<String>> listAll() async {
     final dir = Directory(p.join(vaultPath, folderName));
@@ -56,7 +66,7 @@ class DailyNoteService {
       // ignore: avoid_print
       print('debug: $s');
     }
-    out.sort((a, b) => b.compareTo(a)); // desc por nombre (YYYY-MM-DD sortea bien)
+    out.sort((a, b) => b.compareTo(a));
     return out;
   }
 
@@ -72,6 +82,14 @@ class DailyNoteService {
         .toList();
   }
 
+  /// v0.49.6: lee el contenido de la daily note de una fecha.
+  /// Retorna null si no existe.
+  Future<String?> read(DateTime date) async {
+    final path = pathFor(date);
+    if (!await File(path).exists()) return null;
+    return File(path).readAsString();
+  }
+
   Future<void> _create(String absPath, DateTime date) async {
     final dir = Directory(p.dirname(absPath));
     if (!await dir.exists()) {
@@ -79,29 +97,66 @@ class DailyNoteService {
     }
     final stamp = _stamp(date);
     final iso = date.toIso8601String();
-    final body = _template(stamp, iso);
+    final body = _template(stamp, iso, date);
     await File(absPath).writeAsString(body);
   }
 
-  String _template(String stamp, String iso) {
+  /// v0.49.6: template Notion-style enriquecido
+  String _template(String stamp, String iso, DateTime date) {
+    const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+    const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    final weekday = days[date.weekday - 1];
+    final monthName = months[date.month - 1];
+    final yesterday = date.subtract(const Duration(days: 1));
+    final tomorrow = date.add(const Duration(days: 1));
+    final yStamp = _stamp(yesterday);
+    final tStamp = _stamp(tomorrow);
+    final monthStamp = '${date.year}-${date.month.toString().padLeft(2, '0')}';
+
     return '''---
 title: $stamp
 type: daily
 date: $stamp
 created: $iso
+weekday: ${date.weekday}
+month: $monthStamp
 ---
 
-# $stamp
+# $weekday $stamp
 
-## 📋 Tareas
+> 📅 $weekday, ${date.day} de $monthName de ${date.year}
+
+## ⏮️ Ayer
+[[$yStamp]]
+
+## ⏭️ Mañana
+[[$tStamp]]
+
+## 🎯 Enfoque del día
+<!-- ¿Cuál es la asignatura / tema principal de hoy? -->
+
+## ✅ Tareas
 - [ ] 
 
-## 📝 Notas
+## 📚 Estudio
+- 
 
-## 💡 Ideas
+## 💡 Notas
+- 
+
+## 🌱 Ideas
+- 
+
+## 📌 Log
+<!-- Eventos del día: revisión hecha, conceptos aprendidos, errores corregidos -->
+- 
 
 ## 🎴 Para repasar
-- (Anki cards generadas hoy)
+<!-- Tarjetas FSRS que venzan hoy o que ya están maduras -->
+- (auto-rellenar con FSRS queue)
+
+---
+*Creada automáticamente · usa #daily/${date.year}/${monthStamp} para grouping*
 ''';
   }
 
