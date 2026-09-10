@@ -48,4 +48,22 @@ jobs:
       - name: Analyze
         run: cd app && flutter analyze --no-fatal-infos --no-fatal-warnings
       - name: Test
+
+  test-docker:
+    name: Build & test Docker (v0.62.2)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build Docker image
+        run: docker build --tag mnexus/test:latest .
+      - name: Test Docker image
+        run: |
+          docker run -d --name mnexus-test -p 3000:3000 mnexus/test:latest
+          sleep 5
+          curl -f http://localhost:3000/health || (docker logs mnexus-test && exit 1)
+          docker stop mnexus-test
+          docker rm mnexus-test
         run: cd app && flutter test --no-pub --reporter=expanded

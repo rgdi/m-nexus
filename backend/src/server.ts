@@ -302,6 +302,9 @@ export async function buildServer(): Promise<FastifyInstance> {
   // v0.61.1: Key exchange E2E
   const { keyExchangeRoutes } = await import("./routes/keyExchange.js");
   await app.register(keyExchangeRoutes, { prefix: "/api/v1" });
+  // v0.62.0: Stemmer ES/EN
+  const { stemmerRoutes } = await import("./routes/stemmer.js");
+  await app.register(stemmerRoutes, { prefix: "/api/v1" });
 
   logLifecycle("server", "routes registered", {
     routes: [

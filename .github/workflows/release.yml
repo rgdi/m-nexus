@@ -330,6 +330,58 @@ jobs:
           if-no-files-found: error
 
   # =========================================================================
+  # 3.5. Docker image (v0.62.2) — opcional, no rompe si falla
+  # =========================================================================
+  build-docker:
+    name: Build Docker image
+    runs-on: ubuntu-latest
+    needs: detect-version
+    if: needs.detect-version.outputs.should_release == 'true'
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build Docker image
+        run: |
+          TAG="${{ needs.detect-version.outputs.tag }}"
+          docker build \
+            --tag "mnexus/backend:${TAG}" \
+            --tag "mnexus/backend:latest" \
+            --label "org.opencontainers.image.version=${TAG}" \
+            --label "org.opencontainers.image.source=https://github.com/rgdi/m-nexus" \
+            --label "org.opencontainers.image.title=M-NEXUS" \
+            --label "org.opencontainers.image.description=Knowledge management + spaced repetition" \
+            .
+      - name: Test Docker image
+        run: |
+          docker run -d --name mnexus-test -p 3000:3000 mnexus/backend:latest
+          sleep 5
+          curl -f http://localhost:3000/health || (docker logs mnexus-test && exit 1)
+          docker stop mnexus-test
+          docker rm mnexus-test
+      - name: Save Docker image
+        run: |
+          mkdir -p artifacts
+          TAG="${{ needs.detect-version.outputs.tag }}"
+          docker save mnexus/backend:${TAG} | gzip > "artifacts/m-nexus-docker-${TAG}.tar.gz"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: docker
+          path: artifacts/m-nexus-docker-*.tar.gz
+          if-no-files-found: warn
+      - name: Push to GitHub Container Registry
+        if: github.event_name == 'push'
+        continue-on-error: true
+        run: |
+          TAG="${{ needs.detect-version.outputs.tag }}"
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker tag mnexus/backend:${TAG} ghcr.io/rgdi/m-nexus:${TAG}
+          docker tag mnexus/backend:latest ghcr.io/rgdi/m-nexus:latest
+          docker push ghcr.io/rgdi/m-nexus:${TAG} || echo "GCR push failed (no permissions)"
+          docker push ghcr.io/rgdi/m-nexus:latest || echo "GCR push failed (no permissions)"
+
+  # =========================================================================
   # 4. Create GitHub Release (~10s)
   # =========================================================================
   create-release:

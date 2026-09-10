@@ -1,0 +1,62 @@
+# .dockerignore para M-NEXUS (v0.62.2)
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+.pnpm-store/
+
+# Build
+dist/
+build/
+.next/
+*.tsbuildinfo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Tests
+coverage/
+*.log
+.nyc_output/
+
+# Secrets
+.env
+.env.local
+*.pem
+*.key
+
+# Docs (no necesario en imagen)
+*.md
+!backend/README.md
+
+# Flutter (no usado en backend container)
+app/.dart_tool/
+app/.flutter-plugins
+app/.flutter-plugins-dependencies
+app/build/
+app/pubspec.lock
+
+# Otros
+backups/
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Cache
+.cache/
+.parcel-cache/
+.eslintcache

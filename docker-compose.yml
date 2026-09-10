@@ -1,0 +1,66 @@
+# docker-compose.yml para M-NEXUS (v0.62.2)
+#
+# Levanta el backend con persistencia + opcionalmente un proxy reverso.
+
+version: "3.9"
+
+services:
+  m-nexus:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mnexus/backend:latest
+    container_name: m-nexus-backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - mnexus-data:/data
+      - mnexus-backups:/backups
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOST: 0.0.0.0
+      DATA_DIR: /data
+      BACKUP_DIR: /backups
+      # v0.62.2: secret env vars (puedes sobreescribir en .env)
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    networks:
+      - mnexus-net
+
+  # v0.62.2: nginx proxy opcional
+  nginx:
+    image: nginx:alpine
+    container_name: m-nexus-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    depends_on:
+      m-nexus:
+        condition: service_healthy
+    networks:
+      - mnexus-net
+    profiles:
+      - with-proxy
+
+volumes:
+  mnexus-data:
+    name: mnexus-data
+  mnexus-backups:
+    name: mnexus-backups
+
+networks:
+  mnexus-net:
+    name: mnexus-net
+    driver: bridge
