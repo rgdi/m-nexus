@@ -28,6 +28,7 @@ import '../review_queue/generate_flashcards_screen.dart';
 import 'changelog_view.dart';
 import 'logs_screen.dart';
 import 'ai_settings_screen.dart';
+import 'sync_dashboard_screen.dart';
 import '../recording/transcription_queue_screen.dart';
 import '../databases/databases_screen.dart';
 
@@ -232,6 +233,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               subtitle: 'Ollama, OpenAI, Anthropic, OpenRouter',
               onTap: () => Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const AiSettingsScreen()))),
+            // v0.51.6: sync dashboard end-to-end
+            _Tile(icon: Icons.cloud_sync, title: 'Sync dashboard',
+              subtitle: 'Estado real vault <-> backend',
+              onTap: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const SyncDashboardScreen()))),
           ]),
           const SizedBox(height: 24),
           Center(

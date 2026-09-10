@@ -256,6 +256,7 @@ ${_selectedExam != null ? '\n**Examen:** ${_selectedExam!.title} (${_selectedExa
       }
 
       // 4. v0.49.16: crear evento en el calendario con la grabacion
+      // v0.51.5: cross-tag completo con audioPath + notePath + subject
       String? calendarEventId;
       try {
         final cal = CalendarService();
@@ -266,6 +267,14 @@ ${_selectedExam != null ? '\n**Examen:** ${_selectedExam!.title} (${_selectedExa
           description: eventDesc,
           begin: DateTime.fromMillisecondsSinceEpoch(beginMs),
           end: DateTime.fromMillisecondsSinceEpoch(endMs),
+          audioPath: destPath,
+          notePath: notePath,
+          subject: _selectedSubject?.name,
+          tags: [
+            'mnexus-recording',
+            if (_selectedExam != null) 'examen-${_selectedExam!.id}',
+            'vault-${widget.vaultPath.hashCode.toRadixString(16)}',
+          ],
         )).toString();
         if (int.tryParse(calendarEventId) == -1) calendarEventId = null;
       } catch (e) {

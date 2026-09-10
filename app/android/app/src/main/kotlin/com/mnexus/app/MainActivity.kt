@@ -268,11 +268,19 @@ class MainActivity: FlutterActivity() {
                 }
                 "createEvent" -> {
                     // v0.49.16: crea un evento en el calendario seleccionado
+                    // v0.51.5: cross-tag con audioPath + notePath + subject via
+                    //          CustomAppPackage + CustomAppUri + extended properties
                     val title = call.argument<String>("title") ?: "M-NEXUS"
                     val description = call.argument<String>("description") ?: ""
                     val beginMs = call.argument<Number>("beginMs")?.toLong() ?: System.currentTimeMillis()
                     val endMs = call.argument<Number>("endMs")?.toLong() ?: (beginMs + 60 * 60 * 1000)
                     val calId = call.argument<Number>("calendarId")?.toLong()
+                    val customAppPackage = call.argument<String>("customAppPackage")
+                    val customAppUri = call.argument<String>("customAppUri")
+                    val audioPath = call.argument<String>("audioPath")
+                    val notePath = call.argument<String>("notePath")
+                    val subject = call.argument<String>("subject")
+                    val tags = call.argument<String>("tags")
                     try {
                         val values = android.content.ContentValues().apply {
                             put(android.provider.CalendarContract.Events.CALENDAR_ID, calId ?: getDefaultCalendarId())
@@ -282,9 +290,57 @@ class MainActivity: FlutterActivity() {
                             put(android.provider.CalendarContract.Events.DTEND, endMs)
                             put(android.provider.CalendarContract.Events.EVENT_TIMEZONE, java.util.TimeZone.getDefault().id)
                             put(android.provider.CalendarContract.Events.HAS_ALARM, 0)
+                            // v0.51.5: cross-tag metadata (visible en Calendar Provider UI)
+                            if (customAppPackage != null) {
+                                put(android.provider.CalendarContract.Events.CUSTOM_APP_PACKAGE, customAppPackage)
+                            }
+                            if (customAppUri != null) {
+                                put(android.provider.CalendarContract.Events.CUSTOM_APP_URI, customAppUri)
+                            }
                         }
                         val uri = contentResolver.insert(android.provider.CalendarContract.Events.CONTENT_URI, values)
                         val eventId = uri?.lastPathSegment?.toLongOrNull() ?: -1L
+                        // v0.51.5: guardar extended properties (no visibles en UI pero accesibles)
+                        if (eventId > 0 && (audioPath != null || notePath != null || subject != null || tags != null)) {
+                            try {
+                                val propsUri = android.provider.CalendarContract.ExtendedProperties.CONTENT_URI
+                                if (audioPath != null) {
+                                    val v = android.content.ContentValues().apply {
+                                        put(android.provider.CalendarContract.ExtendedProperties.EVENT_ID, eventId)
+                                        put(android.provider.CalendarContract.ExtendedProperties.NAME, "mnexus.audioPath")
+                                        put(android.provider.CalendarContract.ExtendedProperties.VALUE, audioPath)
+                                    }
+                                    contentResolver.insert(propsUri, v)
+                                }
+                                if (notePath != null) {
+                                    val v = android.content.ContentValues().apply {
+                                        put(android.provider.CalendarContract.ExtendedProperties.EVENT_ID, eventId)
+                                        put(android.provider.CalendarContract.ExtendedProperties.NAME, "mnexus.notePath")
+                                        put(android.provider.CalendarContract.ExtendedProperties.VALUE, notePath)
+                                    }
+                                    contentResolver.insert(propsUri, v)
+                                }
+                                if (subject != null) {
+                                    val v = android.content.ContentValues().apply {
+                                        put(android.provider.CalendarContract.ExtendedProperties.EVENT_ID, eventId)
+                                        put(android.provider.CalendarContract.ExtendedProperties.NAME, "mnexus.subject")
+                                        put(android.provider.CalendarContract.ExtendedProperties.VALUE, subject)
+                                    }
+                                    contentResolver.insert(propsUri, v)
+                                }
+                                if (tags != null) {
+                                    val v = android.content.ContentValues().apply {
+                                        put(android.provider.CalendarContract.ExtendedProperties.EVENT_ID, eventId)
+                                        put(android.provider.CalendarContract.ExtendedProperties.NAME, "mnexus.tags")
+                                        put(android.provider.CalendarContract.ExtendedProperties.VALUE, tags)
+                                    }
+                                    contentResolver.insert(propsUri, v)
+                                }
+                            } catch (e: Exception) {
+                                // No es critico; la description ya tiene los cross-tags visibles
+                                android.util.Log.w("MainActivity", "extended props failed: ${e.message}")
+                            }
+                        }
                         result.success(eventId)
                     } catch (e: Exception) {
                         result.error("create_event_failed", e.message, null)

@@ -368,27 +368,78 @@ class CalendarService {
 
   /// v0.49.16: crea un evento en el calendario. Retorna el eventId o -1.
   /// Usado para registrar clases grabadas en el calendario del dispositivo.
+  /// v0.51.5: cross-tag con audio - acepta audioPath, notePath, subject
+  /// y los guarda como extended properties del evento.
   Future<int> createEvent({
     required String title,
     String description = '',
     required DateTime begin,
     required DateTime end,
     int? calendarId,
+    String? audioPath,
+    String? notePath,
+    String? subject,
+    List<String> tags = const [],
   }) async {
     if (!_isAndroid) return -1;
     if (!await isPermissionGranted()) return -1;
     try {
+      // v0.51.5: cross-tag - inyectar referencias en la description
+      // para que el evento aparezca en el diario / linked databases
+      final fullDescription = StringBuffer(description);
+      if (audioPath != null) {
+        fullDescription.write('\n\n[mnexus-audio:$audioPath]');
+      }
+      if (notePath != null) {
+        fullDescription.write('\n[mnexus-note:${notePath.replaceAll(' ', '_')}]');
+      }
+      if (subject != null) {
+        fullDescription.write('\n[mnexus-subject:$subject]');
+      }
+      if (tags.isNotEmpty) {
+        fullDescription.write('\n[mnexus-tags:${tags.join(',')}]');
+      }
       final id = await _channel.invokeMethod<int>('createEvent', {
         'title': title,
-        'description': description,
+        'description': fullDescription.toString(),
         'beginMs': begin.millisecondsSinceEpoch,
         'endMs': end.millisecondsSinceEpoch,
         'calendarId': calendarId,
+        // v0.51.5: extended properties (visible en Calendar Provider)
+        'customAppPackage': 'com.mnexus.app',
+        'customAppUri': notePath != null ? 'mnexus://note/${Uri.encodeComponent(notePath)}' : null,
+        'audioPath': audioPath,
+        'notePath': notePath,
+        'subject': subject,
+        'tags': tags.join(','),
       });
       return id ?? -1;
     } catch (e) {
       AdvancedLogger.instance.warn('calendar', 'createEvent failed', error: e.toString());
       return -1;
+    }
+  }
+
+  /// v0.51.5: lista eventos con cross-tag de audio/nota.
+  /// Devuelve eventos que tengan [mnexus-audio:...] en su description.
+  Future<List<Map<String, String>>> listCrossTaggedEvents({
+    DateTime? since,
+    DateTime? until,
+  }) async {
+    if (!_isAndroid) return [];
+    if (!await isPermissionGranted()) return [];
+    try {
+      final events = await _channel.invokeMethod<List<dynamic>>('listEvents', {
+        'startMs': (since ?? DateTime.now().subtract(const Duration(days: 30))).millisecondsSinceEpoch,
+        'endMs': (until ?? DateTime.now().add(const Duration(days: 30))).millisecondsSinceEpoch,
+      }) ?? [];
+      return events
+        .map((e) => Map<String, String>.from(e as Map))
+        .where((e) => (e['description'] ?? '').contains('[mnexus-'))
+        .toList();
+    } catch (e) {
+      AdvancedLogger.instance.warn('calendar', 'listCrossTaggedEvents failed', error: e.toString());
+      return [];
     }
   }
 }
