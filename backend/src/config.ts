@@ -31,6 +31,8 @@ export interface BackendConfig {
   backupIndexPath: string;
   /** v0.28: tamaño máximo de un backup individual (bytes). */
   maxBackupSize: number;
+  /** v0.51: directorio donde persistir docs Yjs. */
+  crdtDir: string;
 }
 
 function getAuthRequired(): boolean {
@@ -91,4 +93,6 @@ export const config: BackendConfig = {
   get backupStoragePath() { return process.env.BACKUP_STORAGE_PATH ?? "/var/lib/mnexus/backups"; },
   get backupIndexPath() { return process.env.BACKUP_INDEX_PATH ?? "/var/lib/mnexus/backups-index.db"; },
   get maxBackupSize() { return parseInt(process.env.MAX_BACKUP_SIZE ?? String(500 * 1024 * 1024), 10); },
+  // v0.51: CRDT persistence dir
+  get crdtDir() { return process.env.CRDT_DIR ?? "./.m-nexus-crdt"; },
 } as BackendConfig;

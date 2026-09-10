@@ -275,6 +275,9 @@ export async function buildServer(): Promise<FastifyInstance> {
   await app.register(fsrsQueueRoutes);
   // v0.49.2: import (APKG, PDF, Notion, Roam, Obsidian)
   await app.register(importRoutes, { prefix: "/api/v1/import" });
+  // v0.51: CRDT sync (Yjs-based collaborative editing)
+  const { crdtRoutes } = await import("./routes/crdt.js");
+  await app.register(crdtRoutes, { prefix: "/api/v1/crdt" });
 
   logLifecycle("server", "routes registered", {
     routes: [
