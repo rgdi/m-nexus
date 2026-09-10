@@ -8,6 +8,7 @@
 //   - Acciones rápidas: Nueva nota, Repasar hoy, Nueva flashcard
 //   - Notas recientes (top 5)
 
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
@@ -17,6 +18,8 @@ import '../../services/fsrs_engine.dart';
 import '../../services/heatmap_service.dart';
 import '../../services/vault_service.dart';
 import '../../services/study_stats_service.dart';
+import '../../services/exams_service.dart';
+import '../../services/subjects_service.dart';
 import '../../state/app_state.dart';
 import '../../widgets/glass_widgets.dart';
 import '../flashcards/flashcard_review.dart';
@@ -48,6 +51,10 @@ class _HomeScreenState extends State<HomeScreen> {
   double _retention = 0.90;
   List<_RecentNote> _recentNotes = [];
   Map<String, DailyStat> _dailyStats = {};
+  // v0.49.5: subject-of-the-day, tasks, next exam
+  List<Subject> _subjects = [];
+  List<Exam> _exams = [];
+  List<_TaskItem> _todayTasks = [];
 
   @override
   void initState() {
@@ -91,6 +98,70 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
     }
+    // v0.49.5: cargar subjects, exams, tasks de la daily note
+    await _loadTodayContext(app);
+  }
+
+  /// v0.49.5: subject-of-the-day + tareas pendientes + próximo examen
+  Future<void> _loadTodayContext(AppState app) async {
+    try {
+      // 1) Subjects
+      final subjects = await SubjectsService(app.activeVault!.path).load();
+      // 2) Exams (futuros)
+      final allExams = await ExamsService(app.activeVault!.path).load();
+      final upcoming = allExams
+        .where((e) => !e.isPast(DateTime.now()))
+        .toList()
+        ..sort((a, b) => a.date.compareTo(b.date));
+      // 3) Tasks de la daily note
+      final dailySvc = DailyNoteService(app.activeVault!.path);
+      final dailyPath = await dailySvc.openOrCreate();
+      final dailyContent = await File(dailyPath).readAsString();
+      final tasks = _parseTasks(dailyContent);
+      if (!mounted) return;
+      setState(() {
+        _subjects = subjects.where((s) => s.active).toList();
+        _exams = upcoming;
+        _todayTasks = tasks;
+      });
+    } catch (e) {
+      // No fatal — home sigue funcionando sin subject context
+    }
+  }
+
+  /// v0.49.5: extrae tareas (checkbox markdown) de un texto
+  List<_TaskItem> _parseTasks(String md) {
+    final out = <_TaskItem>[];
+    for (final line in md.split('\n')) {
+      final m = RegExp(r'^\s*-\s*\[(x| )\]\s*(.+)$', caseSensitive: false).firstMatch(line);
+      if (m != null) {
+        out.add(_TaskItem(
+          text: m.group(2)!.trim(),
+          done: m.group(1)!.toLowerCase() == 'x',
+        ));
+      }
+    }
+    return out;
+  }
+
+  /// v0.49.5: subject-of-the-day (rotacion determinista por dia)
+  Subject? _subjectOfDay() {
+    if (_subjects.isEmpty) return null;
+    final dow = DateTime.now().weekday; // 1..7
+    // Distribuir asignaturas entre L-V
+    final active = _subjects.where((s) => s.active).toList();
+    if (active.isEmpty) return null;
+    final idx = (dow - 1) % active.length;
+    return active[idx];
+  }
+
+  /// v0.49.5: formatea la fecha del dia en español sin depender
+  /// de initializeDateFormatting (que no se llama en arranque).
+  String _formatToday() {
+    final now = DateTime.now();
+    const days = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
+    const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    return '${days[now.weekday - 1]} ${now.day} de ${months[now.month - 1]}';
   }
 
   Future<void> _newNote() async {
@@ -203,6 +274,152 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showSnack(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(msg)),
+    );
+  }
+
+  /// v0.49.5: card "Hoy" con subject del dia + tareas + proximo examen
+  Widget _buildTodayCard(ThemeData theme, ColorScheme scheme) {
+    final subject = _subjectOfDay();
+    final nextExam = _exams.isNotEmpty ? _exams.first : null;
+    final pendingTasks = _todayTasks.where((t) => !t.done).toList();
+    final completedTasks = _todayTasks.where((t) => t.done).toList();
+    final today = _formatToday();
+    final capitalize = today.isEmpty
+        ? today
+        : today[0].toUpperCase() + today.substring(1);
+
+    return GlassCard(
+      borderRadius: MxRadius.xl,
+      padding: const EdgeInsets.all(MxSpacing.lg),
+      shadows: MxShadows.sm,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.today_rounded, size: 18),
+              const SizedBox(width: MxSpacing.sm),
+              Text(
+                'Hoy · $capitalize',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: MxSpacing.md),
+          // Asignatura del dia
+          if (subject != null)
+            Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: Color(subject.color),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Asignatura del día',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                      Text(
+                        subject.name,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Text(
+                'Configura asignaturas en Ajustes para ver tu subject-of-the-day',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          if (nextExam != null) ...[
+            const SizedBox(height: MxSpacing.md),
+            Row(
+              children: [
+                Icon(Icons.event_rounded, size: 18, color: scheme.tertiary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Próximo examen: ${nextExam.title} en ${nextExam.daysUntil(DateTime.now())} día${nextExam.daysUntil(DateTime.now()) == 1 ? "" : "s"}',
+                    style: theme.textTheme.bodyMedium,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (pendingTasks.isNotEmpty) ...[
+            const SizedBox(height: MxSpacing.md),
+            Text(
+              'Tareas pendientes (${pendingTasks.length})',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 4),
+            ...pendingTasks.take(3).map((t) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.check_box_outline_blank, size: 14, color: Colors.grey),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      t.text,
+                      style: theme.textTheme.bodySmall,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            )),
+            if (pendingTasks.length > 3)
+              Text(
+                '+${pendingTasks.length - 3} más en tu daily note',
+                style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+              ),
+          ] else if (completedTasks.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  Icon(Icons.check_circle, size: 16, color: scheme.primary),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Todas las tareas hechas 🎉',
+                    style: theme.textTheme.bodySmall?.copyWith(color: scheme.primary),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -321,6 +538,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
+
+            // ── HOY (subject + tasks + next exam) ──
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(MxSpacing.lg, 0, MxSpacing.lg, 0),
+              sliver: SliverToBoxAdapter(
+                child: _buildTodayCard(theme, scheme),
+              ),
+            ),
+
+            const SliverToBoxAdapter(child: SizedBox(height: MxSpacing.md)),
 
             // ── STATS GRID 2×2 ──
             SliverPadding(
@@ -723,6 +950,13 @@ class _RecentNote {
   final DateTime modified;
   const _RecentNote({required this.name, required this.path, required this.title, required this.modified});
 }
+
+// v0.49.5: task item parsed from checkbox markdown
+class _TaskItem {
+  final String text;
+  final bool done;
+  const _TaskItem({required this.text, required this.done});
+}}
 
 class _RecentNoteCard extends StatelessWidget {
   final _RecentNote note;
