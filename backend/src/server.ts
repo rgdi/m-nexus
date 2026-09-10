@@ -296,6 +296,12 @@ export async function buildServer(): Promise<FastifyInstance> {
   // v0.60 (P2.4): Themes
   const { themesRoutes } = await import("./routes/themes.js");
   await app.register(themesRoutes, { prefix: "/api/v1" });
+  // v0.61.0: Marketplace con SQLite real
+  const { marketplaceSqliteRoutes } = await import("./routes/marketplaceSqlite.js");
+  await app.register(marketplaceSqliteRoutes, { prefix: "/api/v1" });
+  // v0.61.1: Key exchange E2E
+  const { keyExchangeRoutes } = await import("./routes/keyExchange.js");
+  await app.register(keyExchangeRoutes, { prefix: "/api/v1" });
 
   logLifecycle("server", "routes registered", {
     routes: [
