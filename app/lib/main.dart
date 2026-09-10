@@ -139,9 +139,16 @@ class _MnexusAppState extends State<MnexusApp> {
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (ctx, child) {
+        // v0.49.19: clamp textScaler a max 1.25 para evitar overflow
+        // a 150%/200% que el sistema Android permite.
+        // El usuario puede ajustar el factor base en Settings (0.85-1.30)
+        // pero el resultado final nunca supera 1.25.
+        final mq = MediaQuery.of(ctx);
+        final userScale = s.fontScale;
+        final effectiveScale = (userScale * mq.textScaler.scale(14) / 14).clamp(0.85, 1.25);
         return MediaQuery(
-          data: MediaQuery.of(ctx).copyWith(
-            textScaler: TextScaler.linear(s.fontScale),
+          data: mq.copyWith(
+            textScaler: TextScaler.linear(effectiveScale),
           ),
           child: child!,
         );
