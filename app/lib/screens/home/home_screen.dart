@@ -22,6 +22,7 @@ import '../../services/exams_service.dart';
 import '../../services/subjects_service.dart';
 import '../../state/app_state.dart';
 import '../../widgets/glass_widgets.dart';
+import '../../widgets/sync_status_indicator.dart';
 import '../flashcards/flashcard_review.dart';
 import '../flashcards/flashcard_edit.dart';
 import '../note/note_editor.dart';
@@ -469,6 +470,10 @@ class _HomeScreenState extends State<HomeScreen> {
             : 'Empieza con una sesión corta de 5 minutos';
 
     return Scaffold(
+      floatingActionButton: const Padding(
+        padding: EdgeInsets.only(bottom: 80),
+        child: SyncStatusIndicator(),
+      ),
       body: RefreshIndicator(
         onRefresh: _load,
         color: scheme.primary,

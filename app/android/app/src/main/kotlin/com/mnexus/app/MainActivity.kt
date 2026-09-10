@@ -266,6 +266,31 @@ class MainActivity: FlutterActivity() {
                         result.error("open_event_failed", e.message, null)
                     }
                 }
+                "createEvent" -> {
+                    // v0.49.16: crea un evento en el calendario seleccionado
+                    val title = call.argument<String>("title") ?: "M-NEXUS"
+                    val description = call.argument<String>("description") ?: ""
+                    val beginMs = call.argument<Number>("beginMs")?.toLong() ?: System.currentTimeMillis()
+                    val endMs = call.argument<Number>("endMs")?.toLong() ?: (beginMs + 60 * 60 * 1000)
+                    val calId = call.argument<Number>("calendarId")?.toLong()
+                    try {
+                        val values = android.content.ContentValues().apply {
+                            put(android.provider.CalendarContract.Events.CALENDAR_ID, calId ?: getDefaultCalendarId())
+                            put(android.provider.CalendarContract.Events.TITLE, title)
+                            put(android.provider.CalendarContract.Events.DESCRIPTION, description)
+                            put(android.provider.CalendarContract.Events.DTSTART, beginMs)
+                            put(android.provider.CalendarContract.Events.DTEND, endMs)
+                            put(android.provider.CalendarContract.Events.EVENT_TIMEZONE, java.util.TimeZone.getDefault().id)
+                            put(android.provider.CalendarContract.Events.HAS_ALARM, 0)
+                        }
+                        val uri = contentResolver.insert(android.provider.CalendarContract.Events.CONTENT_URI, values)
+                        val eventId = uri?.lastPathSegment?.toLongOrNull() ?: -1L
+                        result.success(eventId)
+                    } catch (e: Exception) {
+                        result.error("create_event_failed", e.message, null)
+                    }
+                }
+                }
                 "listCalendars" -> {
                     // Lee los calendarios del Content Provider
                     try {
@@ -426,5 +451,23 @@ class MainActivity: FlutterActivity() {
         } catch (e: Exception) {
             cb.error("saf_save_failed", e.message, null)
         }
+    }
+}
+
+/**
+ * v0.49.16: devuelve el calendarId del primer calendario visible.
+ * Usado como fallback cuando el cliente no especifica uno.
+ */
+private fun getDefaultCalendarId(): Long {
+    return try {
+        val cursor = contentResolver.query(
+            android.provider.CalendarContract.Calendars.CONTENT_URI,
+            arrayOf(android.provider.CalendarContract.Calendars._ID),
+            "${android.provider.CalendarContract.Calendars.VISIBLE} = 1",
+            null, null
+        )
+        cursor?.use { c -> if (c.moveToFirst()) c.getLong(0) else 1L } ?: 1L
+    } catch (e: Exception) {
+        1L
     }
 }

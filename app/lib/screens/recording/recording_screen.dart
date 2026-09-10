@@ -202,13 +202,16 @@ class _RecordingScreenState extends State<RecordingScreen> {
       await File(audioPath).copy(destPath);
 
       // 2. Crear AudioNote markdown
-      final stamp = DateTime.now().toIso8601String();
+      final now = DateTime.now();
+      final stamp = now.toIso8601String();
+      final beginMs = now.millisecondsSinceEpoch - _elapsed.inMilliseconds;
+      final endMs = now.millisecondsSinceEpoch;
       final subjectTag = _selectedSubject != null ? 'subject: ${_selectedSubject!.name}' : '';
       final examTag = _selectedExam != null ? 'exam: ${_selectedExam!.title}' : '';
       final tags = [subjectTag, examTag, 'audio-note', 'clase'].where((t) => t.isNotEmpty).join(', ');
 
       final content = '''---
-title: Clase ${DateTime.now().toIso8601String().substring(0, 16)}
+title: Clase ${stamp.substring(0, 16)}
 type: audio-note
 created: $stamp
 duration: ${_elapsed.inSeconds}s
@@ -218,7 +221,7 @@ ${_selectedExam != null ? 'exam: ${_selectedExam!.id}' : ''}
 tags: [$tags]
 ---
 
-# Clase ${DateTime.now().toIso8601String().substring(0, 16)}
+# Clase ${stamp.substring(0, 16)}
 
 > 🎙️ Audio: [[Recordings/$basename]] · ${_fmtDuration(_elapsed)}
 
@@ -231,7 +234,7 @@ ${_selectedExam != null ? '\n**Examen:** ${_selectedExam!.title} (${_selectedExa
 ## Transcripción (pendiente)
 ''';
 
-      final notePath = p.join(widget.vaultPath, 'Clases', 'clase-${DateTime.now().millisecondsSinceEpoch}.md');
+      final notePath = p.join(widget.vaultPath, 'Clases', 'clase-${now.millisecondsSinceEpoch}.md');
       final noteDir = Directory(p.dirname(notePath));
       if (!await noteDir.exists()) await noteDir.create(recursive: true);
       await File(notePath).writeAsString(content);
@@ -251,22 +254,36 @@ ${_selectedExam != null ? '\n**Examen:** ${_selectedExam!.title} (${_selectedExa
         }
       }
 
-      // 4. Si transcribeAfter, marcar para transcribir
-      // (la transcripcion se hara en background; por ahora solo anotamos)
+      // 4. v0.49.16: crear evento en el calendario con la grabacion
+      String? calendarEventId;
+      try {
+        final cal = CalendarService();
+        final eventTitle = '🎙️ M-NEXUS: ${_selectedSubject?.name ?? "Clase"}';
+        final eventDesc = 'Audio: [[Recordings/$basename]]\nNota: $notePath\nDuración: ${_fmtDuration(_elapsed)}';
+        calendarEventId = (await cal.createEvent(
+          title: eventTitle,
+          description: eventDesc,
+          begin: DateTime.fromMillisecondsSinceEpoch(beginMs),
+          end: DateTime.fromMillisecondsSinceEpoch(endMs),
+        )).toString();
+        if (int.tryParse(calendarEventId) == -1) calendarEventId = null;
+      } catch (e) {
+        AdvancedLogger.instance.warn('recording', 'createEvent failed', error: e.toString());
+      }
+
+      // 5. Si transcribeAfter, kick off transcription (pendiente)
       if (_transcribeAfter) {
-        // TODO: kick off transcription en background
-        // Por simplicidad v0.49.12: solo guardamos el placeholder
+        // TODO v0.50: encolar transcripcion en background
       }
 
       await AppState.instance.reload();
       if (!mounted) return;
-      _toast('Grabación guardada');
-      // Preguntar si quiere abrir la nota
+      _toast('Grabación guardada${calendarEventId != null ? " + evento en calendario" : ""}');
       final open = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
           title: const Text('Grabación guardada'),
-          content: Text('Clase de ${_fmtDuration(_elapsed)} guardada en Clases/.\n${_autoLink ? "Vinculada a la daily note de hoy." : ""}'),
+          content: Text('Clase de ${_fmtDuration(_elapsed)} guardada en Clases/.\n${_autoLink ? "Vinculada a la daily note de hoy.\n" : ""}${calendarEventId != null ? "Evento creado en el calendario." : ""}'),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cerrar')),
             FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Abrir nota')),
