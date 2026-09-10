@@ -202,6 +202,8 @@ class StatCard extends StatelessWidget {
                   color: Colors.white.withOpacity(0.85),
                   fontWeight: FontWeight.w500,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -269,6 +271,8 @@ class ActionCard extends StatelessWidget {
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 if (subtitle != null) ...[
                   const SizedBox(height: 2),
@@ -277,7 +281,7 @@ class ActionCard extends StatelessWidget {
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: scheme.onSurfaceVariant,
                     ),
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
