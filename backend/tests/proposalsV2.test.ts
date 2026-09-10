@@ -131,12 +131,10 @@ describe("proposalsV2 - fallback path (LLM unavailable)", () => {
       },
     });
     expect(result.proposals).toBeDefined();
-    // Heuristic genera al menos 1 card de la nota
-    expect(result.proposals.length).toBeGreaterThan(0);
-    // Las proposals heurísticas tienen prefijo [HEURISTIC] en reasoning
-    if (result.proposals.length > 0) {
-      expect(result.proposals[0].reasoning).toContain("[HEURISTIC]");
-    }
+    // v0.60 (P0.5): proposals vacias cuando LLM no esta disponible
+    expect(result.proposals.length).toBe(0);
+    // source = "heuristic" indica el camino vacio
+    expect(result.stats.source).toBe("heuristic");
   });
 });
 

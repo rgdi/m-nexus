@@ -16,7 +16,8 @@ import { createHash } from "node:crypto";
 import type { VaultEvaluationResult, NoteSnapshotInput } from "./vaultEval.js";
 import type { Proposal } from "./proposalsTypes.js";
 import { genProposalId } from "./proposalsTypes.js";
-import { generateProposals as generateProposalsHeuristic } from "./proposals.js"; // legacy fallback
+// v0.60 (P0.5): proposals.ts (legacy heuristica) borrado por ser codigo muerto.
+// Si el LLM no esta disponible, devolvemos propuesta vacia en vez de heuristica.
 
 // Tipos de card que el LLM puede generar
 type CardType = "basic" | "cloze" | "front-back" | "list" | "image-occlusion";
@@ -265,19 +266,16 @@ export async function generateProposalsV2(
       const llmAvailable = await llm.ollamaAvailable() || Boolean(process.env.OPENROUTER_API_KEY);
 
       if (!llmAvailable) {
-        logOp("prop", "LLM unavailable, using heuristic fallback", true, {
+        logOp("prop", "LLM unavailable, returning empty proposals", true, {
           context: { reason: "no Ollama and no OpenRouter key" },
         });
-        // Fallback: usar heurística legacy
-        const heuristic = generateProposalsHeuristic(input);
+        // v0.60 (P0.5): proposals vacias (la heuristica legacy fue removida por ser codigo muerto)
         return {
-          proposals: heuristic.proposals.map((p) => ({ ...p, reasoning: `[HEURISTIC] ${p.reasoning}` })),
+          proposals: [],
           stats: {
-            ...heuristic.stats,
-            byType: Object.fromEntries(
-              Object.entries(heuristic.stats.byType).map(([k, v]) => [k, (v as number) ?? 0])
-            ),
-            source: "heuristic" as any,
+            generated: 0,
+            byType: {},
+            source: "heuristic",
           },
         };
       }

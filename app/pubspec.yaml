@@ -1,6 +1,6 @@
 name: mnexus_app
 description: "M-NEXUS — Tu segundo cerebro digital. Notas, flashcards, calendar. Standalone (Android + Web)."
-version: 0.51.7+129
+version: 0.60.0+130
 publish_to: "none"
 
 environment:
@@ -75,6 +75,17 @@ dependencies:
   # PDF generation
   pdf: ^3.10.8
   printing: ^5.11.1
+
+  # v0.60: file locking para evitar race conditions en escritura
+  synchronized: ^3.3.0+3
+  # v0.60: secure storage para API keys (reemplaza SharedPreferences)
+  flutter_secure_storage: ^9.2.2
+  # v0.60: TTS (text-to-speech) en cards
+  flutter_tts: ^4.2.0
+  # v0.60: WebView para embeds reales
+  webview_flutter: ^4.10.0
+  # v0.60: in-app review widget (rate us)
+  in_app_review: ^2.0.10
 
   # =========================================================================
   # OPTIONAL - Uncomment when needed

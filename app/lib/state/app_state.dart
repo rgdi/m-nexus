@@ -125,15 +125,22 @@ class AppState extends ChangeNotifier {
   }
 
   /// Mutación: registra que se hizo un review.
+  /// v0.60 (P0.3): update in-place de la card en lugar de relistar todas.
   void recordReview(String cardId) {
     _recentReviews.insert(0, ReviewEvent(timestamp: DateTime.now().millisecondsSinceEpoch));
     if (_recentReviews.length > 500) {
       _recentReviews = _recentReviews.sublist(0, 500);
     }
-    // Re-fetch la card para tener su nuevo state
+    // Update in-place: solo pedimos la card modificada
     if (_flashcardService != null) {
-      _flashcardService!.listAll().then((updated) {
-        _cards = updated;
+      _flashcardService!.getCard(cardId).then((updated) {
+        if (updated == null) return;
+        final idx = _cards.indexWhere((c) => c.id == cardId);
+        if (idx >= 0) {
+          _cards[idx] = updated;
+        } else {
+          _cards.add(updated);
+        }
         notifyListeners();
       });
     } else {

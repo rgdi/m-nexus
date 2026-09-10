@@ -4,6 +4,7 @@
 import 'dart:io';
 import 'package:path/path.dart' as p;
 import '../core/constants.dart';
+import 'file_lock.dart';
 import 'vault_service.dart';
 import 'exams_service.dart';
 import '../utils/error_codes.dart';
@@ -175,6 +176,65 @@ class FlashcardService {
   Future<List<Flashcard>> dueCards() async {
     final all = await listAll();
     return all.where((c) => c.isDue).toList();
+  }
+
+  /// v0.60 (P0.3): obtiene UNA card por id, sin listar todas.
+  /// Esto evita recargar el FSRS completo tras cada review.
+  Future<Flashcard?> getCard(String id) async {
+    for (final sub in [AppConstants.flashcardsApproved, AppConstants.flashcardsDrafts]) {
+      final dir = Directory(p.join(vaultPath, sub));
+      if (!await dir.exists()) continue;
+      for (final entity in dir.listSync(followLinks: false)) {
+        if (entity is! File || !AppConstants.mdExtensions.contains(p.extension(entity.path))) continue;
+        try {
+          final c = await _parseCard(entity, approved: sub == AppConstants.flashcardsApproved);
+          if (c?.id == id) return c;
+        } catch (_) {}
+      }
+    }
+    return null;
+  }
+
+  /// v0.60 (P0.3): actualiza una card en disco por id, sin recargar todo.
+  /// Devuelve la Flashcard actualizada o null si no existe.
+  Future<Flashcard?> updateCard(Flashcard updated) async {
+    final old = await getCard(updated.id);
+    if (old == null) return null;
+    // v0.60 (P0.2): file lock
+    await FileLock.run(updated.path, () async {
+      if (old.path != updated.path) {
+        await File(updated.path).writeAsString(_serializeCard(updated));
+        try { await File(old.path).delete(); } catch (_) {}
+      } else {
+        await File(updated.path).writeAsString(_serializeCard(updated));
+      }
+    });
+    return updated;
+  }
+
+  /// v0.60 (P0.3): serializa una flashcard a markdown para persistir.
+  String _serializeCard(Flashcard c) {
+    final buf = StringBuffer();
+    buf.writeln('---');
+    buf.writeln('id: ${c.id}');
+    if (c.nextReview != null) buf.writeln('next_review: ${c.nextReview!.toIso8601String()}');
+    if (c.mediaPath != null) buf.writeln('media: ${c.mediaPath}');
+    if (c.mediaType != null) buf.writeln('media_type: ${c.mediaType}');
+    if (c.sourceNote != null) buf.writeln('source_note: ${c.sourceNote}');
+    // v0.60: FSRS fields
+    buf.writeln('fsrs_stability: ${c.stability}');
+    buf.writeln('fsrs_retrievability: ${c.retrievability}');
+    buf.writeln('fsrs_state: ${c.state}');
+    buf.writeln('fsrs_scheduled_days: ${c.scheduledDays}');
+    buf.writeln('fsrs_elapsed_days: ${c.elapsedDays}');
+    buf.writeln('fsrs_reps: ${c.reps}');
+    buf.writeln('fsrs_lapses: ${c.lapses}');
+    if (c.lastReview != null) buf.writeln('fsrs_last_review: ${c.lastReview!.toIso8601String()}');
+    buf.writeln('---');
+    buf.writeln('# ${c.question}');
+    buf.writeln();
+    buf.writeln(c.answer);
+    return buf.toString();
   }
 
   /// v0.47.36: cards priorizadas por proximidad de exámenes.

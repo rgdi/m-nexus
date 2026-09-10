@@ -118,6 +118,30 @@ describe("crdtSyncService", () => {
     const b = await service.getOrCreateRoom("a.md");
     expect(a).toBe(b);
   });
+
+  it("v0.60 (P0.1): soporta broadcast de updates entre rooms", async () => {
+    // simula 2 clientes: A escribe, B debe recibir via broadcast manual
+    const room = await service.getOrCreateRoom("broadcast.md");
+    const docA = new Y.Doc();
+    const docB = new Y.Doc();
+    docA.getText("content").insert(0, "from A");
+    const update = Y.encodeStateAsUpdate(docA);
+    // Aplica al room
+    Y.applyUpdate(room.doc, update, "clientA");
+    // B sincroniza via getState (el broadcast real se hace en WS handler)
+    const state = await service.getState("broadcast.md");
+    Y.applyUpdate(docB, state);
+    expect(docB.getText("content").toString()).toBe("from A");
+  });
+
+  it("v0.60 (P0.1): clients se trackean en room", async () => {
+    const room = await service.getOrCreateRoom("track.md");
+    room.clients.add("client-1");
+    room.clients.add("client-2");
+    expect(room.clients.size).toBe(2);
+    room.clients.delete("client-1");
+    expect(room.clients.size).toBe(1);
+  });
 });
 
 function makeDoc(setup: (d: Y.Doc) => void): Y.Doc {

@@ -90,9 +90,9 @@ describe("Cross-cutting: FSRS + LLM + Whisper integration", () => {
       },
     });
 
-    // Sin LLM, debe usar heurística
+    // Sin LLM, debe retornar proposals vacias (v0.60 (P0.5) ya no usa heuristica legacy)
     expect(result.stats.source).toBe("heuristic");
-    expect(result.proposals.length).toBeGreaterThan(0);
+    expect(result.proposals.length).toBe(0);
   });
 
   it("WhisperService isAvailable() returns false without binary or MOCK", async () => {

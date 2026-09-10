@@ -45,6 +45,8 @@ class _AiSettingsScreenState extends State<AiSettingsScreen> {
         _config = AiConfig.fromJson(jsonDecode(json) as Map<String, dynamic>);
       } catch (_) {}
     }
+    // v0.60 (P0.4): API key desde secure storage (no SharedPreferences)
+    _config.apiKey = await SecureApiKeyStore.readKey(_config.provider);
     _apiKeyC.text = _config.apiKey ?? '';
     _baseUrlC.text = _config.baseUrl;
     if (!mounted) return;
@@ -52,6 +54,11 @@ class _AiSettingsScreenState extends State<AiSettingsScreen> {
   }
 
   Future<void> _save() async {
+    // v0.60 (P0.4): API key a secure storage
+    await SecureApiKeyStore.writeKey(
+      _config.provider,
+      _apiKeyC.text.trim().isEmpty ? null : _apiKeyC.text.trim(),
+    );
     _config.apiKey = _apiKeyC.text.trim().isEmpty ? null : _apiKeyC.text.trim();
     _config.baseUrl = _baseUrlC.text.trim();
     final prefs = await SharedPreferences.getInstance();

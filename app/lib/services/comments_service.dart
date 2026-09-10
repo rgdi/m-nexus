@@ -2,11 +2,14 @@
 //
 // v0.50: persistencia en vault/.m-nexus-comments.json
 // Estructura: { notePath: { blockId: [comments...] } }
+//
+// v0.60 (P0.2): file lock para evitar race conditions.
 
 import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as p;
 import '../screens/note/block_editor.dart' show BlockComment;
+import 'file_lock.dart';
 import 'logger.dart';
 
 class CommentsService {
@@ -43,21 +46,24 @@ class CommentsService {
 
   /// v0.50: guarda comentarios de una nota
   Future<void> saveForNote(String notePath, Map<String, List<BlockComment>> comments) async {
-    Map<String, dynamic> all = {};
-    if (await _file.exists()) {
-      try {
-        all = jsonDecode(await _file.readAsString()) as Map<String, dynamic>;
-      } catch (_) {}
-    }
-    final noteKey = _normalizeNoteKey(notePath);
-    final noteData = <String, dynamic>{};
-    for (final entry in comments.entries) {
-      if (entry.value.isEmpty) continue;
-      noteData[entry.key] = entry.value.map((c) => c.toJson()).toList();
-    }
-    all[noteKey] = noteData;
-    if (noteData.isEmpty) all.remove(noteKey);
-    await _file.writeAsString(jsonEncode(all, indent: 2));
+    // v0.60 (P0.2): file lock para evitar race con addComment/reply/delete paralelos
+    await FileLock.run(_file.path, () async {
+      Map<String, dynamic> all = {};
+      if (await _file.exists()) {
+        try {
+          all = jsonDecode(await _file.readAsString()) as Map<String, dynamic>;
+        } catch (_) {}
+      }
+      final noteKey = _normalizeNoteKey(notePath);
+      final noteData = <String, dynamic>{};
+      for (final entry in comments.entries) {
+        if (entry.value.isEmpty) continue;
+        noteData[entry.key] = entry.value.map((c) => c.toJson()).toList();
+      }
+      all[noteKey] = noteData;
+      if (noteData.isEmpty) all.remove(noteKey);
+      await _file.writeAsString(jsonEncode(all, indent: 2));
+    });
   }
 
   /// v0.50: anade un comentario a un bloque

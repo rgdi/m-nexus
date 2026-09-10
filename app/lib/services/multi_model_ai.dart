@@ -7,13 +7,14 @@
 //   - OpenRouter (cualquier modelo via API unificada)
 //   - Mock (para tests)
 //
-// La configuracion se persiste en vault/.m-nexus-ai-config.json
-// (API keys NO se guardan en vault; se leen de variables de entorno o
-// SharedPreferences).
+// v0.60 (P0.4): API keys se guardan en flutter_secure_storage (Android Keystore),
+// NO en SharedPreferences plano.
 
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'logger.dart';
 
 enum AiProvider { ollama, openai, anthropic, openrouter, mock }
 
@@ -35,6 +36,7 @@ class AiConfig {
   Map<String, dynamic> toJson() => {
     'provider': provider.name,
     'model': model,
+    // v0.60 (P0.4): NO serializar apiKey, vive en secure storage
     'baseUrl': baseUrl,
     'temperature': temperature,
     'maxTokens': maxTokens,
@@ -57,6 +59,51 @@ class AiConfig {
       temperature: temperature,
       maxTokens: maxTokens,
     );
+}
+
+/// v0.60 (P0.4): gestor de API keys con flutter_secure_storage.
+class SecureApiKeyStore {
+  static const _storage = FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
+  );
+
+  static const _apiKeyKey = 'mnexus.ai.api_key';
+  static const _anthropicKeyKey = 'mnexus.ai.anthropic_key';
+  static const _openaiKeyKey = 'mnexus.ai.openai_key';
+  static const _openrouterKeyKey = 'mnexus.ai.openrouter_key';
+
+  static Future<void> writeKey(AiProvider provider, String? value) async {
+    final key = _keyFor(provider);
+    if (value == null || value.isEmpty) {
+      await _storage.delete(key: key);
+    } else {
+      await _storage.write(key: key, value: value);
+    }
+  }
+
+  static Future<String?> readKey(AiProvider provider) async {
+    try {
+      return await _storage.read(key: _keyFor(provider));
+    } catch (e) {
+      AdvancedLogger.instance.warn('ai', 'readKey failed', error: e.toString());
+      return null;
+    }
+  }
+
+  static String _keyFor(AiProvider provider) {
+    switch (provider) {
+      case AiProvider.ollama: return 'mnexus.ai.ollama_key'; // (unused)
+      case AiProvider.openai: return _openaiKeyKey;
+      case AiProvider.anthropic: return _anthropicKeyKey;
+      case AiProvider.openrouter: return _openrouterKeyKey;
+      case AiProvider.mock: return 'mnexus.ai.mock_key';
+    }
+  }
+
+  static Future<void> deleteAll() async {
+    await _storage.deleteAll();
+  }
 }
 
 class AiMessage {

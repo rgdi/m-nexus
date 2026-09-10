@@ -10,6 +10,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as p;
+import 'file_lock.dart';
 import 'logger.dart';
 
 enum DbField { title, tag, folder, modified, created, type, source }
@@ -114,8 +115,11 @@ class DatabaseQueryService {
   }
 
   Future<void> save(List<DatabaseQuery> queries) async {
-    final list = queries.map((q) => q.toJson()).toList();
-    await _file.writeAsString(jsonEncode(list, indent: 2));
+    // v0.60 (P0.2): file lock para evitar race con create/update/delete paralelos
+    await FileLock.run(_file.path, () async {
+      final list = queries.map((q) => q.toJson()).toList();
+      await _file.writeAsString(jsonEncode(list, indent: 2));
+    });
   }
 
   Future<DatabaseQuery> create({
@@ -138,25 +142,37 @@ class DatabaseQueryService {
       limit: limit,
       createdAt: DateTime.now(),
     );
-    final all = await load();
-    all.add(q);
-    await save(all);
+    // v0.60 (P0.2): load+modify+save atomico
+    await FileLock.run(_file.path, () async {
+      final all = await load();
+      all.add(q);
+      final list = all.map((q) => q.toJson()).toList();
+      _file.writeAsStringSync(jsonEncode(list, indent: 2));
+    });
     return q;
   }
 
   Future<void> update(DatabaseQuery q) async {
-    final all = await load();
-    final idx = all.indexWhere((x) => x.id == q.id);
-    if (idx >= 0) {
-      all[idx] = q;
-      await save(all);
-    }
+    // v0.60 (P0.2): load+modify+save atomico
+    await FileLock.run(_file.path, () async {
+      final all = await load();
+      final idx = all.indexWhere((x) => x.id == q.id);
+      if (idx >= 0) {
+        all[idx] = q;
+        final list = all.map((q) => q.toJson()).toList();
+        _file.writeAsStringSync(jsonEncode(list, indent: 2));
+      }
+    });
   }
 
   Future<void> delete(String id) async {
-    final all = await load();
-    all.removeWhere((q) => q.id == id);
-    await save(all);
+    // v0.60 (P0.2): load+modify+save dentro del mismo lock
+    await FileLock.run(_file.path, () async {
+      final all = await load();
+      all.removeWhere((q) => q.id == id);
+      final list = all.map((q) => q.toJson()).toList();
+      _file.writeAsStringSync(jsonEncode(list, indent: 2));
+    });
   }
 
   // ── Ejecucion de queries ──

@@ -12,6 +12,8 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as p;
+import 'file_lock.dart';
+import 'logger.dart';
 
 class Exam {
   final String id;
@@ -77,8 +79,8 @@ class ExamsService {
       final list = decoded is List ? decoded : (decoded as Map<String, dynamic>)['exams'] as List;
       return list.map((j) => Exam.fromJson(j as Map<String, dynamic>)).toList();
     } catch (e) {
-      // ignore: avoid_print
-      print('ExamsService.loadAll: parse error: $e');
+      // v0.60 (P0.6): use logger instead of print
+      AdvancedLogger.instance.warn('exams', 'loadAll parse error', error: e.toString());
       return [];
     }
   }
@@ -87,10 +89,13 @@ class ExamsService {
     final mnexusDir = Directory(p.join(vaultPath, '_M-NEXUS'));
     if (!await mnexusDir.exists()) await mnexusDir.create();
     final f = File(p.join(mnexusDir.path, 'exams.json'));
-    await f.writeAsString(
-      jsonEncode(exams.map((e) => e.toJson()).toList()),
-      flush: true,
-    );
+    // v0.60 (P0.2): file lock para evitar race con create/update/delete paralelos
+    await FileLock.run(f.path, () async {
+      await f.writeAsString(
+        jsonEncode(exams.map((e) => e.toJson()).toList()),
+        flush: true,
+      );
+    });
   }
 
   Future<Exam> create({

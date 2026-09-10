@@ -19,6 +19,7 @@
 
 import 'dart:io';
 import 'package:path/path.dart' as p;
+import 'file_lock.dart';
 import 'logger.dart';
 
 class DailyNoteService {
@@ -62,9 +63,7 @@ class DailyNoteService {
         }
       }
     } catch (e, s) {
-      AdvancedLogger.instance.warn('daily', 'list failed', error: e.toString());
-      // ignore: avoid_print
-      print('debug: $s');
+      AdvancedLogger.instance.warn('daily', 'list failed', error: e.toString(), stack: s);
     }
     out.sort((a, b) => b.compareTo(a));
     return out;
@@ -98,7 +97,10 @@ class DailyNoteService {
     final stamp = _stamp(date);
     final iso = date.toIso8601String();
     final body = _template(stamp, iso, date);
-    await File(absPath).writeAsString(body);
+    // v0.60 (P0.2): file lock para evitar race con múltiples creates
+    await FileLock.run(absPath, () async {
+      await File(absPath).writeAsString(body);
+    });
   }
 
   /// v0.49.6: template Notion-style enriquecido

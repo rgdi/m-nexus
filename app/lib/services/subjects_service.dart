@@ -17,6 +17,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as p;
+import 'logger.dart';
 
 class Subject {
   final String id; // slug, e.g., 'anatomia'
@@ -89,8 +90,8 @@ class SubjectsService {
       final list = decoded is List ? decoded : (decoded as Map<String, dynamic>)['subjects'] as List;
       return list.map((j) => Subject.fromJson(j as Map<String, dynamic>)).toList();
     } catch (e) {
-      // ignore: avoid_print
-      print('SubjectsService.loadAll: parse error: $e');
+      // v0.60 (P0.6): use logger instead of print
+      AdvancedLogger.instance.warn('subjects', 'loadAll parse error', error: e.toString());
       return [];
     }
   }
