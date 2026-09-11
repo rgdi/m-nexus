@@ -49,12 +49,12 @@ class _UpdateBannerState extends State<UpdateBanner> {
     // flashcards_list.
     return Material(
       color: theme.colorScheme.primaryContainer,
-      // v0.47.32: NO GestureDetector wrapper con HitTestBehavior.opaque.
-      // v0.47.31 lo tenía para consumir taps en zonas vacías, pero eso
-      // BLOQUEABA los taps de los TextButton hijos (GestureDetector con
-      // onTap consume el hit antes de propagarlo a los hijos). Por eso
-      // "Más tarde" no dismissaba. Ahora el Material sólo recibe los
-      // taps que caen en sus hijos, y los hijos los manejan.
+      // v0.62.7: banner con hit-test correcto + botón X siempre visible.
+      // El usuario reportó que no podía cerrar el banner — los botones
+      // eran demasiado pequeños (minSize 48x32). Ahora:
+      // 1) Botón "Más tarde" más grande (44x36, sin shrinkWrap)
+      // 2) Botón X (close_rounded) para dismiss directo
+      // 3) Botón "Actualizar" sigue funcionando
       child: SafeArea(
         top: false,
         bottom: false,
@@ -62,12 +62,12 @@ class _UpdateBannerState extends State<UpdateBanner> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: Row(
             children: [
-              Icon(Icons.system_update, size: 16, color: theme.colorScheme.primary),
+              Icon(Icons.system_update, size: 18, color: theme.colorScheme.primary),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'Actualización ${update.latestVersion}',
-                  style: theme.textTheme.bodySmall?.copyWith(
+                  style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
                   maxLines: 1,
@@ -84,30 +84,46 @@ class _UpdateBannerState extends State<UpdateBanner> {
                 ),
                 const SizedBox(width: 8),
               ] else ...[
-                TextButton(
+                // v0.62.7: botones más grandes, sin shrinkWrap que reduzca hit.
+                OutlinedButton.icon(
                   onPressed: () {
                     debugPrint('UpdateBanner: dismissing v${update.latestVersion}');
                     _updater.dismissUpdate();
                   },
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    minimumSize: const Size(48, 32),
+                  icon: const Icon(Icons.schedule_rounded, size: 14),
+                  label: const Text('Más tarde', style: TextStyle(fontSize: 12)),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    minimumSize: const Size(0, 36),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    visualDensity: VisualDensity.compact,
                   ),
-                  child: const Text('Más tarde', style: TextStyle(fontSize: 12)),
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: 6),
                 FilledButton(
                   onPressed: () {
                     debugPrint('UpdateBanner: showing install dialog v${update.latestVersion}');
                     _showInstallDialog(context);
                   },
                   style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    minimumSize: const Size(48, 32),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    minimumSize: const Size(0, 36),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    visualDensity: VisualDensity.compact,
                   ),
                   child: const Text('Actualizar', style: TextStyle(fontSize: 12)),
+                ),
+                const SizedBox(width: 4),
+                // v0.62.7: X icon prominente como dismiss directo.
+                IconButton(
+                  tooltip: 'Descartar',
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                  onPressed: () {
+                    debugPrint('UpdateBanner: X dismiss v${update.latestVersion}');
+                    _updater.dismissUpdate();
+                  },
+                  padding: const EdgeInsets.all(6),
+                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                 ),
               ],
             ],

@@ -57,7 +57,6 @@ dependencies:
   # v0.49.11 NEW FEATURES - attachments, audio, PDF viewer
   # =========================================================================
   # Voice recording (audio files for class)
-  record: ^5.0.5
   # PDF viewer (in-app PDF rendering)
   pdfx: ^2.6.0
   # Audio playback (preview)
@@ -94,7 +93,6 @@ dependencies:
   # OPTIONAL - Uncomment when needed
   # =========================================================================
   # Voice recording (audio file)
-  # record: ^5.0.0
   # UI icons
   # cupertino_icons: ^1.0.8
   # Google fonts (custom typography)

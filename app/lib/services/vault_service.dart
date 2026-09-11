@@ -172,7 +172,11 @@ class VaultService {
       if (relPath.isEmpty && name == AppConstants.internalFolder) continue; // _M-NEXUS root
       final childRel = relPath.isEmpty ? name : p.join(relPath, name);
       if (e is Directory) {
-        children.add(await _buildNode(e, childRel));
+        // v0.62.7: filtrar carpetas vacías (sin notas ni subcarpetas con notas).
+        // Reduce ruido visual en el tree.
+        final sub = await _buildNode(e, childRel);
+        if (sub.children.isEmpty) continue;
+        children.add(sub);
       } else if (e is File) {
         if (!AppConstants.mdExtensions.contains(p.extension(name))) continue;
         children.add(VaultNode(

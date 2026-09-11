@@ -268,24 +268,30 @@ class _VaultBrowserState extends State<VaultBrowser> {
     }
     // Archivo
     final selected = _selectedRelPath == node.relPath;
-    return ListTile(
-      dense: true,
-      selected: selected,
-      leading: Icon(
-        Icons.description_outlined,
-        size: 18,
-        color: selected ? Theme.of(context).colorScheme.primary : null,
-      ),
-      title: Text(
-        node.name.replaceAll('.md', ''),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-        ),
-      ),
+    // v0.62.7: ListTile envuelto en GestureDetector para evitar que el
+    // tap se propague al ExpansionTile padre (que colapsaría en lugar
+    // de navegar). behavior:opaque consume el hit antes de propagarse.
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () => _openNote(node),
       onLongPress: () => _showNoteContextMenu(node),
+      child: ListTile(
+        dense: true,
+        selected: selected,
+        leading: Icon(
+          Icons.description_outlined,
+          size: 18,
+          color: selected ? Theme.of(context).colorScheme.primary : null,
+        ),
+        title: Text(
+          node.name.replaceAll('.md', ''),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+          ),
+        ),
+      ),
     );
   }
 
