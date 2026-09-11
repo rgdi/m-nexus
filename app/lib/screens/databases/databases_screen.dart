@@ -230,6 +230,7 @@ class _DatabasesScreenState extends State<DatabasesScreen> {
       case DbField.created: return 'Creado';
       case DbField.type: return 'Tipo';
       case DbField.source: return 'Path';
+      case DbField.size: return 'Tamaño';
     }
   }
 

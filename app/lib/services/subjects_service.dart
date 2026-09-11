@@ -60,6 +60,14 @@ class Subject {
 }
 
 class SubjectsService {
+  // v0.62.7: convenience wrappers que toman vaultPath implícito (patrón legacy).
+  Future<List<Subject>> load([String? vaultPath]) async {
+    final vp = vaultPath ?? _currentVaultPath;
+    if (vp == null) return loadAll('');
+    return loadAll(vp);
+  }
+  String? _currentVaultPath;
+
   /// Crea una asignatura nueva y la persiste.
   Future<Subject> create({
     required String vaultPath,

@@ -31,14 +31,15 @@ import 'logger.dart';
 class TemplateContext {
   final Map<String, String> vars;
   final Future<String?> Function(String prompt) askUser;
-  final Future<String?> getClipboard;
+  Future<String?> Function() getClipboard;
   final DateTime Function() now;
   TemplateContext({
     this.vars = const {},
     required this.askUser,
-    required this.getClipboard,
+    required Future<String?> Function() getClipboard,
     DateTime Function()? now,
-  }) : now = now ?? DateTime.now;
+  })  : getClipboard = getClipboard,
+        now = now ?? DateTime.now;
 }
 
 class TemplateEngine {
@@ -92,7 +93,7 @@ class TemplateEngine {
         final max = int.parse(match.group(2)!);
         return (min + Random().nextInt(max - min + 1)).toString();
       case 'clipboard':
-        return await ctx.getClipboard() ?? '';
+        return await ctx.getClipboard.call() ?? '';
       case 'prompt':
         if (arg == null) return '';
         return await ctx.askUser(arg) ?? '';

@@ -4,7 +4,7 @@
 // que aparecia durante 30s en cold start.
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'core/constants.dart';
 import 'core/main_shell.dart';

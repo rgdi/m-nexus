@@ -63,8 +63,8 @@ class _RecordingScreenState extends State<RecordingScreen> {
 
   Future<void> _loadContext() async {
     try {
-      final subjects = await SubjectsService(widget.vaultPath).load();
-      final exams = await ExamsService(widget.vaultPath).load();
+      final subjects = await SubjectsService().load(widget.vaultPath);
+      final exams = await ExamsService().load(widget.vaultPath);
       final upcoming = exams.where((e) => !e.isPast(DateTime.now())).toList()
         ..sort((a, b) => a.date.compareTo(b.date));
 

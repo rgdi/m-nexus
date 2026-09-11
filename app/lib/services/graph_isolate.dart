@@ -6,6 +6,7 @@
 import 'dart:async';
 import 'dart:isolate';
 import 'dart:math' as math;
+import 'dart:ui';
 import '../../services/graph_view_service.dart';
 
 class GraphIsolate {

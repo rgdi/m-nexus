@@ -11,6 +11,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:flutter/services.dart' show rootBundle;
 import '../utils/safe_call.dart';
+import '../utils/error_codes.dart';
 import 'logger.dart';
 
 class ExportService {
@@ -98,7 +99,8 @@ class ExportService {
         final dir = Directory(p.join(vaultPath, 'Exports'));
         if (!await dir.exists()) await dir.create(recursive: true);
         final outPath = p.join(dir.path, '$title.pdf');
-        await pdfDoc.writeToFile(outPath);
+        final file = File(outPath);
+        await file.writeAsBytes(await pdfDoc.save());
         AdvancedLogger.instance.info('export', 'pdf saved', context: {'path': outPath});
         return outPath;
       },
@@ -240,7 +242,7 @@ $htmlBody
           i++;
         }
         block = _Block(type: 'code', text: code.toString().trimRight());
-      } else if (l.trim() == '---') block = _Block(type: 'hr');
+      } else if (l.trim() == '---') block = _Block(type: 'hr', text: '');
       else if (l.startsWith('> ')) block = _Block(type: 'quote', text: l.substring(2));
       else if (l.startsWith('- [ ] ')) block = _Block(type: 'todo', text: l.substring(6), checked: false);
       else if (l.startsWith('- [x] ')) block = _Block(type: 'todo', text: l.substring(6), checked: true);

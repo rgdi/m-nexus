@@ -53,7 +53,7 @@ class _WebViewEmbedState extends State<WebViewEmbed> {
         },
         onWebResourceError: (e) {
           AdvancedLogger.instance.warn('webview', 'resource error', context: {
-            'url': e.url, 'code': e.errorCode.value, 'desc': e.description,
+            'url': e.url, 'code': e.errorCode, 'desc': e.description,
           });
           if (mounted) setState(() { _error = e.description; _loading = false; });
         },

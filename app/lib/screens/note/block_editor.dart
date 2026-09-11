@@ -16,10 +16,12 @@
 //   - Code: highlight basico (no syntax highlight completo)
 //   - Whiteboards / mind maps: en v0.50 (requieren canvas custom)
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:flutter_math_fork/flutter_math.dart';
-import 'package:flutter_highlight/flutter_highlight.dart';
+import 'package:flutter_highlight/flutter_highlight.dart' show HighlightView;
 import 'package:flutter_highlight/themes/github.dart';
 import '../../core/design_tokens.dart';
 import '../../services/vault_service.dart';
@@ -77,7 +79,7 @@ extension BlockTypeMeta on BlockType {
       case BlockType.paragraph: return Icons.notes_rounded;
       case BlockType.heading1: return Icons.title_rounded;
       case BlockType.heading2: return Icons.title_outlined;
-      case BlockType.heading3: return Icons.subtitle_outlined;
+      case BlockType.heading3: return Icons.text_fields_rounded;
       case BlockType.bulletList: return Icons.format_list_bulleted_rounded;
       case BlockType.numberedList: return Icons.format_list_numbered_rounded;
       case BlockType.todo: return Icons.check_box_outlined;
@@ -89,7 +91,7 @@ extension BlockTypeMeta on BlockType {
       case BlockType.math: return Icons.calculate_outlined;
       case BlockType.image: return Icons.image_outlined;
       case BlockType.columns: return Icons.view_column_outlined;
-      case BlockType.embed: return Icons.embed_rounded;
+      case BlockType.embed: return Icons.code;
     }
   }
 
@@ -1209,7 +1211,7 @@ class _BlockEditorState extends State<BlockEditor> {
                     child: TextField(
                       controller: cc,
                       style: theme.textTheme.bodyMedium,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         border: InputBorder.none,
                         isDense: true,
                         hintText: 'Texto columna ${i + 1}',
@@ -1632,8 +1634,7 @@ class _BlockEditorState extends State<BlockEditor> {
                   ? const Text('// pulsa para escribir código',
                       style: TextStyle(color: Colors.white38, fontFamily: 'monospace', fontSize: 13))
                   : HighlightView(
-                      // v0.50: syntax highlight real
-                      text: block.text,
+                      block.text,
                       language: block.language ?? 'plaintext',
                       theme: githubTheme,
                       padding: EdgeInsets.zero,

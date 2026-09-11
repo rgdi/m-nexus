@@ -63,7 +63,7 @@ class DailyNoteService {
         }
       }
     } catch (e, s) {
-      AdvancedLogger.instance.warn('daily', 'list failed', error: e.toString(), stack: s);
+      AdvancedLogger.instance.warn('daily', 'list failed', context: {'err': e.toString(), 'stack': s.toString()});
     }
     out.sort((a, b) => b.compareTo(a));
     return out;

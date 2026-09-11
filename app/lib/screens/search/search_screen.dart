@@ -10,7 +10,7 @@
 //   - Highlighting del match en el snippet
 
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/search_result.dart';
 import '../../services/vault_service.dart';
 

@@ -99,11 +99,12 @@ class E2EEncryption {
     final key = await getOrCreateMasterKey();
     final secretKey = SecretKey(key);
     try {
-      final encrypted = Encrypted(
+      final secretBox = SecretBox(
         payload.ciphertext,
+        nonce: payload.iv,
         mac: Mac(payload.mac),
       );
-      final clear = await _aes.decrypt(encrypted, secretKey: secretKey);
+      final clear = await _aes.decrypt(secretBox, secretKey: secretKey);
       return utf8.decode(clear);
     } catch (e) {
       AdvancedLogger.instance.error('e2e', 'decrypt failed', error: e);
@@ -162,10 +163,11 @@ class E2EEncryption {
       nonce: utf8.encode('mnexus-e2e-v1'),
     );
     final bytes = await secretKey.extractBytes();
+    final u8 = Uint8List.fromList(bytes);
     // Guardar la nueva key
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_keyPref, base64.encode(bytes));
-    return bytes;
+    await prefs.setString(_keyPref, base64.encode(u8));
+    return u8;
   }
 
   Uint8List _randomBytes(int n) {

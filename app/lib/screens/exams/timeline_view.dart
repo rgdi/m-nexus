@@ -63,11 +63,19 @@ class _TimelineViewState extends State<TimelineView> {
       ),
     );
     if (ok != true) return;
-    exam.date = newDate;
+    // v0.62.7: Exam tiene fields final, no se puede mutar. Crear copia.
+    final updated = Exam(
+      id: exam.id,
+      subjectId: exam.subjectId,
+      title: exam.title,
+      date: newDate,
+      topics: exam.topics,
+      createdAt: exam.createdAt,
+    );
     final svc = ExamsService();
     final all = await svc.all(widget.vaultPath);
     final idx = all.indexWhere((e) => e.id == exam.id);
-    if (idx >= 0) all[idx] = exam;
+    if (idx >= 0) all[idx] = updated;
     await svc.save(widget.vaultPath, all);
     await _load();
     if (!mounted) return;

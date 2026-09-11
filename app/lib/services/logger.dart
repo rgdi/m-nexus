@@ -379,3 +379,7 @@ class AdvancedLogger {
   }
 }
 
+
+
+/// Shortcut for `AdvancedLogger.instance`. Use as `log.info(...)`, `log.warn(...)`, etc.
+final AdvancedLogger log = AdvancedLogger.instance;

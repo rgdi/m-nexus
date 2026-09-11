@@ -10,7 +10,7 @@
 
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 import '../../core/design_tokens.dart';
 import '../../services/flashcard_service.dart';
@@ -110,9 +110,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadTodayContext(AppState app) async {
     try {
       // 1) Subjects
-      final subjects = await SubjectsService(app.activeVault!.path).load();
+      final subjects = await SubjectsService().load(app.activeVault!.path);
       // 2) Exams (futuros)
-      final allExams = await ExamsService(app.activeVault!.path).load();
+      final allExams = await ExamsService().load(app.activeVault!.path);
       final upcoming = allExams
         .where((e) => !e.isPast(DateTime.now()))
         .toList()
@@ -1026,7 +1026,7 @@ class _TaskItem {
   final String text;
   final bool done;
   const _TaskItem({required this.text, required this.done});
-}}
+}
 
 class _RecentNoteCard extends StatelessWidget {
   final _RecentNote note;

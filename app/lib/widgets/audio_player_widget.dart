@@ -111,7 +111,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
     }
     final total = _duration.inMilliseconds.toDouble();
     final current = _position.inMilliseconds.toDouble();
-    final value = total > 0 ? current : 0;
+    final value = total > 0 ? current : 0.0;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -139,7 +139,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
                     overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
                   ),
                   child: Slider(
-                    value: value.clamp(0, total > 0 ? total : 1),
+                    value: value.clamp(0.0, total > 0 ? total : 1.0),
                     min: 0,
                     max: total > 0 ? total : 1,
                     onChanged: total > 0 ? _seek : null,

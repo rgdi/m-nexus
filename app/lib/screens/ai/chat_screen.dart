@@ -11,7 +11,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../l10n/app_localizations.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:path/path.dart' as p;
 import '../../services/ai_tutor_client.dart';
@@ -39,7 +39,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final List<ChatMessage> _messages = [];
   late final AiTutorClient _client;
   bool _isThinking = false;
-  static const _historyFile = '.m-nexus-chat-history.json';
+  static const String _historyFileName = '.m-nexus-chat-history.json';
 
   @override
   void initState() {
@@ -62,7 +62,7 @@ class _ChatScreenState extends State<ChatScreen> {
   // v0.49.4: persist chat history in vault/.m-nexus-chat-history.json
   File? _historyFile() {
     if (widget.vaultPath == null) return null;
-    return File(p.join(widget.vaultPath!, _historyFile));
+    return File(p.join(widget.vaultPath!, _historyFileName));
   }
 
   void _loadHistory() {
@@ -231,7 +231,7 @@ class _ChatScreenState extends State<ChatScreen> {
     ).firstMatch(text);
     final aMatch = RegExp(
       r'(?:^|\n)\s*[*_]*\s*(?:Answer|Respuesta|A)\s*[:\-]?\s*[*_]*\s*(.+?)(?:\n\n|$)',
-      dotMatch: true,
+      dotAll: true,
       caseSensitive: false,
     ).firstMatch(text);
     if (qMatch != null && aMatch != null) {
@@ -251,7 +251,7 @@ class _ChatScreenState extends State<ChatScreen> {
     // Patrón 1: pares Q:/A: consecutivos
     final pattern = RegExp(
       r'(?:^|\n)\s*[*_]*\s*(?:Question|Pregunta|Q)\s*[:\-]?\s*(.+?)\s*\n+\s*[*_]*\s*(?:Answer|Respuesta|A)\s*[:\-]?\s*(.+?)(?=\n+\s*[*_]*\s*(?:Question|Pregunta|Q)|$)',
-      dotMatch: true,
+      dotAll: true,
       multiLine: true,
       caseSensitive: false,
     );

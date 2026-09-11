@@ -147,47 +147,50 @@ class _GlobalTasksScreenState extends State<GlobalTasksScreen> {
   Widget _buildTaskTile(GlobalTask t) {
     final dateFmt = DateFormat('yyyy-MM-dd');
     final isOverdue = t.dueDate != null && t.dueDate!.isBefore(DateTime.now()) && !t.done;
-    return CheckboxListTile(
-      value: t.done,
-      onChanged: (v) async {
-        final svc = GlobalTasksService(widget.vaultPath);
-        await svc.toggleDone(t);
-        await _load();
-      },
-      controlAffinity: ListTileControlAffinity.leading,
-      title: Text(
-        t.text,
-        style: TextStyle(
-          decoration: t.done ? TextDecoration.lineThrough : null,
-          color: t.done ? Colors.grey : null,
-        ),
-      ),
-      subtitle: Row(
-        children: [
-          Icon(Icons.note, size: 12, color: Colors.grey[600]),
-          const SizedBox(width: 4),
-          Expanded(
-            child: Text(t.noteTitle, maxLines: 1, overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-          ),
-          if (t.dueDate != null) ...[
-            const SizedBox(width: 4),
-            Icon(Icons.event, size: 12, color: isOverdue ? Colors.red : Colors.grey[600]),
-            const SizedBox(width: 2),
-            Text(dateFmt.format(t.dueDate!),
-              style: TextStyle(fontSize: 11, color: isOverdue ? Colors.red : Colors.grey[600])),
-          ],
-          if (t.priority >= 2) ...[
-            const SizedBox(width: 4),
-            const Text('🔺', style: TextStyle(fontSize: 14)),
-          ],
-        ],
-      ),
+    // v0.62.7: CheckboxListTile no soporta onTap. Envuelto en InkWell.
+    return InkWell(
       onTap: () {
         Navigator.push(context, MaterialPageRoute(
           builder: (_) => NoteView(notePath: t.notePath, vaultPath: widget.vaultPath),
         ));
       },
+      child: CheckboxListTile(
+        value: t.done,
+        onChanged: (v) async {
+          final svc = GlobalTasksService(widget.vaultPath);
+          await svc.toggleDone(t);
+          await _load();
+        },
+        controlAffinity: ListTileControlAffinity.leading,
+        title: Text(
+          t.text,
+          style: TextStyle(
+            decoration: t.done ? TextDecoration.lineThrough : null,
+            color: t.done ? Colors.grey : null,
+          ),
+        ),
+        subtitle: Row(
+          children: [
+            Icon(Icons.note, size: 12, color: Colors.grey[600]),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(t.noteTitle, maxLines: 1, overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+            ),
+            if (t.dueDate != null) ...[
+              const SizedBox(width: 4),
+              Icon(Icons.event, size: 12, color: isOverdue ? Colors.red : Colors.grey[600]),
+              const SizedBox(width: 2),
+              Text(dateFmt.format(t.dueDate!),
+                style: TextStyle(fontSize: 11, color: isOverdue ? Colors.red : Colors.grey[600])),
+            ],
+            if (t.priority >= 2) ...[
+              const SizedBox(width: 4),
+              const Text('🔺', style: TextStyle(fontSize: 14)),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

@@ -13,7 +13,7 @@ import 'package:path/path.dart' as p;
 import 'file_lock.dart';
 import 'logger.dart';
 
-enum DbField { title, tag, folder, modified, created, type, source }
+enum DbField { title, tag, folder, modified, created, type, source, size }
 enum DbOrder { asc, desc }
 
 class DatabaseQuery {
@@ -118,7 +118,7 @@ class DatabaseQueryService {
     // v0.60 (P0.2): file lock para evitar race con create/update/delete paralelos
     await FileLock.run(_file.path, () async {
       final list = queries.map((q) => q.toJson()).toList();
-      await _file.writeAsString(jsonEncode(list, indent: 2));
+      await _file.writeAsString(const JsonEncoder.withIndent('  ').convert(list));
     });
   }
 
@@ -147,7 +147,7 @@ class DatabaseQueryService {
       final all = await load();
       all.add(q);
       final list = all.map((q) => q.toJson()).toList();
-      _file.writeAsStringSync(jsonEncode(list, indent: 2));
+      _file.writeAsStringSync(const JsonEncoder.withIndent('  ').convert(list));
     });
     return q;
   }
@@ -160,7 +160,7 @@ class DatabaseQueryService {
       if (idx >= 0) {
         all[idx] = q;
         final list = all.map((q) => q.toJson()).toList();
-        _file.writeAsStringSync(jsonEncode(list, indent: 2));
+        _file.writeAsStringSync(const JsonEncoder.withIndent('  ').convert(list));
       }
     });
   }
@@ -171,7 +171,7 @@ class DatabaseQueryService {
       final all = await load();
       all.removeWhere((q) => q.id == id);
       final list = all.map((q) => q.toJson()).toList();
-      _file.writeAsStringSync(jsonEncode(list, indent: 2));
+      _file.writeAsStringSync(const JsonEncoder.withIndent('  ').convert(list));
     });
   }
 
@@ -202,7 +202,8 @@ class DatabaseQueryService {
             break;
           case DbField.modified:
           case DbField.created:
-            // Filtro de fecha seria date range; simplificamos a skip
+          case DbField.size:
+            // Filtro de fecha/serial; simplificamos a skip
             break;
         }
       }

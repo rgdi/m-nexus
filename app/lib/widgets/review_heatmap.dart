@@ -5,7 +5,7 @@
 // 5 niveles de intensidad (0 = sin actividad, 4 = 100+ repasas/dia).
 
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../l10n/app_localizations.dart';
 import '../services/heatmap_service.dart';
 import '../services/study_stats_service.dart';
 

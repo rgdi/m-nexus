@@ -69,6 +69,16 @@ class Exam {
 }
 
 class ExamsService {
+  // v0.62.7: alias de loadAll que acepta optional vaultPath
+  Future<List<Exam>> all([String? vaultPath]) async {
+    if (vaultPath == null) return loadAll(_currentVaultPath ?? '');
+    return loadAll(vaultPath);
+  }
+  String? _currentVaultPath;
+
+  // v0.62.7: load() alias
+  Future<List<Exam>> load([String? vaultPath]) async => all(vaultPath);
+
   Future<List<Exam>> loadAll(String vaultPath) async {
     final f = File(p.join(vaultPath, '_M-NEXUS', 'exams.json'));
     if (!await f.exists()) return [];

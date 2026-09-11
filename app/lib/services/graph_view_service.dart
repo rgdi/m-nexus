@@ -43,7 +43,7 @@ class GraphData {
 
 class GraphViewService {
   final String vaultPath;
-  static const _wikilinkRe = RegExp(r'\[\[([^\[\]|]+)(?:\|[^\]]*)?\]\]');
+  static final RegExp _wikilinkRe = RegExp(r'\[\[([^\[\]|]+)(?:\|[^\]]*)?\]\]');
 
   GraphViewService(this.vaultPath);
 

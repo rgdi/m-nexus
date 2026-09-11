@@ -26,6 +26,8 @@ class TranscriptionJob {
     required this.audioPath,
     required this.enqueuedAt,
     this.status = TranscriptionStatus.pending,
+    this.resultText,
+    this.error,
   });
 
   Map<String, dynamic> toJson() => {
@@ -98,7 +100,7 @@ class TranscriptionQueue {
     await _save();
     try {
       AdvancedLogger.instance.info('transcription-queue', 'processing', context: {'id': next.id});
-      final result = await voiceService.transcribeFile(next.audioPath);
+      final result = await voiceService.transcribeLocal(audioPath: next.audioPath);
       next.status = TranscriptionStatus.done;
       next.resultText = result.text;
       // Append a la nota
@@ -168,7 +170,7 @@ class TranscriptionQueue {
   Future<void> _save() async {
     try {
       final list = _jobs.map((j) => j.toJson()).toList();
-      await _file.writeAsString(jsonEncode(list, indent: 2));
+      await _file.writeAsString(const JsonEncoder.withIndent('  ').convert(list));
     } catch (e) {
       AdvancedLogger.instance.warn('transcription-queue', 'save failed', error: e.toString());
     }

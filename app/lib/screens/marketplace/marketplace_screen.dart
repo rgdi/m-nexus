@@ -8,7 +8,7 @@
 //   - Tap → DeckDetailScreen (v0.46.1 fix)
 
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/marketplace_client.dart';
 import '../../models/marketplace_deck.dart';
 import 'deck_detail_screen.dart';

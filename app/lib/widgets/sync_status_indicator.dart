@@ -28,7 +28,7 @@ class _SyncStatusIndicatorState extends State<SyncStatusIndicator> {
   }
 
   Future<void> _check() async {
-    final url = await AppSettings.getBackendUrl();
+    final url = SettingsService.instance.current.backendUrl;
     if (url == null || url.isEmpty) {
       if (!mounted) return;
       setState(() {

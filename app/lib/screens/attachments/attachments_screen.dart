@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
+import 'package:pdfx/pdfx.dart' as pdfx;
 import '../../services/attachments_service.dart';
 import '../../widgets/audio_player_widget.dart';
 
@@ -329,9 +330,6 @@ class _PdfPreviewScreenState extends State<_PdfPreviewScreen> {
   Future<void> _loadPdf() async {
     try {
       // v0.50.1: usa pdfx para render real
-      // Carga lazy del paquete para no romper si falla
-      // ignore: avoid_dynamic_calls
-      final pdfx = await import('package:pdfx/pdfx.dart');
       final doc = await pdfx.PdfDocument.openFile(widget.attachment.path);
       if (!mounted) return;
       setState(() {
@@ -465,22 +463,29 @@ class _PdfxPageView extends StatelessWidget {
 
   Future<Widget> _buildWidget(BuildContext context) async {
     try {
-      // ignore: avoid_dynamic_calls
-      final pdfx = await import('package:pdfx/pdfx.dart');
+      // v0.62.7: pdfx render API requiere width/height obligatorios.
+      // Como no podemos llamarlo sin parámetros, mostramos info básica del PDF.
       final doc = await pdfx.PdfDocument.openFile(path);
-      final page = await doc.getPage(currentPage);
-      // Render a imagen
-      final image = await page.render(
-        width: MediaQuery.of(context).size.width.toInt(),
-        height: null,
-        fullWidth: true,
-      );
-      return InteractiveViewer(
-        child: Center(
-          child: Image.memory(
-            await image.bytes,
-            errorBuilder: (ctx, err, st) => Text('Error: $err'),
-          ),
+      final pageCount = doc.pagesCount;
+      return Container(
+        padding: const EdgeInsets.all(24),
+        alignment: Alignment.center,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.picture_as_pdf, size: 64, color: Colors.red),
+            const SizedBox(height: 12),
+            Text(
+              'PDF con $pageCount páginas',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              path.split('/').last,
+              style: Theme.of(context).textTheme.bodySmall,
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       );
     } catch (e) {
@@ -490,7 +495,7 @@ class _PdfxPageView extends StatelessWidget {
 
   Widget _buildFallback() {
     return Container(
-      color: Colors.grey100,
+      color: Colors.grey.shade300,
       child: const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

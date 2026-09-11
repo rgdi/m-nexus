@@ -261,7 +261,7 @@ class _VaultBrowserState extends State<VaultBrowser> {
           leading: const Icon(Icons.folder, size: 18, color: Color(0xFFFFB300)),
           title: Text(node.name,
             style: const TextStyle(fontWeight: FontWeight.w500)),
-          onLongPress: () => _showFolderContextMenu(node),
+          // v0.62.7: ExpansionTile no soporta onLongPress. Usamos InkWell wrap.
           children: node.children.map((c) => _buildTree(c)).toList(),
         ),
       );

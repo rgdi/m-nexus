@@ -3,7 +3,7 @@
 // v0.47.0: tutorial corto para nuevos usuarios, en español de España.
 
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../l10n/app_localizations.dart';
 
 class OnboardingTutorial extends StatefulWidget {
   final VoidCallback onFinish;

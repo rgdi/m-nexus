@@ -62,7 +62,7 @@ class CommentsService {
       }
       all[noteKey] = noteData;
       if (noteData.isEmpty) all.remove(noteKey);
-      await _file.writeAsString(jsonEncode(all, indent: 2));
+      await _file.writeAsString(const JsonEncoder.withIndent('  ').convert(all));
     });
   }
 
@@ -91,7 +91,7 @@ class CommentsService {
   /// v0.50: cuenta comentarios totales en una nota
   Future<int> countComments(String notePath) async {
     final all = await loadForNote(notePath);
-    return all.values.fold(0, (sum, list) => sum + list.length);
+    return all.values.fold<int>(0, (sum, list) => sum + list.length);
   }
 
   String _normalizeNoteKey(String path) {

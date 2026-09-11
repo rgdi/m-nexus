@@ -3,7 +3,7 @@
 // v0.46: muestra toda la info del deck, sample cards, install flow completo.
 
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/marketplace_deck.dart';
 import '../../services/marketplace_client.dart';
 

@@ -169,7 +169,7 @@ class FsrsOptimizer {
       return null;
     }
     // Parametros FSRS-5 por defecto (21 valores)
-    final defaults = FsrsEngine.defaultParameters;
+    final defaults = defaultParameters;
     // Baseline: log-loss con defaults
     final defaultLoss = _logLoss(defaults, reviews);
     AdvancedLogger.instance.info('fsrs-opt', 'starting optimization', context: {
@@ -242,7 +242,7 @@ class FsrsOptimizer {
   /// v0.60 (P0.8): carga los parametros optimizados.
   /// Si no existen, retorna defaults.
   Future<List<double>> loadParams() async {
-    if (!await _paramsPath.exists()) return FsrsEngine.defaultParameters;
+    if (!await _paramsPath.exists()) return defaultParameters;
     try {
       final raw = await _paramsPath.readAsString();
       final r = FsrsOptimizationResult.fromJson(jsonDecode(raw) as Map<String, dynamic>);
@@ -250,7 +250,7 @@ class FsrsOptimizer {
     } catch (e) {
       AdvancedLogger.instance.warn('fsrs-opt', 'loadParams failed, using defaults',
         error: e.toString());
-      return FsrsEngine.defaultParameters;
+      return defaultParameters;
     }
   }
 
@@ -268,7 +268,7 @@ class FsrsOptimizer {
       'reviewCount': reviews.length,
       'minForOptimize': _minReviewsForOptimize,
       'hasParams': (await _paramsPath.exists()),
-      'paramsHash': params.length == FsrsEngine.defaultParameters.length
+      'paramsHash': params.length == defaultParameters.length
         ? 'defaults' : 'optimized',
     };
   }

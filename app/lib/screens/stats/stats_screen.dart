@@ -4,7 +4,7 @@
 // Usa fl_chart para line charts + custom heatmap widget.
 
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../l10n/app_localizations.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../services/study_stats_service.dart';
 import '../../services/heatmap_service.dart';

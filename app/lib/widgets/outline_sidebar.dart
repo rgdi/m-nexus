@@ -119,7 +119,7 @@ class OutlineSidebar extends StatelessWidget {
                               child: Text(
                                 e.text,
                                 style: TextStyle(
-                                  fontSize: 12 + (4 - e.level) as int,
+                                  fontSize: 12.0 + (4 - e.level) * 1.5,
                                   fontWeight: e.level == 1 ? FontWeight.w700 : FontWeight.w500,
                                   color: isCurrent
                                     ? theme.colorScheme.onPrimaryContainer

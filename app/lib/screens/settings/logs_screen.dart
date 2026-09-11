@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import '../../services/logger.dart';
+import '../../services/logger_models.dart';
 
 class LogsScreen extends StatefulWidget {
   const LogsScreen({super.key});
@@ -210,6 +211,7 @@ class _LogsScreenState extends State<LogsScreen> {
 
   Widget _buildEntry(_LogEntry e, ThemeData theme) {
     final color = switch (e.level) {
+      LogLevel.trace => theme.colorScheme.onSurfaceVariant,
       LogLevel.debug => theme.colorScheme.onSurfaceVariant,
       LogLevel.info => theme.colorScheme.primary,
       LogLevel.warn => Colors.orange,
@@ -217,6 +219,7 @@ class _LogsScreenState extends State<LogsScreen> {
       LogLevel.fatal => theme.colorScheme.error,
     };
     final icon = switch (e.level) {
+      LogLevel.trace => Icons.notes_outlined,
       LogLevel.debug => Icons.bug_report_outlined,
       LogLevel.info => Icons.info_outline,
       LogLevel.warn => Icons.warning_amber_outlined,

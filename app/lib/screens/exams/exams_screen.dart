@@ -7,7 +7,7 @@
 //   3. Generar flashcards automáticamente desde notas que coincidan
 
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/exams_service.dart';
 import '../../services/subjects_service.dart';
 

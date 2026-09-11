@@ -11,7 +11,7 @@
 // v0.46: usa ClozeService (Fase 3.A backend) + el parser en app.
 
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/cloze.dart';
 import '../../services/cloze_service.dart';
 

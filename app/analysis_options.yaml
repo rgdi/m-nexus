@@ -9,6 +9,9 @@ analyzer:
     unused_element: ignore
   exclude:
     - "**/*.g.dart"
+    - build/**
+    - android/**
+    - web/**
 linter:
   rules:
     prefer_final_fields: false

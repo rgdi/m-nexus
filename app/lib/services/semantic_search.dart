@@ -105,10 +105,11 @@ class SemanticSearch {
     'que', 'qué', 'como', 'cómo', 'donde', 'cuál', 'cuáles',
     'es', 'son', 'ser', 'estar', 'está', 'están', 'fue', 'fueron',
     'y', 'o', 'u', 'pero', 'sino', 'aunque',
-    'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to',
+    'the', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to',
     'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be',
     'i', 'you', 'he', 'she', 'it', 'we', 'they',
     'this', 'that', 'these', 'those',
+    // english determiners already covered above (a, an)
   };
 
   SemanticSearch(this.vaultPath);
