@@ -11,6 +11,7 @@
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/updater.dart';
 import '../services/updater_models.dart';
 import '../services/logger.dart';
@@ -18,6 +19,8 @@ import '../services/logger.dart';
 class UpdaterService extends ChangeNotifier {
   static final UpdaterService instance = UpdaterService._();
   UpdaterService._();
+
+  static const _kDismissedVersion = 'updater.dismissed_version';
 
   final Updater _updater = Updater(
     config: const UpdaterConfig(
@@ -115,9 +118,28 @@ class UpdaterService extends ChangeNotifier {
   bool _dismissedForThisVersion = false;
   String? _dismissedVersion;
 
+  /// v0.62.13: load del dismiss persistido en disco. Llamar una vez al
+  /// initState() del MainShell antes de evaluar shouldShowUpdateBanner.
+  Future<void> load() async {
+    try {
+      final p = await SharedPreferences.getInstance();
+      _dismissedVersion = p.getString(_kDismissedVersion);
+      _dismissedForThisVersion = _dismissedVersion != null;
+    } catch (_) {}
+    notifyListeners();
+  }
+
   void dismissUpdate() {
     _dismissedForThisVersion = true;
     _dismissedVersion = _updater.lastResult?.update?.latestVersion;
+    // v0.62.13: persistir en disco para que el banner no reaparezca al
+    // reiniciar la app. Antes solo se guardaba en memoria → reaparecía
+    // en cada cold start.
+    _dismissedVersion != null
+        ? SharedPreferences.getInstance().then(
+            (p) => p.setString(_kDismissedVersion, _dismissedVersion!),
+          )
+        : null;
     notifyListeners();
   }
 

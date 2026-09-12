@@ -22,6 +22,14 @@ class _UpdateBannerState extends State<UpdateBanner> {
     super.initState();
     _updater = UpdaterService.instance;
     _updater.addListener(_onChange);
+    // v0.62.13: si el load() desde disco no ha terminado cuando el banner
+    // se construye, podría mostrarse brevemente. Forzamos un re-render
+    // después del load para asegurar que shouldShowUpdateBanner ya tiene
+    // el estado correcto.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await UpdaterService.instance.load();
+      if (mounted) setState(() {});
+    });
   }
 
   @override

@@ -72,15 +72,16 @@ class _MainShellState extends State<MainShell> {
 
   Widget _buildMobile(BuildContext context) {
     return Scaffold(
-      // AppBackground envuelve la página activa + un Stack permite el dock
-      // flotante por encima sin afectar el contenido.
+      // v0.62.13: UpdateBanner eliminado del Stack del MainShell (volvió
+      // al modelo original de hermano en main.dart). El problema era la
+      // falta de persistencia del dismiss, ya resuelto con SharedPreferences.
+      // Revertir este cambio evita que el banner tape el contenido de cada
+      // screen (que no tiene AppBar propio en Home, o lo tiene en otros).
       body: Stack(
         children: [
           // Página activa (cada una ya trae su AppBackground si quiere).
           // v0.62.10: Padding(bottom: 80) para que el contenido de cada
           // screen tenga espacio reservado y no quede tapado por el dock.
-          // Antes el dock flotaba y el ListView se extendía hasta el borde
-          // inferior, ocultando el último item de cards/notas/acciones.
           Positioned.fill(
             child: Padding(
               padding: const EdgeInsets.only(bottom: 80),

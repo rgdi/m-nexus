@@ -299,13 +299,18 @@ class _NoteViewState extends State<NoteView> {
 
   Widget _buildFrontmatter(Map<String, String> fm) {
     if (fm.isEmpty) return const SizedBox.shrink();
+    // v0.62.12: frontmatter con colores del theme (antes hardcoded beige
+    // que se ve ilegible en dark mode — bug detectado en audit A063).
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF3E0),
+        color: scheme.surfaceContainerHigh.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(8),
-        border:
-            Border.all(color: const Color(0xFFFFB74D).withValues(alpha: 0.4)),
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.4),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -316,14 +321,21 @@ class _NoteViewState extends State<NoteView> {
                 children: [
                   SizedBox(
                     width: 90,
-                    child: Text(e.key,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w600, fontSize: 12)),
+                    child: Text(
+                      e.key,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                   Expanded(
-                    child: Text(e.value,
-                        style: const TextStyle(
-                            fontSize: 12, fontFamily: 'monospace')),
+                    child: Text(
+                      e.value,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontFamily: 'monospace',
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
                   ),
                 ],
               ),

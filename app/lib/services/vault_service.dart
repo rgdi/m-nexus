@@ -138,6 +138,12 @@ class VaultService {
         final name = p.basename(entity.path);
         if (name.startsWith('.')) continue;
         if (!AppConstants.mdExtensions.contains(p.extension(name))) continue;
+        // v0.62.13: excluir archivos internos (flashcards, daily, backups).
+        // Sin este filtro, "Recientes" mostraba IDs de flashcards (fc-12345)
+        // en vez de notas reales del usuario.
+        final rel = p.relative(entity.path, from: vaultPath);
+        if (rel.startsWith(AppConstants.internalFolder)) continue;
+        if (rel.startsWith('${AppConstants.internalFolder}${Platform.pathSeparator}')) continue;
         try {
           final stat = await entity.stat();
           candidates.add(_NoteCandidate(path: entity.path, mtime: stat.modified));

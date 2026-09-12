@@ -234,6 +234,63 @@ class MainActivity: FlutterActivity() {
                             android.content.pm.PackageManager.PERMISSION_GRANTED
                     result.success(granted)
                 }
+                // v0.62.13: lista eventos del calendar del sistema en un rango
+                // de fechas. Usado por el autosync con calendar del Plan screen.
+                "listSystemEvents" -> {
+                    if (checkSelfPermission(android.Manifest.permission.READ_CALENDAR) !=
+                        android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                        result.success(emptyList<Map<String, Any?>>())
+                        return@setMethodCallHandler
+                    }
+                    val startMs = call.argument<Number>("startMs")?.toLong()
+                        ?: System.currentTimeMillis()
+                    val endMs = call.argument<Number>("endMs")?.toLong()
+                        ?: (startMs + 7L * 24 * 3600 * 1000)
+                    try {
+                        val events = mutableListOf<Map<String, Any?>>()
+                        val uri = android.provider.CalendarContract.Events.CONTENT_URI
+                        val projection = arrayOf(
+                            android.provider.CalendarContract.Events._ID,
+                            android.provider.CalendarContract.Events.TITLE,
+                            android.provider.CalendarContract.Events.DESCRIPTION,
+                            android.provider.CalendarContract.Events.DTSTART,
+                            android.provider.CalendarContract.Events.DTEND,
+                            android.provider.CalendarContract.Events.EVENT_LOCATION,
+                            android.provider.CalendarContract.Events.CALENDAR_ID
+                        )
+                        val sel = "${android.provider.CalendarContract.Events.DTSTART} >= ? AND ${android.provider.CalendarContract.Events.DTSTART} <= ?"
+                        val args = arrayOf(startMs.toString(), endMs.toString())
+                        contentResolver.query(
+                            uri, projection, sel, args,
+                            "${android.provider.CalendarContract.Events.DTSTART} ASC"
+                        )?.use { c ->
+                            val idIdx = c.getColumnIndexOrThrow(android.provider.CalendarContract.Events._ID)
+                            val titleIdx = c.getColumnIndexOrThrow(android.provider.CalendarContract.Events.TITLE)
+                            val descIdx = c.getColumnIndexOrThrow(android.provider.CalendarContract.Events.DESCRIPTION)
+                            val dtstartIdx = c.getColumnIndexOrThrow(android.provider.CalendarContract.Events.DTSTART)
+                            val dtendIdx = c.getColumnIndexOrThrow(android.provider.CalendarContract.Events.DTEND)
+                            val locIdx = c.getColumnIndexOrThrow(android.provider.CalendarContract.Events.EVENT_LOCATION)
+                            val calIdx = c.getColumnIndexOrThrow(android.provider.CalendarContract.Events.CALENDAR_ID)
+                            while (c.moveToNext()) {
+                                val dtendVal = if (c.isNull(dtendIdx)) null else c.getLong(dtendIdx)
+                                events.add(mapOf(
+                                    "id" to c.getLong(idIdx),
+                                    "title" to (c.getString(titleIdx) ?: ""),
+                                    "description" to (c.getString(descIdx) ?: ""),
+                                    "dtStart" to c.getLong(dtstartIdx),
+                                    "dtEnd" to dtendVal,
+                                    "location" to (c.getString(locIdx) ?: ""),
+                                    "calendarId" to c.getLong(calIdx)
+                                ))
+                            }
+                        }
+                        result.success(events)
+                    } catch (e: SecurityException) {
+                        result.error("permission_denied", "READ_CALENDAR not granted", null)
+                    } catch (e: Exception) {
+                        result.error("query_failed", e.message, null)
+                    }
+                }
                 "requestCalendarPermission" -> {
                     requestPermissions(arrayOf(android.Manifest.permission.READ_CALENDAR), 1001)
                     // No esperamos el callback aquí; el caller debe usar checkCalendarPermission después

@@ -566,13 +566,14 @@ class _VaultBrowserState extends State<VaultBrowser> {
       );
     }
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(MxSpacing.lg, MxSpacing.sm, MxSpacing.lg, MxSpacing.xxxl),
+      padding: const EdgeInsets.fromLTRB(MxSpacing.lg, MxSpacing.sm, MxSpacing.lg, 96),
       itemCount: items.length,
       separatorBuilder: (_, __) => const SizedBox(height: MxSpacing.sm),
       itemBuilder: (ctx, i) {
         final n = items[i];
         return _VaultItemRow(
           node: n,
+          modified: _modifiedOf(n),
           vault: _vault!,
           selected: _selectedRelPath == n.relPath,
           isFavorite: _favorites.contains(n.relPath),
@@ -1104,6 +1105,7 @@ class _ScopeChip extends StatelessWidget {
 
 class _VaultItemRow extends StatelessWidget {
   final VaultNode node;
+  final DateTime modified;
   final VaultService vault;
   final bool selected;
   final bool isFavorite;
@@ -1112,6 +1114,7 @@ class _VaultItemRow extends StatelessWidget {
   final VoidCallback onToggleFavorite;
   const _VaultItemRow({
     required this.node,
+    required this.modified,
     required this.vault,
     required this.selected,
     required this.isFavorite,
@@ -1128,12 +1131,8 @@ class _VaultItemRow extends StatelessWidget {
   }
 
   String _dateLabel() {
-    // v0.62.11: el vault no llama initializeDateFormatting('es_ES') al
-    // arranque (home_screen.dart tiene su propio formateador manual por
-    // la misma razón). Formateamos sin intl para evitar el fallback a
-    // "1 ene" / "1 Jan" raro que sale cuando locale no está inicializado.
     final now = DateTime.now();
-    final d = node.note?.modified ?? DateTime.fromMillisecondsSinceEpoch(0);
+    final d = modified;
     final diff = now.difference(d);
     if (diff.inMinutes < 1) return 'ahora';
     if (diff.inMinutes < 60) return 'hace ${diff.inMinutes} min';

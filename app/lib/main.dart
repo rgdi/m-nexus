@@ -93,6 +93,10 @@ void main() async {
   // Chequea GitHub cada 6h y muestra dialog si hay update
   // ignore: discarded_futures
   UpdaterService.instance.start();
+  // v0.62.13: load del dismiss persistido en disco (para que el banner
+  // update no reaparezca en cada cold start).
+  // ignore: discarded_futures
+  UpdaterService.instance.load();
 
   runApp(const MnexusApp());
 }
@@ -190,11 +194,8 @@ class _RootGateState extends State<_RootGate> {
   Widget build(BuildContext context) {
     final app = AppState.instance;
     if (app.hasVault) {
-      // MainShell con banner de update encima. v0.62.10: el banner hace
-      // su propio SafeArea(top:true); no aplicamos MediaQuery.removePadding
-      // porque eso propagaba la quita de inset al Scaffold de cada screen,
-      // dejando el AppBar pegado al banner. Ahora cada Scaffold gestiona
-      // su status bar independientemente.
+      // MainShell con banner de update encima (v0.62.13: el banner ahora
+      // persiste su dismiss en disco, ya no reaparece en cada cold start).
       return Column(
         children: [
           const UpdateBanner(),

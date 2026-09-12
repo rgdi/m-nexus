@@ -16,6 +16,7 @@ import '../../core/theme.dart';
 import '../../services/exams_service.dart';
 import '../../services/global_tasks_service.dart';
 import '../../services/subjects_service.dart';
+import '../../services/system_calendar_service.dart';
 import '../../services/vault_detector.dart';
 import '../../services/logger.dart';
 import '../../widgets/empty_state.dart';
@@ -33,11 +34,14 @@ class _PlanScreenState extends State<PlanScreen>
     with SingleTickerProviderStateMixin {
   final _examsSvc = ExamsService();
   final _subjectsSvc = SubjectsService();
+  final _systemCal = SystemCalendarService();
   String? _vaultPath;
 
   List<Exam> _exams = [];
   List<Subject> _subjects = [];
   List<GlobalTask> _tasks = [];
+  List<SystemCalendarEvent> _systemEvents = [];
+  bool _calendarPermissionAsked = false;
 
   bool _loading = true;
   late TabController _tab;
@@ -74,15 +78,43 @@ class _PlanScreenState extends State<PlanScreen>
       _subjects = await _subjectsSvc.loadAll(_vaultPath!);
       final tasksSvc = GlobalTasksService(_vaultPath!);
       _tasks = await tasksSvc.all(includeDone: false);
+      // v0.62.13: autosync con calendar del sistema. Si no tenemos permiso,
+      // pedimos una sola vez al cargar.
+      await _syncSystemCalendar();
       log.debug('plan', 'loaded', context: {
         'exams': _exams.length,
         'tasks': _tasks.length,
+        'systemEvents': _systemEvents.length,
       });
     } catch (e, s) {
       log.error('plan', 'load failed', error: e, stack: s);
     }
     if (!mounted) return;
     setState(() { _loading = false; });
+  }
+
+  /// v0.62.13: pide permiso al calendar del sistema Android y carga
+  /// eventos. Si no hay permiso, queda vacío (sin spammear al usuario).
+  Future<void> _syncSystemCalendar() async {
+    final hasPerm = await _systemCal.hasPermission();
+    if (!hasPerm) {
+      if (!_calendarPermissionAsked) {
+        _calendarPermissionAsked = true;
+        await _systemCal.requestPermission();
+        // Re-check después de pedir.
+        final hasNow = await _systemCal.hasPermission();
+        if (!hasNow) return;
+      } else {
+        return;
+      }
+    }
+    _systemEvents = await _systemCal.listEvents(
+      // v0.62.13: rango de 6 meses atrás + 1 año adelante. Eventos
+      // académicos suelen estar en calendarios escolares que se planifican
+      // con meses de anticipación.
+      from: DateTime.now().subtract(const Duration(days: 180)),
+      to: DateTime.now().add(const Duration(days: 365)),
+    );
   }
 
   Subject? _subjectById(String id) {
@@ -241,6 +273,21 @@ class _PlanScreenState extends State<PlanScreen>
         date: e.date,
       ));
     }
+    // v0.62.13: eventos académicos del calendar del sistema se mezclan
+    // con los exams manuales. Si ya existe un exam manual con el mismo
+    // título+día, no duplicamos.
+    final examKeys = upcomingExams
+        .map((e) => '${e.title.toLowerCase().trim()}-${e.date.day}-${e.date.month}')
+        .toSet();
+    for (final ev in _systemEvents.where((e) => e.isAcademic)) {
+      final key = '${ev.title.toLowerCase().trim()}-${ev.dtStart.day}-${ev.dtStart.month}';
+      if (examKeys.contains(key)) continue;
+      items.add(_TimelineItem(
+        kind: _TimelineKind.calendarEvent,
+        systemEvent: ev,
+        date: ev.dtStart,
+      ));
+    }
     for (final t in pendingTasks) {
       items.add(_TimelineItem(
         kind: _TimelineKind.task,
@@ -249,13 +296,17 @@ class _PlanScreenState extends State<PlanScreen>
       ));
     }
     // Ordenar: exámenes por fecha asc, luego tareas urgentes
+    // v0.62.13: comparación de sort defensiva. Los items pueden ser exam,
+    // task o calendarEvent — no todos tienen task, así que evitamos null
+    // check. Los exam/calendarEvent van primero (por fecha), luego tasks
+    // urgentes, luego tasks normales.
     items.sort((a, b) {
-      if (a.kind == _TimelineKind.exam && b.kind == _TimelineKind.exam) {
-        return a.date.compareTo(b.date);
+      if (a.kind == _TimelineKind.task && b.kind == _TimelineKind.task) {
+        return b.task!.priority.compareTo(a.task!.priority);
       }
-      if (a.kind == _TimelineKind.exam) return -1;
-      if (b.kind == _TimelineKind.exam) return 1;
-      return b.task!.priority.compareTo(a.task!.priority);
+      if (a.kind == _TimelineKind.task) return 1;
+      if (b.kind == _TimelineKind.task) return -1;
+      return a.date.compareTo(b.date);
     });
 
     if (_tab.index == 1) {
@@ -283,7 +334,7 @@ class _PlanScreenState extends State<PlanScreen>
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(MxSpacing.lg, MxSpacing.md, MxSpacing.lg, MxSpacing.xxxl),
+      padding: const EdgeInsets.fromLTRB(MxSpacing.lg, MxSpacing.md, MxSpacing.lg, 96),
       itemCount: items.length,
       separatorBuilder: (_, __) => const SizedBox(height: MxSpacing.sm),
       itemBuilder: (ctx, i) {
@@ -293,6 +344,12 @@ class _PlanScreenState extends State<PlanScreen>
             exam: it.exam!,
             subject: it.subject,
             onTap: () => _openExamTimeline(it.exam!),
+          );
+        }
+        if (it.kind == _TimelineKind.calendarEvent) {
+          return _CalendarEventCard(
+            event: it.systemEvent!,
+            onTap: () => _openCalendarEvent(it.systemEvent!),
           );
         }
         return _TaskCard(
@@ -313,6 +370,21 @@ class _PlanScreenState extends State<PlanScreen>
     Navigator.push(context, MaterialPageRoute(
       builder: (_) => TimelineView(vaultPath: _vaultPath!, focusExamId: exam.id),
     ));
+  }
+
+  /// v0.62.13: abre el evento del calendar del sistema en la app nativa
+  /// de Calendar (no en M-NEXUS, porque los datos viven en el system
+  /// Content Provider).
+  void _openCalendarEvent(SystemCalendarEvent ev) async {
+    try {
+      const ch = MethodChannel('com.mnexus.app/calendar');
+      await ch.invokeMethod('openEvent', {'eventId': ev.id});
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo abrir el evento: $e')),
+      );
+    }
   }
 
   void _openTaskSource(GlobalTask task) {
@@ -341,19 +413,21 @@ class _PlanScreenState extends State<PlanScreen>
 
 // ── MODELS ─────────────────────────────────────────────────────────────
 
-enum _TimelineKind { exam, task }
+enum _TimelineKind { exam, task, calendarEvent }
 
 class _TimelineItem {
   final _TimelineKind kind;
   final Exam? exam;
   final Subject? subject;
   final GlobalTask? task;
+  final SystemCalendarEvent? systemEvent;
   final DateTime date;
   _TimelineItem({
     required this.kind,
     this.exam,
     this.subject,
     this.task,
+    this.systemEvent,
     required this.date,
   });
 }
@@ -690,6 +764,144 @@ class _TaskCard extends StatelessWidget {
                   fontSize: 12,
                 ),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// v0.62.13: card para eventos académicos del calendar del sistema.
+/// Se distingue de `_ExamCard` por el ícono (calendar vs school) y porque
+/// NO tiene día countdown grande — muestra la fecha real del evento.
+class _CalendarEventCard extends StatelessWidget {
+  final SystemCalendarEvent event;
+  final VoidCallback onTap;
+  const _CalendarEventCard({required this.event, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final d = event.dtStart;
+    const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(MxRadius.lg),
+      child: Container(
+        padding: const EdgeInsets.all(MxSpacing.md),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerLow.withOpacity(0.4),
+          borderRadius: BorderRadius.circular(MxRadius.lg),
+          border: Border.all(
+            color: const Color(0xFF06B6D4).withOpacity(0.35),  // cyan = calendar system
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Date badge: día + mes (no countdown, es evento real)
+            Container(
+              width: 60, height: 64,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    const Color(0xFF06B6D4).withOpacity(0.20),
+                    const Color(0xFF06B6D4).withOpacity(0.08),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(MxRadius.md),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    '${d.day}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 24,
+                      color: Color(0xFF06B6D4),
+                      height: 1.0,
+                    ),
+                  ),
+                  Text(
+                    months[d.month - 1],
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF06B6D4),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: MxSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.calendar_today_rounded,
+                        size: 11,
+                        color: Color(0xFF06B6D4),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Del calendario · ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: const Color(0xFF06B6D4),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    event.title,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.2,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (event.location.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.location_on_outlined,
+                          size: 11,
+                          color: scheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 3),
+                        Flexible(
+                          child: Text(
+                            event.location,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: scheme.onSurfaceVariant,
+                              fontSize: 10,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            Icon(
+              Icons.open_in_new_rounded,
+              size: 16,
+              color: scheme.onSurfaceVariant.withOpacity(0.5),
             ),
           ],
         ),
