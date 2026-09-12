@@ -35,7 +35,8 @@ android {
 
     defaultConfig {
         applicationId = "com.mnexus.app"
-        minSdkVersion = flutter.minSdkVersion
+        // v0.62.9: flutter_tts requires minSdk 24
+        minSdk = 24
         targetSdk = 34
         // v0.47.3: versionCode/versionName se setean via env vars (CI)
         // o via gradle.properties (local). NO hardcoded.
