@@ -69,3 +69,29 @@ APK: v0.62.7 debug (instalado, sin rebuild posible por catch-22 Kotlin/Gradle)
 
 - Rebuild APK con Flutter 3.32 (1 hora)
 - Re-install y re-testing completo de las 5 fases del TODO
+
+## Round 2 testing visual — additional findings
+
+### ✅ Pantallas adicionales probadas
+- **NoteView (Circulación)**: title limpio, header chip fecha + tag #anatomia, body markdown con cloze deletions `{{c1::texto}}`, wikilink "Volver a corazon", bottom action bar: **Editar / Flashcards / Preguntas / Tutor** (IA inline ✅)
+- **Editor de notas (existente)**: con contenido previo, focus funciona y permite escribir
+- **Asignaturas**: CRUD básico, 3 asignaturas (Anatomía inactiva bug, Fisiología y Bioquímica activas)
+- **Generar flashcards**: ✅ funciona, genera 38 cards
+- **Pendientes de revisión**: ❌ "Sin flashcards pendientes" aunque se acaban de generar 38
+
+### ❌ Bugs adicionales encontrados (Round 2)
+8. **Editor de notas NUEVO sin focus** — al crear nueva nota, ni título ni body responden a tap simple (requieren longPress). Bug crítico bloqueante para crear notas.
+9. **Editor de notas NUEVO con longPress** — abre selector de imágenes de Google Fotos en lugar de hacer focus el campo. Confuso.
+10. **Wikilinks no navegan** — "[[Volver a corazon]]" en Circulación.md no abre nota Corazón. Tap no responde.
+11. **Generar flashcards → guardadas en Approved** — `service.create()` default `approved=true` ignorado por `persistDrafts()`, por eso "Pendientes de revisión" muestra 0. **Fix en commit `85d42aa`** (necesita rebuild).
+12. **Flashcards placeholder "***" como título** — todas las recientes (5/5) muestran "***" en lugar del título real. Bug visual grave de reciente/título.
+13. **Anatomía inactiva en Asignaturas** — debería auto-detectarse de notas existentes; requiere activación manual.
+14. **Duplicación case-sensitive en Vault** — "notes" y "Notes" / "anatomia" y "Anatomía" coexisten. Vault service no normaliza case.
+15. **Stats Home no recalculan tras review** — "15 tarjetas para repasar hoy" sigue diciendo 15 aunque ya repasaste 1.
+16. **App state restoration buggy** — al reabrir app, salta al último screen en lugar del home. Causa confusión en navigation.
+
+### 🎯 Estado final
+- **APK instalado**: v0.62.7 con 15+ bugs visuales identificados
+- **Repo (commit 85d42aa)**: 3 fixes aplicados (overflow, padding, persistDrafts)
+- **Pendiente rebuild** para verificar fixes (catch-22 Kotlin/Gradle)
+- **Backend**: vivo en :4100 con Ollama, llama3.2:3b responde en ~80s primera vez, RAG funcional
