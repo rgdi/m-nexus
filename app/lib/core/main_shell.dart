@@ -72,8 +72,17 @@ class _MainShellState extends State<MainShell> {
       // flotante por encima sin afectar el contenido.
       body: Stack(
         children: [
-          // Página activa (cada una ya trae su AppBackground si quiere)
-          Positioned.fill(child: _destinations[_index].page),
+          // Página activa (cada una ya trae su AppBackground si quiere).
+          // v0.62.10: Padding(bottom: 80) para que el contenido de cada
+          // screen tenga espacio reservado y no quede tapado por el dock.
+          // Antes el dock flotaba y el ListView se extendía hasta el borde
+          // inferior, ocultando el último item de cards/notas/acciones.
+          Positioned.fill(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 80),
+              child: _destinations[_index].page,
+            ),
+          ),
           // Floating dock en la parte inferior
           Positioned(
             left: 0,
