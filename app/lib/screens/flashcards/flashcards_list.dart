@@ -155,6 +155,11 @@ class _FlashcardsListState extends State<FlashcardsList> {
                     ),
                   )
                 : ListView.builder(
+                    // v0.62.10: padding bottom 88dp para que la última
+                    // tarjeta NO quede tapada por el FloatingDock (altura
+                    // ~64dp + margen 24dp). Antes el último item se cortaba
+                    // contra el dock glass.
+                    padding: const EdgeInsets.only(bottom: 88),
                     itemCount: _filtered.length,
                     itemBuilder: (ctx, i) {
                       final c = _filtered[i];

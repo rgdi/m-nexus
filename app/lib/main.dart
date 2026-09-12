@@ -190,19 +190,16 @@ class _RootGateState extends State<_RootGate> {
   Widget build(BuildContext context) {
     final app = AppState.instance;
     if (app.hasVault) {
-      // MainShell con banner de update encima.
-      // v0.62.10: MediaQuery.removePadding arriba — el banner ya hace
-      // SafeArea(top:true), no queremos un segundo inset que descuadre
-      // el contenido de los screens debajo.
-      return MediaQuery.removePadding(
-        context: context,
-        removeTop: true,
-        child: Column(
-          children: [
-            const UpdateBanner(),
-            const Expanded(child: MainShell()),
-          ],
-        ),
+      // MainShell con banner de update encima. v0.62.10: el banner hace
+      // su propio SafeArea(top:true); no aplicamos MediaQuery.removePadding
+      // porque eso propagaba la quita de inset al Scaffold de cada screen,
+      // dejando el AppBar pegado al banner. Ahora cada Scaffold gestiona
+      // su status bar independientemente.
+      return Column(
+        children: [
+          const UpdateBanner(),
+          const Expanded(child: MainShell()),
+        ],
       );
     }
     // Si no tiene vault pero ya termino de cargar → setup wizard
