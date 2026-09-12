@@ -75,6 +75,8 @@ class AutoFlashcardService {
           answer: card.answer,
           difficulty: 3,
           sourceNote: card.sourceNote,
+          // v0.62.8: persist as draft so user reviews before approving
+          approved: false,
         );
         saved++;
       } catch (_) {
