@@ -508,22 +508,22 @@ class MainActivity: FlutterActivity() {
             cb.error("saf_save_failed", e.message, null)
         }
     }
-}
-
-/**
- * v0.49.16: devuelve el calendarId del primer calendario visible.
- * Usado como fallback cuando el cliente no especifica uno.
- */
-private fun getDefaultCalendarId(): Long {
-    return try {
-        val cursor = contentResolver.query(
-            android.provider.CalendarContract.Calendars.CONTENT_URI,
-            arrayOf(android.provider.CalendarContract.Calendars._ID),
-            "${android.provider.CalendarContract.Calendars.VISIBLE} = 1",
-            null, null
-        )
-        cursor?.use { c -> if (c.moveToFirst()) c.getLong(0) else 1L } ?: 1L
-    } catch (e: Exception) {
-        1L
+    /**
+     * v0.49.16: devuelve el calendarId del primer calendario visible.
+     * Usado como fallback cuando el cliente no especifica uno.
+     */
+    private fun getDefaultCalendarId(): Long {
+        return try {
+            val cursor = contentResolver.query(
+                android.provider.CalendarContract.Calendars.CONTENT_URI,
+                arrayOf(android.provider.CalendarContract.Calendars._ID),
+                "${android.provider.CalendarContract.Calendars.VISIBLE} = 1",
+                null, null
+            )
+            cursor?.use { c -> if (c.moveToFirst()) c.getLong(0) else 1L } ?: 1L
+        } catch (e: Exception) {
+            1L
+        }
     }
 }
+
