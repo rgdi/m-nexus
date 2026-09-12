@@ -153,7 +153,8 @@ class StatCard extends StatelessWidget {
     return GlassCard(
       gradient: gradient,
       borderRadius: MxRadius.xl,
-      padding: const EdgeInsets.all(MxSpacing.lg),
+      // v0.62.8: reduced padding from MxSpacing.lg (16) to 14 to fit stat text
+      padding: const EdgeInsets.all(14),
       onTap: onTap,
       shadows: MxShadows.md,
       child: Column(

@@ -601,7 +601,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisCount: 2,
                 mainAxisSpacing: MxSpacing.md,
                 crossAxisSpacing: MxSpacing.md,
-                childAspectRatio: 1.65,
+                // v0.62.8: increased from 1.65 to fix "BOTTOM OVERFLOWED BY 0.725 PIXELS"
+                childAspectRatio: 1.45,
                 children: [
                   StatCard(
                     icon: Icons.local_fire_department_rounded,
