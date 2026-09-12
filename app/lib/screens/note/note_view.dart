@@ -17,11 +17,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:path/path.dart' as p;
+import '../../core/design_tokens.dart';
 import '../../core/theme.dart';
 import '../../services/logger.dart';
 import '../../services/vault_service.dart';
 import '../../services/attachments_service.dart';
+import '../../services/heatmap_service.dart';
+import '../../services/local_tutor_service.dart';
+import '../../services/note_metadata.dart';
 import '../../widgets/backlinks_panel.dart';
+import '../../widgets/outline_sidebar.dart';
+import '../../widgets/threaded_comments_panel.dart';
 import '../../widgets/attachment_references_panel.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/note_inline_rich.dart';
@@ -56,6 +62,10 @@ class _NoteViewState extends State<NoteView> {
   /// v0.62 (FASE 2): source = muestra el markdown crudo sin procesar
   /// cloze/wikilinks; preview = render enriquezido (default).
   bool _showSource = false;
+  // v0.62.14: AFFiNE-style sidebars. Outline flotante a la izquierda
+  // (header tree), comments threadable sobre bloques.
+  bool _showOutline = false;
+  bool _showComments = false;
 
   @override
   void initState() {
@@ -154,6 +164,18 @@ class _NoteViewState extends State<NoteView> {
             },
             tooltip: 'Dibujar / Anotar',
           ),
+          // v0.62.14: toggle outline sidebar (AFFiNE-style header tree).
+          IconButton(
+            icon: Icon(_showOutline ? Icons.list_alt : Icons.list_alt_outlined),
+            onPressed: () => setState(() => _showOutline = !_showOutline),
+            tooltip: 'Outline',
+          ),
+          // v0.62.14: toggle comments panel.
+          IconButton(
+            icon: Icon(_showComments ? Icons.comment : Icons.comment_outlined),
+            onPressed: () => setState(() => _showComments = !_showComments),
+            tooltip: 'Comentarios',
+          ),
           // v0.62 (FASE 2): menú 3 puntos unificado con todas las acciones
           // extra (preview/source, share, export markdown, word count)
           // manteniendo las históricas (history, export PDF/HTML).
@@ -175,10 +197,32 @@ class _NoteViewState extends State<NoteView> {
             },
             onExportPdf: () => _export('pdf'),
             onExportHtml: () => _export('html'),
+            onCustomize: () => _customizeNote(note),
+            onJournal: () => _showJournal(note),
           ),
         ],
       ),
-      body: body,
+      body: Stack(
+        children: [
+          body,
+          // v0.62.14: Outline sidebar (AFFiNE-style header tree).
+          if (_showOutline)
+            Positioned(
+              top: 0, left: 0, bottom: 0,
+              child: _OutlineSidebarWrapper(note: _note!, onClose: () {
+                setState(() => _showOutline = false);
+              }),
+            ),
+          // v0.62.14: Comments threadable panel.
+          if (_showComments)
+            Positioned(
+              top: 0, right: 0, bottom: 0,
+              child: _CommentsPanelWrapper(note: _note!, onClose: () {
+                setState(() => _showComments = false);
+              }),
+            ),
+        ],
+      ),
     );
   }
 
@@ -574,6 +618,164 @@ class _NoteViewState extends State<NoteView> {
       );
     }
   }
+
+  // ── v0.62.14: customize + journal (AFFiNE-style) ────────────────
+
+  Future<void> _customizeNote(Note note) async {
+    final svc = NoteMetadataService(widget.vaultPath);
+    final current = await svc.get(note.path);
+    if (!mounted) return;
+
+    final faviconCtrl = TextEditingController(text: current.favicon);
+    final colorCtrl = TextEditingController(text: current.coverColorHex);
+    String coverPath = current.coverPath;
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setSt) => AlertDialog(
+        title: const Text('Personalizar nota'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                height: 80,
+                decoration: BoxDecoration(
+                  color: _hexOrNull(colorCtrl.text) ??
+                      MxColors.indigoDeep.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(MxRadius.md),
+                ),
+                alignment: Alignment.center,
+                child: coverPath.isEmpty && faviconCtrl.text.isEmpty
+                    ? const Icon(Icons.image_outlined, size: 32,
+                        color: Colors.white70)
+                    : Text(faviconCtrl.text.isEmpty ? '🖼' : faviconCtrl.text,
+                        style: const TextStyle(fontSize: 32)),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: faviconCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Favicon (emoji o 2 letras)',
+                  hintText: '📚',
+                ),
+                onChanged: (_) => setSt(() {}),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: colorCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Color de cover (hex)',
+                  hintText: '#A78BFA',
+                ),
+                onChanged: (_) => setSt(() {}),
+              ),
+              const SizedBox(height: 8),
+              Text('Cover: ${coverPath.isEmpty ? "(ninguna)" : coverPath.split('/').last}'),
+              TextButton.icon(
+                icon: const Icon(Icons.image_outlined),
+                label: const Text('Cambiar imagen...'),
+                onPressed: () async {
+                  final ctrl = TextEditingController(text: coverPath);
+                  final r = await showDialog<String>(
+                    context: ctx,
+                    builder: (c) => AlertDialog(
+                      title: const Text('Path del cover'),
+                      content: TextField(controller: ctrl),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(c),
+                            child: const Text('Cancelar')),
+                        FilledButton(
+                          onPressed: () => Navigator.pop(c, ctrl.text.trim()),
+                          child: const Text('OK'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (r != null) setSt(() => coverPath = r);
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          FilledButton(
+            onPressed: () async {
+              await svc.save(note.path, NoteMetadata(
+                coverPath: coverPath,
+                coverColorHex: colorCtrl.text.trim(),
+                favicon: faviconCtrl.text.trim(),
+                journal: current.journal,
+                updatedAt: DateTime.now(),
+              ));
+              if (mounted) Navigator.pop(ctx);
+            },
+            child: const Text('Guardar'),
+          ),
+        ],
+      )),
+    );
+  }
+
+  Future<void> _showJournal(Note note) async {
+    final svc = NoteMetadataService(widget.vaultPath);
+    final meta = await svc.get(note.path);
+    if (!mounted) return;
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Container(
+          padding: const EdgeInsets.all(MxSpacing.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(children: [
+                const Icon(Icons.event_note_outlined),
+                const SizedBox(width: 8),
+                Text('Journal (${meta.journal.length} eventos)',
+                  style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  )),
+              ]),
+              const SizedBox(height: MxSpacing.md),
+              if (meta.journal.isEmpty)
+                const Text('Sin eventos aún.')
+              else
+                ...meta.journal.reversed.take(50).map((e) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(children: [
+                    Icon(Icons.fiber_manual_record,
+                      size: 8, color: MxColors.indigoDeep),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(e.summary)),
+                    Text(_fmtRelTime(e.at),
+                      style: Theme.of(ctx).textTheme.labelSmall),
+                  ]),
+                )),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Color? _hexOrNull(String hex) {
+    if (hex.isEmpty || !hex.startsWith('#') || hex.length != 7) return null;
+    try {
+      return Color(int.parse('0xff${hex.substring(1)}'));
+    } catch (_) { return null; }
+  }
+
+  String _fmtRelTime(DateTime t) {
+    final d = DateTime.now().difference(t);
+    if (d.inMinutes < 1) return 'ahora';
+    if (d.inMinutes < 60) return '${d.inMinutes}m';
+    if (d.inHours < 24) return '${d.inHours}h';
+    return '${d.inDays}d';
+  }
 }
 
 /// v0.62 (FASE 2): PopupMenuButton extraído para mantener `build` limpio.
@@ -589,6 +791,9 @@ class _NoteOverflowMenu extends StatelessWidget {
   final VoidCallback onHistory;
   final VoidCallback onExportPdf;
   final VoidCallback onExportHtml;
+  // v0.62.14: AFFiNE-like customizers.
+  final VoidCallback onCustomize;
+  final VoidCallback onJournal;
 
   const _NoteOverflowMenu({
     required this.note,
@@ -600,6 +805,8 @@ class _NoteOverflowMenu extends StatelessWidget {
     required this.onHistory,
     required this.onExportPdf,
     required this.onExportHtml,
+    required this.onCustomize,
+    required this.onJournal,
   });
 
   @override
@@ -623,6 +830,12 @@ class _NoteOverflowMenu extends StatelessWidget {
             break;
           case 'history':
             onHistory();
+            break;
+          case 'customize':
+            onCustomize();
+            break;
+          case 'journal':
+            onJournal();
             break;
           case 'export_pdf':
             onExportPdf();
@@ -679,6 +892,23 @@ class _NoteOverflowMenu extends StatelessWidget {
             Icon(Icons.history),
             SizedBox(width: 12),
             Text('Historial de versiones'),
+          ]),
+        ),
+        // v0.62.14: AFFiNE-like customizers.
+        const PopupMenuItem(
+          value: 'customize',
+          child: Row(children: [
+            Icon(Icons.palette_outlined),
+            SizedBox(width: 12),
+            Text('Personalizar (cover, favicon)'),
+          ]),
+        ),
+        const PopupMenuItem(
+          value: 'journal',
+          child: Row(children: [
+            Icon(Icons.event_note_outlined),
+            SizedBox(width: 12),
+            Text('Journal de la nota'),
           ]),
         ),
         const PopupMenuItem(
@@ -774,6 +1004,107 @@ class WikilinkPreprocessor {
         final href = fragment.isEmpty ? file : '$file$fragment';
         return '[$display]($href)';
       },
+    );
+  }
+}
+
+// ── v0.62.14: AFFiNE-style outline + comments sidebars ────────────────
+
+class _OutlineSidebarWrapper extends StatelessWidget {
+  final Note note;
+  final VoidCallback onClose;
+  const _OutlineSidebarWrapper({required this.note, required this.onClose});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      elevation: 8,
+      color: theme.colorScheme.surface,
+      child: Container(
+        width: 280,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.list_alt_rounded, size: 18),
+                const SizedBox(width: 8),
+                Text('Outline', style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                )),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                  onPressed: onClose,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: OutlineSidebar(
+                entries: OutlineSidebar.parseFromMarkdown(note.content),
+                currentIndex: 0,
+                onJump: (idx) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Ir al bloque $idx'),
+                      duration: const Duration(milliseconds: 800)),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CommentsPanelWrapper extends StatelessWidget {
+  final Note note;
+  final VoidCallback onClose;
+  const _CommentsPanelWrapper({required this.note, required this.onClose});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      elevation: 8,
+      color: theme.colorScheme.surface,
+      child: Container(
+        width: 320,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.comment_outlined, size: 18),
+                const SizedBox(width: 8),
+                Text('Comentarios', style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                )),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                  onPressed: onClose,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: ThreadedCommentsPanel(
+                notePath: note.path,
+                blockContexts: const {},
+                onClose: onClose,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

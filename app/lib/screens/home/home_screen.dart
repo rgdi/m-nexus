@@ -30,6 +30,7 @@ import '../flashcards/flashcard_review.dart';
 import '../flashcards/flashcard_edit.dart';
 import '../note/note_editor.dart';
 import '../note/note_view.dart';
+import '../database/databases_list_screen.dart';
 import '../recording/recording_screen.dart';
 import '../attachments/attachments_screen.dart';
 import '../whiteboard/whiteboards_list_screen.dart';
@@ -233,6 +234,47 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _showCommandPalette() async {
     await showDialog(context: context, builder: (_) => const CommandPaletteDialog());
+  }
+
+  /// v0.62.14: bottom sheet "Crear" con todas las opciones AFFiNE-like
+  /// (nota, tarjeta, base de datos).
+  Future<void> _showCreateSheet() async {
+    final app = AppState.instance;
+    final vp = app.activeVault?.path;
+    if (vp == null) return;
+    await showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.note_add_outlined),
+              title: const Text('Nueva nota'),
+              subtitle: const Text('Markdown con cloze, imágenes, dibujo'),
+              onTap: () { Navigator.pop(ctx); _newNote(); },
+            ),
+            ListTile(
+              leading: const Icon(Icons.style_outlined),
+              title: const Text('Nueva tarjeta'),
+              subtitle: const Text('Cloze flashcard con FSRS'),
+              onTap: () { Navigator.pop(ctx); _newFlashcard(); },
+            ),
+            ListTile(
+              leading: const Icon(Icons.table_chart_outlined),
+              title: const Text('Nueva base de datos'),
+              subtitle: const Text('Tabla relacional con vistas (AFFiNE-style)'),
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => DatabasesListScreen(vaultPath: vp),
+                ));
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _openVault() {
