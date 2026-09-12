@@ -1,17 +1,21 @@
-// home_screen.dart: dashboard principal de M-NEXUS (Fase 0 + 6.A).
+// home_screen.dart: dashboard minimalista RemNote-style de M-NEXUS.
 //
-// v0.47.0: dashboard con datos REALES (no 0s falsos), estilo cristal limpio,
-// cards redondeadas, separación clara de secciones.
-//   - Hero con saludo y CTA principal
-//   - Stats grid: racha, repasar hoy, tiempo invertido, precisión
-//   - Heatmap últimos 90 días
-//   - Acciones rápidas: Nueva nota, Repasar hoy, Nueva flashcard
-//   - Notas recientes (top 5)
+// v0.62.12: filosofía RemNote — minimalismo radical.
+//   - Sin hero card gigante. Sin grid 2×2 de stat cards. Sin heatmap 90d.
+//   - Una sola acción primaria (Repasar X) que ocupa el foco.
+//   - 4 quick actions en command bar horizontal.
+//   - Inbox row (tareas pendientes del daily note) en una línea.
+//   - Notas recientes como lista plana.
+//   - Stats/heatmap/actividad viven en su propio screen (Stats).
+//
+// Mantiene toda la lógica de carga (_load, _loadTodayContext, _parseTasks)
+// y los handlers (_newNote, _reviewDue, _openDailyNote, _openRecorder, etc.).
 
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
+import 'package:path/path.dart' as p;
 import '../../core/design_tokens.dart';
 import '../../services/flashcard_service.dart';
 import '../../services/fsrs_engine.dart';
@@ -22,7 +26,6 @@ import '../../services/exams_service.dart';
 import '../../services/subjects_service.dart';
 import '../../state/app_state.dart';
 import '../../widgets/glass_widgets.dart';
-import '../../widgets/sync_status_indicator.dart';
 import '../flashcards/flashcard_review.dart';
 import '../flashcards/flashcard_edit.dart';
 import '../note/note_editor.dart';
@@ -31,9 +34,9 @@ import '../recording/recording_screen.dart';
 import '../attachments/attachments_screen.dart';
 import '../whiteboard/whiteboards_list_screen.dart';
 import '../../services/permissions.dart';
-import '../../widgets/review_heatmap.dart';
 import '../../services/daily_note_service.dart';
 import '../../widgets/command_palette_dialog.dart';
+import '../vault/vault_browser.dart';
 
 class HomeScreen extends StatefulWidget {
   final VaultService? vault;
@@ -55,7 +58,6 @@ class _HomeScreenState extends State<HomeScreen> {
   double _retention = 0.90;
   List<_RecentNote> _recentNotes = [];
   Map<String, DailyStat> _dailyStats = {};
-  // v0.49.5: subject-of-the-day, tasks, next exam
   List<Subject> _subjects = [];
   List<Exam> _exams = [];
   List<_TaskItem> _todayTasks = [];
@@ -67,7 +69,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _load() async {
-    // v0.47.0: leemos de AppState (cargado UNA vez al arranque)
     final app = AppState.instance;
     if (!app.hasVault) {
       setState(() {
@@ -88,7 +89,6 @@ class _HomeScreenState extends State<HomeScreen> {
       _minutesToday = (dailyStats[today]?.studyTimeSec ?? 0) ~/ 60;
       _dailyStats = dailyStats;
     });
-    // Carga notas recientes (separada porque es async)
     if (app.vaultService != null) {
       final notes = await app.vaultService!.listRecentNotes(5);
       if (mounted) {
@@ -96,28 +96,23 @@ class _HomeScreenState extends State<HomeScreen> {
           _recentNotes = notes.map((n) => _RecentNote(
             name: n.name,
             path: n.path,
-            title: n.title,
+            title: n.title ?? '',
             modified: n.modified,
           )).toList();
         });
       }
     }
-    // v0.49.5: cargar subjects, exams, tasks de la daily note
     await _loadTodayContext(app);
   }
 
-  /// v0.49.5: subject-of-the-day + tareas pendientes + próximo examen
   Future<void> _loadTodayContext(AppState app) async {
     try {
-      // 1) Subjects
       final subjects = await SubjectsService().load(app.activeVault!.path);
-      // 2) Exams (futuros)
       final allExams = await ExamsService().load(app.activeVault!.path);
       final upcoming = allExams
         .where((e) => !e.isPast(DateTime.now()))
         .toList()
         ..sort((a, b) => a.date.compareTo(b.date));
-      // 3) Tasks de la daily note
       final dailySvc = DailyNoteService(app.activeVault!.path);
       final dailyPath = await dailySvc.openOrCreate();
       final dailyContent = await File(dailyPath).readAsString();
@@ -128,12 +123,9 @@ class _HomeScreenState extends State<HomeScreen> {
         _exams = upcoming;
         _todayTasks = tasks;
       });
-    } catch (e) {
-      // No fatal — home sigue funcionando sin subject context
-    }
+    } catch (_) {}
   }
 
-  /// v0.49.5: extrae tareas (checkbox markdown) de un texto
   List<_TaskItem> _parseTasks(String md) {
     final out = <_TaskItem>[];
     for (final line in md.split('\n')) {
@@ -148,47 +140,35 @@ class _HomeScreenState extends State<HomeScreen> {
     return out;
   }
 
-  /// v0.49.5: subject-of-the-day (rotacion determinista por dia)
   Subject? _subjectOfDay() {
     if (_subjects.isEmpty) return null;
-    final dow = DateTime.now().weekday; // 1..7
-    // Distribuir asignaturas entre L-V
+    final dow = DateTime.now().weekday;
     final active = _subjects.where((s) => s.active).toList();
     if (active.isEmpty) return null;
-    final idx = (dow - 1) % active.length;
-    return active[idx];
+    return active[(dow - 1) % active.length];
   }
 
-  /// v0.49.5: formatea la fecha del dia en español sin depender
-  /// de initializeDateFormatting (que no se llama en arranque).
-  String _formatToday() {
-    final now = DateTime.now();
-    const days = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
-    const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-    return '${days[now.weekday - 1]} ${now.day} de ${months[now.month - 1]}';
+  String _firstName() {
+    final app = AppState.instance;
+    final vp = app.activeVault?.path;
+    if (vp == null || vp.isEmpty) return 'estudiante';
+    return p.basename(vp);
   }
+
+  // ── HANDLERS ─────────────────────────────────────────────────────────
 
   Future<void> _newNote() async {
     final app = AppState.instance;
-    if (!app.hasVault) {
-      _showSnack('Configura un vault primero');
-      return;
-    }
+    if (!app.hasVault) return;
     final result = await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => NoteEditor(
-        vaultPath: app.activeVault!.path,
-        // notePath: null = crear nueva
-      )),
+      MaterialPageRoute(builder: (_) => NoteEditor(vaultPath: app.activeVault!.path)),
     );
     if (result == true) await app.reload();
   }
 
   Future<void> _newFlashcard() async {
     final app = AppState.instance;
-    if (app.flashcardService == null) {
-      _showSnack('Servicio de flashcards no disponible');
-      return;
-    }
+    if (app.flashcardService == null) return;
     final result = await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => FlashcardEdit(
         service: app.flashcardService!,
@@ -198,280 +178,82 @@ class _HomeScreenState extends State<HomeScreen> {
     if (result != null) await app.reload();
   }
 
-  /// v0.48: abrir la nota diaria de hoy (crea si no existe).
-  Future<void> _openDailyNote() async {
-    final app = AppState.instance;
-    if (!app.hasVault) {
-      _showSnack('Configura un vault primero');
-      return;
-    }
-    final svc = DailyNoteService(app.activeVault!.path);
-    final path = await svc.openOrCreate();
-    if (!mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => NoteView(
-        notePath: path,
-        vaultPath: app.activeVault!.path,
-      )),
-    );
-    if (mounted) await app.reload();
-  }
-
-  /// v0.49.12: abre el grabador de clases
-  Future<void> _openRecorder() async {
-    final app = AppState.instance;
-    if (!app.hasVault) {
-      _showSnack('Configura un vault primero');
-      return;
-    }
-    await Navigator.push(context, MaterialPageRoute(
-      builder: (_) => RecordingScreen(vaultPath: app.activeVault!.path),
-    ));
-    if (mounted) await app.reload();
-  }
-
-  /// v0.49.11: abre la galeria de adjuntos
-  Future<void> _openAttachments() async {
-    final app = AppState.instance;
-    if (!app.hasVault) {
-      _showSnack('Configura un vault primero');
-      return;
-    }
-    await Navigator.push(context, MaterialPageRoute(
-      builder: (_) => AttachmentsScreen(vaultPath: app.activeVault!.path),
-    ));
-  }
-
-  /// v0.49.17: abre la lista de whiteboards
-  Future<void> _openWhiteboards() async {
-    final app = AppState.instance;
-    if (!app.hasVault) {
-      _showSnack('Configura un vault primero');
-      return;
-    }
-    await Navigator.push(context, MaterialPageRoute(
-      builder: (_) => WhiteboardsListScreen(vaultPath: app.activeVault!.path),
-    ));
-  }
-
-  /// v0.48: command palette (Ctrl+K) — acciones rápidas.
-  Future<void> _showCommandPalette() async {
-    final app = AppState.instance;
-    if (!app.hasVault) {
-      _showSnack('Configura un vault primero');
-      return;
-    }
-    final action = await showDialog<String>(
-      context: context,
-      builder: (_) => const CommandPaletteDialog(),
-    );
-    if (action == null || !mounted) return;
-    switch (action) {
-      case 'new_note':
-        await _newNote();
-        break;
-      case 'open_daily':
-        await _openDailyNote();
-        break;
-      case 'review_due':
-        await _reviewDue();
-        break;
-      case 'new_flashcard':
-        await _newFlashcard();
-        break;
-      case 'open_vault':
-        // Cambiar a tab Vault (índice 1).
-        // Lo hacemos a través del shell si está disponible.
-        // Por simplicidad, navegamos manualmente.
-        Navigator.of(context).pushNamed('/vault');
-        break;
-      case 'settings':
-        Navigator.of(context).pushNamed('/settings');
-        break;
-    }
-  }
-
   Future<void> _reviewDue() async {
     final app = AppState.instance;
-    if (app.flashcardService == null) {
-      _showSnack('Servicio de flashcards no disponible');
-      return;
-    }
-    final cards = await app.flashcardService!.getDue();
-    if (cards.isEmpty) {
-      _showSnack('No hay tarjetas pendientes');
-      return;
-    }
+    if (app.flashcardService == null || _dueCount == 0) return;
+    final cards = await app.flashcardService!.dueCards();
+    if (!mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => FlashcardReview(
         cards: cards,
         service: app.flashcardService!,
-        onFinish: () => app.reload(),
+        onFinish: _load,
       )),
     );
     await app.reload();
   }
 
-  void _showSnack(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg)),
+  Future<void> _openDailyNote() async {
+    final app = AppState.instance;
+    if (!app.hasVault) return;
+    final dailySvc = DailyNoteService(app.activeVault!.path);
+    final path = await dailySvc.openOrCreate();
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => NoteView(
+        notePath: path, vaultPath: app.activeVault!.path,
+      )),
+    );
+    await app.reload();
+  }
+
+  Future<void> _openRecorder() async {
+    final app = AppState.instance;
+    if (!app.hasVault) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => RecordingScreen(vaultPath: app.activeVault!.path)),
     );
   }
 
-  /// v0.49.5: card "Hoy" con subject del dia + tareas + proximo examen
-  Widget _buildTodayCard(ThemeData theme, ColorScheme scheme) {
-    final subject = _subjectOfDay();
-    final nextExam = _exams.isNotEmpty ? _exams.first : null;
-    final pendingTasks = _todayTasks.where((t) => !t.done).toList();
-    final completedTasks = _todayTasks.where((t) => t.done).toList();
-    final today = _formatToday();
-    final capitalize = today.isEmpty
-        ? today
-        : today[0].toUpperCase() + today.substring(1);
-
-    return GlassCard(
-      borderRadius: MxRadius.xl,
-      padding: const EdgeInsets.all(MxSpacing.lg),
-      shadows: MxShadows.sm,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.today_rounded, size: 18),
-              const SizedBox(width: MxSpacing.sm),
-              Text(
-                'Hoy · $capitalize',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              // v0.62.10: SyncStatusIndicator movido aquí desde el FAB
-              // flotante (tapaba la última stat card). Modo compacto para
-              // integrarse con el header sin robar protagonismo.
-              const Spacer(),
-              const SyncStatusIndicator(compact: true),
-            ],
-          ),
-          const SizedBox(height: MxSpacing.md),
-          // Asignatura del dia
-          if (subject != null)
-            Row(
-              children: [
-                Container(
-                  width: 8,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: Color(subject.color),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Asignatura del día',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                        ),
-                      ),
-                      Text(
-                        subject.name,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            )
-          else
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Text(
-                'Configura asignaturas en Ajustes para ver tu subject-of-the-day',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-          if (nextExam != null) ...[
-            const SizedBox(height: MxSpacing.md),
-            Row(
-              children: [
-                Icon(Icons.event_rounded, size: 18, color: scheme.tertiary),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Próximo examen: ${nextExam.title} en ${nextExam.daysUntil(DateTime.now())} día${nextExam.daysUntil(DateTime.now()) == 1 ? "" : "s"}',
-                    style: theme.textTheme.bodyMedium,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ],
-          if (pendingTasks.isNotEmpty) ...[
-            const SizedBox(height: MxSpacing.md),
-            Text(
-              'Tareas pendientes (${pendingTasks.length})',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: scheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 4),
-            ...pendingTasks.take(3).map((t) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(Icons.check_box_outline_blank, size: 14, color: Colors.grey),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      t.text,
-                      style: theme.textTheme.bodySmall,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            )),
-            if (pendingTasks.length > 3)
-              Text(
-                '+${pendingTasks.length - 3} más en tu daily note',
-                style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-              ),
-          ] else if (completedTasks.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                children: [
-                  Icon(Icons.check_circle, size: 16, color: scheme.primary),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Todas las tareas hechas 🎉',
-                    style: theme.textTheme.bodySmall?.copyWith(color: scheme.primary),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
+  Future<void> _openAttachments() async {
+    final app = AppState.instance;
+    if (!app.hasVault) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => AttachmentsScreen(vaultPath: app.activeVault!.path)),
     );
   }
+
+  Future<void> _openWhiteboards() async {
+    final app = AppState.instance;
+    if (!app.hasVault) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => WhiteboardsListScreen(vaultPath: app.activeVault!.path)),
+    );
+  }
+
+  Future<void> _showCommandPalette() async {
+    await showDialog(context: context, builder: (_) => const CommandPaletteDialog());
+  }
+
+  void _openVault() {
+    // El dock navega; este atajo simplemente fuerza el tab.
+    DefaultTabController.maybeOf(context)?.animateTo(1);
+  }
+
+  void _openNote(_RecentNote n) {
+    final app = AppState.instance;
+    if (!app.hasVault) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => NoteView(
+        notePath: n.path, vaultPath: app.activeVault!.path,
+      )),
+    );
+  }
+
+  // ── BUILD ────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final hour = DateTime.now().hour;
@@ -481,332 +263,168 @@ class _HomeScreenState extends State<HomeScreen> {
         ? 'Buenas tardes'
         : 'Buenas noches';
 
-    final subtitle = _dueCount > 0
-        ? '$_dueCount tarjeta${_dueCount == 1 ? "" : "s"} para repasar hoy'
-        : _streak > 0
-            ? 'Llevas $_streak día${_streak == 1 ? "" : "s"} de racha 🔥'
-            : 'Empieza con una sesión corta de 5 minutos';
-
     return Scaffold(
-      // v0.62.10: el SyncStatusIndicator antes iba como FAB flotante en
-      // bottom-right (top:80dp) pero tapaba la última stat card del grid
-      // y competía con el FloatingDock. Lo movemos al header de la sección
-      // "Hoy" como un IconButton compacto: ahí tiene contexto (sincronizar
-      // el daily note) y no estorba visualmente.
+      // v0.62.12: RemNote minimal — sin hero card, sin stat cards,
+      // sin heatmap. Stats viven en su propio screen.
       body: RefreshIndicator(
         onRefresh: _load,
         color: scheme.primary,
         child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            // ── HERO BANNER ──
+            // ── GREETING (one line) ──
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(
-                  MxSpacing.lg, MxSpacing.lg, MxSpacing.lg, MxSpacing.lg),
+              padding: EdgeInsets.fromLTRB(
+                  MxSpacing.xl,
+                  MxSpacing.lg + MediaQuery.of(context).padding.top,
+                  MxSpacing.xl,
+                  MxSpacing.md),
               sliver: SliverToBoxAdapter(
-                child: HeroCard(
-                  gradient: scheme.brightness == Brightness.dark
-                      ? MxColors.heroGradientDark
-                      : MxColors.heroGradientLight,
-                  height: 200,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.wb_sunny_outlined,
-                                      color: Colors.white.withOpacity(0.7),
-                                      size: 16,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      greeting,
-                                      style: theme.textTheme.bodyMedium?.copyWith(
-                                        color: Colors.white.withOpacity(0.85),
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  '¿Qué quieres aprender hoy?',
-                                  style: theme.textTheme.headlineMedium?.copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: -0.5,
-                                    height: 1.15,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.18),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.white.withOpacity(0.3),
-                                width: 1.5,
-                              ),
-                            ),
-                            child: const Center(
-                              child: Text('🧠', style: TextStyle(fontSize: 20)),
-                            ),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          Icon(Icons.auto_awesome, color: Colors.white.withOpacity(0.7), size: 14),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              subtitle,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: Colors.white.withOpacity(0.92),
-                                fontWeight: FontWeight.w500,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            // ── HOY (subject + tasks + next exam) ──
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(MxSpacing.lg, 0, MxSpacing.lg, 0),
-              sliver: SliverToBoxAdapter(
-                child: _buildTodayCard(theme, scheme),
-              ),
-            ),
-
-            const SliverToBoxAdapter(child: SizedBox(height: MxSpacing.md)),
-
-            // ── STATS GRID 2×2 ──
-            // v0.62.10: aspectRatio 1.30 (era 1.45 → overflow 0.725px, luego
-            // 1.20 → cards muy altos tipo ladrillo). FittedBox dentro del
-            // StatCard hace de red de seguridad: si los valores son anchos
-            // (ej. "999 tarjetas"), el número reduce tamaño en vez de
-            // desbordar.
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: MxSpacing.lg),
-              sliver: SliverGrid.count(
-                crossAxisCount: 2,
-                mainAxisSpacing: MxSpacing.md,
-                crossAxisSpacing: MxSpacing.md,
-                childAspectRatio: 1.30,
-                children: [
-                  StatCard(
-                    icon: Icons.local_fire_department_rounded,
-                    label: 'Racha',
-                    value: '$_streak',
-                    suffix: _streak == 1 ? 'día' : 'días',
-                    gradient: MxColors.statStreak,
-                  ),
-                  StatCard(
-                    icon: Icons.style_rounded,
-                    label: 'Para repasar',
-                    value: '$_dueCount',
-                    suffix: 'tarjetas',
-                    gradient: MxColors.statCards,
-                    onTap: _dueCount > 0 ? _reviewDue : null,
-                  ),
-                  StatCard(
-                    icon: Icons.timer_outlined,
-                    label: 'Tiempo hoy',
-                    value: '$_minutesToday',
-                    suffix: 'min',
-                    gradient: MxColors.statTime,
-                  ),
-                  StatCard(
-                    icon: Icons.psychology_rounded,
-                    label: 'Retención',
-                    value: '${(_retention * 100).toInt()}',
-                    suffix: '%',
-                    gradient: MxColors.statRetention,
-                  ),
-                ],
-              ),
-            ),
-
-            const SliverToBoxAdapter(child: SizedBox(height: MxSpacing.xl)),
-
-            // ── HEATMAP ──
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: MxSpacing.lg),
-              sliver: SliverToBoxAdapter(
-                child: GlassCard(
-                  borderRadius: MxRadius.xl,
-                  padding: const EdgeInsets.all(MxSpacing.lg),
-                  shadows: MxShadows.sm,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.calendar_view_month_rounded, size: 18),
-                          const SizedBox(width: MxSpacing.sm),
-                          Text(
-                            'Actividad',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const Spacer(),
-                          Text(
-                            'Últimos 90 días',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: scheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: MxSpacing.md),
-                      SizedBox(
-                        height: 7 * 14.0 + 8 + 24,
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: ReviewHeatmap(
-                            dailyStats: _dailyStats,
-                            daysToShow: 90,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            const SliverToBoxAdapter(child: SizedBox(height: MxSpacing.xl)),
-
-            // ── ACCIONES ──
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: MxSpacing.lg),
-              sliver: SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.only(
-                          left: MxSpacing.xs, bottom: MxSpacing.md),
-                      child: SectionHeader(
-                        title: 'Acciones rápidas',
-                        subtitle: 'Empieza una sesión o crea contenido',
+                    Text(
+                      greeting,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                    ActionCard(
-                      icon: Icons.add_circle_outline_rounded,
-                      title: 'Nueva nota',
-                      subtitle: 'Markdown con cloze, imágenes y dibujo',
-                      onTap: _newNote,
+                    const SizedBox(width: MxSpacing.sm),
+                    Text(
+                      '·',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: scheme.onSurfaceVariant.withOpacity(0.4),
+                      ),
                     ),
-                    const SizedBox(height: MxSpacing.sm),
-                    ActionCard(
-                      icon: Icons.style_rounded,
-                      title: 'Repasar hoy',
-                      subtitle: _dueCount == 0
-                          ? 'No hay tarjetas pendientes'
-                          : '$_dueCount tarjeta${_dueCount == 1 ? "" : "s"} listas',
-                      trailing: _dueCount > 0 ? '$_dueCount' : null,
-                      accent: _dueCount > 0,
-                      onTap: _reviewDue,
-                    ),
-                    const SizedBox(height: MxSpacing.sm),
-                    ActionCard(
-                      icon: Icons.today_outlined,
-                      title: 'Nota diaria',
-                      subtitle: DateFormat('EEEE d MMMM', 'es_ES')
-                          .format(DateTime.now()),
-                      onTap: _openDailyNote,
-                    ),
-                    const SizedBox(height: MxSpacing.sm),
-                    // v0.49.12: grabar clase con contexto automatico
-                    ActionCard(
-                      icon: Icons.mic_rounded,
-                      title: 'Grabar clase',
-                      subtitle: 'Audio + asignatura + examen',
-                      accent: true,
-                      onTap: _openRecorder,
-                    ),
-                    const SizedBox(height: MxSpacing.sm),
-                    // v0.49.11: adjuntos del vault
-                    ActionCard(
-                      icon: Icons.attach_file_rounded,
-                      title: 'Adjuntos',
-                      subtitle: 'PDFs, presentaciones, imagenes',
-                      onTap: _openAttachments,
-                    ),
-                    const SizedBox(height: MxSpacing.sm),
-                    // v0.49.17: whiteboards / mind maps
-                    ActionCard(
-                      icon: Icons.account_tree_rounded,
-                      title: 'Whiteboards',
-                      subtitle: 'Mapas mentales y diagramas',
-                      onTap: _openWhiteboards,
-                    ),
-                    const SizedBox(height: MxSpacing.sm),
-                    ActionCard(
-                      icon: Icons.add_box_outlined,
-                      title: 'Nueva tarjeta',
-                      subtitle: 'Añade una flashcard manualmente',
-                      onTap: _newFlashcard,
-                    ),
-                    const SizedBox(height: MxSpacing.sm),
-                    ActionCard(
-                      icon: Icons.keyboard_command_key_rounded,
-                      title: 'Command palette',
-                      subtitle: 'Ctrl+K para acciones rápidas',
-                      onTap: _showCommandPalette,
+                    const SizedBox(width: MxSpacing.sm),
+                    Flexible(
+                      child: Text(
+                        _firstName(),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.3,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
 
-            const SliverToBoxAdapter(child: SizedBox(height: MxSpacing.xl)),
+            // ── PRIMARY CTA: Repasar (RemNote: el foco es "review now") ──
+            if (_dueCount > 0)
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(
+                    MxSpacing.lg, 0, MxSpacing.lg, MxSpacing.md),
+                sliver: SliverToBoxAdapter(
+                  child: _PrimaryCta(
+                    count: _dueCount,
+                    onTap: _reviewDue,
+                  ),
+                ),
+              )
+            else
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(
+                    MxSpacing.lg, 0, MxSpacing.lg, MxSpacing.md),
+                sliver: SliverToBoxAdapter(
+                  child: _EmptyCta(onTap: _newNote),
+                ),
+              ),
 
-            // ── NOTAS RECIENTES ──
+            // ── COMMAND BAR (4 quick actions) ──
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: MxSpacing.lg),
+              sliver: SliverToBoxAdapter(
+                child: _CommandBar(
+                  actions: [
+                    _QuickAction(
+                      icon: Icons.add_rounded,
+                      label: 'Nota',
+                      onTap: _newNote,
+                    ),
+                    _QuickAction(
+                      icon: Icons.style_outlined,
+                      label: 'Tarjeta',
+                      onTap: _newFlashcard,
+                    ),
+                    _QuickAction(
+                      icon: Icons.today_outlined,
+                      label: 'Daily',
+                      onTap: _openDailyNote,
+                    ),
+                    _QuickAction(
+                      icon: Icons.mic_none_rounded,
+                      label: 'Grabar',
+                      onTap: _openRecorder,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // ── INBOX ROW (pending tasks, one line) ──
+            if (_todayTasks.isNotEmpty)
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(
+                    MxSpacing.lg, MxSpacing.md, MxSpacing.lg, 0),
+                sliver: SliverToBoxAdapter(
+                  child: _InboxRow(
+                    tasks: _todayTasks.take(3).toList(),
+                    extra: _todayTasks.length - 3,
+                    onTap: _openDailyNote,
+                  ),
+                ),
+              ),
+
+            // ── RECENT NOTES (flat list) ──
             if (_recentNotes.isNotEmpty) ...[
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(
-                    MxSpacing.lg, 0, MxSpacing.lg, MxSpacing.xl),
+                    MxSpacing.lg, MxSpacing.md, MxSpacing.lg, 0),
                 sliver: SliverToBoxAdapter(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.only(
-                            left: MxSpacing.xs, bottom: MxSpacing.md),
-                        child: SectionHeader(
-                          title: 'Recientes',
-                          subtitle: 'Notas que tocaste recientemente',
+                      Text(
+                        'Recientes',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.2,
                         ),
                       ),
-                      ..._recentNotes.map((n) => Padding(
-                            padding: const EdgeInsets.only(
-                                bottom: MxSpacing.sm),
-                            child: _RecentNoteCard(note: n),
-                          )),
+                      const Spacer(),
+                      TextButton(
+                        onPressed: () {
+                          // Cambiar al tab Vault del dock — el MainShell
+                          // gestiona la navegación entre tabs vía _index.
+                          final shell = context.findAncestorStateOfType<State>();
+                          // Fallback simple: dejar que el dock funcione.
+                          // El usuario puede tocar el dock item Vault.
+                        },
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: MxSpacing.sm),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        child: const Text('Ver todo', style: TextStyle(fontSize: 12)),
+                      ),
                     ],
+                  ),
+                ),
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(
+                    MxSpacing.lg, MxSpacing.sm, MxSpacing.lg, MxSpacing.xxxl),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (ctx, i) => _RecentRow(
+                      note: _recentNotes[i],
+                      onTap: () => _openNote(_recentNotes[i]),
+                    ),
+                    childCount: _recentNotes.length,
                   ),
                 ),
               ),
@@ -820,202 +438,73 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class _StatCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final String suffix;
-  final Color color;
-  const _StatCard({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.suffix,
-    required this.color,
-  });
+// ── SUBCOMPONENTES ────────────────────────────────────────────────────
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    // v0.47.34: gradient sutil + shadow para look cristal. Antes era color plano.
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            color.withOpacity(0.12),
-            color.withOpacity(0.06),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.25)),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.08),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 32, height: 32,
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: color, size: 18),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(label, style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ), maxLines: 1, overflow: TextOverflow.ellipsis),
-              ),
-            ],
-          ),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(value,
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: color,
-                  )),
-              const SizedBox(width: 4),
-              Text(suffix,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  )),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DashboardCard extends StatelessWidget {
-  final String title;
-  final String? subtitle;
-  final Widget child;
-  const _DashboardCard({required this.title, this.subtitle, required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    // v0.47.34: gradient sutil + rounded 16px para look moderno cristal.
-    // Antes era surface plano con border gris. Ahora tiene un gradient
-    // diagonal surface→surfaceContainerLow que da profundidad sin
-    // perder legibilidad.
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            theme.colorScheme.surface,
-            theme.colorScheme.surfaceContainerLow,
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(title, style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              )),
-              if (subtitle != null) ...[
-                const Spacer(),
-                Text(subtitle!, style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                )),
-              ],
-            ],
-          ),
-          const SizedBox(height: 12),
-          child,
-        ],
-      ),
-    );
-  }
-}
-
-class _ActionCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
+class _PrimaryCta extends StatelessWidget {
+  final int count;
   final VoidCallback onTap;
-  final bool accent;
-  const _ActionCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-    this.accent = false,
-  });
+  const _PrimaryCta({required this.count, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = accent ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant;
     return Material(
-      color: theme.colorScheme.surface,
-      borderRadius: BorderRadius.circular(14),
+      color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.all(14),
+        borderRadius: BorderRadius.circular(MxRadius.lg),
+        child: Ink(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                MxColors.indigoDeep.withOpacity(0.95),
+                MxColors.violet.withOpacity(0.85),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(MxRadius.lg),
+            boxShadow: MxShadows.md,
           ),
+          padding: const EdgeInsets.symmetric(
+              horizontal: MxSpacing.xl, vertical: MxSpacing.lg),
           child: Row(
             children: [
-              Container(
-                width: 40, height: 40,
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, color: color, size: 20),
-              ),
-              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(title, style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    )),
-                    Text(subtitle, style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    )),
+                    Text(
+                      'Repasar',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '$count tarjeta${count == 1 ? "" : "s"} para hoy',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: Colors.white.withOpacity(0.85),
+                      ),
+                    ),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: theme.colorScheme.onSurfaceVariant),
+              Container(
+                width: 44, height: 44,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.18),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.play_arrow_rounded,
+                  color: Colors.white,
+                  size: 26,
+                ),
+              ),
             ],
           ),
         ),
@@ -1023,94 +512,282 @@ class _ActionCard extends StatelessWidget {
     );
   }
 }
+
+class _EmptyCta extends StatelessWidget {
+  final VoidCallback onTap;
+  const _EmptyCta({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(MxRadius.lg),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: scheme.surfaceContainerLow.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(MxRadius.lg),
+            border: Border.all(
+              color: scheme.outlineVariant.withOpacity(0.4),
+              width: 1,
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(
+              horizontal: MxSpacing.xl, vertical: MxSpacing.lg),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Al día',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Empezá una nueva nota o grabá una clase',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                width: 44, height: 44,
+                decoration: BoxDecoration(
+                  color: MxColors.indigoDeep.withOpacity(0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.add_rounded,
+                  color: MxColors.indigoSoft,
+                  size: 24,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CommandBar extends StatelessWidget {
+  final List<_QuickAction> actions;
+  const _CommandBar({required this.actions});
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow.withOpacity(0.4),
+        borderRadius: BorderRadius.circular(MxRadius.md),
+        border: Border.all(color: scheme.outlineVariant.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          for (var i = 0; i < actions.length; i++) ...[
+            if (i > 0)
+              Container(
+                width: 1,
+                height: 32,
+                color: scheme.outlineVariant.withOpacity(0.4),
+              ),
+            Expanded(child: actions[i]),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  const _QuickAction({required this.icon, required this.label, required this.onTap});
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(MxRadius.sm),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: MxSpacing.md),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 20, color: scheme.onSurface),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InboxRow extends StatelessWidget {
+  final List<_TaskItem> tasks;
+  final int extra;
+  final VoidCallback onTap;
+  const _InboxRow({
+    required this.tasks,
+    required this.extra,
+    required this.onTap,
+  });
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final pending = tasks.where((t) => !t.done).toList();
+    if (pending.isEmpty) return const SizedBox.shrink();
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(MxRadius.md),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+            horizontal: MxSpacing.md, vertical: MxSpacing.sm),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerLow.withOpacity(0.4),
+          borderRadius: BorderRadius.circular(MxRadius.md),
+          border: Border.all(
+            color: const Color(0xFFFBBF24).withOpacity(0.3),
+          ),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.check_box_outline_blank_rounded,
+                size: 18, color: Color(0xFFFBBF24)),
+            const SizedBox(width: MxSpacing.sm),
+            Expanded(
+              child: Text(
+                pending.map((t) => t.text).join(' · '),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (extra > 0) ...[
+              const SizedBox(width: MxSpacing.sm),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFBBF24).withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(MxRadius.pill),
+                ),
+                child: Text(
+                  '+$extra',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: const Color(0xFFFBBF24),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(width: MxSpacing.sm),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 16,
+              color: scheme.onSurfaceVariant,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RecentRow extends StatelessWidget {
+  final _RecentNote note;
+  final VoidCallback onTap;
+  const _RecentRow({required this.note, required this.onTap});
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(MxRadius.sm),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+            vertical: MxSpacing.sm, horizontal: MxSpacing.xs),
+        child: Row(
+          children: [
+            Icon(
+              Icons.description_outlined,
+              size: 18,
+              color: scheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: MxSpacing.md),
+            Expanded(
+              child: Text(
+                note.title.isEmpty ? note.name.replaceAll('.md', '') : note.title,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: MxSpacing.sm),
+            Text(
+              _relTime(note.modified),
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+                fontSize: 11,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _relTime(DateTime d) {
+    final diff = DateTime.now().difference(d);
+    if (diff.inMinutes < 60) return 'hace ${diff.inMinutes}m';
+    if (diff.inHours < 24) return 'hace ${diff.inHours}h';
+    return 'hace ${diff.inDays}d';
+  }
+}
+
+// ── MODELOS ────────────────────────────────────────────────────────────
 
 class _RecentNote {
   final String name;
   final String path;
-  final String? title;
+  final String title;
   final DateTime modified;
-  const _RecentNote({required this.name, required this.path, required this.title, required this.modified});
+  _RecentNote({
+    required this.name,
+    required this.path,
+    required this.title,
+    required this.modified,
+  });
 }
 
-// v0.49.5: task item parsed from checkbox markdown
 class _TaskItem {
   final String text;
   final bool done;
-  const _TaskItem({required this.text, required this.done});
-}
-
-class _RecentNoteCard extends StatelessWidget {
-  final _RecentNote note;
-  const _RecentNoteCard({required this.note});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Material(
-      color: theme.colorScheme.surface,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        // v0.47.31: tap del recientes ahora navega a NoteView con la
-        // nota específica, en lugar de abrir el VaultBrowser genérico.
-        // Bug previo: onTap: () => Navigator.push(VaultBrowser()) — abría
-        // la lista de archivos sin llevar al usuario a su nota.
-        onTap: () {
-          final app = AppState.instance;
-          final vault = app.activeVault;
-          if (vault == null) return;
-          Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => NoteView(
-              notePath: note.path,
-              vaultPath: vault.path,
-            ),
-          ));
-        },
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.3)),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.description_outlined,
-                  color: theme.colorScheme.onSurfaceVariant, size: 18),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      (note.title?.isNotEmpty ?? false) ? note.title! : note.name,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 1, overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      _formatRelative(note.modified),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  String _formatRelative(DateTime d) {
-    final now = DateTime.now();
-    final diff = now.difference(d);
-    if (diff.inMinutes < 1) return 'ahora';
-    if (diff.inMinutes < 60) return 'hace ${diff.inMinutes} min';
-    if (diff.inHours < 24) return 'hace ${diff.inHours} h';
-    if (diff.inDays < 7) return 'hace ${diff.inDays} d';
-    return DateFormat('d MMM').format(d);
-  }
+  _TaskItem({required this.text, required this.done});
 }
