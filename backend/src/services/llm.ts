@@ -235,6 +235,10 @@ export class LLMService {
     };
   }
 
+  // TODO(FASE-4-streaming): add chatStream(req) → AsyncIterable<{delta: string}>
+  // using Ollama's stream:true mode (NDJSON over /api/chat). Wire to Fastify
+  // reply.raw for SSE. Keep LLMService.chat() non-streaming as default so
+  // existing call sites stay stable. See FASE 4 prep in .hermes/plans.
   private async ollamaChat(req: ChatRequest): Promise<ChatResponse> {
     const r = await safeCallAsync<ChatResponse>({
       component: "llm",

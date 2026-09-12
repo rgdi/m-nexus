@@ -9,7 +9,7 @@
 // defecto, escribe el .md directamente bajo _M-NEXUS/Flashcards/Approved/.
 
 import { FastifyInstance } from "fastify";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, writeFile, readdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { dirname, join, resolve, basename, extname } from "node:path";
 import { randomUUID } from "node:crypto";
@@ -407,6 +407,48 @@ Genera hasta ${maxCards} flashcards.`;
     if (!r.success || !r.value) throw r.error!;
     return r.value;
   });
+
+  // ── List approved flashcards with pagination (FASE 4 prep) ─────────
+  // GET /api/v1/flashcards/list?limit=20&offset=0
+  //   limit  — max items returned (1..200, default 50)
+  //   offset — items to skip (default 0)
+  // Returns: { items: [{id, path, mtime}], total, limit, offset, hasMore }
+  // Pure read — does not depend on LLM, sqlite, or plugins.
+  app.get<{ Querystring: { limit?: string; offset?: string } }>(
+    "/api/v1/flashcards/list",
+    async (req, reply) => {
+      try {
+        const limit = Math.min(Math.max(parseInt(req.query?.limit ?? "50", 10) || 50, 1), 200);
+        const offset = Math.max(parseInt(req.query?.offset ?? "0", 10) || 0, 0);
+        const dir = join(resolveVaultRoot(), "_M-NEXUS", "Flashcards", "Approved");
+        if (!existsSync(dir)) {
+          return reply.send({ items: [], total: 0, limit, offset, hasMore: false });
+        }
+        const entries = await readdir(dir, { withFileTypes: true });
+        const mdFiles = entries
+          .filter((e) => e.isFile() && e.name.toLowerCase().endsWith(".md"))
+          .map((e) => e.name);
+        // Sort alphabetically (stable across calls). For real ordering by mtime
+        // we would need fs.stat — kept minimal to avoid extra IO per request.
+        mdFiles.sort((a, b) => a.localeCompare(b));
+        const total = mdFiles.length;
+        const page = mdFiles.slice(offset, offset + limit);
+        const items = page.map((name) => ({
+          id: name.replace(/\.md$/i, ""),
+          path: join(dir, name),
+        }));
+        return reply.send({
+          items,
+          total,
+          limit,
+          offset,
+          hasMore: offset + items.length < total,
+        });
+      } catch (err: any) {
+        return reply.status(500).send({ error: err.message || String(err) });
+      }
+    },
+  );
 }
 
 function parseFlashcards(raw: string, max: number): FlashcardDraftOut[] {
