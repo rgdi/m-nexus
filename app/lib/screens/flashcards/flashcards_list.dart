@@ -396,7 +396,7 @@ class _FlashcardsListState extends State<FlashcardsList>
     final items = [...due, ...fresh];
 
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(MxSpacing.lg, MxSpacing.md, MxSpacing.lg, MxSpacing.xxxl),
+      padding: const EdgeInsets.fromLTRB(MxSpacing.lg, MxSpacing.md, MxSpacing.lg, 96),
       itemCount: items.length + (due.isNotEmpty ? 1 : 0) + (fresh.isNotEmpty ? 1 : 0),
       separatorBuilder: (_, __) => const SizedBox(height: MxSpacing.sm),
       itemBuilder: (ctx, i) {
@@ -436,7 +436,7 @@ class _FlashcardsListState extends State<FlashcardsList>
       );
     }
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(MxSpacing.lg, MxSpacing.md, MxSpacing.lg, MxSpacing.xxxl),
+      padding: const EdgeInsets.fromLTRB(MxSpacing.lg, MxSpacing.md, MxSpacing.lg, 96),
       itemCount: _conceptCandidates.length + 1,
       separatorBuilder: (_, __) => const SizedBox(height: MxSpacing.sm),
       itemBuilder: (ctx, i) {
@@ -485,7 +485,7 @@ class _FlashcardsListState extends State<FlashcardsList>
       );
     }
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(MxSpacing.lg, MxSpacing.md, MxSpacing.lg, MxSpacing.xxxl),
+      padding: const EdgeInsets.fromLTRB(MxSpacing.lg, MxSpacing.md, MxSpacing.lg, 96),
       itemCount: drafts.length,
       separatorBuilder: (_, __) => const SizedBox(height: MxSpacing.sm),
       itemBuilder: (ctx, i) {
@@ -523,7 +523,7 @@ class _FlashcardsListState extends State<FlashcardsList>
       );
     }
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(MxSpacing.lg, MxSpacing.md, MxSpacing.lg, MxSpacing.xxxl),
+      padding: const EdgeInsets.fromLTRB(MxSpacing.lg, MxSpacing.md, MxSpacing.lg, 96),
       itemCount: _filtered.length,
       separatorBuilder: (_, __) => const SizedBox(height: MxSpacing.sm),
       itemBuilder: (ctx, i) {

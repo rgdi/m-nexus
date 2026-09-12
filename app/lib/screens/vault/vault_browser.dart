@@ -42,6 +42,9 @@ class _VaultBrowserState extends State<VaultBrowser> {
   String _filter = '';
   String _scope = 'all'; // all | recent | favorites | by-folder | by-tag
   String? _scopeValue; // folder relPath or tag name
+  /// v0.62.15: ruta de carpeta actual (null = root). Permite navegar
+  /// jerárquicamente el árbol del vault con breadcrumb.
+  String? _currentFolder;
   final TextEditingController _searchCtrl = TextEditingController();
   final Set<String> _expanded = {};
   final Set<String> _favorites = {}; // relPath de notas marcadas favoritas
@@ -158,6 +161,15 @@ class _VaultBrowserState extends State<VaultBrowser> {
       ),
       body: Column(
         children: [
+          // v0.62.15: breadcrumb de navegación (siempre visible).
+          _BreadcrumbBar(
+            currentFolder: _currentFolder,
+            vaultName: p.basename(_vault!.vaultPath),
+            onNavigate: (folder) => setState(() {
+              _currentFolder = folder;
+              _selectedRelPath = null;
+            }),
+          ),
           _buildSearchAndFilters(),
           _buildBreadcrumb(),
           const Divider(height: 1),
@@ -523,15 +535,19 @@ class _VaultBrowserState extends State<VaultBrowser> {
 
   List<VaultNode> _filteredItems() {
     if (_tree == null) return [];
+    // v0.62.15: si _currentFolder está seteada, navegamos a esa carpeta
+    // y mostramos sus items + subfolders directos.
     final all = <VaultNode>[];
-    void walk(VaultNode n) {
-      if (!n.isDir) {
-        all.add(n);
-      } else {
-        for (final c in n.children) walk(c);
+    if (_currentFolder != null) {
+      // Buscar el nodo de la carpeta actual.
+      final folderNode = _findFolder(_tree!, _currentFolder!);
+      if (folderNode != null) {
+        all.addAll(folderNode.children);
       }
+    } else {
+      // Root: items del root level (files y folders top-level).
+      all.addAll(_tree!.children);
     }
-    walk(_tree!);
     var filtered = all;
     // Texto
     if (_filter.isNotEmpty) {
@@ -539,19 +555,36 @@ class _VaultBrowserState extends State<VaultBrowser> {
     }
     // Scope
     if (_scope == 'recent') {
-      filtered = filtered.toList()
+      filtered = filtered.where((n) => !n.isDir).toList()
         ..sort((a, b) => _modifiedOf(b).compareTo(_modifiedOf(a)));
       filtered = filtered.take(20).toList();
     } else if (_scope == 'favorites') {
-      filtered = filtered.where((n) => _favorites.contains(n.relPath)).toList();
+      filtered = filtered.where((n) => !n.isDir && _favorites.contains(n.relPath)).toList();
     } else if (_scope == 'by-tag' && _scopeValue != null) {
-      // Tag filter sería async (leer frontmatter); simplificamos: mostrar
-      // archivos cuyo nombre contenga el tag como substring (rápido).
-      filtered = filtered.where((n) => n.name.toLowerCase().contains(_scopeValue!.toLowerCase())).toList();
+      filtered = filtered.where((n) => !n.isDir &&
+          n.name.toLowerCase().contains(_scopeValue!.toLowerCase())).toList();
     } else {
-      filtered = filtered.toList()..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      // Sort: folders primero, luego files alfabético.
+      filtered = filtered.toList()..sort((a, b) {
+        if (a.isDir && !b.isDir) return -1;
+        if (!a.isDir && b.isDir) return 1;
+        return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      });
     }
     return filtered;
+  }
+
+  /// Helper: busca un nodo folder por su relPath.
+  VaultNode? _findFolder(VaultNode node, String relPath) {
+    if (node.relPath == relPath && node.isDir) return node;
+    for (final c in node.children) {
+      if (c.relPath == relPath && c.isDir) return c;
+      if (c.isDir) {
+        final r = _findFolder(c, relPath);
+        if (r != null) return r;
+      }
+    }
+    return null;
   }
 
   Widget _buildItemsList() {
@@ -571,6 +604,14 @@ class _VaultBrowserState extends State<VaultBrowser> {
       separatorBuilder: (_, __) => const SizedBox(height: MxSpacing.sm),
       itemBuilder: (ctx, i) {
         final n = items[i];
+        // v0.62.15: las carpetas son tappeables — navegan al subárbol.
+        if (n.isDir) {
+          return _FolderRow(
+            node: n,
+            onTap: () => setState(() => _currentFolder = n.relPath),
+            onLongPress: () => _showNoteContextMenu(n),
+          );
+        }
         return _VaultItemRow(
           node: n,
           modified: _modifiedOf(n),
@@ -1280,6 +1321,155 @@ class _VaultItemRow extends StatelessWidget {
               size: 18,
               color: scheme.onSurfaceVariant,
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── v0.62.15: breadcrumb + folder row ────────────────────────────────
+
+class _BreadcrumbBar extends StatelessWidget {
+  final String? currentFolder;
+  final String vaultName;
+  final ValueChanged<String?> onNavigate;
+  const _BreadcrumbBar({
+    required this.currentFolder,
+    required this.vaultName,
+    required this.onNavigate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final parts = <String>[];
+    if (currentFolder != null && currentFolder!.isNotEmpty) {
+      parts.addAll(currentFolder!.split('/'));
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: MxSpacing.lg, vertical: MxSpacing.sm),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerLow.withValues(alpha: 0.4),
+        border: Border(
+          bottom: BorderSide(
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+          ),
+        ),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            InkWell(
+              onTap: () => onNavigate(null),
+              borderRadius: BorderRadius.circular(MxRadius.sm),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.folder_rounded, size: 14),
+                    const SizedBox(width: 4),
+                    Text(vaultName,
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      )),
+                  ],
+                ),
+              ),
+            ),
+            for (int i = 0; i < parts.length; i++) ...[
+              const Icon(Icons.chevron_right, size: 14, color: Colors.grey),
+              InkWell(
+                onTap: () {
+                  // Subir hasta este nivel.
+                  final upTo = parts.sublist(0, i + 1).join('/');
+                  onNavigate(i == parts.length - 1 ? null : upTo);
+                },
+                borderRadius: BorderRadius.circular(MxRadius.sm),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  child: Text(parts[i],
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      fontWeight: i == parts.length - 1
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                    )),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FolderRow extends StatelessWidget {
+  final VaultNode node;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
+  const _FolderRow({required this.node, required this.onTap, required this.onLongPress});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final childFolders = node.children.where((c) => c.isDir).length;
+    final childFiles = node.children.where((c) => !c.isDir).length;
+    return InkWell(
+      onTap: onTap,
+      onLongPress: onLongPress,
+      borderRadius: BorderRadius.circular(MxRadius.lg),
+      child: Container(
+        padding: const EdgeInsets.all(MxSpacing.md),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerLow.withValues(alpha: 0.4),
+          borderRadius: BorderRadius.circular(MxRadius.lg),
+          border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40, height: 40,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    MxColors.amber.withValues(alpha: 0.20),
+                    MxColors.indigoDeep.withValues(alpha: 0.10),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(MxRadius.md),
+              ),
+              alignment: Alignment.center,
+              child: Icon(Icons.folder_rounded, size: 20, color: MxColors.amber),
+            ),
+            const SizedBox(width: MxSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(node.name,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                    maxLines: 1, overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    childFolders > 0 || childFiles > 0
+                        ? '$childFolders carpeta${childFolders == 1 ? "" : "s"}, $childFiles nota${childFiles == 1 ? "" : "s"}'
+                        : 'Carpeta vacía',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, size: 18, color: Colors.grey),
           ],
         ),
       ),
