@@ -5,6 +5,12 @@
 // - Calendar (permiso y selección)
 // - Tipografía (escala)
 // - Changelog
+//
+// FASE 4: limpieza de features IA/redundantes que ahora son context-aware:
+//   - Tutor IA → inline en NoteView y flashcard review
+//   - Asignaturas, Examenes → FAB en Home
+//   - Generar flashcards, Pendientes → accesible desde Tarjetas y Reviews
+// Quedan solo 3 secciones: General / Apariencia / About.
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -17,20 +23,7 @@ import '../../services/logger.dart';
 import '../../services/settings_service.dart';
 import '../../services/vault_detector.dart';
 import '../../services/vault_saf_picker.dart';
-import '../../state/app_state.dart';
-import '../ai/chat_screen.dart';
-import '../subjects/subjects_screen.dart';
-import '../exams/exams_screen.dart';
-import '../daily/daily_notes_screen.dart';
-import '../attachments/attachments_screen.dart';
-import '../review_queue/review_queue_screen.dart';
-import '../review_queue/generate_flashcards_screen.dart';
 import 'changelog_view.dart';
-import 'logs_screen.dart';
-import 'ai_settings_screen.dart';
-import 'sync_dashboard_screen.dart';
-import '../recording/transcription_queue_screen.dart';
-import '../databases/databases_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -121,88 +114,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               subtitle: _settings.enableHaptics ? 'Activada' : 'Desactivada',
               onTap: _toggleHaptics),
           ]),
-          _buildSection(title: 'Contenido', tiles: [
-            _Tile(icon: Icons.school, title: 'Asignaturas',
-              subtitle: 'Estructura el vault por materia',
-              onTap: () {
-                final app = AppState.instance;
-                if (app.activeVault == null) return;
-                Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => SubjectsScreen(vaultPath: app.activeVault!.path),
-                ));
-              }),
-            _Tile(icon: Icons.event_note, title: 'Exámenes',
-              subtitle: 'Programa fechas y temario',
-              onTap: () {
-                final app = AppState.instance;
-                if (app.activeVault == null) return;
-                Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => ExamsScreen(vaultPath: app.activeVault!.path),
-                ));
-              }),
-            _Tile(icon: Icons.today, title: 'Daily Notes',
-              subtitle: 'Notas diarias con calendario',
-              onTap: () {
-                final app = AppState.instance;
-                if (app.activeVault == null) return;
-                Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => DailyNotesScreen(vaultPath: app.activeVault!.path),
-                ));
-              }),
-            _Tile(icon: Icons.attach_file, title: 'Adjuntos',
-              subtitle: 'PDFs, presentaciones, imagenes',
-              onTap: () {
-                final app = AppState.instance;
-                if (app.activeVault == null) return;
-                Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => AttachmentsScreen(vaultPath: app.activeVault!.path),
-                ));
-              }),
-            // v0.51: linked databases (Notion-style queries)
-            _Tile(icon: Icons.table_chart_outlined, title: 'Bases de datos',
-              subtitle: 'Vistas filtradas del vault',
-              onTap: () {
-                final app = AppState.instance;
-                if (app.activeVault == null) return;
-                Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => DatabasesScreen(vaultPath: app.activeVault!.path),
-                ));
-              }),
-          ]),
-          _buildSection(title: 'Avanzado', tiles: [
-            // v0.47.33: AI Tutor (Local) — usa LocalTutorService que corre
-            // en cliente sin backend, basado en las notas del vault.
-            _Tile(icon: Icons.psychology, title: 'Tutor IA',
-              subtitle: 'Pregúntale a tus notas (offline)',
-              onTap: () {
-                final app = AppState.instance;
-                Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => ChatScreen(
-                    backendUrl: _settings.backendUrl ?? '',
-                    vaultPath: app.activeVault?.path,
-                  ),
-                ));
-              }),
-            // v0.47.37: Generar flashcards desde notas.
-            _Tile(icon: Icons.auto_awesome, title: 'Generar flashcards',
-              subtitle: 'Extrae cloze/QA de tus notas',
-              onTap: () {
-                final app = AppState.instance;
-                if (app.activeVault == null) return;
-                Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => GenerateFlashcardsScreen(vaultPath: app.activeVault!.path),
-                ));
-              }),
-            // v0.47.37: Cola de revisión de flashcards pendientes.
-            _Tile(icon: Icons.task_alt, title: 'Pendientes de revisión',
-              subtitle: 'Aprueba flashcards generadas',
-              onTap: () {
-                final app = AppState.instance;
-                if (app.activeVault == null) return;
-                Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => ReviewQueueScreen(vaultPath: app.activeVault!.path),
-                ));
-              }),
+          // FASE 4: secciones Contenido y Avanzado (con Tutor IA,
+          // Asignaturas, Examenes, Generar flashcards, Pendientes)
+          // eliminadas. Esas features ahora son context-aware:
+          //   - Tutor IA → inline en NoteView y flashcard review
+          //   - Asignaturas / Examenes → FAB en Home
+          //   - Generar flashcards → desde lista de Tarjetas
+          //   - Pendientes → desde Reviews
+          _buildSection(title: 'About', tiles: [
             _Tile(icon: Icons.bug_report, title: 'Reportar bug',
               subtitle: 'github.com/rgdi/m-nexus/issues',
               onTap: () => launchUrl(Uri.parse('https://github.com/rgdi/m-nexus/issues'))),
@@ -213,31 +132,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               subtitle: 'Versiones',
               onTap: () => Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const ChangelogView()))),
-            // v0.49.15: visor de logs estructurados
-            _Tile(icon: Icons.terminal, title: 'Logs',
-              subtitle: 'Visor de logs de la app',
-              onTap: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const LogsScreen()))),
-            // v0.50.1: cola de transcripcion Whisper
-            _Tile(icon: Icons.queue_music, title: 'Transcripciones',
-              subtitle: 'Cola de audio a texto',
-              onTap: () {
-                final app = AppState.instance;
-                if (app.activeVault == null) return;
-                Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => TranscriptionQueueScreen(vaultPath: app.activeVault!.path),
-                ));
-              }),
-            // v0.51: AI multi-modelo
-            _Tile(icon: Icons.psychology_alt, title: 'Configuración AI',
-              subtitle: 'Ollama, OpenAI, Anthropic, OpenRouter',
-              onTap: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const AiSettingsScreen()))),
-            // v0.51.6: sync dashboard end-to-end
-            _Tile(icon: Icons.cloud_sync, title: 'Sync dashboard',
-              subtitle: 'Estado real vault <-> backend',
-              onTap: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const SyncDashboardScreen()))),
           ]),
           const SizedBox(height: 24),
           Center(

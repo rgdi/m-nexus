@@ -18,9 +18,15 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:path/path.dart' as p;
+import '../../services/ai_tutor_client.dart';
 import '../../services/flashcard_service.dart';
 import '../../services/fsrs_engine.dart';
 import '../../services/fsrs_optimizer.dart';
+import '../../services/settings_service.dart';
+import '../../services/vault_service.dart';
 import '../../widgets/empty_state.dart';
 import 'dart:async';
 
@@ -60,6 +66,13 @@ class _FlashcardReviewState extends State<FlashcardReview> {
   DateTime? _cardStartTime;
   late FsrsEngine _fsrs;
 
+  // ── FASE 3: state for note snippet, generate-more, and inline tutor ──
+  String? _sourceNoteSnippet;
+  bool _generatingMore = false;
+  bool _tutorOpen = false;
+  String? _tutorQuestion;
+  final List<Map<String, String>> _tutorMessages = [];
+
   /// v0.48.3: nota fuente resuelta (absoluta) de la card actual.
   String? get _currentSourceNote {
     if (_index >= widget.cards.length) return null;
@@ -92,6 +105,8 @@ class _FlashcardReviewState extends State<FlashcardReview> {
     super.initState();
     _fsrs = widget.fsrs ?? FsrsEngine.fsrs5();
     _cardStartTime = DateTime.now();
+    // FASE 3: precarga snippet de la nota fuente de la primera card.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadSourceNoteSnippet());
   }
 
   @override
@@ -192,6 +207,10 @@ class _FlashcardReviewState extends State<FlashcardReview> {
               ),
             ),
             const SizedBox(height: 12),
+            // FASE 3: snippet de la nota fuente arriba de la pregunta.
+            if (!_showAnswer && _sourceNoteSnippet != null)
+              _buildSourceSnippet(),
+            const SizedBox(height: 8),
             Text(
               _showAnswer ? card.answer : card.question,
               style: const TextStyle(fontSize: 20, height: 1.4),
@@ -200,8 +219,197 @@ class _FlashcardReviewState extends State<FlashcardReview> {
             if (!_showAnswer)
               const Text('👆 Tocá para voltear',
                 style: TextStyle(color: Colors.grey, fontSize: 12)),
+            // FASE 3: acciones contextuales (sólo si hay nota fuente).
+            if (_currentSourceNote != null && !_showAnswer)
+              _buildContextualActions(),
+            // FASE 3: panel inline del tutor (3 respuestas).
+            if (_tutorOpen) _buildInlineTutor(),
           ],
         ),
+      ),
+    );
+  }
+
+  /// FASE 3: snippet de la nota fuente como contexto arriba de la pregunta.
+  Widget _buildSourceSnippet() {
+    final src = _currentSourceNote;
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface.withOpacity(0.55),
+        borderRadius: BorderRadius.circular(8),
+        border: Border(
+          left: BorderSide(
+            color: Theme.of(context).colorScheme.secondary,
+            width: 3,
+          ),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.article_outlined,
+                  size: 14,
+                  color: Theme.of(context).colorScheme.secondary),
+              const SizedBox(width: 6),
+              const Text('Contexto',
+                  style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _sourceNoteSnippet ?? '',
+            style: const TextStyle(
+                fontSize: 12, fontStyle: FontStyle.italic, height: 1.35),
+            maxLines: 4,
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (src != null && widget.onNoteOpen != null)
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () {
+                  final p = _currentSourceNote;
+                  if (p != null && p.isNotEmpty) widget.onNoteOpen!(p);
+                },
+                icon: const Icon(Icons.open_in_new, size: 12),
+                label: const Text('Ver nota',
+                    style: TextStyle(fontSize: 11)),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 6, vertical: 0),
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// FASE 3: botones contextuales — Generar más / Tutor.
+  Widget _buildContextualActions() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: _generatingMore ? null : _generateMoreQuestions,
+              icon: _generatingMore
+                  ? const SizedBox(
+                      width: 12,
+                      height: 12,
+                      child: CircularProgressIndicator(strokeWidth: 1.5))
+                  : const Icon(Icons.auto_awesome, size: 14),
+              label: Text(_generatingMore
+                  ? 'Generando…'
+                  : 'Generar más preguntas',
+                  style: const TextStyle(fontSize: 11)),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 6),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: _openTutor,
+              icon: const Icon(Icons.psychology_outlined, size: 14),
+              label: const Text('Tutor',
+                  style: TextStyle(fontSize: 11)),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 6),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// FASE 3: panel inline de mini-tutor (3 respuestas contextuales).
+  Widget _buildInlineTutor() {
+    return Container(
+      margin: const EdgeInsets.only(top: 16),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.secondaryContainer,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.psychology, size: 14),
+              const SizedBox(width: 6),
+              const Text('Mini-Tutor',
+                  style: TextStyle(
+                      fontSize: 12, fontWeight: FontWeight.bold)),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.close, size: 14),
+                onPressed: () => setState(() {
+                  _tutorOpen = false;
+                  _tutorMessages.clear();
+                }),
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                tooltip: 'Cerrar tutor',
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          // Sugerencias contextuales (chips) — sólo si no hay respuestas.
+          if (_tutorMessages.isEmpty) ...[
+            const Text('Pregunta sugerida:',
+                style: TextStyle(fontSize: 11, color: Colors.grey)),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: const [
+                '¿Podés explicarme con un ejemplo?',
+                '¿Confusión típica?',
+                '¿Cómo se conecta con el tema?',
+              ].map((q) => ActionChip(
+                label: Text(q, style: const TextStyle(fontSize: 11)),
+                onPressed: () => _askTutor(q),
+                visualDensity: VisualDensity.compact,
+              )).toList(),
+            ),
+          ] else ...[
+            // Hasta 3 últimas respuestas para mantenerlo compacto.
+            for (final m in _tutorMessages.length > 3
+                ? _tutorMessages.sublist(_tutorMessages.length - 3)
+                : _tutorMessages)
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 4),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: m['role'] == 'user'
+                      ? Theme.of(context).colorScheme.primaryContainer
+                      : Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${m['role'] == 'user' ? 'Vos' : 'Tutor'}: ${m['content']}',
+                  style: const TextStyle(fontSize: 12, height: 1.35),
+                ),
+              ),
+          ],
+        ],
       ),
     );
   }
@@ -487,7 +695,212 @@ class _FlashcardReviewState extends State<FlashcardReview> {
     setState(() {
       _index++;
       _showAnswer = false;
+      // FASE 3: limpia snippet y mini-tutor al pasar de card.
+      _sourceNoteSnippet = null;
+      _tutorOpen = false;
+      _tutorMessages.clear();
+      _tutorQuestion = null;
     });
+    // FASE 3: recarga snippet para la nueva card.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadSourceNoteSnippet());
+  }
+
+  // ── FASE 3: snippet de la nota fuente (2-3 líneas relevantes) ─────────
+
+  Future<void> _loadSourceNoteSnippet() async {
+    final src = _currentSourceNote;
+    if (src == null) {
+      if (mounted) setState(() => _sourceNoteSnippet = null);
+      return;
+    }
+    if (widget.vaultPath == null || widget.vaultPath!.isEmpty) {
+      // No hay vault: no podemos leer la nota.
+      if (mounted) setState(() => _sourceNoteSnippet = null);
+      return;
+    }
+    try {
+      final vault = VaultService(widget.vaultPath!);
+      final note = await vault.readNote(src);
+      if (!mounted) return;
+      if (note == null) {
+        setState(() => _sourceNoteSnippet = null);
+        return;
+      }
+      // Tomamos 2-3 líneas que contengan keywords de la pregunta.
+      final card = widget.cards[_index];
+      final snippet = _extractSnippet(note.content, card.question);
+      setState(() => _sourceNoteSnippet = snippet);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _sourceNoteSnippet = null);
+    }
+  }
+
+  /// Extrae 2-3 líneas relevantes del contenido de la nota que contengan
+  /// keywords de la pregunta de la flashcard. Si no encuentra, devuelve el
+  /// primer párrafo no-vacío.
+  String _extractSnippet(String content, String question) {
+    final lines = content.split('\n');
+    // Quita frontmatter y headings muy largos; recoge keywords.
+    final qWords = question
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-záéíóúñü\s]'), ' ')
+        .split(RegExp(r'\s+'))
+        .where((w) => w.length >= 4)
+        .toSet();
+    final scored = <_ScoredLine>[];
+    for (var i = 0; i < lines.length; i++) {
+      final line = lines[i].trim();
+      if (line.isEmpty || line.startsWith('#')) continue;
+      final lower = line.toLowerCase();
+      var score = 0;
+      for (final w in qWords) {
+        if (lower.contains(w)) score++;
+      }
+      if (score > 0) scored.add(_ScoredLine(i, line, score));
+    }
+    if (scored.isNotEmpty) {
+      scored.sort((a, b) => b.score.compareTo(a.score));
+      final picked = scored.take(3).toList()
+        ..sort((a, b) => a.index.compareTo(b.index));
+      return picked.map((s) => s.text).join(' / ');
+    }
+    // Fallback: primer párrafo no-vacío.
+    for (final line in lines) {
+      final t = line.trim();
+      if (t.isNotEmpty && !t.startsWith('#')) return t;
+    }
+    return content.length > 200 ? '${content.substring(0, 200)}…' : content;
+  }
+
+  // ── FASE 3: "Generar más preguntas sobre este tema" ──────────────────
+
+  Future<void> _generateMoreQuestions() async {
+    final src = _currentSourceNote;
+    if (src == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Esta flashcard no tiene nota fuente.')),
+      );
+      return;
+    }
+    if (widget.vaultPath == null || widget.vaultPath!.isEmpty) return;
+
+    final settings = await SettingsService.instance.load();
+    final backendUrl = settings.backendUrl;
+    if (backendUrl == null || backendUrl.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Configura la URL del backend primero.')),
+      );
+      return;
+    }
+
+    setState(() => _generatingMore = true);
+    try {
+      // Lee la nota fuente para mandarla al backend.
+      final vault = VaultService(widget.vaultPath!);
+      final note = await vault.readNote(src);
+      if (note == null) throw Exception('No se pudo leer la nota fuente');
+      final title = (note.title != null && note.title!.isNotEmpty)
+          ? note.title!
+          : p.basename(src);
+
+      final body = jsonEncode({
+        'noteTitle': title,
+        'noteContent': note.content,
+        'frontmatter': note.frontmatter,
+        'style': 'generic',
+        'maxCards': 5,
+      });
+      final resp = await http.post(
+        Uri.parse('$backendUrl/api/v1/flashcards/generate'),
+        headers: {'Content-Type': 'application/json'},
+        body: body,
+      ).timeout(const Duration(seconds: 60));
+
+      if (resp.statusCode >= 200 && resp.statusCode < 300) {
+        final json = jsonDecode(resp.body) as Map<String, dynamic>;
+        final cards = (json['cards'] as List?) ?? [];
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                'Se generaron ${cards.length} borradores. Andá a Pendientes de revisión para aprobarlas.'),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      } else {
+        throw Exception('Backend ${resp.statusCode}: ${resp.body}');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error generando: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _generatingMore = false);
+    }
+  }
+
+  // ── FASE 3: mini-tutor inline (3 respuestas contextuales) ────────────
+
+  Future<void> _askTutor(String userQuestion) async {
+    final settings = await SettingsService.instance.load();
+    final backendUrl = settings.backendUrl;
+    if (backendUrl == null || backendUrl.isEmpty) {
+      setState(() {
+        _tutorMessages.add({
+          'role': 'assistant',
+          'content': 'Configura la URL del backend en Ajustes para usar el tutor.',
+        });
+      });
+      return;
+    }
+    setState(() {
+      _tutorMessages.add({'role': 'user', 'content': userQuestion});
+    });
+    try {
+      // Contexto: la card misma + el snippet de la nota fuente.
+      final ctx = StringBuffer()
+        ..writeln('Flashcard Q: ${widget.cards[_index].question}')
+        ..writeln('Flashcard A: ${widget.cards[_index].answer}');
+      if (_sourceNoteSnippet != null && _sourceNoteSnippet!.isNotEmpty) {
+        ctx
+          ..writeln()
+          ..writeln('Contexto de la nota fuente:')
+          ..writeln(_sourceNoteSnippet!);
+      }
+      final client = AiTutorClient(backendUrl: backendUrl);
+      final resp = await client.ask(userQuestion, context: ctx.toString());
+      if (!mounted) return;
+      setState(() {
+        _tutorMessages.add(
+            {'role': 'assistant', 'content': resp.answer});
+      });
+      client.close();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _tutorMessages.add(
+            {'role': 'assistant', 'content': 'Error: $e'});
+      });
+    }
+  }
+
+  void _openTutor() {
+    setState(() {
+      _tutorOpen = true;
+      _tutorMessages.clear();
+      _tutorQuestion = null;
+    });
+    // 3 preguntas semilla contextuales.
+    final seedQuestions = <String>[
+      '¿Podés explicarme esta respuesta con un ejemplo?',
+      '¿Qué confusión común tiene la gente con este concepto?',
+      '¿Cómo se conecta esto con el resto del tema?',
+    ];
+    setState(() => _tutorQuestion = seedQuestions.first);
   }
 }
 
@@ -498,4 +911,12 @@ class _RatingColors {
   static const hard = Color(0xFFFB8C00);  // orange 600
   static const good = Color(0xFF43A047);  // green 600
   static const easy = Color(0xFF1E88E5);  // blue 600
+}
+
+/// FASE 3: helper para ordenar líneas relevantes para el snippet.
+class _ScoredLine {
+  final int index;
+  final String text;
+  final int score;
+  const _ScoredLine(this.index, this.text, this.score);
 }
