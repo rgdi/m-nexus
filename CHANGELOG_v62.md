@@ -98,3 +98,29 @@ También se añadió `test-docker` al CI workflow (no release) para validar el D
 - Plugin interno para "Daily Note" automático
 - Búsqueda semántica con embeddings on-device
 - Sync conflict resolution UI
+
+## v0.62.10 — Visual polish + dock global padding
+
+**Problemas detectados (audit visual ADB A063):**
+1. UpdateBanner se solapaba con status bar (texto mezclado con reloj).
+2. Stat cards del home overflow 0.725px → banda amarilla.
+3. SyncStatusIndicator como FAB tapaba la última stat card.
+4. Last item de ListView/SliverList quedaba cortado por FloatingDock.
+5. Llave duplicada en MainActivity.kt tras v0.62.9 rompía build de Kotlin.
+
+**Cambios:**
+- `widgets/update_dialog.dart`: `SafeArea(top:true)` en el banner.
+- `main.dart`: revertido `MediaQuery.removePadding(top:true)` — propagaba quita de inset al Scaffold de cada screen, dejando AppBar pegado al banner.
+- `screens/home/home_screen.dart`: childAspectRatio 1.30 (era 1.45 con overflow, luego 1.20 muy alto). FittedBox en `StatCard` para "999 tarjetas" como red de seguridad. SyncStatusIndicator movido del FAB flotante al header "Hoy" en modo compacto.
+- `widgets/glass_widgets.dart StatCard`: value con `FittedBox(scaleDown)`, suffix con `Flexible`+ellipsis.
+- `core/main_shell.dart`: `Padding(bottom: 80)` global en el `Positioned.fill` del screen actual — antes cada screen tenía que añadir su propio padding, ahora es central y consistente.
+- `android/app/src/main/kotlin/com/mnexus/app/MainActivity.kt`: llave `}` duplicada tras v0.62.9 eliminada (rompía `compileDebugKotlin`).
+
+**Resultado visual (v0.62.10):**
+- Home: 9/10 (hero card, stat cards proporcionales, dock glass perfecto).
+- Vault: 9/10 (folder list completa, banner bien inset).
+- Tarjetas: 10/10 (última card visible, cloze legible, layout impecable).
+- Ajustes: 9/10 (secciones agrupadas, iconos indigo).
+
+**No-fix (preexistente):**
+- "readme" y "README" duplicados en vault: son archivos distintos reales en el filesystem, no es bug del código.
