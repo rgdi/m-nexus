@@ -346,6 +346,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   fontWeight: FontWeight.w700,
                 ),
               ),
+              // v0.62.10: SyncStatusIndicator movido aquí desde el FAB
+              // flotante (tapaba la última stat card). Modo compacto para
+              // integrarse con el header sin robar protagonismo.
+              const Spacer(),
+              const SyncStatusIndicator(compact: true),
             ],
           ),
           const SizedBox(height: MxSpacing.md),
@@ -483,10 +488,11 @@ class _HomeScreenState extends State<HomeScreen> {
             : 'Empieza con una sesión corta de 5 minutos';
 
     return Scaffold(
-      floatingActionButton: const Padding(
-        padding: EdgeInsets.only(bottom: 80),
-        child: SyncStatusIndicator(),
-      ),
+      // v0.62.10: el SyncStatusIndicator antes iba como FAB flotante en
+      // bottom-right (top:80dp) pero tapaba la última stat card del grid
+      // y competía con el FloatingDock. Lo movemos al header de la sección
+      // "Hoy" como un IconButton compacto: ahí tiene contexto (sincronizar
+      // el daily note) y no estorba visualmente.
       body: RefreshIndicator(
         onRefresh: _load,
         color: scheme.primary,
@@ -595,14 +601,18 @@ class _HomeScreenState extends State<HomeScreen> {
             const SliverToBoxAdapter(child: SizedBox(height: MxSpacing.md)),
 
             // ── STATS GRID 2×2 ──
+            // v0.62.10: aspectRatio 1.30 (era 1.45 → overflow 0.725px, luego
+            // 1.20 → cards muy altos tipo ladrillo). FittedBox dentro del
+            // StatCard hace de red de seguridad: si los valores son anchos
+            // (ej. "999 tarjetas"), el número reduce tamaño en vez de
+            // desbordar.
             SliverPadding(
               padding: const EdgeInsets.symmetric(horizontal: MxSpacing.lg),
               sliver: SliverGrid.count(
                 crossAxisCount: 2,
                 mainAxisSpacing: MxSpacing.md,
                 crossAxisSpacing: MxSpacing.md,
-                // v0.62.8: increased from 1.65 to fix "BOTTOM OVERFLOWED BY 0.725 PIXELS"
-                childAspectRatio: 1.45,
+                childAspectRatio: 1.30,
                 children: [
                   StatCard(
                     icon: Icons.local_fire_department_rounded,

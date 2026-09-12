@@ -346,7 +346,6 @@ class MainActivity: FlutterActivity() {
                         result.error("create_event_failed", e.message, null)
                     }
                 }
-                }
                 "listCalendars" -> {
                     // Lee los calendarios del Content Provider
                     try {

@@ -150,10 +150,13 @@ class StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // v0.62.10: StatCard imported from glass_widgets.dart (gradient + icon
+    // badge + value + label). Antes había un _StatCard privado idéntico
+    // que quedó como código muerto. Mantenemos esta versión un poco más
+    // baja (28sp) para garantizar que label + suffix nunca se corten.
     return GlassCard(
       gradient: gradient,
       borderRadius: MxRadius.xl,
-      // v0.62.8: reduced padding from MxSpacing.lg (16) to 14 to fit stat text
       padding: const EdgeInsets.all(14),
       onTap: onTap,
       shadows: MxShadows.md,
@@ -176,21 +179,31 @@ class StatCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.baseline,
                 textBaseline: TextBaseline.alphabetic,
                 children: [
-                  Text(
-                    value,
-                    style: theme.textTheme.headlineLarge?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      height: 1.0,
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        value,
+                        style: theme.textTheme.headlineLarge?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          height: 1.0,
+                        ),
+                      ),
                     ),
                   ),
                   if (suffix != null) ...[
                     const SizedBox(width: 4),
-                    Text(
-                      suffix!,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: Colors.white.withOpacity(0.85),
-                        fontWeight: FontWeight.w500,
+                    Flexible(
+                      child: Text(
+                        suffix!,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: Colors.white.withOpacity(0.85),
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],

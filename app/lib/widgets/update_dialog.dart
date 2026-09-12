@@ -55,9 +55,13 @@ class _UpdateBannerState extends State<UpdateBanner> {
       // 1) Botón "Más tarde" más grande (44x36, sin shrinkWrap)
       // 2) Botón X (close_rounded) para dismiss directo
       // 3) Botón "Actualizar" sigue funcionando
+      // v0.62.10: SafeArea(top:true) para no solaparse con el status bar
+      // cuando el banner está montado como Column raíz en main.dart.
       child: SafeArea(
-        top: false,
+        top: true,
         bottom: false,
+        left: false,
+        right: false,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: Row(
