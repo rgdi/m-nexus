@@ -12,6 +12,7 @@ import 'theme.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/vault/vault_browser.dart';
 import '../screens/flashcards/flashcards_list.dart';
+import '../screens/plan/plan_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/help/help_screen.dart';
 import '../core/shortcuts.dart';
@@ -33,6 +34,8 @@ class _MainShellState extends State<MainShell> {
         Icons.folder_outlined, Icons.folder_rounded, 'Vault', VaultBrowser()),
     _NavDest(Icons.style_outlined, Icons.style_rounded, 'Tarjetas',
         FlashcardsList()),
+    _NavDest(Icons.event_note_outlined, Icons.event_note_rounded, 'Plan',
+        PlanScreen()),
     _NavDest(Icons.settings_outlined, Icons.settings_rounded, 'Ajustes',
         SettingsScreen()),
   ];
@@ -45,6 +48,7 @@ class _MainShellState extends State<MainShell> {
         SingleActivator(LogicalKeyboardKey.digit2, control: true): _GoToIntent(1),
         SingleActivator(LogicalKeyboardKey.digit3, control: true): _GoToIntent(2),
         SingleActivator(LogicalKeyboardKey.digit4, control: true): _GoToIntent(3),
+        SingleActivator(LogicalKeyboardKey.digit5, control: true): _GoToIntent(4),
         SingleActivator(LogicalKeyboardKey.comma, control: true): _GoToIntent(0),
       },
       child: Actions(

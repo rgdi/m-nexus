@@ -11,7 +11,10 @@ import 'exams_screen.dart';
 
 class TimelineView extends StatefulWidget {
   final String vaultPath;
-  const TimelineView({super.key, required this.vaultPath});
+  /// v0.62.11: si se pasa, el timeline hace scroll inicial al examen
+  /// con este id y lo resalta. Usado por PlanScreen al tap en una card.
+  final String? focusExamId;
+  const TimelineView({super.key, required this.vaultPath, this.focusExamId});
 
   @override
   State<TimelineView> createState() => _TimelineViewState();

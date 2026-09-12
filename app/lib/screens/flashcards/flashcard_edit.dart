@@ -15,7 +15,16 @@ class FlashcardEdit extends StatefulWidget {
   final VoidCallback? onSaved;
   /// v0.49.7: si se pasa, se edita; si no, se crea.
   final Flashcard? existing;
-  const FlashcardEdit({super.key, required this.service, this.onSaved, this.existing});
+  /// v0.62.11: pre-rellenar el campo pregunta cuando se crea desde un
+  /// concepto de autoevaluación.
+  final String? initialQuestion;
+  const FlashcardEdit({
+    super.key,
+    required this.service,
+    this.onSaved,
+    this.existing,
+    this.initialQuestion,
+  });
 
   @override
   State<FlashcardEdit> createState() => _FlashcardEditState();
@@ -37,6 +46,9 @@ class _FlashcardEditState extends State<FlashcardEdit> {
     if (widget.existing != null) {
       _question.text = widget.existing!.question;
       _answer.text = widget.existing!.answer;
+    } else if (widget.initialQuestion != null && widget.initialQuestion!.isNotEmpty) {
+      // v0.62.11: pre-llenar pregunta al crear desde "Conceptos"
+      _question.text = widget.initialQuestion!;
     }
   }
 
