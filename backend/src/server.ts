@@ -65,6 +65,9 @@ export async function buildServer(): Promise<any> {
 
       const ollamaUrl = process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434";
       const model = process.env.OLLAMA_MODEL || "llama3.2:3b";
+      // v0.62.9: timeout 45s para evitar cuelgue de UI cuando Ollama CPU es lento
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 45000);
       const ollamaResp = await fetch(`${ollamaUrl}/api/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -72,9 +75,14 @@ export async function buildServer(): Promise<any> {
           model,
           prompt,
           stream: false,
-          options: { temperature: 0.3, num_predict: 400 },
+          options: { temperature: 0.3, num_predict: 120 },
         }),
+        signal: ctrl.signal,
+      }).catch((e) => {
+        clearTimeout(t);
+        throw e;
       });
+      clearTimeout(t);
       if (!ollamaResp.ok) {
         return reply.status(502).send({ error: `ollama returned ${ollamaResp.status}` });
       }
@@ -85,7 +93,8 @@ export async function buildServer(): Promise<any> {
         sources: vaultSnippets.slice(0, 5),
       });
     } catch (err: any) {
-      return reply.status(500).send({ error: err.message || String(err) });
+      const msg = err?.name === 'AbortError' ? 'timeout: Ollama CPU muy lento (>45s)' : (err.message || String(err));
+      return reply.status(504).send({ error: msg, hint: 'Reduce num_predict o usa GPU' });
     }
   });
   console.log("DEBUG: tutor route registered");
