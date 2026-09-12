@@ -276,3 +276,43 @@ Auditoría visual sistemática de TODAS las pantallas. Severidad: CRÍTICO / MED
 **MENORES:**
 - Sin compartir nota (share intent)
 - Sin exportar a PDF/markdown
+
+---
+
+## 🚧 FASE 1 fixes — pending rebuild
+
+Bugs identificados durante el audit round 3 (60+ bugs). Algunos se arreglaron vía SharedPreferences / scripts / git config sin necesidad de rebuild APK. El resto requiere rebuild de v0.62.8.
+
+### ✅ Aplicados sin rebuild (FASE 1 commit)
+
+| Bug | Fix | Archivo / mecanismo |
+|---|---|---|
+| Banner de actualización persistente | Eliminado `flutter.mnexus.lastUpdateCheck(.data)` | `shared_prefs/FlutterSharedPreferences.xml` (device) via `scripts/setup_device.sh` |
+| Backend URL key inconsistente (dots vs underscores) | Normalizado a `flutter.mnexus.backend_url` (underscore canonical) | mismo XML, mismo script |
+| Health-check ad-hoc del sistema | Nuevo script | `scripts/health_check.sh` |
+| Setup reproducible del device | Nuevo script | `scripts/setup_device.sh` |
+
+### 🔧 Pendientes — requieren rebuild APK (v0.62.8)
+
+| Bug | Archivo a modificar | Bloque |
+|---|---|---|
+| Banner superpone status bar | `lib/theme/theme.dart`, `lib/screens/settings/update_dialog.dart` | Update dialog / safe area |
+| Stat cards overflow | `lib/screens/home/home_screen.dart` | ✅ **YA FIXED en repo** (commit `ea13e0c`) |
+| Editor focus bug | `lib/screens/notes/note_editor.dart` | Focus / autofocus / keyboard |
+| Response contrast (texto claro sobre fondo claro en flashcards) | `lib/screens/flashcards/flashcard_review.dart` | Theme contrast |
+| Title triplicado en NoteView | `lib/screens/notes/note_view.dart` | ✅ **YA FIXED en FASE 2** (commit `b3e2d57` — rediseño NoteView) |
+| Cloze literal `{{c1::...}}` no se renderiza | `lib/screens/notes/note_view.dart` | ✅ **YA FIXED en FASE 2** (commit `b3e2d57` — cloze renderer) |
+| Wikilinks no navegables | `lib/screens/notes/note_view.dart` | ✅ **YA FIXED en FASE 2** (commit `b3e2d57` — wikilinks navigable) |
+| Preguntas genéricas ("¿Qué es X?") sin contexto | `lib/screens/questions/questions_screen.dart` | FASE 3 — prompt engineering |
+| Settings redundantes / duplicados | `lib/screens/settings/settings_screen.dart` | FASE 4 — refactor UI |
+| Local tutor ignora backend (force offline) | `lib/screens/chat/chat_screen.dart` | FASE 3 — provider switch |
+| Asignaturas strikethrough no deseado | `lib/screens/subjects/subjects_screen.dart` | Visual / list tile |
+| State restoration (reabre en último screen) | `lib/main.dart` | App lifecycle / restoration |
+
+### 📋 Próximos pasos
+
+1. **Esperar a que termine `sa-0-7ca80006`** (rebuild APK v0.62.8 con fixes FASE 2/3/4 ya commiteados)
+2. **Mientras tanto**: `bash scripts/setup_device.sh` en el device tras cada instalación limpia
+3. **Validación post-install**: `bash scripts/health_check.sh` debe devolver todo verde
+4. **Smoke test manual** (lista priorizada en sección "Manual smoke test v0.62.8" arriba)
+5. **Si quedan bugs críticos** post-rebuild → FASE 5 (otro ciclo de fix + rebuild)
