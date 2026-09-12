@@ -34,6 +34,7 @@ import '../database/databases_list_screen.dart';
 import '../recording/recording_screen.dart';
 import '../attachments/attachments_screen.dart';
 import '../whiteboard/whiteboards_list_screen.dart';
+import '../ai/ai_chat_screen.dart';
 import '../../services/permissions.dart';
 import '../../services/daily_note_service.dart';
 import '../../widgets/command_palette_dialog.dart';
@@ -268,6 +269,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.pop(ctx);
                 Navigator.push(context, MaterialPageRoute(
                   builder: (_) => DatabasesListScreen(vaultPath: vp),
+                ));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.auto_awesome),
+              title: const Text('AI Chat'),
+              subtitle: const Text('Conversa con M-NEXUS AI sobre tu vault'),
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => AiChatScreen(vaultPath: vp),
                 ));
               },
             ),
