@@ -95,3 +95,184 @@ APK: v0.62.7 debug (instalado, sin rebuild posible por catch-22 Kotlin/Gradle)
 - **Repo (commit 85d42aa)**: 3 fixes aplicados (overflow, padding, persistDrafts)
 - **Pendiente rebuild** para verificar fixes (catch-22 Kotlin/Gradle)
 - **Backend**: vivo en :4100 con Ollama, llama3.2:3b responde en ~80s primera vez, RAG funcional
+
+## AUDITORÍA EXHAUSTIVA v0.62.7 (Round 3)
+
+Auditoría visual sistemática de TODAS las pantallas. Severidad: CRÍTICO / MEDIO / MENOR.
+
+### 🏠 HOME (round 3 - portrait mode)
+
+**CRÍTICOS:**
+- Banner actualización superpone status bar (y=28-88 vs status bar 0-136)
+- 4 stat cards overflow BOTTOM 0.725 PIXELS (banner debug amarillo-negro rayado)
+- Stats labels cortados: "Racha" → "D..." (no cabe en el card)
+- Bottom nav tapa última action item de "Command palette"
+
+**MEDIOS:**
+- Hero card padding inferior insuficiente
+- Stats "Para repasar" cuenta Approved, no incluye Drafts
+
+**MENORES:**
+- Heatmap actividad poco contraste (3/90 días con color)
+- Banner debug rayado intrusivo
+
+### 📚 VAULT
+
+**CRÍTICOS:**
+- ExpansionTile no expande al tap (Anatomía, Inbox no responden, Bioquímica sí)
+- Duplicación case-sensitive: notes/Notes, anatomia/Anatomía, readme/README coexisten
+
+**MEDIOS:**
+- Sin indicador visual claro "expandida vs colapsada"
+- Sin contador de archivos en carpetas
+
+**MENORES:**
+- Search bar muy pegada al status bar
+
+### 🃏 TARJETAS
+
+**CRÍTICOS:**
+- Botón play (▶) en top-right no responde
+- Flashcards con título "***" (asteriscos literales) en 5/5 recientes
+- Conteo incluye Drafts y Approved mezclados (no hay separación)
+
+**MENORES:**
+- Sin filtrado por prioridad/deck
+- Sin búsqueda visual de cards
+
+### 🔄 REVIEW FLASHCARDS
+
+**CRÍTICOS:**
+- Respuesta con contraste blanco/verde-claro = texto invisible
+- Asimetría pregunta/respuesta (respuesta mucho más pequeña)
+- Espaciado enorme entre respuesta y métricas FSRS
+
+**MEDIOS:**
+- Sin animación al calificar (Again/Hard/Good/Easy)
+- Sin haptic feedback al calificar
+
+**MENORES:**
+- Métricas FSRS sin label "S/D/R/Reps" (solo el letter)
+
+### 📝 NOTEVIEW
+
+**CRÍTICOS:**
+- Title duplicado en 3 lugares (AppBar, header H1, body markdown)
+- Cloze deletions {{c1::texto}} no se renderizan, aparecen literales
+- Wikilinks [[corazon]] no navegan al tap
+
+**MEDIOS:**
+- Sin metadata (word count, lectura estimada, backlinks, flashcards asociadas)
+- Sin preview markdown renderizado
+
+**MENORES:**
+- Title H1 demasiado bold (debería ser sutil)
+- Padding bottom insuficiente
+
+### 🤖 TUTOR IA (inline en nota)
+
+**CRÍTICOS:**
+- Sin contexto de la nota abierta al entrar (debería mostrar la nota como contexto)
+- Sin ejemplos/sugerencias de preguntas (chips de "Resumen de Y", "Quiz sobre Z")
+- Input placeholder "Ask about your notes..." hardcoded en inglés
+- La app prioriza LocalTutorService sobre backend (ignora Ollama si vaultPath != null)
+
+**MEDIOS:**
+- Sin historial de conversaciones previas
+- Sin indicador del backend status (online/offline/modelo)
+
+**MENORES:**
+- Botón papelera sin tooltip
+- Padding top del header del chat
+
+### 📝 EDITOR DE NOTAS
+
+**CRÍTICOS:**
+- Editor NUEVO sin focus al tap simple (requiere longPress)
+- LongPress abre Google Fotos (selector de imagen) en lugar de focus
+
+**MEDIOS:**
+- Toolbar iconos sin tooltip (B/I/code/T/lista/quote/link)
+- Cloze deletions visibles literales (no se ocultan en editor)
+- Sin syntax highlighting de markdown
+
+**MENORES:**
+- Sin preview toggle
+- Sin word count / reading time
+- Sin indicador de autosave
+
+### 🧠 PREGUNTAS PARA ESTUDIAR
+
+**CRÍTICOS:**
+- Las 5 preguntas son GENÉRICAS, no específicas de la nota
+- Botón "Regenerar" no seleccionado (regenera todas? cuáles?)
+- Falta "save as flashcard" en cada pregunta
+
+**MEDIOS:**
+- Números en badges (7/57/96) sin label de significado
+- Bottom sheet tapa el body markdown
+
+**MENORES:**
+- Sin copy/share/report por pregunta
+
+### ✨ GENERAR FLASHCARDS
+
+**MEDIOS:**
+- Pantalla casi vacía, falta explicación del proceso
+- Sin preview de notas a procesar
+- Sin estimado de tiempo/cantidad
+
+**MENORES:**
+- Sin histórico de generaciones previas
+
+### 📚 ASIGNATURAS
+
+**CRÍTICOS:**
+- Anatomía tachada con strikethrough (UX confuso)
+- Anatomía no auto-detecta notas existentes (debería activarse al ver notas en /Anatomía/)
+
+**MEDIOS:**
+- Iconografía sin diferenciación clara activa/inactiva (solo color)
+
+**MENORES:**
+- Sin búsqueda/filtro de asignaturas
+- Sin orden customizable
+
+### ⚙️ AJUSTES
+
+**CRÍTICOS:**
+- Banner de actualización DUPLICADO encima (2 banners superpuestos)
+- Items inferiores cortados por bottom nav (Changelog, "Versiones")
+- "Tutor IA" muestra "(offline)" aunque backend está conectado (status nunca se actualiza)
+- Backend URL debe escribirse a mano (no auto-descubre en LAN)
+
+**MEDIOS:**
+- Padding bottom insuficiente
+- Sin agrupamiento visual claro entre secciones
+
+**MENORES:**
+- Sin búsqueda de settings
+- Sin reset a defaults
+
+### 🏠 BOTTOM NAV
+
+**CRÍTICOS:**
+- Reabre app en último screen (no en home) - state restoration bug
+- Tap en bottom nav en landscape se invierte (eje rotado)
+
+**MENORES:**
+- Sin badge counter para Tarjetas (15 → 50)
+
+### 🌐 GLOBAL / NAVIGATION
+
+**CRÍTICOS:**
+- Botón "Atrás" desde Tutor inline no vuelve a NoteView (cierra sesión)
+- Al cerrar app y reabrir, salta al último screen (rompe UX)
+
+**MEDIOS:**
+- Sin deep linking (vault://note/glucosa no funciona)
+- Sin state preservation al rotar pantalla
+
+**MENORES:**
+- Sin compartir nota (share intent)
+- Sin exportar a PDF/markdown
