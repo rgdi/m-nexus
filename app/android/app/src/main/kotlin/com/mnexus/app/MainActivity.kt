@@ -16,6 +16,8 @@ class MainActivity: FlutterActivity() {
     // v0.45.1: callback channel used by onActivityResult to forward SAF picker results
     // to Dart (setSafPath). The result includes the tree URI as a String (or null if cancelled).
     private var pendingSafResult: MethodChannel.Result? = null
+    private var pendingOcrResult: MethodChannel.Result? = null
+    private var pendingOcrFile: java.io.File? = null
     private val SAF_PICKER_REQUEST = 4242
     private val INSTALL_CHANNEL = "com.mnexus.app/install"
     private val DEVICE_CHANNEL = "com.mnexus.app/device"
@@ -643,4 +645,6 @@ class MainActivity: FlutterActivity() {
     }
 
 
-private var pendingOcrFile: java.io.File? = null
+
+
+}
