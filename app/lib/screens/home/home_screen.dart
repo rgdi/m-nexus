@@ -33,6 +33,7 @@ import '../note/note_view.dart';
 import '../note/template_picker_screen.dart';
 import '../database/databases_list_screen.dart';
 import '../recording/recording_screen.dart';
+import '../recording/transcription_screen.dart';
 import '../attachments/attachments_screen.dart';
 import '../whiteboard/whiteboards_list_screen.dart';
 import '../ai/ai_chat_screen.dart';
@@ -383,6 +384,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.pop(ctx);
                 Navigator.push(context, MaterialPageRoute(
                   builder: (_) => OcrScreen(vaultPath: vp),
+                ));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.transcribe_rounded),
+              title: const Text('Transcribir audio'),
+              subtitle: const Text('Whisper local en el backend'),
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => TranscriptionScreen(vaultPath: vp),
                 ));
               },
             ),

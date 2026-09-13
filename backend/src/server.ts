@@ -14,6 +14,7 @@ import { healthRoutes } from "./routes/health.js";
 import { metricsRoutes } from "./routes/metrics.js";
 import { flashcardsRoutes } from "./routes/flashcards.js";
 import { aiV2Routes } from "./routes/ai_v2.js";
+import { syncRoutes } from "./routes/sync.js";
 
 export async function buildServer(): Promise<any> {
   const app = Fastify({
@@ -47,6 +48,7 @@ export async function buildServer(): Promise<any> {
   // No auth — same posture as /api/v1/ai/tutor below. Designed to be safe
   // under Node 20.19.4 + tsx (no better-sqlite3, no plugin imports).
   await app.register(aiV2Routes);
+  await app.register(syncRoutes);
 
   // v0.62.8: minimal AI tutor endpoint that uses Ollama
   app.post("/api/v1/ai/tutor", async (req, reply) => {

@@ -16,6 +16,8 @@ import 'services/device_id.dart';
 import 'services/device_info.dart';
 import 'services/logger.dart';
 import 'services/settings_service.dart';
+import 'services/web_seed.dart';
+import 'services/web_vault_service.dart';
 import 'state/app_state.dart';
 import 'state/updater_service.dart';
 import 'widgets/update_dialog.dart';
@@ -82,6 +84,15 @@ void main() async {
   //
   // Antes: 30s "Cargando..." en cold start (bloqueaba esperando vault scan)
   // Ahora: <500ms para mostrar UI; vault scan corre en background.
+
+  // v0.62.18: en web, sembrar vault demo (3 notas de bienvenida) la primera
+  // vez que el usuario abre la app.
+  if (kIsWeb) {
+    // ignore: discarded_futures
+    WebSeed.ensureSeeded(WebVaultService()).catchError((e) {
+      AdvancedLogger.instance.warn('app', 'web seed failed', error: e);
+    });
+  }
 
   // Inicia carga en background (no awaited)
   // ignore: discarded_futures

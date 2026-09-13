@@ -1,0 +1,16 @@
+{
+  "test.md": {
+    "path": "test.md",
+    "content": "---\nlastModified:2025-09-13T00:00:00Z\n---\n\n# Test\n",
+    "lastModified": "2025-09-13T00:00:00Z",
+    "fmVersion": 1,
+    "updatedAt": 1789295614604
+  },
+  "e2e-test.md": {
+    "path": "e2e-test.md",
+    "content": "---\nlastModified:2099-01-01T00:00:00Z\n---\n\n# E2E test\n",
+    "lastModified": "2099-01-01T00:00:00Z",
+    "fmVersion": 1,
+    "updatedAt": 1789304813908
+  }
+}
