@@ -18,6 +18,7 @@ import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import '../../core/design_tokens.dart';
 import '../../core/theme.dart';
+import '../../widgets/responsive.dart';
 import '../../services/vault_detector.dart';
 import '../../services/permissions.dart';
 import '../../services/vault_service.dart';
@@ -105,12 +106,49 @@ class _VaultBrowserState extends State<VaultBrowser> {
         subtitle: 'No se detectaron vaults. Configurá uno en Ajustes.',
       );
     }
-    final isMobile = AppTheme.isMobile(context);
-    if (isMobile) return _buildMobileLayout();
+    final ff = Responsive.formFactor(context);
+    if (ff == FormFactor.phone) return _buildMobileLayout();
+    if (ff == FormFactor.tablet) return _buildTabletLayout();
     return _buildDesktopLayout();
   }
 
   // ── MOBILE ───────────────────────────────────────────────────────────
+
+  Widget _buildTabletLayout() {
+    // v0.62.17: tablet muestra sidebar permanente (tree de carpetas) +
+    // lista de items. Sidebar colapsable con un botón toggle.
+    return _VaultTabletScaffold(
+      vault: _vault!,
+      tree: _tree!,
+      currentFolder: _currentFolder,
+      onFolder: (f) => setState(() => _currentFolder = f),
+      searchCtrl: _searchCtrl,
+      filter: _filter,
+      onFilter: (v) => setState(() => _filter = v),
+      scope: _scope,
+      scopeValue: _scopeValue,
+      onScope: (s, v) => setState(() {
+        _scope = s;
+        _scopeValue = v;
+      }),
+      items: _filteredItems(),
+      onItemTap: _openNote,
+      onItemLongPress: _showNoteContextMenu,
+      onCreateFolder: _createFolder,
+      onImport: _showImportDialog,
+      onRefresh: _refreshVault,
+      favorites: _favorites,
+      onToggleFavorite: (path) {
+        setState(() {
+          if (_favorites.contains(path)) {
+            _favorites.remove(path);
+          } else {
+            _favorites.add(path);
+          }
+        });
+      },
+    );
+  }
 
   Widget _buildMobileLayout() {
     return Scaffold(
@@ -1473,6 +1511,277 @@ class _FolderRow extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+// ── v0.62.17: lista simple de items (reutilizada en tablet)
+class _VaultList extends StatelessWidget {
+  final List<VaultNode> items;
+  final void Function(VaultNode) onTap;
+  final void Function(VaultNode) onLongPress;
+  final Set<String> favorites;
+  final void Function(String) onToggleFavorite;
+
+  const _VaultList({
+    required this.items,
+    required this.onTap,
+    required this.onLongPress,
+    required this.favorites,
+    required this.onToggleFavorite,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (items.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: Text('Sin items', style: TextStyle(color: Colors.grey)),
+        ),
+      );
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.all(MxSpacing.md),
+      itemCount: items.length,
+      separatorBuilder: (_, __) => const SizedBox(height: MxSpacing.xs),
+      itemBuilder: (ctx, i) {
+        final n = items[i];
+        if (n.isDir) {
+          return InkWell(
+            onTap: () => onTap(n),
+            borderRadius: BorderRadius.circular(MxRadius.md),
+            child: Container(
+              padding: const EdgeInsets.all(MxSpacing.md),
+              decoration: BoxDecoration(
+                color: const Color(0x1AFBBF24),
+                borderRadius: BorderRadius.circular(MxRadius.md),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.folder_rounded, size: 18, color: Color(0xFFFBBF24)),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(n.name, style: const TextStyle(fontWeight: FontWeight.w600))),
+                  const Icon(Icons.chevron_right_rounded, size: 16, color: Colors.grey),
+                ],
+              ),
+            ),
+          );
+        }
+        return InkWell(
+          onTap: () => onTap(n),
+          onLongPress: () => onLongPress(n),
+          borderRadius: BorderRadius.circular(MxRadius.md),
+          child: Container(
+            padding: const EdgeInsets.all(MxSpacing.md),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerLow.withOpacity(0.4),
+              borderRadius: BorderRadius.circular(MxRadius.md),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 32, height: 32,
+                  decoration: BoxDecoration(
+                    color: MxColors.indigoDeep.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(MxRadius.sm),
+                  ),
+                  alignment: Alignment.center,
+                  child: const Icon(Icons.description_rounded, size: 16, color: MxColors.indigoDeep),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        n.name.replaceAll('.md', ''),
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(
+                    favorites.contains(n.relPath)
+                        ? Icons.star_rounded
+                        : Icons.star_outline_rounded,
+                    size: 16,
+                    color: favorites.contains(n.relPath) ? const Color(0xFFFBBF24) : null,
+                  ),
+                  onPressed: () => onToggleFavorite(n.relPath),
+                  visualDensity: VisualDensity.compact,
+                ),
+                const Icon(Icons.chevron_right_rounded, size: 16, color: Colors.grey),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ── v0.62.17: tablet layout — sidebar tree permanente + lista ─────────────
+
+class _VaultTabletScaffold extends StatelessWidget {
+  final VaultService vault;
+  final VaultNode tree;
+  final String? currentFolder;
+  final ValueChanged<String?> onFolder;
+  final TextEditingController searchCtrl;
+  final String filter;
+  final ValueChanged<String> onFilter;
+  final String scope;
+  final String? scopeValue;
+  final void Function(String, String?) onScope;
+  final List<VaultNode> items;
+  final void Function(VaultNode) onItemTap;
+  final void Function(VaultNode) onItemLongPress;
+  final VoidCallback onCreateFolder;
+  final VoidCallback onImport;
+  final VoidCallback onRefresh;
+  final Set<String> favorites;
+  final void Function(String) onToggleFavorite;
+
+  const _VaultTabletScaffold({
+    required this.vault,
+    required this.tree,
+    required this.currentFolder,
+    required this.onFolder,
+    required this.searchCtrl,
+    required this.filter,
+    required this.onFilter,
+    required this.scope,
+    required this.scopeValue,
+    required this.onScope,
+    required this.items,
+    required this.onItemTap,
+    required this.onItemLongPress,
+    required this.onCreateFolder,
+    required this.onImport,
+    required this.onRefresh,
+    required this.favorites,
+    required this.onToggleFavorite,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        // Sidebar con tree.
+        Container(
+          width: 280,
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerLow.withOpacity(0.4),
+            border: Border(
+              right: BorderSide(color: theme.dividerColor.withOpacity(0.3)),
+            ),
+          ),
+          child: Column(
+            children: [
+              // Header.
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        p.basename(vault.vaultPath),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.create_new_folder_outlined, size: 20),
+                      onPressed: onCreateFolder,
+                      tooltip: 'Nueva carpeta',
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.file_upload_outlined, size: 20),
+                      onPressed: onImport,
+                      tooltip: 'Importar',
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.refresh_rounded, size: 20),
+                      onPressed: onRefresh,
+                      tooltip: 'Recargar',
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ],
+                ),
+              ),
+              // Breadcrumb.
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: Row(
+                  children: [
+                    InkWell(
+                      onTap: () => onFolder(null),
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        child: Text('🏠', style: TextStyle(fontSize: 14)),
+                      ),
+                    ),
+                    if (currentFolder != null && currentFolder!.isNotEmpty) ...[
+                      const Icon(Icons.chevron_right, size: 14, color: Colors.grey),
+                      Expanded(
+                        child: Text(
+                          currentFolder!.split('/').last,
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                          maxLines: 1, overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              // Lista de items.
+              Expanded(
+                child: _VaultList(
+                  items: items,
+                  onTap: onItemTap,
+                  onLongPress: onItemLongPress,
+                  favorites: favorites,
+                  onToggleFavorite: onToggleFavorite,
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Right side: detail panel.
+        Expanded(
+          child: Container(
+            color: theme.scaffoldBackgroundColor,
+            child: items.isEmpty
+                ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(32),
+                      child: Text(
+                        'Selecciona una nota del sidebar.',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ),
+                  )
+                : NoteView(
+                    notePath: items.first.isDir
+                        ? p.join(vault.vaultPath, items.first.relPath)
+                        : p.join(vault.vaultPath, items.first.relPath),
+                    vaultPath: vault.vaultPath,
+                    embedded: true,
+                  ),
+          ),
+        ),
+      ],
     );
   }
 }

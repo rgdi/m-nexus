@@ -10,6 +10,7 @@ import '../../widgets/empty_state.dart';
 import '../../state/app_state.dart';
 import 'trash_screen.dart';
 import 'smart_folders_screen.dart';
+import '../sync/sync_screen.dart';
 
 class WorkspaceSwitcherScreen extends StatefulWidget {
   final String currentVaultPath;
@@ -96,6 +97,14 @@ class _WorkspaceSwitcherScreenState extends State<WorkspaceSwitcherScreen> {
             subtitle: const Text('Notas borradas (recuperables)'),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => TrashScreen(vaultPath: widget.currentVaultPath)),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.cloud_sync_outlined),
+            title: const Text('Sync entre devices'),
+            subtitle: const Text('Pull/Push de notas vía backend'),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => SyncScreen(vaultPath: widget.currentVaultPath)),
             ),
           ),
         ],

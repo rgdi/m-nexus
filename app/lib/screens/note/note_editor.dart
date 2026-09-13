@@ -219,6 +219,9 @@ class _NoteEditorState extends State<NoteEditor> {
 
   @override
   Widget build(BuildContext context) {
+    // v0.62.17: en tablet/desktop, ancho del body limitado a 720dp centrado
+    // (legibilidad óptima para markdown). En phone, ocupa todo el ancho.
+    final isWide = MediaQuery.sizeOf(context).width >= 720;
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -260,7 +263,10 @@ class _NoteEditorState extends State<NoteEditor> {
       body: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: EdgeInsets.symmetric(
+            horizontal: isWide ? 80 : 16,
+            vertical: 12,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
