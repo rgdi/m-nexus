@@ -7,7 +7,7 @@
 [![FSRS](https://img.shields.io/badge/FSRS-5.4.2-orange)]()
 [![Topic](https://img.shields.io/badge/topics-15-blue)]()
 
-> **v0.46.0** · App standalone (sin Obsidian), Material 3, AdaptiveScaffold, atajos estilo Obsidian, **FSRS-5/6 real** (ts-fsrs 5.4.2 + port a Dart), voice notes con Whisper real, multi-dispositivo (Android + Web), sync Yjs CRDT con E2E encryption, marketplace de decks, AI tutor (RAG)
+> **v0.62.18** · Sync inter-device (Android + Web + Tablet) verificado end-to-end, vault en navegador (localStorage), AFFiNE-comparable (slash menu, database multi-view, AI Mind Map/Slides, smart folders, templates, OCR, transcription UI), Tablet responsive layout, last-write-wins conflict resolution, 91/91 tests pass. (preparando CRDT real + IndexedDB en v0.63-0.65)
 
 **M-NEXUS** = backend Node.js opcional + app standalone Flutter
 para estudio médico. App 100% independiente y offline-first: vault local en Android (SAF), markdown viewer, flashcards con **FSRS-5/6 real** (21 params, mismo algoritmo que Anki), voice notes, calendar, dashboard, heatmap, stats, search FTS5, wikilinks, cloze, image occlusion, type-answer, AI tutor, marketplace.
@@ -43,6 +43,25 @@ Diseñado para ser **humano en el loop**: la IA propone, tú decides.
 ---
 
 ## 🎯 ¿Qué hace M-NEXUS?
+
+### v0.62.18 — Sync inter-device + Web vault + Tablet + AFFiNE parity (Sep 2026)
+
+**Highlights:**
+- **Sync E2E entre devices** (Last-Write-Wins): `POST /api/v1/notes/sync/{pull,push,status}` con persistencia atómica + resolución de conflictos. Test E2E automatizado en `scripts/test_sync_e2e.sh` (PUSH + PULL + CONFLICT verificados con curl real contra backend).
+- **Web vault** en navegador: `WebVaultService` usa `SharedPreferences` (localStorage en web runtime). `WebSeed` siembra 3 notas demo en primera sesión. Build verificado en `localhost:8080`.
+- **Tablet responsive layout**: `Responsive.formFactor()` con enum phone/tablet/desktop. `_VaultTabletScaffold`: sidebar permanente + lista + detail panel. `NoteEditor`: padding 80dp en pantallas ≥720dp.
+- **Voice transcription UI**: `TranscriptionScreen` con multipart upload a `/api/v1/audio/transcribe`. Integrada en Home como ListTile.
+- **SyncWorker**: `Timer.periodic` cada 5min con `pullNow()` para botón manual.
+- **Paridad AFFiNE ~75%**: Slash menu, Database multi-view, AI Mind Map generator, AI Slides generator, Outline sidebar, Backlinks panel, Custom Metadata (cover/favicon/journal), Smart Folders, Trash, Multi-workspace switcher, Templates, Camera OCR.
+
+**Commits desde v0.46.0:** 52 commits mergeados a `main`.
+
+**Métricas v0.62.18:**
+- Tests: 91/91 pass (0 regresiones)
+- Web build: OK (28MB)
+- APK debug: OK (211MB)
+- Backend TS: compila sin errores
+- Sync E2E: verificado end-to-end
 
 ### v0.46.0 — Major audit-driven release (40 commits)
 

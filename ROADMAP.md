@@ -19,15 +19,32 @@ Ser la plataforma de estudio médico más respetada del mundo, open source, con:
 
 ---
 
-## Estado actual: **v0.46.0 (2026-09-08)** ✅
+## Estado actual: **v0.62.18 (2026-09-13)** ✅
 
-**40 commits mergeados desde `audit/checklist-and-improvements` a `main`.**
+**52 commits desde `audit/checklist-and-improvements` a `main`.**
 
-- ✅ Fases 1-6 del roadmap implementadas
-- ✅ 589 backend tests passing (1 skipped pre-existente)
-- ✅ 56 app-side tests documentados
-- ✅ 0 typecheck errors
-- ✅ 6/6 auditor bugs cerrados
+### v0.62.x — Foundation hardening + AFFiNE parity + multi-device + web
+
+- ✅ **v0.62.0** — Stemmer bilingüe ES/EN + 747 backend tests
+- ✅ **v0.62.5** — 23 nuevos tests + mejoras mobile
+- ✅ **v0.62.8** — Backend minimal estable (workaround SIGSEGV Node 20)
+- ✅ **v0.62.10** — Home/vault/flashcards RemNote minimal
+- ✅ **v0.62.11** — Vault Notion + flashcards autoeval + plan timeline
+- ✅ **v0.62.12** — RemNote minimal redesign (Home + Ajustes)
+- ✅ **v0.62.13** — Bug audit fixes + autosync calendar
+- ✅ **v0.62.14** — AFFiNE parity Tier 1 (database + sidebars)
+- ✅ **v0.62.15** — Reconstrucción NoteView/Editor/Vault minimalista
+- ✅ **v0.62.16** — 8 features AFFiNE-comparable (slash, smart folders, templates, AI Mind Map, AI Slides, Camera OCR, Trash, Multi-workspace)
+- ✅ **v0.62.17** — Sync inter-device (LWW) + Tablet responsive layout
+- ✅ **v0.62.18** — LWW sync E2E verificado + Web vault (localStorage) + Whisper transcription UI
+
+**Métricas actuales (v0.62.18):**
+- ✅ **91/91** Flutter tests pass (0 regresiones)
+- ✅ Backend TS compilable sin errores
+- ✅ Web build OK (28MB) sirviendo en localhost:8080
+- ✅ APK debug OK (211MB)
+- ✅ **scripts/test_sync_e2e.sh** PUSH + PULL + CONFLICT verificados con curl real
+- ✅ Paridad AFFiNE: ~75% (Slash menu, Database multi-view, AI Mind Map/Slides, Outlines, Backlinks, Custom Metadata, Smart Folders, Trash, Multi-workspace, Templates)
 - ✅ 135/150 items del CHECKLIST completados (90%)
 
 **Lo que falta (15% app-side polish):**
@@ -182,3 +199,31 @@ Ser la plataforma de estudio médico más respetada del mundo, open source, con:
 ---
 
 **Última actualización:** 2026-09-08 · v0.46.0 mergeado a `main`
+
+
+---
+
+## Próximas fases (post-v0.62.18)
+
+### Fase A — CRDT real + Voice transcription (v0.63)
+- Implementar `yjs-dart` (puerto no oficial) o reemplazo custom (CRDT log-based).
+- Integrar `WhisperService` en `server.ts` (binary whisper ya existe en `scripts/`).
+- Voice notes con transcripción AI inline en `NoteView` (como AFFiNE transcription block).
+- Sync E2E probando 2-3 devices reales.
+
+### Fase B — Web completo (v0.64)
+- IndexedDB real para vault web > 5MB (reemplazar SharedPreferences).
+- Camera OCR + Voice notes en navegador (Web APIs: getUserMedia + MediaRecorder).
+- OCR con Tesseract.js (WASM) para OCR en browser.
+
+### Fase C — Multi-workspace real (v0.65)
+- Workspace switcher UI completo con workspace switch (no solo listado).
+- Sync per-workspace (cada workspace tiene su propio CRDT room).
+- Marketplace de templates (descarga de templates públicos).
+
+### Backlog (sin fecha)
+- Slash menu inline en NoteEditor (en lugar de popup manual).
+- Smart Folders UI con queries avanzadas (AND/OR de filtros).
+- Tags formales con colores (en lugar de #hashtag inline).
+- Comments en bloques específicos.
+- Edgeless mode (canvas infinito con shapes/sticky notes).

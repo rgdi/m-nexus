@@ -1,5 +1,43 @@
 # Release Notes
 
+## v0.62.18 (2026-09-13) — Sync inter-device + Web vault + Tablet
+
+**Sync end-to-end verificado:** `scripts/test_sync_e2e.sh` pasa contra backend en :4100 con PUSH + PULL + CONFLICT resolution.
+
+### 🎯 Highlights
+
+#### Sync entre devices (Last-Write-Wins)
+- Backend `POST /api/v1/notes/sync/{pull,push,status}` con persistencia atómica.
+- Cliente Flutter `SyncService` + `SyncScreen` + `SyncWorker` (background cada 5min).
+- Conflict resolution: server con timestamp más reciente gana → va a `conflicts`.
+
+#### Web vault
+- `WebVaultService` usa `SharedPreferences` (localStorage en web) — 5MB.
+- `WebSeed` siembra 3 notas demo en primera sesión web.
+- Build verificado: index.html, main.dart.js (4MB), favicon, manifest PWA.
+
+#### Tablet optimization
+- `Responsive.formFactor()` con enum phone/tablet/desktop.
+- `_VaultTabletScaffold`: sidebar permanente (280dp) + lista + detail.
+- `NoteEditor`: padding 80dp en pantallas ≥720dp.
+
+#### Voice transcription (Whisper UI)
+- `TranscriptionScreen`: POST /api/v1/audio/transcribe con multipart.
+- Integrada en Home como ListTile "Transcribir audio".
+
+### 📊 Métricas
+- Tests: **91/91 pass** (0 regresiones).
+- Web build: **OK** (28MB) sirviendo en localhost:8080.
+- APK build: **OK** (211MB).
+- Backend TS compile: **OK**.
+- Sync E2E test: **OK** verificado con curl real.
+
+### 🔧 Commits
+- `48d71ae` — v0.62.17: Sync inter-device + responsive layout.
+- `6585504` — v0.62.18: LWW sync verificado + web vault + Whisper UI.
+
+# Release Notes
+
 ## v0.46.0 (2026-09-08) — Released ✅ — Major audit-driven release
 
 **40 commits · 16 backend services · 13 app-side files · 6 auditor bugs · 589 tests passing**

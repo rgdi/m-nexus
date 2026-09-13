@@ -124,3 +124,63 @@ También se añadió `test-docker` al CI workflow (no release) para validar el D
 
 **No-fix (preexistente):**
 - "readme" y "README" duplicados en vault: son archivos distintos reales en el filesystem, no es bug del código.
+
+### v0.62.18 — Web vault + Sync real + Whisper UI + Tablet
+
+**Sync inter-device (Last-Write-Wins, verificado end-to-end):**
+
+Backend (`backend/src/routes/sync.ts`):
+- `POST /api/v1/notes/sync/pull  {since}` → `{notes, serverTime}`
+- `POST /api/v1/notes/sync/push  {notes[]}` → `{accepted, conflicts, serverTime}`
+- `GET  /api/v1/notes/sync/status` → `{available, entries, serverTime}`
+- Persistencia atómica en `data/sync.json` (tmp + rename).
+- Resolución de conflictos: si el server tiene lastModified más reciente
+  que el cliente, el push se rechaza y la nota del server va a `conflicts`.
+
+Cliente Flutter (`app/lib/services/sync_service.dart` + `sync_screen.dart`):
+- `SyncService.push(List<SyncDelta>)` y `pull(DateTime since)`.
+- `SyncScreen`: status card + Pull/Push + contadores.
+- `SyncWorker`: Timer.periodic cada 5min con `pullNow()` para botón manual.
+
+Test E2E automatizado (`scripts/test_sync_e2e.sh`):
+```
+1. GET /status → {"available":true, "entries":1}
+2. POST /push (1 nota) → accepted: 1
+3. POST /pull (since=2020) → Pulled 2 notes
+4. POST /push con timestamp ANTIGUO → conflicts: 1
+=== ALL E2E TESTS PASSED ===
+```
+
+**Web vault (vault en browser):**
+
+- `WebVaultService` usa `shared_preferences` (que internamente usa
+  localStorage en web runtime).
+- `WebNote` model con JSON roundtrip.
+- `WebSeed.ensureSeeded()`: siembra 3 notas demo (welcome, getting-started,
+  flashcards-demo) en la primera sesión web.
+- Limitación: ~5MB por dominio. IndexedDB para vaults grandes está
+  pendiente.
+
+**TranscriptionScreen (Whisper UI):**
+
+- `POST /api/v1/audio/transcribe` con multipart/form-data.
+- Integrada en Home como ListTile "Transcribir audio".
+
+**Tablet optimization (v0.62.17 ya incluido):**
+
+- `Responsive.formFactor()` con enum phone/tablet/desktop.
+- `_VaultTabletScaffold`: sidebar permanente (280dp) + lista + detail panel.
+- `NoteEditor`: padding horizontal 80dp en pantallas ≥720dp.
+
+**Resultados:**
+- Tests: 91/91 pass (0 regresiones).
+- Web build: OK (28MB).
+- APK build: OK (211MB).
+- Backend TS compile: OK.
+- Sync E2E test: OK.
+
+**Pendiente:**
+- CRDT Yjs en cliente (requiere `yjs-dart`, no oficial).
+- Audio route en `server.ts` (binary whisper existe pero no se invoca).
+- IndexedDB para vault web > 5MB.
+
