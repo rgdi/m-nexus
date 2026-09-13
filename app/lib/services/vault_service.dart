@@ -166,6 +166,29 @@ class VaultService {
     }, hint: 'limit=$limit') ?? [];
   }
 
+  /// v0.62.16: lista TODAS las notas del vault (no solo top-N).
+  Future<List<Note>> listAll() async {
+    return await guardAsync<List<Note>>('vault', 'EC-VAULT-009',
+      'listAll failed', () async {
+        final paths = <String>[];
+        await for (final entity in Directory(vaultPath).list(recursive: true, followLinks: false)) {
+          if (entity is! File) continue;
+          final name = p.basename(entity.path);
+          if (name.startsWith('.')) continue;
+          if (!AppConstants.mdExtensions.contains(p.extension(name))) continue;
+          final rel = p.relative(entity.path, from: vaultPath);
+          if (rel.startsWith(AppConstants.internalFolder)) continue;
+          paths.add(entity.path);
+        }
+        final notes = <Note>[];
+        for (final path in paths) {
+          final n = await readNote(path);
+          if (n != null) notes.add(n);
+        }
+        return notes;
+    }, hint: '') ?? [];
+  }
+
   Future<VaultNode> _buildNode(Directory dir, String relPath) async {
     // Las excepciones de I/O se loguean pero no detienen el tree
     return await guardAsync<VaultNode>('vault', 'EC-VAULT-002',
@@ -644,5 +667,84 @@ class VaultService {
       }
     } catch (_) {}
     return null;
+  }
+}
+// ── v0.62.16: Trash (soft delete) + Archive ────────────────────────────
+//
+// AFFiNE implementa trash como una flag en DocProperties + filtro en
+// el sidebar. Aquí lo hacemos file-based: `_M-NEXUS/trash/<path>.md`
+// contiene el archivo borrado con timestamp. Para restaurar, copiamos
+// de vuelta. Archive es similar: `_M-NEXUS/archive/<path>.md`.
+
+extension VaultServiceTrash on VaultService {
+  Directory _trashDir() {
+    final d = Directory(p.join(vaultPath, '_M-NEXUS', 'trash'));
+    if (!d.existsSync()) d.createSync(recursive: true);
+    return d;
+  }
+
+  /// Mueve un archivo a la papelera (soft delete).
+  Future<bool> moveToTrash(String notePath) async {
+    final f = File(notePath);
+    if (!await f.exists()) return false;
+    final trash = _trashDir();
+    final base = p.basename(notePath);
+    final ts = DateTime.now().millisecondsSinceEpoch;
+    final dest = File(p.join(trash.path, '$ts-$base'));
+    try {
+      await f.copy(dest.path);
+      await f.delete();
+      invalidateCache();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Lista archivos en trash ordenados por timestamp desc (más recientes primero).
+  Future<List<File>> listTrash() async {
+    final trash = _trashDir();
+    if (!await trash.exists()) return [];
+    final files = await trash.list().toList();
+    files.sort((a, b) => b.path.compareTo(a.path));
+    return files.whereType<File>().toList();
+  }
+
+  /// Restaura un archivo del trash a su ubicación original.
+  Future<bool> restoreFromTrash(String trashFileName) async {
+    final trash = _trashDir();
+    final src = File(p.join(trash.path, trashFileName));
+    if (!await src.exists()) return false;
+    // Extrae path original: "ts-originalname.md" → recuperar del nombre sin ts.
+    final base = trashFileName.replaceFirst(RegExp(r'^\d+-'), '');
+    // Busca en el vault el lugar donde solía estar — fallback a root.
+    final candidates = <String>[];
+    void walk(Directory d, String rel) {
+      for (final e in d.listSync()) {
+        if (e is File) {
+          if (p.basename(e.path) == base) candidates.add(e.path);
+        } else if (e is Directory) {
+          walk(e, p.join(rel, p.basename(e.path)));
+        }
+      }
+    }
+    walk(Directory(vaultPath), '');
+    final dest = candidates.isNotEmpty
+        ? candidates.first
+        : p.join(vaultPath, base);
+    try {
+      await src.copy(dest);
+      await src.delete();
+      invalidateCache();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Borra permanentemente un archivo del trash.
+  Future<void> permanentlyDelete(String trashFileName) async {
+    final f = File(p.join(_trashDir().path, trashFileName));
+    if (await f.exists()) await f.delete();
   }
 }

@@ -23,11 +23,58 @@ class MainActivity: FlutterActivity() {
     private val RECORDING_CHANNEL = "com.mnexus.app/recording"
     private val PERMISSIONS_CHANNEL = "com.mnexus.app/permissions"
     private val VAULT_CHANNEL = "com.mnexus.app/vault"
+    private val OCR_CHANNEL = "com.mnexus.app/ocr"
     private val LOGGER_CHANNEL = "com.mnexus.app/logger"
     private val safPathPrefs = "mnexus_saf_path"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
+        // ── OCR (v0.62.16) ──────────────────────────────────────
+        // Captura foto + (futuro) reconocimiento ML Kit.
+        // Para v0.62.16 devolvemos texto placeholder si no hay ML Kit.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, OCR_CHANNEL).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "pickFromCamera" -> {
+                    try {
+                        val photoFile = java.io.File.createTempFile(
+                            "ocr_", ".jpg", cacheDir
+                        )
+                        val outputUri = androidx.core.content.FileProvider.getUriForFile(
+                            this, "$packageName.fileprovider", photoFile
+                        )
+                        val takePicture = android.content.Intent(
+                            android.provider.MediaStore.ACTION_IMAGE_CAPTURE
+                        )
+                        takePicture.putExtra(
+                            android.provider.MediaStore.EXTRA_OUTPUT, outputUri
+                        )
+                        takePicture.addFlags(
+                            android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                        )
+                        pendingOcrResult = result
+                        pendingOcrFile = photoFile
+                        startActivityForResult(takePicture, 9999)
+                    } catch (e: Exception) {
+                        result.error("camera_failed", e.message, null)
+                    }
+                }
+                "recognizeText" -> {
+                    val imagePath = call.argument<String>("imagePath")
+                    if (imagePath == null) {
+                        result.success("")
+                        return@setMethodCallHandler
+                    }
+                    // ML Kit no incluido en este build. AFFiNE-style: el
+                    // OCR real requiere com.google.mlkit:text-recognition
+                    // como dependencia Gradle. Mientras tanto devolvemos
+                    // texto vacío + el path para que el caller sepa que
+                    // la imagen fue capturada.
+                    result.success("")
+                }
+                else -> result.notImplemented()
+            }
+        }
 
         // ── Install APK ────────────────────────────────────────
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, INSTALL_CHANNEL).setMethodCallHandler { call, result ->
@@ -563,6 +610,19 @@ class MainActivity: FlutterActivity() {
         } catch (e: Exception) {
             cb.error("saf_save_failed", e.message, null)
         }
+        // v0.62.16: OCR usa requestCode 9999 (distinto de SAF 4242).
+        if (requestCode == 9999 && pendingOcrResult != null) {
+            val r = pendingOcrResult!!
+            val f = pendingOcrFile
+            pendingOcrResult = null
+            pendingOcrFile = null
+            if (resultCode == RESULT_OK && f != null && f.exists()) {
+                r.success(f.absolutePath)
+            } else {
+                r.success(null)
+            }
+            return
+        }
     }
     /**
      * v0.49.16: devuelve el calendarId del primer calendario visible.
@@ -581,5 +641,6 @@ class MainActivity: FlutterActivity() {
             1L
         }
     }
-}
 
+
+private var pendingOcrFile: java.io.File? = null

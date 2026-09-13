@@ -30,11 +30,18 @@ import '../flashcards/flashcard_review.dart';
 import '../flashcards/flashcard_edit.dart';
 import '../note/note_editor.dart';
 import '../note/note_view.dart';
+import '../note/template_picker_screen.dart';
 import '../database/databases_list_screen.dart';
 import '../recording/recording_screen.dart';
 import '../attachments/attachments_screen.dart';
 import '../whiteboard/whiteboards_list_screen.dart';
 import '../ai/ai_chat_screen.dart';
+import '../ai/mindmap_screen.dart';
+import '../ai/slides_screen.dart';
+import '../camera/ocr_screen.dart';
+import '../vault/smart_folders_screen.dart';
+import '../vault/trash_screen.dart';
+import '../vault/workspace_switcher.dart';
 import '../../services/permissions.dart';
 import '../../services/daily_note_service.dart';
 import '../../widgets/command_palette_dialog.dart';
@@ -280,6 +287,136 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.pop(ctx);
                 Navigator.push(context, MaterialPageRoute(
                   builder: (_) => AiChatScreen(vaultPath: vp),
+                ));
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.dashboard_customize_outlined),
+              title: const Text('Desde template'),
+              subtitle: const Text('Daily / Reunión / Estudio / Proyecto…'),
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => TemplatePickerScreen(vaultPath: vp),
+                ));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.account_tree_outlined),
+              title: const Text('AI Mind Map'),
+              subtitle: const Text('Generar mapa mental desde una nota'),
+              onTap: () async {
+                Navigator.pop(ctx);
+                // Pide path de nota.
+                final ctrl = TextEditingController();
+                final path = await showDialog<String>(
+                  context: context,
+                  builder: (c) => AlertDialog(
+                    title: const Text('Mind Map desde nota'),
+                    content: TextField(
+                      controller: ctrl,
+                      decoration: const InputDecoration(
+                        hintText: 'ruta/nota.md',
+                        labelText: 'Path relativo de la nota',
+                      ),
+                    ),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(c), child: const Text('Cancelar')),
+                      FilledButton(
+                        onPressed: () => Navigator.pop(c, ctrl.text.trim()),
+                        child: const Text('Generar'),
+                      ),
+                    ],
+                  ),
+                );
+                if (path != null && path.isNotEmpty) {
+                  final full = path.startsWith(vp) ? path : '$vp/$path';
+                  if (!mounted) return;
+                  Navigator.push(context, MaterialPageRoute(
+                    builder: (_) => MindmapScreen(vaultPath: vp, sourceNotePath: full),
+                  ));
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.slideshow_outlined),
+              title: const Text('AI Slides'),
+              subtitle: const Text('Convertir nota en presentación'),
+              onTap: () async {
+                Navigator.pop(ctx);
+                final ctrl = TextEditingController();
+                final path = await showDialog<String>(
+                  context: context,
+                  builder: (c) => AlertDialog(
+                    title: const Text('Slides desde nota'),
+                    content: TextField(
+                      controller: ctrl,
+                      decoration: const InputDecoration(
+                        hintText: 'ruta/nota.md',
+                        labelText: 'Path relativo de la nota',
+                      ),
+                    ),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(c), child: const Text('Cancelar')),
+                      FilledButton(
+                        onPressed: () => Navigator.pop(c, ctrl.text.trim()),
+                        child: const Text('Generar'),
+                      ),
+                    ],
+                  ),
+                );
+                if (path != null && path.isNotEmpty) {
+                  final full = path.startsWith(vp) ? path : '$vp/$path';
+                  if (!mounted) return;
+                  Navigator.push(context, MaterialPageRoute(
+                    builder: (_) => SlidesScreen(vaultPath: vp, sourceNotePath: full),
+                  ));
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.document_scanner_outlined),
+              title: const Text('Camera OCR'),
+              subtitle: const Text('Escanear apuntes con cámara'),
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => OcrScreen(vaultPath: vp),
+                ));
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.filter_alt_outlined),
+              title: const Text('Smart Folders'),
+              subtitle: const Text('Consultas guardadas'),
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => SmartFoldersScreen(vaultPath: vp),
+                ));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline_rounded),
+              title: const Text('Papelera'),
+              subtitle: const Text('Notas borradas (recuperables)'),
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => TrashScreen(vaultPath: vp),
+                ));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.swap_horiz_rounded),
+              title: const Text('Cambiar workspace'),
+              subtitle: const Text('Otros vaults detectados'),
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => WorkspaceSwitcherScreen(currentVaultPath: vp),
                 ));
               },
             ),

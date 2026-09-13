@@ -10,10 +10,13 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../core/design_tokens.dart';
 import '../../services/logger.dart';
+import '../../services/template_service.dart';
 import '../../services/vault_service.dart';
 import '../../state/app_state.dart';
+import '../../widgets/slash_menu.dart';
 
 class NoteEditor extends StatefulWidget {
   final String vaultPath;
@@ -27,12 +30,16 @@ class NoteEditor extends StatefulWidget {
   /// Contenido inicial (solo para notas nuevas).
   final String? initialContent;
 
+  /// v0.62.16: template inicial (opcional) que pre-rellena el body.
+  final DocTemplate? initialTemplate;
+
   const NoteEditor({
     super.key,
     required this.vaultPath,
     this.notePath,
     this.initialTitle,
     this.initialContent,
+    this.initialTemplate,
   });
 
   @override
@@ -54,7 +61,9 @@ class _NoteEditorState extends State<NoteEditor> {
   void initState() {
     super.initState();
     _titleCtrl = TextEditingController(text: widget.initialTitle ?? '');
-    _bodyCtrl = TextEditingController(text: widget.initialContent ?? '');
+    _bodyCtrl = TextEditingController(
+      text: widget.initialContent ?? widget.initialTemplate?.body ?? '',
+    );
     _bodyFocus = FocusNode();
     _load();
   }
@@ -172,6 +181,42 @@ class _NoteEditorState extends State<NoteEditor> {
     if (mounted) Navigator.of(context).pop(true);
   }
 
+  /// v0.62.16: inserta un snippet markdown en la posición del cursor.
+  void _insertMarkdown(String value) {
+    final sel = _bodyCtrl.selection;
+    if (!sel.isValid) return;
+    final text = value;
+    final newText = _bodyCtrl.text.replaceRange(sel.start, sel.end, text);
+    _bodyCtrl.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: sel.start + text.length),
+    );
+    _bodyFocus.requestFocus();
+  }
+
+  PopupMenuItem<String> _slashItem(String label, String snippet, String desc,
+      IconData icon, String value) {
+    return PopupMenuItem<String>(
+      value: snippet,
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: MxColors.indigoDeep),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                Text(desc, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -186,6 +231,25 @@ class _NoteEditorState extends State<NoteEditor> {
           style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
         ),
         actions: [
+          // v0.62.16: Slash menu AFFiNE-style (comandos markdown rápidos).
+          PopupMenuButton<String>(
+            tooltip: 'Insertar',
+            icon: const Icon(Icons.add_box_outlined),
+            onSelected: (value) => _insertMarkdown(value),
+            itemBuilder: (_) => [
+              _slashItem('Encabezado 1', '# ', 'Título grande', Icons.title_rounded, 'h1'),
+              _slashItem('Encabezado 2', '## ', 'Sección', Icons.title_rounded, 'h2'),
+              _slashItem('Encabezado 3', '### ', 'Subsección', Icons.title_rounded, 'h3'),
+              _slashItem('Lista', '- ', 'Lista con bullets', Icons.format_list_bulleted_rounded, 'list'),
+              _slashItem('Numerada', '1. ', 'Lista numerada', Icons.format_list_numbered_rounded, 'ol'),
+              _slashItem('Checklist', '- [ ] ', 'Tarea con checkbox', Icons.check_box_outlined, 'todo'),
+              _slashItem('Cita', '> ', 'Bloque citado', Icons.format_quote_rounded, 'quote'),
+              _slashItem('Código', '```\n\n```', 'Bloque de código', Icons.code_rounded, 'code'),
+              _slashItem('Separador', '\n---\n', 'Línea horizontal', Icons.horizontal_rule_rounded, 'hr'),
+              _slashItem('Cloze', '{{c1::texto}}', 'Tarjeta cloze', Icons.style_outlined, 'cloze'),
+              _slashItem('Wikilink', '[[nota]]', 'Link a otra nota', Icons.link_rounded, 'wiki'),
+            ],
+          ),
           IconButton(
             icon: const Icon(Icons.check_rounded),
             onPressed: _close,
