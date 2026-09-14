@@ -1,0 +1,354 @@
+/* ============================================================
+ * screens/notes.js — notebook con canvas stylus-first.
+ * v1.0.0 — handwriting canvas + multi-page + toolbar + pencil drawer.
+ *
+ * Soporta stylus via PointerEvents. Pressure + tilt donde estén disponibles.
+ * ============================================================ */
+
+import { collection, store } from "../services/store.js";
+
+const state = {
+  selectedId: null,
+  page: 0,
+  tool: "pen", // pen | highlighter | eraser | ruler | laser | select
+  color: "#1a1d24",
+  size: 3,
+  pencils: [
+    { id: "red", name: "Red pen", color: "#ff3b3b", size: 3 },
+    { id: "blue", name: "Blue pen", color: "#56c4e6", size: 3 },
+    { id: "purple", name: "Purple pen", color: "#8c5cf6", size: 3 },
+    { id: "black", name: "Black pen", color: "#1a1d24", size: 3 },
+  ],
+};
+
+export async function renderNotes(root) {
+  if (!state.selectedId) return renderNotesList(root);
+  renderNotebook(root, state.selectedId);
+}
+
+function renderNotesList(root) {
+  const notes = collection("notes").list();
+  root.innerHTML = `
+    <div class="screen">
+      <header class="screen-header">
+        <h1 class="h-title">Notes</h1>
+        <div class="spacer"></div>
+        <button class="btn primary" id="new">+ New note</button>
+      </header>
+      <div class="row gap-2" style="margin-bottom: var(--s-5)">
+        <input class="input with-icon" id="search" placeholder="Search notebooks" />
+        <button class="btn icon" aria-label="Filter">⛁</button>
+      </div>
+      <div class="book-grid" id="grid"></div>
+    </div>
+  `;
+  root.querySelector("#new").addEventListener("click", () => {
+    const n = collection("notes").create({ title: "Untitled", body: "" });
+    state.selectedId = n.id;
+    renderNotes(root);
+  });
+  root.querySelector("#search").addEventListener("input", (e) => {
+    const q = e.target.value.toLowerCase();
+    root.querySelectorAll(".book-card").forEach((c) => {
+      c.style.display = c.dataset.title.toLowerCase().includes(q) ? "" : "none";
+    });
+  });
+  root.querySelector("#grid").innerHTML = notes.map(n => `
+    <div class="book-card" data-id="${n.id}" data-title="${escapeHtml(n.title)}">
+      <div class="cover">${escapeHtml((n.title || "?")[0])}</div>
+      <div class="title">${escapeHtml(n.title)}</div>
+    </div>
+  `).join("");
+  root.querySelectorAll(".book-card").forEach((c) => {
+    c.addEventListener("click", () => { state.selectedId = c.dataset.id; renderNotes(root); });
+  });
+}
+
+function renderNotebook(root, id) {
+  const notes = collection("notes");
+  const note = notes.get(id);
+  if (!note) { state.selectedId = null; return renderNotesList(root); }
+
+  const pages = note.pages || [{ strokes: [] }];
+  const page = pages[state.page] || pages[0];
+
+  root.innerHTML = `
+    <div class="screen" style="max-width: 1100px; padding: var(--s-5) var(--s-6) var(--s-7)">
+      <header class="screen-header">
+        <button class="btn icon" id="back">←</button>
+        <h1 class="h-title" id="title" contenteditable="true" spellcheck="false">${escapeHtml(note.title)}</h1>
+        <div class="spacer"></div>
+        <div class="pages-nav">
+          <button class="icon-btn" id="prev">←</button>
+          <span class="lbl">Page ${state.page + 1}/${pages.length}</span>
+          <button class="icon-btn" id="next">→</button>
+          <button class="icon-btn" id="add-page">+</button>
+        </div>
+      </header>
+
+      <div class="row gap-2" style="margin-bottom: var(--s-3)">
+        <button class="btn primary" id="overview-btn">✦ Intelligent overview</button>
+        <button class="btn icon" id="search-btn" aria-label="Search">⌕</button>
+      </div>
+
+      <div class="notebook" id="canvas-wrap" style="height: calc(100vh - 320px); min-height: 480px">
+        <div class="notebook-toolbar">
+          <button class="tool-btn" data-tool="pen" title="Pen">✎</button>
+          <button class="tool-btn" data-tool="highlighter" title="Highlighter">▒</button>
+          <button class="tool-btn" data-tool="eraser" title="Eraser">⌫</button>
+          <button class="tool-btn" data-tool="select" title="Select">⤡</button>
+          <button class="tool-btn" data-tool="ruler" title="Ruler">▤</button>
+        </div>
+
+        <div class="notebook-side">
+          <button class="tool-btn" data-act="voice" title="Voice">🎙</button>
+          <button class="tool-btn" data-act="code" title="Code">⌨</button>
+          <button class="tool-btn" data-act="image" title="Image">▢</button>
+          <button class="tool-btn" data-act="graph" title="Graph">⌬</button>
+          <button class="tool-btn" data-act="link" title="Link">⌘</button>
+          <button class="tool-btn" data-act="table" title="Table">▦</button>
+        </div>
+
+        <div class="pencil-drawer">
+          <button class="pencil add" id="add-pencil">+</button>
+          ${state.pencils.map(p => `
+            <button class="pencil" data-pencil="${p.id}" style="background:${p.color}"></button>
+          `).join("")}
+          <button class="pencil trash" data-act="trash" title="Delete pencil">🗑</button>
+        </div>
+
+        <canvas id="canvas"></canvas>
+      </div>
+    </div>
+  `;
+
+  // Page navigation
+  root.querySelector("#back").addEventListener("click", () => { state.selectedId = null; renderNotes(root); });
+  root.querySelector("#prev").addEventListener("click", () => {
+    if (state.page > 0) { state.page--; renderNotes(root); }
+  });
+  root.querySelector("#next").addEventListener("click", () => {
+    if (state.page < pages.length - 1) { state.page++; renderNotes(root); }
+  });
+  root.querySelector("#add-page").addEventListener("click", () => {
+    pages.push({ strokes: [] });
+    notes.update(id, { pages });
+    state.page = pages.length - 1;
+    renderNotes(root);
+  });
+
+  // Title editing
+  const titleEl = root.querySelector("#title");
+  titleEl.addEventListener("blur", () => {
+    notes.update(id, { title: titleEl.textContent.trim() || "Untitled" });
+  });
+
+  // Toolbar tool selection
+  root.querySelectorAll(".tool-btn").forEach((b) => {
+    b.addEventListener("click", () => {
+      if (b.dataset.tool) {
+        state.tool = b.dataset.tool;
+        root.querySelectorAll(".tool-btn").forEach(x => x.classList.remove("active"));
+        b.classList.add("active");
+      }
+      if (b.dataset.act) {
+        handleInsertAction(b.dataset.act, root, id, state.page);
+      }
+    });
+  });
+
+  // Pencil drawer
+  root.querySelectorAll(".pencil[data-pencil]").forEach((p) => {
+    p.addEventListener("click", () => {
+      const found = state.pencils.find(x => x.id === p.dataset.pencil);
+      if (!found) return;
+      state.color = found.color;
+      state.size = found.size;
+      root.querySelectorAll(".pencil").forEach(x => x.classList.remove("active"));
+      p.classList.add("active");
+    });
+  });
+
+  // Intelligent overview (AI)
+  root.querySelector("#overview-btn").addEventListener("click", () => {
+    openOverviewModal(note);
+  });
+
+  // Setup canvas + drawing
+  setupCanvas(root, id, state.page, page.strokes, pages);
+}
+
+function handleInsertAction(act, root, noteId, pageIdx) {
+  const notes = collection("notes");
+  const note = notes.get(noteId);
+  const pages = note.pages || [{ strokes: [] }];
+  const page = pages[pageIdx] || pages[0];
+  if (act === "trash") {
+    if (confirm("¿Eliminar el lápiz activo?")) {
+      // noop for now
+    }
+    return;
+  }
+  // Stub: cada accion mete un "stroke" decorativo que represente el placeholder
+  const placeholder = {
+    type: act,
+    x: 60 + Math.random() * 200,
+    y: 60 + Math.random() * 100,
+    w: 220, h: 80,
+    label: { voice: "Voice note", code: "// code", image: "Image", graph: "Graph", link: "Link", table: "Table" }[act],
+  };
+  page.placeholders = page.placeholders || [];
+  page.placeholders.push(placeholder);
+  notes.update(noteId, { pages });
+  renderNotes(root);
+}
+
+function setupCanvas(root, noteId, pageIdx, strokes, pages) {
+  const wrap = root.querySelector("#canvas-wrap");
+  const canvas = root.querySelector("#canvas");
+  const ctx = canvas.getContext("2d");
+  const dpr = window.devicePixelRatio || 1;
+
+  function fit() {
+    const rect = wrap.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    canvas.style.width = rect.width + "px";
+    canvas.style.height = rect.height + "px";
+    ctx.scale(dpr, dpr);
+    redraw();
+  }
+
+  function redraw() {
+    const rect = wrap.getBoundingClientRect();
+    ctx.clearRect(0, 0, rect.width, rect.height);
+    // placeholders
+    (strokes._placeholders || []).forEach((p) => {
+      ctx.fillStyle = "rgba(140,92,246,0.06)";
+      ctx.strokeStyle = "rgba(140,92,246,0.4)";
+      ctx.setLineDash([6, 4]);
+      ctx.fillRect(p.x, p.y, p.w, p.h);
+      ctx.strokeRect(p.x, p.y, p.w, p.h);
+      ctx.setLineDash([]);
+      ctx.fillStyle = "#8c5cf6";
+      ctx.font = "13px " + getComputedStyle(document.body).fontFamily;
+      ctx.fillText("📎 " + p.label, p.x + 8, p.y + 18);
+    });
+    // strokes
+    for (const s of strokes) {
+      if (!s.points || s.points.length < 1) continue;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.globalAlpha = s.alpha ?? 1;
+      ctx.strokeStyle = s.color;
+      ctx.lineWidth = s.size;
+      ctx.beginPath();
+      ctx.moveTo(s.points[0].x, s.points[0].y);
+      for (let i = 1; i < s.points.length; i++) {
+        ctx.lineTo(s.points[i].x, s.points[i].y);
+      }
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // Drawing state
+  let drawing = false;
+  let currentStroke = null;
+
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top, p: e.pressure || 0.5, tilt: e.tiltX || 0 };
+  }
+
+  function onDown(e) {
+    if (state.tool === "select") return;
+    e.preventDefault();
+    canvas.setPointerCapture(e.pointerId);
+    drawing = true;
+    currentStroke = {
+      tool: state.tool,
+      color: state.tool === "highlighter" ? state.color : (state.tool === "eraser" ? "var(--bg)" : state.color),
+      size: state.tool === "highlighter" ? state.size * 3 : state.tool === "eraser" ? state.size * 4 : state.size,
+      alpha: state.tool === "highlighter" ? 0.35 : 1,
+      points: [getPos(e)],
+    };
+  }
+  function onMove(e) {
+    if (!drawing) return;
+    currentStroke.points.push(getPos(e));
+    // Live redraw (only the active stroke)
+    redraw();
+    ctx.beginPath();
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.globalAlpha = currentStroke.alpha;
+    ctx.strokeStyle = currentStroke.color;
+    ctx.lineWidth = currentStroke.size;
+    const pts = currentStroke.points;
+    ctx.moveTo(pts[pts.length - 2].x, pts[pts.length - 2].y);
+    ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+  function onUp() {
+    if (!drawing) return;
+    drawing = false;
+    if (currentStroke && currentStroke.points.length > 1) {
+      strokes.push(currentStroke);
+      // autosave
+      const notes = collection("notes");
+      const n = notes.get(noteId);
+      const pages = n.pages || [];
+      if (!pages[pageIdx]) pages[pageIdx] = { strokes: [] };
+      pages[pageIdx].strokes = strokes;
+      notes.update(noteId, { pages });
+    }
+    currentStroke = null;
+  }
+
+  canvas.addEventListener("pointerdown", onDown);
+  canvas.addEventListener("pointermove", onMove);
+  canvas.addEventListener("pointerup", onUp);
+  canvas.addEventListener("pointercancel", onUp);
+  canvas.addEventListener("pointerleave", onUp);
+
+  // Resize handling
+  const ro = new ResizeObserver(fit);
+  ro.observe(wrap);
+  fit();
+
+  // Expose for placeholders re-render
+  strokes._placeholders = pages[pageIdx]?.placeholders || [];
+  redraw();
+}
+
+function openOverviewModal(note) {
+  const scrim = document.createElement("div");
+  scrim.className = "scrim";
+  const body = (note.body || "").slice(0, 800);
+  scrim.innerHTML = `
+    <div class="sheet">
+      <div class="sheet-header">
+        <h3>Intelligent overview</h3>
+        <button class="btn icon" data-act="close">✕</button>
+      </div>
+      <div class="muted small">Generated from ${(note.pages?.length ?? 1)} page(s) of handwriting and text.</div>
+      <div style="margin-top: var(--s-4); white-space: pre-wrap; font-size: var(--fs-md); line-height: 1.6">
+${escapeHtml(body) || "No content yet. Start writing!"}
+      </div>
+      <div class="row gap-2" style="margin-top: var(--s-5)">
+        <button class="btn" data-act="search">⌕ Search notebook</button>
+        <button class="btn primary" data-act="close">Done</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(scrim);
+  const close = () => scrim.remove();
+  scrim.addEventListener("click", (e) => { if (e.target === scrim || e.target.dataset.act === "close") close(); });
+}
+
+function escapeHtml(s) {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}

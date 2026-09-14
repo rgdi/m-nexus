@@ -1,0 +1,239 @@
+/* ============================================================
+ * components.css — buttons, cards, modales, subject bubbles
+ * v1.0.0 — Education Service style
+ * ============================================================ */
+
+/* ---------- Buttons ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  height: 38px;
+  padding: 0 var(--s-4);
+  border-radius: var(--r-pill);
+  background: var(--bg-sunken);
+  color: var(--fg);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  border: 1px solid transparent;
+  transition: background var(--dur-fast), color var(--dur-fast), border-color var(--dur-fast);
+  user-select: none;
+}
+.btn:hover { background: var(--border); }
+.btn.primary { background: var(--fg); color: var(--bg); }
+.btn.primary:hover { background: var(--fg-muted); }
+.btn.ghost { background: transparent; }
+.btn.danger { color: var(--bad); }
+.btn.icon { width: 38px; padding: 0; }
+.btn.small { height: 30px; padding: 0 var(--s-3); font-size: var(--fs-xs); }
+
+/* ---------- Card (genérico) ---------- */
+.card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--r-3);
+  padding: var(--s-4);
+  box-shadow: var(--shadow-1);
+  transition: box-shadow var(--dur), transform var(--dur);
+}
+.card.interactive { cursor: pointer; }
+.card.interactive:hover {
+  box-shadow: var(--shadow-2);
+  transform: translateY(-1px);
+}
+
+/* ---------- Subject bubble (Subjects screen) ---------- */
+.subj-bubble {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  aspect-ratio: 1 / 1;
+  padding: var(--s-3);
+  border-radius: var(--r-4);
+  color: #fff;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform var(--dur);
+  box-shadow: var(--shadow-2);
+}
+.subj-bubble:hover { transform: scale(1.02); }
+.subj-bubble .name {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+}
+.subj-bubble .perf {
+  margin-top: 2px;
+  font-size: var(--fs-xs);
+  opacity: .9;
+}
+.subj-bubble .corner {
+  position: absolute;
+  top: var(--s-3);
+  right: var(--s-3);
+  width: 56px;
+  height: 56px;
+  pointer-events: none;
+}
+
+/* ---------- Subject row (Subjects list / detail) ---------- */
+.subj-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--s-4);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--r-3);
+  cursor: pointer;
+  transition: background var(--dur-fast);
+  overflow: hidden;
+}
+.subj-row:hover { background: var(--bg-sunken); }
+.subj-row .icon {
+  width: 56px; height: 56px;
+  border-radius: var(--r-3);
+  margin-right: var(--s-4);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+  font-size: 22px;
+  font-weight: 800;
+}
+.subj-row .meta { flex: 1; }
+.subj-row .name { font-size: var(--fs-lg); font-weight: 700; }
+.subj-row .perf { font-size: var(--fs-xs); color: var(--fg-muted); margin-top: 2px; }
+.subj-row .grade {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: var(--r-pill);
+  padding: 2px 10px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+}
+
+/* ---------- Modal / sheet ---------- */
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 17, 21, .4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  animation: fadeIn var(--dur) var(--ease);
+}
+.scrim.sheet-bottom {
+  align-items: flex-end;
+  padding-bottom: var(--s-4);
+}
+.sheet {
+  background: var(--bg-elevated);
+  border-radius: var(--r-4);
+  width: min(560px, 92vw);
+  max-height: 86vh;
+  overflow: auto;
+  padding: var(--s-5);
+  box-shadow: var(--shadow-3);
+}
+.sheet.bottom {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  width: 100%;
+  max-width: 720px;
+}
+.sheet .sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--s-4);
+}
+.sheet h3 { font-size: var(--fs-xl); }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* ---------- Toolbar (notebook) ---------- */
+.toolbar {
+  display: flex;
+  gap: var(--s-1);
+  padding: var(--s-2);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  box-shadow: var(--shadow-1);
+}
+.tool-btn {
+  width: 36px; height: 36px;
+  border-radius: var(--r-pill);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg-muted);
+  transition: background var(--dur-fast), color var(--dur-fast);
+}
+.tool-btn:hover { background: var(--bg-sunken); color: var(--fg); }
+.tool-btn.active { background: var(--fg); color: var(--bg); }
+
+/* ---------- Tabs ---------- */
+.tabs {
+  display: flex;
+  gap: var(--s-1);
+  padding: 4px;
+  background: var(--bg-sunken);
+  border-radius: var(--r-pill);
+}
+.tab {
+  flex: 1;
+  text-align: center;
+  padding: 8px 14px;
+  border-radius: var(--r-pill);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--fg-muted);
+  transition: background var(--dur-fast), color var(--dur-fast);
+}
+.tab.active { background: var(--bg-elevated); color: var(--fg); box-shadow: var(--shadow-1); }
+
+/* ---------- Input ---------- */
+.input {
+  width: 100%;
+  height: 42px;
+  padding: 0 var(--s-4);
+  border-radius: var(--r-pill);
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--fg);
+  font-size: var(--fs-md);
+  transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
+}
+.input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.input.with-icon {
+  padding-left: 42px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ba3b0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='8'/><path d='m21 21-4.35-4.35'/></svg>");
+  background-repeat: no-repeat;
+  background-position: 14px center;
+}
+
+/* ---------- Stat pill (Overview) ---------- */
+.stat {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--r-3);
+  padding: var(--s-3) var(--s-4);
+}
+.stat .lbl { font-size: var(--fs-xs); color: var(--fg-muted); text-transform: uppercase; letter-spacing: .04em; }
+.stat .val { font-size: var(--fs-2xl); font-weight: 800; margin-top: 4px; }
+.stat .sub { font-size: var(--fs-xs); color: var(--fg-faint); }
+
+/* ---------- Empty state ---------- */
+.empty {
+  text-align: center;
+  padding: var(--s-9) var(--s-4);
+  color: var(--fg-muted);
+}
+.empty .em-title { font-size: var(--fs-lg); font-weight: 700; color: var(--fg); margin-bottom: 8px; }

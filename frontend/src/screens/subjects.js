@@ -1,0 +1,216 @@
+/* ============================================================
+ * screens/subjects.js — list + detail (grades, homework, e-books)
+ * v1.0.0 — bubbles in list, detail screen with grades grid
+ * ============================================================ */
+
+import { collection } from "../services/store.js";
+
+const state = { selectedId: null };
+
+export async function renderSubjects(root) {
+  if (state.selectedId) {
+    return renderSubjectDetail(root, state.selectedId);
+  }
+  renderSubjectList(root);
+}
+
+function renderSubjectList(root) {
+  const subjects = collection("subjects").list();
+
+  root.innerHTML = `
+    <div class="screen">
+      <header class="screen-header">
+        <button class="btn icon" id="back" aria-label="Back">←</button>
+        <h1 class="h-title">Subjects</h1>
+        <div class="spacer"></div>
+        <button class="btn primary" id="new">+ New subject</button>
+      </header>
+      <div class="grid grid-auto-3" id="list"></div>
+    </div>
+  `;
+
+  root.querySelector("#list").innerHTML = subjects.map(s => `
+    <div class="subj-bubble" data-id="${s.id}" style="background:${s.color}">
+      <div>
+        <div class="corner"><div style="background:rgba(255,255,255,.18);border-radius:10px;width:48px;height:48px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800">${escapeHtml(s.icon || s.name[0])}</div></div>
+        <div class="name">${escapeHtml(s.name)}</div>
+        <div class="perf">${s.performance ? `+${s.performance}%` : ""} performance</div>
+      </div>
+      <span style="position:absolute;top:8px;left:8px;background:rgba(255,255,255,.92);color:var(--fg);border-radius:var(--r-pill);padding:2px 10px;font-size:var(--fs-xs);font-weight:700">${(s.grade ?? 0).toFixed(2)}</span>
+    </div>
+  `).join("");
+
+  root.querySelectorAll(".subj-bubble").forEach((el) => {
+    el.addEventListener("click", () => { state.selectedId = el.dataset.id; renderSubjects(root); });
+  });
+  root.querySelector("#new").addEventListener("click", () => openSubjectModal(null, () => renderSubjectList(root)));
+}
+
+function renderSubjectDetail(root, id) {
+  const subjects = collection("subjects");
+  const s = subjects.get(id);
+  if (!s) { state.selectedId = null; return renderSubjectList(root); }
+
+  // Mock grades grid (10 random but stable per subject)
+  const grades = mockGrades(s.id);
+
+  root.innerHTML = `
+    <div class="screen">
+      <header class="screen-header">
+        <button class="btn icon" id="back">←</button>
+        <h1 class="h-title">${escapeHtml(s.name)}</h1>
+        <div class="spacer"></div>
+      </header>
+      <div class="tabs" role="tablist">
+        <div class="tab active" data-tab="classes">Classes</div>
+        <div class="tab" data-tab="topics">Topics</div>
+      </div>
+      <div id="tab-body" style="margin-top: var(--s-5)"></div>
+    </div>
+  `;
+  root.querySelector("#back").addEventListener("click", () => { state.selectedId = null; renderSubjects(root); });
+  const body = root.querySelector("#tab-body");
+  const renderTab = (tab) => {
+    body.innerHTML = `
+      <div class="grid grid-2">
+        <div class="card">
+          <h4>Grades <span class="chip muted" style="margin-left:8px">Avg ${(s.grade ?? 0).toFixed(2)}</span></h4>
+          <div style="margin-top: var(--s-3); display:flex; flex-wrap:wrap; gap: 6px">
+            ${grades.map(g => `<span class="chip ${gClass(g)}">${g.toFixed(1)}</span>`).join("")}
+          </div>
+        </div>
+        <div class="card">
+          <h4>Homework</h4>
+          <div class="col gap-2" style="margin-top: var(--s-3)">
+            <div class="row gap-2"><span class="dot" style="background:var(--good)"></span><span class="small">Sep 14, 2023</span></div>
+            <div class="small">Ex. 4* on p. 20, Additional Mathematics book</div>
+            <div class="row gap-2" style="margin-top: var(--s-3)"><span class="dot" style="background:var(--warn)"></span><span class="small">Sep 20, 2023</span></div>
+            <div class="small">Complete ex. 12, 13 on p. 24</div>
+          </div>
+        </div>
+      </div>
+      <h4 style="margin: var(--s-5) 0 var(--s-3)">E-books <span class="muted small" style="margin-left:8px">See all</span></h4>
+      <div class="book-grid">
+        ${mockBooks(s.id).map(b => `
+          <div class="book-card">
+            <div class="cover" style="background:${b.bg}">${b.cover}</div>
+            <div class="title">${escapeHtml(b.title)}</div>
+          </div>
+        `).join("")}
+      </div>
+      <h4 style="margin: var(--s-5) 0 var(--s-3)">Notebooks <span class="muted small" style="margin-left:8px">See all</span></h4>
+      <div class="book-grid">
+        ${mockNotebooks(s.id).map(b => `
+          <div class="book-card">
+            <div class="cover" style="background:${b.bg};color:var(--fg)">${b.cover}</div>
+            <div class="title">${escapeHtml(b.title)}</div>
+          </div>
+        `).join("")}
+      </div>
+    `;
+  };
+  root.querySelectorAll(".tab").forEach((t) => {
+    t.addEventListener("click", () => {
+      root.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
+      t.classList.add("active");
+      renderTab(t.dataset.tab);
+    });
+  });
+  renderTab("classes");
+}
+
+function gClass(g) {
+  if (g >= 9) return "good";
+  if (g >= 7) return "info";
+  if (g >= 5) return "warn";
+  return "bad";
+}
+
+function mockGrades(seed) {
+  let s = 0; for (const c of String(seed)) s = (s * 31 + c.charCodeAt(0)) >>> 0;
+  const r = () => { s = (s * 1103515245 + 12345) >>> 0; return s / 2 ** 32; };
+  const out = [];
+  for (let i = 0; i < 18; i++) {
+    const g = 4 + r() * 6.5; // 4..10.5
+    out.push(Math.round(g * 10) / 10);
+  }
+  return out;
+}
+
+function mockBooks(seed) {
+  const titles = ["Additional Mathematics", "Advanced Geometry", "Linear Algebra", "The Math Book", "Kiselev's Geometry", "B.Sc. Mathematics", "Pure Mathematics 1"];
+  return titles.slice(0, 4).map((t, i) => ({
+    title: t,
+    bg: ["#3b8aff", "#a02020", "#e8eaa0", "#0a0a0a"][i % 4],
+    cover: i === 2 ? "" : t.split(" ").map(w => w[0]).slice(0, 2).join(""),
+  }));
+}
+
+function mockNotebooks(seed) {
+  return [
+    { title: "Properties of fractions", bg: "#fff", cover: "📓" },
+    { title: "Derivatives and dark matter", bg: "#fff", cover: "📓" },
+    { title: "Lesson log: Analysis", bg: "#fff", cover: "📓" },
+  ];
+}
+
+function openSubjectModal(id, onSaved) {
+  const subjects = collection("subjects");
+  const s = id ? subjects.get(id) : { name: "", icon: "", color: "var(--subj-blue)", grade: 7 };
+  const colors = ["var(--subj-red)", "var(--subj-yellow)", "var(--subj-blue)", "var(--subj-purple)", "var(--subj-green)", "var(--subj-pink)", "var(--subj-orange)", "var(--subj-teal)"];
+  const scrim = document.createElement("div");
+  scrim.className = "scrim";
+  scrim.innerHTML = `
+    <div class="sheet">
+      <div class="sheet-header">
+        <h3>${id ? "Edit" : "New"} subject</h3>
+        <button class="btn icon" data-act="close">✕</button>
+      </div>
+      <div class="col gap-3">
+        <input class="input" id="s-name" placeholder="Subject name" value="${escapeHtml(s.name)}" />
+        <input class="input" id="s-icon" placeholder="Icon letter" maxlength="2" value="${escapeHtml(s.icon || "")}" />
+        <div class="row gap-2" style="flex-wrap:wrap">
+          ${colors.map(c => `<button data-c="${c}" class="dot" style="width:30px;height:30px;background:${c};border:2px solid ${c === s.color ? "var(--fg)" : "transparent"}"></button>`).join("")}
+        </div>
+        <input class="input" id="s-grade" type="number" min="0" max="10" step="0.01" placeholder="Grade" value="${s.grade ?? ""}" />
+        <div class="row gap-2">
+          ${id ? `<button class="btn danger" data-act="del" style="margin-right:auto">Delete</button>` : ""}
+          <button class="btn primary" data-act="save">Save</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(scrim);
+  let chosenColor = s.color;
+  scrim.querySelectorAll('[data-c]').forEach((b) => b.addEventListener("click", () => {
+    chosenColor = b.dataset.c;
+    scrim.querySelectorAll('[data-c]').forEach(x => x.style.border = "2px solid transparent");
+    b.style.border = "2px solid var(--fg)";
+  }));
+  const close = () => scrim.remove();
+  scrim.querySelector('[data-act="close"]').addEventListener("click", close);
+  scrim.addEventListener("click", (e) => { if (e.target === scrim) close(); });
+  scrim.querySelector('[data-act="save"]').addEventListener("click", () => {
+    const name = scrim.querySelector("#s-name").value.trim();
+    if (!name) return;
+    const payload = {
+      name, icon: scrim.querySelector("#s-icon").value,
+      color: chosenColor, grade: parseFloat(scrim.querySelector("#s-grade").value) || null,
+    };
+    if (id) subjects.update(id, payload);
+    else subjects.create(payload);
+    close();
+    onSaved?.();
+  });
+  scrim.querySelector('[data-act="del"]')?.addEventListener("click", () => {
+    subjects.remove(id);
+    close();
+    onSaved?.();
+  });
+}
+
+function escapeHtml(s) {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}

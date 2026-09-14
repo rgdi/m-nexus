@@ -1,0 +1,195 @@
+/* ============================================================
+ * notebook.css — stylus-first canvas styles
+ * v1.0.0 — handwriting canvas, paper grid, pencil drawer
+ * ============================================================ */
+
+.notebook {
+  position: relative;
+  background: var(--pencil-bg);
+  background-image:
+    linear-gradient(var(--pencil-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--pencil-grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-3);
+  overflow: hidden;
+  touch-action: none;       /* we want pointer events, no scroll */
+}
+
+.notebook canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: crosshair;
+}
+
+.notebook-toolbar {
+  position: absolute;
+  top: var(--s-3);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: var(--s-1);
+  padding: 6px;
+  background: rgba(255, 255, 255, .92);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  box-shadow: var(--shadow-2);
+  z-index: 10;
+}
+[data-theme="dark"] .notebook-toolbar,
+@media (prefers-color-scheme: dark) {
+  .notebook-toolbar { background: rgba(26, 29, 36, .92); }
+}
+
+/* Pencil drawer — bottom-left */
+.pencil-drawer {
+  position: absolute;
+  left: var(--s-4);
+  bottom: var(--s-4);
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  box-shadow: var(--shadow-2);
+  z-index: 10;
+}
+.pencil {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform var(--dur-fast);
+  position: relative;
+  border: 2px solid transparent;
+}
+.pencil:hover { transform: translateY(-2px); }
+.pencil.active { border-color: var(--fg); }
+.pencil svg { width: 22px; height: 22px; }
+
+.pencil.add {
+  background: var(--bg-sunken);
+  color: var(--fg-muted);
+  border: 1px dashed var(--border-strong);
+}
+.pencil.trash {
+  background: rgba(255, 93, 93, .10);
+  color: var(--bad);
+}
+
+/* Notebook sidebar — right side */
+.notebook-side {
+  position: absolute;
+  right: var(--s-4);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  padding: 6px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  box-shadow: var(--shadow-2);
+  z-index: 10;
+}
+
+/* Pages nav — top right */
+.pages-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 6px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  box-shadow: var(--shadow-1);
+}
+.pages-nav .lbl { font-size: var(--fs-sm); font-weight: 600; padding: 0 var(--s-2); }
+.icon-btn {
+  width: 32px; height: 32px;
+  border-radius: var(--r-pill);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-sunken);
+  color: var(--fg-muted);
+}
+.icon-btn:hover { background: var(--border); color: var(--fg); }
+
+/* Definition popup */
+.def-popup {
+  position: absolute;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--r-3);
+  padding: var(--s-3) var(--s-4);
+  box-shadow: var(--shadow-3);
+  z-index: 20;
+  min-width: 280px;
+  max-width: 320px;
+}
+.def-popup .word {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+}
+.def-popup .pos {
+  color: var(--fg-muted);
+  font-size: var(--fs-sm);
+  margin-left: var(--s-1);
+}
+.def-popup .meta {
+  margin-top: var(--s-2);
+  font-size: var(--fs-xs);
+  color: var(--fg-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.def-popup .ipa {
+  font-family: var(--font-mono);
+  background: var(--bg-sunken);
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: var(--fs-xs);
+  display: inline-block;
+  margin-top: var(--s-2);
+}
+
+/* Notebook thumbnail grid (e.g. Math e-books) */
+.book-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--s-4);
+}
+.book-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--r-3);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform var(--dur);
+}
+.book-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-2); }
+.book-card .cover {
+  aspect-ratio: 3 / 4;
+  background: linear-gradient(135deg, #f0f2f5, #d6dae0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--fg-muted);
+}
+.book-card .title {
+  padding: var(--s-3);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}

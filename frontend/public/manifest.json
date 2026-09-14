@@ -1,0 +1,12 @@
+{
+  "name": "M-NEXUS — Education Service",
+  "short_name": "M-NEXUS",
+  "description": "Notebook, calendar, subjects and AI tutor for medical students.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f1115",
+  "theme_color": "#0f1115",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
