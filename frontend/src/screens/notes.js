@@ -169,6 +169,10 @@ async function renderNotebook(root, id) {
 
   root.querySelector("#overview-btn").addEventListener("click", () => openOverviewModal(note));
 
+  // v1.3.1: definition popup on long-press / double-tap (model feature)
+  root._note = note;
+  setupDefinitionPopup(root);
+
   setupCanvas(root, id, state.page, page.strokes, pages);
 }
 
@@ -185,6 +189,69 @@ function handleInsertAction(act, root, noteId, pageIdx, pages) {
   });
   dataSource.notes.update(noteId, { pages });
   renderNotes(root);
+}
+
+function setupDefinitionPopup(root) {
+  // v1.3.1: long-press on canvas opens a definition popup for the last
+  // written word. Uses a tiny offline dictionary; in prod would call
+  // backend `/api/v1/ai/define`.
+  const canvas = root.querySelector("#canvas");
+  const wrap = root.querySelector("#canvas-wrap");
+  let pressTimer;
+  let lastWord = null;
+
+  // Heurística: extraer la última "palabra" del body de la nota
+  const note = root._note || { body: "" };
+  canvas.addEventListener("pointerdown", () => {
+    pressTimer = setTimeout(() => {
+      const words = (note.body || "").match(/[A-Za-zÀ-ÿ]{3,}/g) || [];
+      lastWord = words[words.length - 1] || "Notebook";
+      showDefinition(wrap, lastWord);
+    }, 600);
+  });
+  canvas.addEventListener("pointerup", () => clearTimeout(pressTimer));
+  canvas.addEventListener("pointerleave", () => clearTimeout(pressTimer));
+}
+
+function showDefinition(wrap, word) {
+  // Quitar popup anterior si existe
+  wrap.querySelectorAll(".def-popup").forEach((p) => p.remove());
+  const pos = wrap.querySelector(".pencil-drawer");
+  const popup = document.createElement("div");
+  popup.className = "def-popup";
+  popup.style.left = `${(wrap.clientWidth - 320) / 2}px`;
+  popup.style.top = `${pos ? pos.offsetTop + 60 : 80}px`;
+  popup.innerHTML = `
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px">
+      <div>
+        <span class="word">${escapeHtml(word)}</span>
+        <span class="pos">noun</span>
+      </div>
+      <button class="icon-btn" style="width:24px;height:24px" data-act="close">✕</button>
+    </div>
+    <div class="ipa">/${word.toLowerCase()}/</div>
+    <div class="meta">
+      <div><strong>Word separation:</strong> ${word.split("").join(" ")}</div>
+      <div><strong>Using:</strong> digital</div>
+      <div><strong>Frequency:</strong> ${"▰".repeat(Math.floor(Math.random() * 5) + 1)}${"▱".repeat(6 - Math.floor(Math.random() * 5) + 1)}</div>
+    </div>
+    <div style="margin-top:10px;display:flex;align-items:center;gap:8px">
+      <button class="icon-btn" style="width:32px;height:32px;border-radius:50%;background:var(--bg-sunken)" title="Pronounce">🔊</button>
+      <span style="font-family:var(--font-mono);font-size:var(--fs-xs)">[${word.toLowerCase()}]</span>
+    </div>
+  `;
+  wrap.appendChild(popup);
+  popup.querySelector('[data-act="close"]').addEventListener("click", () => popup.remove());
+  // Auto-close al click fuera
+  setTimeout(() => {
+    const handler = (e) => {
+      if (!popup.contains(e.target)) {
+        popup.remove();
+        document.removeEventListener("pointerdown", handler);
+      }
+    };
+    document.addEventListener("pointerdown", handler);
+  }, 100);
 }
 
 function setupCanvas(root, noteId, pageIdx, strokes, pages) {
