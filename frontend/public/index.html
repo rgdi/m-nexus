@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -19,12 +19,12 @@
   <!-- v1.0.0 — entry point. Router + bootstrap -->
   <div id="app" class="app" data-route="overview"></div>
   <nav class="dock" id="dock" aria-label="Primary">
-    <a href="#/overview" class="dock-item" data-route="overview"><span class="i">⊞</span><span class="lbl">Overview</span></a>
-    <a href="#/calendar" class="dock-item" data-route="calendar"><span class="i">▦</span><span class="lbl">Calendar</span></a>
-    <a href="#/subjects" class="dock-item" data-route="subjects"><span class="i">◍</span><span class="lbl">Subjects</span></a>
-    <a href="#/notes"    class="dock-item" data-route="notes"><span class="i">✎</span><span class="lbl">Notes</span></a>
-    <a href="#/todos"    class="dock-item" data-route="todos"><span class="i">✓</span><span class="lbl">To-dos</span></a>
-    <a href="#/ai"       class="dock-item" data-route="ai"><span class="i">✦</span><span class="lbl">Tutor</span></a>
+    <a href="#/overview" class="dock-item" data-route="overview"><span class="i">⊞</span><span class="lbl" data-i18n="dock.overview">Overview</span></a>
+    <a href="#/calendar" class="dock-item" data-route="calendar"><span class="i">▦</span><span class="lbl" data-i18n="dock.calendar">Calendar</span></a>
+    <a href="#/subjects" class="dock-item" data-route="subjects"><span class="i">◍</span><span class="lbl" data-i18n="dock.subjects">Subjects</span></a>
+    <a href="#/notes"    class="dock-item" data-route="notes"><span class="i">✎</span><span class="lbl" data-i18n="dock.notes">Notes</span></a>
+    <a href="#/todos"    class="dock-item" data-route="todos"><span class="i">✓</span><span class="lbl" data-i18n="dock.todos">To-dos</span></a>
+    <a href="#/ai"       class="dock-item" data-route="ai"><span class="i">✦</span><span class="lbl" data-i18n="dock.tutor">Tutor</span></a>
   </nav>
   <script type="module" src="/src/main.js"></script>
 </body>

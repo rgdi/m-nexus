@@ -1,9 +1,10 @@
 /* ============================================================
  * screens/calendar.js — day / week calendar
- * v1.1.0 — conectado al backend via dataSource
+ * v1.3.0 — i18n integration
  * ============================================================ */
 
 import { dataSource } from "../services/dataSource.js";
+import { i18n } from "../services/i18n.js";
 
 const HOUR = 3600 * 1000;
 const PAD = (n) => String(n).padStart(2, "0");
@@ -26,16 +27,16 @@ export async function renderCalendar(root) {
   root.innerHTML = `
     <div class="screen">
       <header class="screen-header">
-        <h1 class="h-title">Calendar</h1>
+        <h1 class="h-title">${i18n.t("dock.calendar")}</h1>
         <div class="spacer"></div>
         <div class="view-toggle" role="tablist">
-          <button class="seg ${state.view === "day" ? "active" : ""}" data-view="day">Day</button>
-          <button class="seg ${state.view === "week" ? "active" : ""}" data-view="week">Week</button>
+          <button class="seg ${state.view === "day" ? "active" : ""}" data-view="day">${i18n.t("calendar.day")}</button>
+          <button class="seg ${state.view === "week" ? "active" : ""}" data-view="week">${i18n.t("calendar.week")}</button>
         </div>
-        <button class="btn primary" id="new-event">+ Create event</button>
+        <button class="btn primary" id="new-event">${i18n.t("calendar.create")}</button>
       </header>
 
-      <div id="cal-body"><div class="empty"><div class="em-title">Loading…</div></div></div>
+      <div id="cal-body"><div class="empty"><div class="em-title">${i18n.t("common.loading")}</div></div></div>
     </div>
   `;
   root.querySelectorAll(".view-toggle .seg").forEach((b) => {
@@ -138,14 +139,14 @@ function openEventModal(id, onSaved) {
     scrim.innerHTML = `
       <div class="sheet bottom">
         <div class="sheet-header">
-          <h3>${id ? "Edit" : "New"} event</h3>
+          <h3>${id ? i18n.t("calendar.edit") : i18n.t("calendar.new")}</h3>
           <button class="btn icon" data-act="close">✕</button>
         </div>
         <div class="col gap-3">
-          <input class="input" id="ev-title" placeholder="Title" value="${escapeHtml(e.title)}" />
+          <input class="input" id="ev-title" placeholder="${i18n.t("calendar.title")}" value="${escapeHtml(e.title)}" />
           <div class="row gap-2">
-            <input class="input" id="ev-prof" placeholder="Prof / Teacher" value="${escapeHtml(e.prof || "")}" />
-            <input class="input" id="ev-room" placeholder="Room" value="${escapeHtml(e.room || "")}" />
+            <input class="input" id="ev-prof" placeholder="${i18n.t("calendar.prof")}" value="${escapeHtml(e.prof || "")}" />
+            <input class="input" id="ev-room" placeholder="${i18n.t("calendar.room")}" value="${escapeHtml(e.room || "")}" />
           </div>
           <div class="row gap-2">
             <input class="input" id="ev-start" type="datetime-local"
@@ -155,14 +156,14 @@ function openEventModal(id, onSaved) {
           </div>
           <select class="input" id="ev-type">
             <option value="">—</option>
-            <option value="Lecture" ${e.type === "Lecture" ? "selected" : ""}>Lecture</option>
-            <option value="Homework" ${e.type === "Homework" ? "selected" : ""}>Homework</option>
-            <option value="Referat" ${e.type === "Referat" ? "selected" : ""}>Referat</option>
-            <option value="Exam" ${e.type === "Exam" ? "selected" : ""}>Exam</option>
+            <option value="Lecture" ${e.type === "Lecture" ? "selected" : ""}>${i18n.t("calendar.type.lecture")}</option>
+            <option value="Homework" ${e.type === "Homework" ? "selected" : ""}>${i18n.t("calendar.type.homework")}</option>
+            <option value="Referat" ${e.type === "Referat" ? "selected" : ""}>${i18n.t("calendar.type.referat")}</option>
+            <option value="Exam" ${e.type === "Exam" ? "selected" : ""}>${i18n.t("calendar.type.exam")}</option>
           </select>
           <div class="row gap-2">
-            ${id ? `<button class="btn danger" data-act="del" style="margin-right:auto">Delete</button>` : ""}
-            <button class="btn primary" data-act="save">Save</button>
+            ${id ? `<button class="btn danger" data-act="del" style="margin-right:auto">${i18n.t("common.delete")}</button>` : ""}
+            <button class="btn primary" data-act="save">${i18n.t("common.save")}</button>
           </div>
         </div>
       </div>

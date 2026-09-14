@@ -1,12 +1,10 @@
 /* ============================================================
  * screens/notes.js — notebook con canvas stylus-first.
- * v1.1.0 — conectado al backend via dataSource.
- *
- * Cada stroke se appenda al backend como evento (appendStroke)
- * para sync incremental sin reenviar la nota entera.
+ * v1.3.0 — i18n integration
  * ============================================================ */
 
 import { dataSource } from "../services/dataSource.js";
+import { i18n } from "../services/i18n.js";
 
 const state = {
   selectedId: null,
@@ -32,19 +30,19 @@ async function renderNotesList(root) {
   root.innerHTML = `
     <div class="screen">
       <header class="screen-header">
-        <h1 class="h-title">Notes</h1>
+        <h1 class="h-title">${i18n.t("dock.notes")}</h1>
         <div class="spacer"></div>
-        <button class="btn primary" id="new">+ New note</button>
+        <button class="btn primary" id="new">${i18n.t("notes.new")}</button>
       </header>
       <div class="row gap-2" style="margin-bottom: var(--s-5)">
-        <input class="input with-icon" id="search" placeholder="Search notebooks" />
-        <button class="btn icon" aria-label="Filter">⛁</button>
+        <input class="input with-icon" id="search" placeholder="${i18n.t("notes.search")}" />
+        <button class="btn icon" aria-label="${i18n.t("common.filter")}">⛁</button>
       </div>
-      <div class="book-grid" id="grid"><div class="empty"><div class="em-title">Loading…</div></div></div>
+      <div class="book-grid" id="grid"><div class="empty"><div class="em-title">${i18n.t("common.loading")}</div></div></div>
     </div>
   `;
   root.querySelector("#new").addEventListener("click", async () => {
-    const n = await dataSource.notes.create({ title: "Untitled", body: "" });
+    const n = await dataSource.notes.create({ title: i18n.t("notes.untitled"), body: "" });
     state.selectedId = n.id;
     state.page = 0;
     renderNotes(root);
@@ -56,7 +54,7 @@ async function renderNotesList(root) {
     });
   });
   if (notes.length === 0) {
-    root.querySelector("#grid").innerHTML = `<div class="empty"><div class="em-title">No notebooks yet</div><div>Create one to get started.</div></div>`;
+    root.querySelector("#grid").innerHTML = `<div class="empty"><div class="em-title">${i18n.t("notes.noNotes")}</div><div>${i18n.t("notes.createFirst")}</div></div>`;
     return;
   }
   root.querySelector("#grid").innerHTML = notes.map(n => `
@@ -86,33 +84,33 @@ async function renderNotebook(root, id) {
         <div class="spacer"></div>
         <div class="pages-nav">
           <button class="icon-btn" id="prev">←</button>
-          <span class="lbl">Page ${state.page + 1}/${pages.length}</span>
+          <span class="lbl">${i18n.t("notes.page", { current: state.page + 1, total: pages.length })}</span>
           <button class="icon-btn" id="next">→</button>
           <button class="icon-btn" id="add-page">+</button>
         </div>
       </header>
 
       <div class="row gap-2" style="margin-bottom: var(--s-3)">
-        <button class="btn primary" id="overview-btn">✦ Intelligent overview</button>
-        <button class="btn icon" id="search-btn" aria-label="Search">⌕</button>
+        <button class="btn primary" id="overview-btn">${i18n.t("notes.intelligentOverview")}</button>
+        <button class="btn icon" id="search-btn" aria-label="${i18n.t("common.search")}">⌕</button>
       </div>
 
       <div class="notebook" id="canvas-wrap" style="height: calc(100vh - 320px); min-height: 480px">
         <div class="notebook-toolbar">
-          <button class="tool-btn" data-tool="pen" title="Pen">✎</button>
-          <button class="tool-btn" data-tool="highlighter" title="Highlighter">▒</button>
-          <button class="tool-btn" data-tool="eraser" title="Eraser">⌫</button>
-          <button class="tool-btn" data-tool="select" title="Select">⤡</button>
-          <button class="tool-btn" data-tool="ruler" title="Ruler">▤</button>
+          <button class="tool-btn" data-tool="pen" title="${i18n.t("notes.tool.pen")}">✎</button>
+          <button class="tool-btn" data-tool="highlighter" title="${i18n.t("notes.tool.highlighter")}">▒</button>
+          <button class="tool-btn" data-tool="eraser" title="${i18n.t("notes.tool.eraser")}">⌫</button>
+          <button class="tool-btn" data-tool="select" title="${i18n.t("notes.tool.select")}">⤡</button>
+          <button class="tool-btn" data-tool="ruler" title="${i18n.t("notes.tool.ruler")}">▤</button>
         </div>
 
         <div class="notebook-side">
-          <button class="tool-btn" data-act="voice" title="Voice">🎙</button>
-          <button class="tool-btn" data-act="code" title="Code">⌨</button>
-          <button class="tool-btn" data-act="image" title="Image">▢</button>
-          <button class="tool-btn" data-act="graph" title="Graph">⌬</button>
-          <button class="tool-btn" data-act="link" title="Link">⌘</button>
-          <button class="tool-btn" data-act="table" title="Table">▦</button>
+          <button class="tool-btn" data-act="voice" title="${i18n.t("notes.tool.voice")}">🎙</button>
+          <button class="tool-btn" data-act="code" title="${i18n.t("notes.tool.code")}">⌨</button>
+          <button class="tool-btn" data-act="image" title="${i18n.t("notes.tool.image")}">▢</button>
+          <button class="tool-btn" data-act="graph" title="${i18n.t("notes.tool.graph")}">⌬</button>
+          <button class="tool-btn" data-act="link" title="${i18n.t("notes.tool.link")}">⌘</button>
+          <button class="tool-btn" data-act="table" title="${i18n.t("notes.tool.table")}">▦</button>
         </div>
 
         <div class="pencil-drawer">
@@ -144,7 +142,7 @@ async function renderNotebook(root, id) {
 
   const titleEl = root.querySelector("#title");
   titleEl.addEventListener("blur", async () => {
-    await dataSource.notes.update(id, { title: titleEl.textContent.trim() || "Untitled" });
+    await dataSource.notes.update(id, { title: titleEl.textContent.trim() || i18n.t("notes.untitled") });
   });
 
   root.querySelectorAll(".tool-btn").forEach((b) => {
@@ -300,15 +298,15 @@ function openOverviewModal(note) {
   scrim.innerHTML = `
     <div class="sheet">
       <div class="sheet-header">
-        <h3>Intelligent overview</h3>
+        <h3>${i18n.t("notes.overviewTitle")}</h3>
         <button class="btn icon" data-act="close">✕</button>
       </div>
-      <div class="muted small">Generated from ${note.pages?.length ?? 1} page(s) of handwriting and text.</div>
+      <div class="muted small">${i18n.t("notes.overviewSubtitle", { n: note.pages?.length ?? 1 })}</div>
       <div style="margin-top: var(--s-4); white-space: pre-wrap; font-size: var(--fs-md); line-height: 1.6">
-${escapeHtml(body) || "No content yet. Start writing!"}
+${escapeHtml(body) || i18n.t("notes.overviewEmpty")}
       </div>
       <div class="row gap-2" style="margin-top: var(--s-5)">
-        <button class="btn primary" data-act="close">Done</button>
+        <button class="btn primary" data-act="close">${i18n.t("common.close")}</button>
       </div>
     </div>
   `;

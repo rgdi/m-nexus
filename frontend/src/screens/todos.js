@@ -1,9 +1,10 @@
 /* ============================================================
  * screens/todos.js — to-do's list with priority and due dates
- * v1.1.0 — conectado al backend via dataSource
+ * v1.3.0 — i18n integration
  * ============================================================ */
 
 import { dataSource } from "../services/dataSource.js";
+import { i18n } from "../services/i18n.js";
 
 const PAD = (n) => String(n).padStart(2, "0");
 const fmtDateTime = (ms) => {
@@ -26,15 +27,15 @@ export async function renderTodos(root) {
   root.innerHTML = `
     <div class="screen">
       <header class="screen-header">
-        <h1 class="h-title">To-do's</h1>
+        <h1 class="h-title">${i18n.t("dock.todos")}</h1>
         <div class="spacer"></div>
-        <button class="btn primary" id="new">+ New task</button>
+        <button class="btn primary" id="new">${i18n.t("todos.new")}</button>
       </header>
 
       <div class="grid grid-3" style="margin-bottom: var(--s-5)">
-        <div class="stat"><div class="lbl">Open</div><div class="val">${tasks.filter(t => !t.done).length}</div></div>
-        <div class="stat"><div class="lbl">Done</div><div class="val">${tasks.filter(t => t.done).length}</div></div>
-        <div class="stat"><div class="lbl">Overdue</div><div class="val">${tasks.filter(t => isOverdue(t.due, t.done)).length}</div></div>
+        <div class="stat"><div class="lbl">${i18n.t("todos.open")}</div><div class="val">${tasks.filter(t => !t.done).length}</div></div>
+        <div class="stat"><div class="lbl">${i18n.t("todos.done")}</div><div class="val">${tasks.filter(t => t.done).length}</div></div>
+        <div class="stat"><div class="lbl">${i18n.t("todos.overdue")}</div><div class="val">${tasks.filter(t => isOverdue(t.due, t.done)).length}</div></div>
       </div>
 
       <div class="card" style="padding: 0">
@@ -46,7 +47,7 @@ export async function renderTodos(root) {
   root.querySelector("#new").addEventListener("click", () => openTaskModal(null, () => renderTodos(root)));
   root.querySelector("#list").innerHTML = tasks.length
     ? tasks.map(t => taskRow(t)).join("")
-    : `<div class="empty"><div class="em-title">All clear</div><div>No pending tasks.</div></div>`;
+    : `<div class="empty"><div class="em-title">${i18n.t("todos.empty")}</div><div>${i18n.t("todos.emptySub")}</div></div>`;
 
   root.querySelectorAll(".todo-row").forEach((row) => {
     const id = row.dataset.id;
@@ -71,7 +72,7 @@ function taskRow(t) {
       </button>
       <div style="flex:1; ${t.done ? "text-decoration:line-through;color:var(--fg-faint)" : ""}">
         <div class="bold">${escapeHtml(t.text)}</div>
-        ${t.due ? `<div class="small" style="color:${overdue ? "var(--bad)" : "var(--fg-muted)"}">📅 ${fmtDateTime(t.due)} ${overdue ? " · OVERDUE" : ""}</div>` : ""}
+        ${t.due ? `<div class="small" style="color:${overdue ? "var(--bad)" : "var(--fg-muted)"}">📅 ${fmtDateTime(t.due)} ${overdue ? " · " + i18n.t("todos.overdueBadge") : ""}</div>` : ""}
       </div>
       <div class="row gap-2">
         ${t.priority ? `<span class="chip warn">${PRIORITY_LABEL[t.priority] || ""}</span>` : ""}
@@ -90,23 +91,23 @@ function openTaskModal(id, onSaved) {
     scrim.innerHTML = `
       <div class="sheet bottom">
         <div class="sheet-header">
-          <h3>${id ? "Edit" : "New"} task</h3>
+          <h3>${id ? i18n.t("todos.edit") : i18n.t("todos.new")}</h3>
           <button class="btn icon" data-act="close">✕</button>
         </div>
         <div class="col gap-3">
-          <input class="input" id="t-text" placeholder="What needs to be done?" value="${escapeHtml(task.text)}" />
+          <input class="input" id="t-text" placeholder="${i18n.t("todos.placeholder")}" value="${escapeHtml(task.text)}" />
           <div class="row gap-2">
             <input class="input" id="t-due" type="datetime-local" value="${task.due ? toLocalDateTime(task.due) : ""}" />
             <select class="input" id="t-priority">
-              <option value="0" ${task.priority === 0 ? "selected" : ""}>Normal</option>
-              <option value="1" ${task.priority === 1 ? "selected" : ""}>🔼 Medium</option>
-              <option value="2" ${task.priority === 2 ? "selected" : ""}>🔺 Urgent</option>
+              <option value="0" ${task.priority === 0 ? "selected" : ""}>${i18n.t("todos.normal")}</option>
+              <option value="1" ${task.priority === 1 ? "selected" : ""}>${i18n.t("todos.medium")}</option>
+              <option value="2" ${task.priority === 2 ? "selected" : ""}>${i18n.t("todos.urgent")}</option>
             </select>
           </div>
-          <input class="input" id="t-subject" placeholder="Subject / tag" value="${escapeHtml(task.subject || "")}" />
+          <input class="input" id="t-subject" placeholder="${i18n.t("todos.tag")}" value="${escapeHtml(task.subject || "")}" />
           <div class="row gap-2">
-            ${id ? `<button class="btn danger" data-act="del" style="margin-right:auto">Delete</button>` : ""}
-            <button class="btn primary" data-act="save">Save</button>
+            ${id ? `<button class="btn danger" data-act="del" style="margin-right:auto">${i18n.t("common.delete")}</button>` : ""}
+            <button class="btn primary" data-act="save">${i18n.t("common.save")}</button>
           </div>
         </div>
       </div>

@@ -1,9 +1,10 @@
 /* ============================================================
  * screens/subjects.js — list + detail (grades, homework, e-books)
- * v1.1.0 — conectado al backend via dataSource (con fallback local)
+ * v1.3.0 — i18n integration
  * ============================================================ */
 
 import { dataSource } from "../services/dataSource.js";
+import { i18n } from "../services/i18n.js";
 
 const state = { selectedId: null };
 
@@ -20,13 +21,13 @@ async function renderSubjectList(root) {
   root.innerHTML = `
     <div class="screen">
       <header class="screen-header">
-        <button class="btn icon" id="back" aria-label="Back">←</button>
-        <h1 class="h-title">Subjects</h1>
+        <button class="btn icon" id="back" aria-label="${i18n.t("common.back")}">←</button>
+        <h1 class="h-title">${i18n.t("dock.subjects")}</h1>
         <div class="spacer"></div>
-        <button class="btn primary" id="new">+ New subject</button>
+        <button class="btn primary" id="new">${i18n.t("subjects.new")}</button>
       </header>
       <div class="grid grid-auto-3" id="list">
-        <div class="empty"><div class="em-title">Loading…</div></div>
+        <div class="empty"><div class="em-title">${i18n.t("common.loading")}</div></div>
       </div>
     </div>
   `;
@@ -34,7 +35,7 @@ async function renderSubjectList(root) {
   root.querySelector("#new").addEventListener("click", () => openSubjectModal(null, () => renderSubjectList(root)));
 
   if (subjects.length === 0) {
-    root.querySelector("#list").innerHTML = `<div class="empty"><div class="em-title">No subjects yet</div><div>Create your first subject to get started.</div></div>`;
+    root.querySelector("#list").innerHTML = `<div class="empty"><div class="em-title">${i18n.t("subjects.noSubjects")}</div><div>${i18n.t("subjects.createFirst")}</div></div>`;
     return;
   }
 
@@ -68,8 +69,8 @@ async function renderSubjectDetail(root, id) {
         <div class="spacer"></div>
       </header>
       <div class="tabs" role="tablist">
-        <div class="tab active" data-tab="classes">Classes</div>
-        <div class="tab" data-tab="topics">Topics</div>
+        <div class="tab active" data-tab="classes">${i18n.t("subjects.classes")}</div>
+        <div class="tab" data-tab="topics">${i18n.t("subjects.topics")}</div>
       </div>
       <div id="tab-body" style="margin-top: var(--s-5)"></div>
     </div>
@@ -80,13 +81,13 @@ async function renderSubjectDetail(root, id) {
     body.innerHTML = `
       <div class="grid grid-2">
         <div class="card">
-          <h4>Grades <span class="chip muted" style="margin-left:8px">Avg ${(s.grade ?? 0).toFixed(2)}</span></h4>
+          <h4>${i18n.t("subjects.grades")} <span class="chip muted" style="margin-left:8px">${i18n.t("subjects.avg", { grade: (s.grade ?? 0).toFixed(2) })}</span></h4>
           <div style="margin-top: var(--s-3); display:flex; flex-wrap:wrap; gap: 6px">
             ${grades.map(g => `<span class="chip ${gClass(g)}">${g.toFixed(1)}</span>`).join("")}
           </div>
         </div>
         <div class="card">
-          <h4>Homework</h4>
+          <h4>${i18n.t("subjects.homework")}</h4>
           <div class="col gap-2" style="margin-top: var(--s-3)">
             <div class="row gap-2"><span class="dot" style="background:var(--good)"></span><span class="small">Sep 14, 2023</span></div>
             <div class="small">Ex. 4* on p. 20, Additional Mathematics book</div>
@@ -95,7 +96,7 @@ async function renderSubjectDetail(root, id) {
           </div>
         </div>
       </div>
-      <h4 style="margin: var(--s-5) 0 var(--s-3)">E-books <span class="muted small" style="margin-left:8px">See all</span></h4>
+      <h4 style="margin: var(--s-5) 0 var(--s-3)">${i18n.t("subjects.ebooks")} <span class="muted small" style="margin-left:8px">${i18n.t("subjects.seeAll")}</span></h4>
       <div class="book-grid">
         ${mockBooks(s.id).map(b => `
           <div class="book-card">
@@ -104,7 +105,7 @@ async function renderSubjectDetail(root, id) {
           </div>
         `).join("")}
       </div>
-      <h4 style="margin: var(--s-5) 0 var(--s-3)">Notebooks <span class="muted small" style="margin-left:8px">See all</span></h4>
+      <h4 style="margin: var(--s-5) 0 var(--s-3)">${i18n.t("subjects.notebooks")} <span class="muted small" style="margin-left:8px">${i18n.t("subjects.seeAll")}</span></h4>
       <div class="book-grid">
         ${mockNotebooks(s.id).map(b => `
           <div class="book-card">
@@ -169,19 +170,19 @@ function openSubjectModal(id, onSaved) {
     scrim.innerHTML = `
       <div class="sheet">
         <div class="sheet-header">
-          <h3>${id ? "Edit" : "New"} subject</h3>
+          <h3>${id ? i18n.t("subjects.edit") : i18n.t("subjects.new")}</h3>
           <button class="btn icon" data-act="close">✕</button>
         </div>
         <div class="col gap-3">
-          <input class="input" id="s-name" placeholder="Subject name" value="${escapeHtml(subj.name)}" />
-          <input class="input" id="s-icon" placeholder="Icon letter" maxlength="2" value="${escapeHtml(subj.icon || "")}" />
+          <input class="input" id="s-name" placeholder="${i18n.t("subjects.new")}" value="${escapeHtml(subj.name)}" />
+          <input class="input" id="s-icon" placeholder="${i18n.t("subjects.icon")}" maxlength="2" value="${escapeHtml(subj.icon || "")}" />
           <div class="row gap-2" style="flex-wrap:wrap">
             ${colors.map(c => `<button data-c="${c}" class="dot" style="width:30px;height:30px;background:${c};border:2px solid ${c === subj.color ? "var(--fg)" : "transparent"}"></button>`).join("")}
           </div>
-          <input class="input" id="s-grade" type="number" min="0" max="10" step="0.01" placeholder="Grade" value="${subj.grade ?? ""}" />
+          <input class="input" id="s-grade" type="number" min="0" max="10" step="0.01" placeholder="${i18n.t("subjects.grade")}" value="${subj.grade ?? ""}" />
           <div class="row gap-2">
-            ${id ? `<button class="btn danger" data-act="del" style="margin-right:auto">Delete</button>` : ""}
-            <button class="btn primary" data-act="save">Save</button>
+            ${id ? `<button class="btn danger" data-act="del" style="margin-right:auto">${i18n.t("common.delete")}</button>` : ""}
+            <button class="btn primary" data-act="save">${i18n.t("common.save")}</button>
           </div>
         </div>
       </div>

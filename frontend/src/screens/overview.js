@@ -1,9 +1,10 @@
 /* ============================================================
  * screens/overview.js — landing screen
- * v1.1.0 — conectado al backend via dataSource
+ * v1.3.0 — i18n integration
  * ============================================================ */
 
 import { dataSource } from "../services/dataSource.js";
+import { i18n } from "../services/i18n.js";
 
 const HOUR = 3600 * 1000;
 const PAD = (n) => String(n).padStart(2, "0");
@@ -51,22 +52,23 @@ export async function renderOverview(root) {
 
   const todayLabel = new Date().toLocaleDateString(undefined, { month: "short", day: "numeric" });
   const notes = await dataSource.notes.list();
+  const gradedSubjects = subjects.filter(s => s.grade);
 
   root.innerHTML = `
     <div class="screen">
       <header class="screen-header">
-        <h1 class="h-title">Overview</h1>
+        <h1 class="h-title">${i18n.t("dock.overview")}</h1>
         <span class="h-sub">${todayLabel}</span>
         <div class="spacer"></div>
-        ${nextDeadline ? `<span class="chip bad">Referat deadline: ${fmtRange(nextDeadline.start, nextDeadline.end).slice(0, -3)}</span>` : ""}
+        ${nextDeadline ? `<span class="chip bad">${i18n.t("overview.referatBadge", { time: fmtRange(nextDeadline.start, nextDeadline.end).slice(0, -3) })}</span>` : ""}
       </header>
 
       <div class="grid grid-3" style="align-items:start">
         <div>
-          <h3 class="muted small semibold" style="margin-bottom: var(--s-3)">TODAY'S SCHEDULE</h3>
+          <h3 class="muted small semibold" style="margin-bottom: var(--s-3)">${i18n.t("overview.todaySchedule")}</h3>
           <div class="col gap-2">
             ${events.length === 0
-              ? `<div class="empty">No events scheduled today</div>`
+              ? `<div class="empty">${i18n.t("overview.noEvents")}</div>`
               : events.map(e => `
                 <div class="card" style="border-left: 3px solid ${COLOR_FOR[e.subject] || COLOR_FOR.default}">
                   <div class="muted tiny">${fmtRange(e.start, e.end)}</div>
@@ -81,31 +83,31 @@ export async function renderOverview(root) {
         </div>
 
         <div>
-          <h3 class="muted small semibold" style="margin-bottom: var(--s-3)">SUBJECTS</h3>
+          <h3 class="muted small semibold" style="margin-bottom: var(--s-3)">${i18n.t("overview.subjects")}</h3>
           <div class="grid grid-2">${cardsHtml}</div>
         </div>
 
         <div>
-          <h3 class="muted small semibold" style="margin-bottom: var(--s-3)">AT A GLANCE</h3>
+          <h3 class="muted small semibold" style="margin-bottom: var(--s-3)">${i18n.t("overview.atGlance")}</h3>
           <div class="col gap-3">
             <div class="stat">
-              <div class="lbl">Due today</div>
+              <div class="lbl">${i18n.t("overview.dueToday")}</div>
               <div class="val">${openTasks.filter(t => t.due && sameDay(t.due, Date.now())).length}</div>
-              <div class="sub">${openTasks.length} open tasks total</div>
+              <div class="sub">${openTasks.length} ${i18n.t("overview.openTasks")}</div>
             </div>
             <div class="stat">
-              <div class="lbl">Next Referat</div>
+              <div class="lbl">${i18n.t("overview.nextReferat")}</div>
               <div class="val" style="font-size: var(--fs-xl)">${nextDeadline ? fmtTime(nextDeadline.start) : "—"}</div>
-              <div class="sub">${nextDeadline ? escapeHtml(nextDeadline.title) : "no deadline this week"}</div>
+              <div class="sub">${nextDeadline ? escapeHtml(nextDeadline.title) : i18n.t("overview.noDeadline")}</div>
             </div>
             <div class="stat">
-              <div class="lbl">Avg grade</div>
-              <div class="val">${avg(subjects.map(s => s.grade).filter(Boolean)).toFixed(2)}</div>
-              <div class="sub">across ${subjects.filter(s => s.grade).length} subjects</div>
+              <div class="lbl">${i18n.t("overview.avgGrade")}</div>
+              <div class="val">${avg(gradedSubjects.map(s => s.grade)).toFixed(2)}</div>
+              <div class="sub">${i18n.t("overview.acrossSubjects", { n: gradedSubjects.length })}</div>
             </div>
           </div>
 
-          <h3 class="muted small semibold" style="margin: var(--s-5) 0 var(--s-3)">QUICK NOTES</h3>
+          <h3 class="muted small semibold" style="margin: var(--s-5) 0 var(--s-3)">${i18n.t("overview.quickNotes")}</h3>
           <div class="grid grid-2">${renderQuickNotes(notes)}</div>
         </div>
       </div>
@@ -117,7 +119,7 @@ function avg(arr) { return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.len
 
 function renderQuickNotes(notes) {
   const items = notes.slice(0, 4);
-  if (!items.length) return `<div class="muted small">No notes yet</div>`;
+  if (!items.length) return `<div class="muted small">${i18n.t("notes.noNotes")}</div>`;
   return items.map(n => `
     <a href="#/notes" class="card interactive" style="padding: var(--s-3)">
       <div class="bold truncate">${escapeHtml(n.title)}</div>

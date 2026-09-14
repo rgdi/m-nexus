@@ -6,6 +6,8 @@
 import { api } from "./services/api.js";
 import { store } from "./services/store.js";
 import { device, startDeviceWatch } from "./services/device.js";
+import { i18n } from "./services/i18n.js";
+import { mountLangSwitcher } from "./widgets/lang_switcher.js";
 import { renderOverview } from "./screens/overview.js";
 import { renderCalendar } from "./screens/calendar.js";
 import { renderSubjects } from "./screens/subjects.js";
@@ -34,6 +36,10 @@ function parseHash() {
 function setActiveDock(route) {
   dock.querySelectorAll(".dock-item").forEach((el) => {
     el.classList.toggle("active", el.dataset.route === route);
+    const label = el.querySelector(".lbl");
+    if (label) {
+      label.textContent = i18n.t(`dock.${route}`);
+    }
   });
 }
 
@@ -41,7 +47,7 @@ async function render() {
   const route = parseHash();
   app.dataset.route = route;
   setActiveDock(route);
-  app.innerHTML = '<div class="screen"><div class="empty">Cargando…</div></div>';
+  app.innerHTML = `<div class="screen"><div class="empty">${i18n.t("common.loading")}</div></div>`;
   try {
     const fn = ROUTES[route];
     await fn(app);
@@ -50,11 +56,17 @@ async function render() {
     app.innerHTML = `
       <div class="screen">
         <div class="empty">
-          <div class="em-title">Algo falló</div>
-          <div>${e.message}</div>
+          <div class="em-title">${i18n.t("common.error")}</div>
+          <div>${escapeHtml(e.message)}</div>
         </div>
       </div>`;
   }
+}
+
+function escapeHtml(s) {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
 window.addEventListener("hashchange", render);
@@ -63,6 +75,10 @@ window.addEventListener("hashchange", render);
 async function bootstrap() {
   // v1.2.0: arrancar watcher de dispositivo (DPR, orientation, theme, etc).
   startDeviceWatch();
+  // v1.3.0: montar selector de idioma
+  mountLangSwitcher();
+  // Set initial lang attribute on html
+  document.documentElement.lang = i18n.lang;
 
   // API: si no hay backend en línea, usa fallback offline (localStorage).
   store.bind(api);
@@ -79,8 +95,14 @@ async function bootstrap() {
       store.set("seed.v1", true);
     }
   }
-  // Exponer device para debug en consola
-  if (typeof window !== "undefined") window.__device = device;
+  // Exponer device + i18n para debug en consola
+  if (typeof window !== "undefined") {
+    window.__device = device;
+    window.__i18n = i18n;
+  }
+
+  // v1.3.0: re-render al cambiar idioma
+  i18n.subscribe(() => render());
 
   await render();
 }
