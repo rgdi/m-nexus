@@ -5,6 +5,7 @@
 
 import { api } from "./services/api.js";
 import { store } from "./services/store.js";
+import { device, startDeviceWatch } from "./services/device.js";
 import { renderOverview } from "./screens/overview.js";
 import { renderCalendar } from "./screens/calendar.js";
 import { renderSubjects } from "./screens/subjects.js";
@@ -60,6 +61,9 @@ window.addEventListener("hashchange", render);
 
 /* ===== Bootstrap ===== */
 async function bootstrap() {
+  // v1.2.0: arrancar watcher de dispositivo (DPR, orientation, theme, etc).
+  startDeviceWatch();
+
   // API: si no hay backend en línea, usa fallback offline (localStorage).
   store.bind(api);
   // Detectar backend
@@ -68,13 +72,16 @@ async function bootstrap() {
     document.documentElement.dataset.backend = "online";
   } catch {
     document.documentElement.dataset.backend = "offline";
-    // Sembrar datos demo la primera vez
-    if (!store.has("seed.v1")) {
+    // Sembrar datos demo la primera vez (si no hay backend ni cache local)
+    if (!store.has("seed.v1") && store.keys().filter(k => k.startsWith("col.")).length === 0) {
       const { seedDemo } = await import("./services/demoSeed.js");
       seedDemo(store);
       store.set("seed.v1", true);
     }
   }
+  // Exponer device para debug en consola
+  if (typeof window !== "undefined") window.__device = device;
+
   await render();
 }
 

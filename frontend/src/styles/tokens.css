@@ -1,7 +1,7 @@
 /* ============================================================
  * Design tokens — extracted from the Education Service reference.
  * Tablet-first, light theme default, dark mode ready.
- * v1.0.0
+ * v1.2.0 — fluid typography + full responsive scale.
  * ============================================================ */
 :root {
   /* ---------- Color base ---------- */
@@ -15,11 +15,11 @@
   --border-strong:#cdd1d8;
 
   /* ---------- Subject palette (cards grandes) ---------- */
-  --subj-red:     #ff5d5d;  /* math */
-  --subj-yellow:  #d8d65a;  /* politics-econ */
-  --subj-blue:    #56c4e6;  /* deutsch */
-  --subj-purple:  #8c5cf6;  /* physics */
-  --subj-green:   #4cc88c;  /* chemistry */
+  --subj-red:     #ff5d5d;
+  --subj-yellow:  #d8d65a;
+  --subj-blue:    #56c4e6;
+  --subj-purple:  #8c5cf6;
+  --subj-green:   #4cc88c;
   --subj-pink:    #ff8fb8;
   --subj-orange:  #ff9c4a;
   --subj-teal:    #4cc0c0;
@@ -33,32 +33,49 @@
   --accent:       #8c5cf6;
   --accent-soft:  rgba(140, 92, 246, .12);
 
-  /* ---------- Spacing ---------- */
-  --s-1: 4px;  --s-2: 8px;  --s-3: 12px;  --s-4: 16px;
-  --s-5: 20px; --s-6: 24px; --s-7: 32px;  --s-8: 40px;
-  --s-9: 56px; --s-10:72px;
+  /* ---------- Spacing (fluid: shrinks on phones) ---------- */
+  --s-1: clamp(3px, 0.4vw, 4px);
+  --s-2: clamp(6px, 0.8vw, 8px);
+  --s-3: clamp(10px, 1.2vw, 12px);
+  --s-4: clamp(12px, 1.6vw, 16px);
+  --s-5: clamp(16px, 2vw, 20px);
+  --s-6: clamp(18px, 2.4vw, 24px);
+  --s-7: clamp(22px, 3.2vw, 32px);
+  --s-8: clamp(28px, 4vw, 40px);
+  --s-9: clamp(40px, 5.6vw, 56px);
+  --s-10: clamp(56px, 8vw, 72px);
 
   /* ---------- Radius ---------- */
-  --r-1: 6px;  --r-2: 10px; --r-3: 14px; --r-4: 20px; --r-pill: 999px;
+  --r-1: 6px;
+  --r-2: 10px;
+  --r-3: 14px;
+  --r-4: 20px;
+  --r-pill: 999px;
 
-  /* ---------- Typography ---------- */
+  /* ---------- Typography (fluid via clamp) ---------- */
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto,
           "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  --fs-xs: 11px;  --fs-sm: 13px;  --fs-md: 15px;
-  --fs-lg: 18px;  --fs-xl: 22px;  --fs-2xl: 28px;
-  --fs-3xl: 36px;
-  --lh-tight: 1.15;  --lh-normal: 1.45;  --lh-loose: 1.65;
+  --fs-xs: clamp(10px, 0.78vw + 0.4vh, 12px);
+  --fs-sm: clamp(12px, 0.9vw + 0.6vh, 14px);
+  --fs-md: clamp(14px, 1.1vw + 0.6vh, 16px);
+  --fs-lg: clamp(16px, 1.4vw + 0.6vh, 19px);
+  --fs-xl: clamp(19px, 1.8vw + 0.8vh, 23px);
+  --fs-2xl: clamp(24px, 2.6vw + 0.8vh, 30px);
+  --fs-3xl: clamp(30px, 4vw + 1vh, 40px);
+  --lh-tight: 1.15;
+  --lh-normal: 1.45;
+  --lh-loose: 1.65;
 
-  /* ---------- Elevation (sombras tipo iPad) ---------- */
+  /* ---------- Elevation ---------- */
   --shadow-1: 0 1px 2px rgba(15, 17, 21, .06), 0 1px 3px rgba(15, 17, 21, .04);
   --shadow-2: 0 4px 12px rgba(15, 17, 21, .06), 0 2px 6px rgba(15, 17, 21, .04);
   --shadow-3: 0 12px 32px rgba(15, 17, 21, .10), 0 4px 12px rgba(15, 17, 21, .06);
 
   /* ---------- Layout ---------- */
-  --nav-h: 56px;       /* top bar tablet */
-  --dock-h: 72px;      /* bottom dock */
-  --side-w: 280px;     /* sidebar tablet */
+  --nav-h: 56px;
+  --dock-h: 72px;
+  --side-w: 280px;
   --content-max: 1280px;
   --safe-bottom: env(safe-area-inset-bottom, 0);
   --safe-top: env(safe-area-inset-top, 0);
@@ -73,9 +90,16 @@
   --pencil-bg: #ffffff;
   --pencil-grid: rgba(0, 0, 0, .04);
   --pencil-line: #1a1d24;
+
+  /* ---------- Touch / pointer (adaptive input) ---------- */
+  --hit-target: 44px;        /* min WCAG touch target */
+  --hit-target-l: 48px;     /* iPad comfortable */
+  --hit-target-desktop: 32px; /* mouse */
 }
 
-/* Dark mode (manual toggle via [data-theme=dark] on <html>) */
+/* ============================================================
+ * Dark mode (manual toggle via [data-theme="dark"] on <html>)
+ * ============================================================ */
 [data-theme="dark"] {
   --bg:           #0f1115;
   --bg-elevated:  #1a1d24;
@@ -91,6 +115,7 @@
   --pencil-line: #e4e6ea;
 }
 
+/* v1.2.0: auto dark via system preference (unless user overrides with data-theme) */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg:           #0f1115;
@@ -105,5 +130,27 @@
     --pencil-bg: #1a1d24;
     --pencil-grid: rgba(255, 255, 255, .04);
     --pencil-line: #e4e6ea;
+  }
+}
+
+/* v1.2.0: contrast preference */
+@media (prefers-contrast: more) {
+  :root {
+    --border-strong: var(--fg);
+    --fg-muted: var(--fg);
+    --accent-soft: rgba(140, 92, 246, .25);
+  }
+}
+
+/* v1.2.0: reduced motion (accessibility + battery) */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0ms;
+    --dur: 0ms;
+    --dur-slow: 0ms;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }

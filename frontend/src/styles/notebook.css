@@ -1,6 +1,6 @@
 /* ============================================================
  * notebook.css — stylus-first canvas styles
- * v1.0.0 — handwriting canvas, paper grid, pencil drawer
+ * v1.2.0 — landscape phones move pencil drawer to right side
  * ============================================================ */
 
 .notebook {
@@ -13,7 +13,7 @@
   border: 1px solid var(--border);
   border-radius: var(--r-3);
   overflow: hidden;
-  touch-action: none;       /* we want pointer events, no scroll */
+  touch-action: none;
 }
 
 .notebook canvas {
@@ -33,17 +33,17 @@
   padding: 6px;
   background: rgba(255, 255, 255, .92);
   backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border);
   border-radius: var(--r-pill);
   box-shadow: var(--shadow-2);
   z-index: 10;
 }
-[data-theme="dark"] .notebook-toolbar,
+[data-theme="dark"] .notebook-toolbar { background: rgba(26, 29, 36, .92); }
 @media (prefers-color-scheme: dark) {
-  .notebook-toolbar { background: rgba(26, 29, 36, .92); }
+  :root:not([data-theme="light"]) .notebook-toolbar { background: rgba(26, 29, 36, .92); }
 }
 
-/* Pencil drawer — bottom-left */
 .pencil-drawer {
   position: absolute;
   left: var(--s-4);
@@ -69,8 +69,12 @@
   transition: transform var(--dur-fast);
   position: relative;
   border: 2px solid transparent;
+  min-width: var(--hit-target-desktop);
+  min-height: var(--hit-target-desktop);
 }
-.pencil:hover { transform: translateY(-2px); }
+@media (pointer: fine) and (hover: hover) {
+  .pencil:hover { transform: translateY(-2px); }
+}
 .pencil.active { border-color: var(--fg); }
 .pencil svg { width: 22px; height: 22px; }
 
@@ -84,7 +88,6 @@
   color: var(--bad);
 }
 
-/* Notebook sidebar — right side */
 .notebook-side {
   position: absolute;
   right: var(--s-4);
@@ -101,7 +104,6 @@
   z-index: 10;
 }
 
-/* Pages nav — top right */
 .pages-nav {
   display: inline-flex;
   align-items: center;
@@ -114,7 +116,8 @@
 }
 .pages-nav .lbl { font-size: var(--fs-sm); font-weight: 600; padding: 0 var(--s-2); }
 .icon-btn {
-  width: 32px; height: 32px;
+  width: var(--hit-target-desktop);
+  height: var(--hit-target-desktop);
   border-radius: var(--r-pill);
   display: inline-flex;
   align-items: center;
@@ -122,9 +125,10 @@
   background: var(--bg-sunken);
   color: var(--fg-muted);
 }
-.icon-btn:hover { background: var(--border); color: var(--fg); }
+@media (pointer: fine) and (hover: hover) {
+  .icon-btn:hover { background: var(--border); color: var(--fg); }
+}
 
-/* Definition popup */
 .def-popup {
   position: absolute;
   background: var(--bg-elevated);
@@ -133,26 +137,12 @@
   padding: var(--s-3) var(--s-4);
   box-shadow: var(--shadow-3);
   z-index: 20;
-  min-width: 280px;
+  min-width: 240px;
   max-width: 320px;
 }
-.def-popup .word {
-  font-size: var(--fs-lg);
-  font-weight: 700;
-}
-.def-popup .pos {
-  color: var(--fg-muted);
-  font-size: var(--fs-sm);
-  margin-left: var(--s-1);
-}
-.def-popup .meta {
-  margin-top: var(--s-2);
-  font-size: var(--fs-xs);
-  color: var(--fg-muted);
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
+.def-popup .word { font-size: var(--fs-lg); font-weight: 700; }
+.def-popup .pos { color: var(--fg-muted); font-size: var(--fs-sm); margin-left: var(--s-1); }
+.def-popup .meta { margin-top: var(--s-2); font-size: var(--fs-xs); color: var(--fg-muted); display: flex; flex-direction: column; gap: 2px; }
 .def-popup .ipa {
   font-family: var(--font-mono);
   background: var(--bg-sunken);
@@ -163,7 +153,25 @@
   margin-top: var(--s-2);
 }
 
-/* Notebook thumbnail grid (e.g. Math e-books) */
+/* v1.2.0: landscape phones — pencil drawer moves to bottom right,
+   notebook-side to top right to free up drawing area. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .pencil-drawer {
+    left: auto;
+    right: var(--s-4);
+    bottom: var(--s-3);
+    padding: 4px;
+  }
+  .notebook-side {
+    top: var(--s-3);
+    right: var(--s-4);
+    transform: none;
+    flex-direction: row;
+    padding: 4px;
+  }
+  .notebook-toolbar { top: var(--s-2); padding: 4px; }
+}
+
 .book-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -175,9 +183,11 @@
   border-radius: var(--r-3);
   overflow: hidden;
   cursor: pointer;
-  transition: transform var(--dur);
+  transition: transform var(--dur), box-shadow var(--dur);
 }
-.book-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-2); }
+@media (pointer: fine) and (hover: hover) {
+  .book-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-2); }
+}
 .book-card .cover {
   aspect-ratio: 3 / 4;
   background: linear-gradient(135deg, #f0f2f5, #d6dae0);
@@ -192,4 +202,8 @@
   padding: var(--s-3);
   font-size: var(--fs-sm);
   font-weight: 600;
+}
+
+@media (max-width: 480px) {
+  .book-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
 }

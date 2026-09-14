@@ -1,15 +1,15 @@
 /* ============================================================
  * layout.css — app shell, dock, responsive grid
- * v1.0.0 — tablet-first design (Education Service style)
+ * v1.2.0 — orientation + container queries + ultra-wide handling.
  * ============================================================ */
 
-/* App container fills viewport above dock */
+/* App container */
 .app {
   min-height: calc(100vh - var(--dock-h) - var(--safe-bottom));
   padding-top: var(--safe-top);
 }
 
-/* Screen wrapper — common header + body */
+/* Screen wrapper */
 .screen {
   max-width: var(--content-max);
   margin: 0 auto;
@@ -21,6 +21,7 @@
   align-items: baseline;
   gap: var(--s-3);
   margin-bottom: var(--s-6);
+  flex-wrap: wrap;
 }
 
 .screen-header .h-title {
@@ -35,7 +36,8 @@
 }
 
 /* ============================================================
- * Dock — bottom navigation, glass-like (pill style)
+ * Dock — bottom navigation
+ * Adapts: phone (compact) / tablet (pill) / desktop (topbar)
  * ============================================================ */
 .dock {
   position: fixed;
@@ -51,6 +53,9 @@
   border-radius: var(--r-pill);
   box-shadow: var(--shadow-3);
   z-index: 100;
+  /* v1.2.0: blur backdrop when supported */
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
 .dock-item {
@@ -63,6 +68,7 @@
   font-size: var(--fs-sm);
   font-weight: 500;
   transition: background var(--dur-fast), color var(--dur-fast);
+  min-height: var(--hit-target-desktop);
 }
 
 .dock-item:hover { color: var(--fg); }
@@ -74,51 +80,110 @@
   align-items: center;
   justify-content: center;
 }
+.dock-item.active { background: var(--fg); color: var(--bg); }
 
-.dock-item.active {
-  background: var(--fg);
-  color: var(--bg);
+/* ============================================================
+ * ORIENTATION (v1.2.0)
+ * ============================================================ */
+
+/* Landscape phones — more horizontal real estate */
+@media (orientation: landscape) and (max-height: 500px) {
+  body { padding-bottom: calc(var(--dock-h) + var(--safe-bottom)); }
+  .dock { bottom: calc(var(--safe-bottom) + 6px); padding: 4px; }
+  .dock-item { padding: 6px 12px; font-size: var(--fs-xs); }
+  .screen { padding: var(--s-3) var(--s-5); }
+  .screen-header { margin-bottom: var(--s-3); }
+  /* Compress header in landscape phones */
+  .screen-header .h-title { font-size: var(--fs-xl); }
+}
+
+/* Landscape tablets — use side-by-side */
+@media (orientation: landscape) and (min-width: 720px) and (min-height: 540px) {
+  /* Already covered by tablet breakpoints */
+}
+
+/* Portrait phones — full-width single column */
+@media (orientation: portrait) and (max-width: 480px) {
+  .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  .grid-2 { grid-template-columns: 1fr; }
 }
 
 /* ============================================================
- * Tablet layout — 720dp+ (sidebar + content)
+ * BREAKPOINTS BY DEVICE (v1.2.0)
  * ============================================================ */
+
+/* Tablet portrait & up */
 @media (min-width: 720px) {
-  .screen { padding: var(--s-7) var(--s-8); }
   .dock {
     bottom: calc(var(--safe-bottom) + 20px);
     padding: 8px;
   }
-  .dock-item { padding: 10px 20px; font-size: var(--fs-md); }
+  .dock-item { padding: 10px 20px; font-size: var(--fs-md); min-height: var(--hit-target); }
 }
 
 @media (min-width: 1100px) {
-  body {
-    /* Add side gutter for ultra-wide tablets */
-  }
+  body { /* wider content on desktop */ }
+}
+
+/* ============================================================
+ * ULTRA-WIDE — center + cap
+ * ============================================================ */
+@media (min-width: 1920px) {
+  .screen { padding-left: var(--s-9); padding-right: var(--s-9); }
+  .dock { bottom: calc(var(--safe-bottom) + 32px); padding: 10px; }
 }
 
 /* ============================================================
  * Grid helpers
  * ============================================================ */
-.grid {
-  display: grid;
-  gap: var(--s-4);
-}
+.grid { display: grid; gap: var(--s-4); }
 .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.grid-auto-2 {
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-}
-.grid-auto-3 {
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-}
+.grid-auto-2 { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.grid-auto-3 { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
 
 @media (max-width: 719px) {
   .grid-3, .grid-4 { grid-template-columns: 1fr; }
   .grid-2 { grid-template-columns: 1fr; }
 }
 
-/* Flex helpers */
+@media (max-width: 479px) {
+  .grid-auto-3 { grid-template-columns: 1fr 1fr; }
+  .grid-auto-2 { grid-template-columns: 1fr; }
+}
+
 .between { display: flex; align-items: center; justify-content: space-between; }
+
+/* ============================================================
+ * CONTAINER QUERIES (v1.2.0)
+ * Cada screen define su layout según el ancho del contenedor,
+ * no del viewport. Permite reutilizar componentes en cualquier lado.
+ * ============================================================ */
+.responsive-container {
+  container-type: inline-size;
+  container-name: app;
+}
+
+@container app (max-width: 480px) {
+  .responsive-container .grid-2,
+  .responsive-container .grid-3 { grid-template-columns: 1fr; }
+  .responsive-container .stat .val { font-size: var(--fs-xl); }
+}
+
+@container app (min-width: 720px) {
+  .responsive-container .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .responsive-container .grid-3 { grid-template-columns: repeat(3, 1fr); }
+}
+
+@container app (min-width: 1100px) {
+  .responsive-container .grid-4 { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* ============================================================
+ * SAFE AREA (iOS notches / Android cutouts)
+ * ============================================================ */
+@supports (padding: max(0px)) {
+  .app { padding-top: max(var(--safe-top), var(--s-3)); }
+  body { padding-bottom: calc(var(--dock-h) + max(var(--safe-bottom), var(--s-3))); }
+}

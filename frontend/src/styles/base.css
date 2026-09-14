@@ -1,6 +1,6 @@
 /* ============================================================
  * base.css — reset + typography + global utilities
- * v1.0.0
+ * v1.2.0 — touch + pointer + hi-DPI adaptive.
  * ============================================================ */
 
 *,
@@ -26,14 +26,10 @@ html, body {
 
 body {
   overscroll-behavior: none;
-  /* Reserve space for bottom dock */
   padding-bottom: calc(var(--dock-h) + var(--safe-bottom));
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
-}
+a { color: inherit; text-decoration: none; }
 
 button {
   font-family: inherit;
@@ -72,10 +68,7 @@ h4 { font-size: var(--fs-lg); }
 p { margin: 0; }
 ul, ol { margin: 0; padding: 0; list-style: none; }
 
-::selection {
-  background: var(--accent-soft);
-  color: var(--fg);
-}
+::selection { background: var(--accent-soft); color: var(--fg); }
 
 :focus-visible {
   outline: 2px solid var(--accent);
@@ -100,7 +93,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .hidden { display: none !important; }
 .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* Pills / chips (subjects) */
+/* Pills / chips */
 .chip {
   display: inline-flex;
   align-items: center;
@@ -119,9 +112,96 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .chip.info   { background: rgba(86, 196, 230, .15); color: var(--info); }
 .chip.muted  { background: var(--bg-sunken);        color: var(--fg-muted); }
 
-/* Subject color dot */
-.dot {
-  width: 10px; height: 10px;
-  border-radius: 50%;
-  display: inline-block;
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+/* ============================================================
+ * ADAPTIVE INPUT (v1.2.0)
+ * - Touch devices: larger hit targets, more spacing
+ * - Pointer (mouse): compact, hover effects
+ * - Coarse pointer: no hover effects (they stick)
+ * ============================================================ */
+
+/* Touch devices (phones, tablets): larger targets */
+@media (pointer: coarse) {
+  .btn { height: var(--hit-target-l); padding: 0 var(--s-5); font-size: var(--fs-md); }
+  .btn.small { height: var(--hit-target); }
+  .tool-btn { width: 44px; height: 44px; }
+  .icon-btn { width: 44px; height: 44px; }
+  /* No hover-only state changes on touch */
+  .btn:hover, .subj-bubble:hover, .subj-row:hover { background: revert; }
+  /* Disable text selection on long-press */
+  .no-select { user-select: none; -webkit-user-select: none; }
+}
+
+/* Mouse / trackpad: compact + hover effects */
+@media (pointer: fine) and (hover: hover) {
+  .btn { height: 38px; padding: 0 var(--s-4); font-size: var(--fs-sm); }
+  .btn.small { height: 30px; }
+  .tool-btn { width: 36px; height: 36px; }
+}
+
+/* Touch-only device (no hover) */
+@media (hover: none) {
+  /* Always show secondary actions that mouse would see on hover */
+  .reveal-on-hover { opacity: 1 !important; }
+}
+
+/* ============================================================
+ * HI-DPI ADAPTATION (v1.2.0)
+ * Retina/2x: crisper borders, thinner shadows
+ * ============================================================ */
+
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  :root {
+    --border: color-mix(in srgb, var(--border) 85%, transparent);
+  }
+  .card { box-shadow: 0 0.5px 1px rgba(15, 17, 21, .04); }
+  .shadow-2, .shadow-3 { box-shadow: var(--shadow-1); } /* lighten shadows on retina */
+}
+
+@media (-webkit-min-device-pixel-ratio: 3), (min-resolution: 288dpi) {
+  .card { box-shadow: 0 0.33px 0.66px rgba(15, 17, 21, .04); }
+}
+
+/* ============================================================
+ * FONT SCALE BY VIEWPORT (v1.2.0)
+ * Tiny phones vs phones vs tablets vs desktop
+ * ============================================================ */
+
+/* Compact UI on very small screens (≤360px) */
+@media (max-width: 360px) {
+  :root {
+    --fs-3xl: clamp(24px, 8vw, 30px);
+    --fs-2xl: clamp(20px, 6vw, 26px);
+    --dock-h: 60px;
+  }
+  .screen { padding: var(--s-4); }
+}
+
+/* Large phones (361-479px) — slightly more breathing room */
+@media (min-width: 361px) and (max-width: 479px) {
+  :root { --dock-h: 64px; }
+}
+
+/* Small tablets portrait (480-719px) */
+@media (min-width: 480px) and (max-width: 719px) {
+  :root { --dock-h: 68px; --side-w: 240px; }
+  .screen { padding: var(--s-5); }
+}
+
+/* Tablets (720-1099px) — primary target */
+@media (min-width: 720px) {
+  :root { --dock-h: 80px; --side-w: 280px; }
+  .screen { padding: var(--s-6) var(--s-7); }
+}
+
+/* Desktop / laptop (1100-1439px) */
+@media (min-width: 1100px) {
+  :root { --side-w: 320px; }
+  .screen { padding: var(--s-7) var(--s-8); max-width: var(--content-max); }
+}
+
+/* Ultra-wide (1440px+) — center with max-width already set */
+@media (min-width: 1440px) {
+  :root { --fs-3xl: clamp(34px, 3vw, 48px); }
 }

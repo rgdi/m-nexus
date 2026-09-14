@@ -1,6 +1,6 @@
 /* ============================================================
  * calendar.css — day / week calendar grid
- * v1.0.0 — Education Service style: vertical timeline
+ * v1.2.0 — landscape tablets get a wider grid.
  * ============================================================ */
 
 .calendar {
@@ -28,9 +28,13 @@
   border-bottom: 1px solid transparent;
 }
 
-.cal-events {
-  position: relative;
+/* v1.2.0: compress hour rows on small landscape phones */
+@media (orientation: landscape) and (max-height: 500px) {
+  .cal-time { height: 50px; padding: 2px 6px 0 0; }
+  .cal-grid-line { height: 50px !important; }
 }
+
+.cal-events { position: relative; }
 .cal-grid-line {
   height: 80px;
   border-bottom: 1px dashed var(--border);
@@ -47,14 +51,23 @@
   cursor: pointer;
   overflow: hidden;
   transition: transform var(--dur-fast), box-shadow var(--dur-fast);
+  min-height: 32px;
 }
-.cal-event:hover { transform: translateX(2px); box-shadow: var(--shadow-2); }
+@media (pointer: fine) and (hover: hover) {
+  .cal-event:hover { transform: translateX(2px); box-shadow: var(--shadow-2); }
+}
 .cal-event .time { font-size: var(--fs-xs); color: var(--fg-muted); }
 .cal-event .title { font-size: var(--fs-md); font-weight: 600; margin-top: 2px; }
 .cal-event .prof { font-size: var(--fs-xs); color: var(--fg-muted); margin-top: 2px; }
-.cal-event .room { display: inline-block; margin-left: 8px; padding: 1px 6px; background: var(--border); border-radius: 6px; font-size: var(--fs-xs); }
+.cal-event .room {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 6px;
+  background: var(--border);
+  border-radius: 6px;
+  font-size: var(--fs-xs);
+}
 
-/* Now line */
 .cal-now {
   position: absolute;
   left: 0; right: 0;
@@ -71,7 +84,6 @@
   background: var(--bad);
 }
 
-/* Week view (mini) */
 .week-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -98,7 +110,14 @@
   border-left: 3px solid var(--subj-blue);
 }
 
-/* Tabs Day / Week */
+/* v1.2.0: hide week-day labels on phones */
+@media (max-width: 480px) {
+  .week-grid { grid-template-columns: repeat(7, 1fr); font-size: 10px; }
+  .week-day { padding: var(--s-2) 4px; min-height: 90px; }
+  .week-day .num { font-size: var(--fs-md); }
+  .week-day .ev { padding: 2px 4px; }
+}
+
 .view-toggle {
   display: inline-flex;
   gap: 0;
@@ -107,11 +126,12 @@
   border-radius: var(--r-pill);
 }
 .view-toggle .seg {
-  padding: 6px 14px;
+  padding: 8px 14px;
   border-radius: var(--r-pill);
   font-size: var(--fs-sm);
   font-weight: 600;
   color: var(--fg-muted);
+  min-height: var(--hit-target-desktop);
 }
 .view-toggle .seg.active {
   background: var(--bg-elevated);
