@@ -1,10 +1,11 @@
 /* ============================================================
  * screens/notes.js — notebook con canvas stylus-first.
- * v1.3.0 — i18n integration
+ * v1.4.0 — splash + top toolbar (undo/redo/bg/hide)
  * ============================================================ */
 
 import { dataSource } from "../services/dataSource.js";
 import { i18n } from "../services/i18n.js";
+import { mountTopToolbar } from "../widgets/top_toolbar.js";
 
 const state = {
   selectedId: null,
@@ -172,6 +173,9 @@ async function renderNotebook(root, id) {
   // v1.3.1: definition popup on long-press / double-tap (model feature)
   root._note = note;
   setupDefinitionPopup(root);
+
+  // v1.4.0: top toolbar (undo/redo/bg/hide) — solo en notebook
+  mountTopToolbar();
 
   setupCanvas(root, id, state.page, page.strokes, pages);
 }

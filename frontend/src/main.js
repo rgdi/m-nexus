@@ -8,6 +8,7 @@ import { store } from "./services/store.js";
 import { device, startDeviceWatch } from "./services/device.js";
 import { i18n } from "./services/i18n.js";
 import { mountLangSwitcher } from "./widgets/lang_switcher.js";
+import { showSplash } from "./widgets/splash.js";
 import { renderOverview } from "./screens/overview.js";
 import { renderCalendar } from "./screens/calendar.js";
 import { renderSubjects } from "./screens/subjects.js";
@@ -38,7 +39,8 @@ function setActiveDock(route) {
     el.classList.toggle("active", el.dataset.route === route);
     const label = el.querySelector(".lbl");
     if (label) {
-      label.textContent = i18n.t(`dock.${route}`);
+      const i18nKey = label.dataset.i18n || `dock.${el.dataset.route}`;
+      label.textContent = i18n.t(i18nKey);
     }
   });
 }
@@ -46,6 +48,8 @@ function setActiveDock(route) {
 async function render() {
   const route = parseHash();
   app.dataset.route = route;
+  // v1.4.0: clase de pantalla para fondos diferenciados
+  app.className = `app screen-${route}`;
   setActiveDock(route);
   app.innerHTML = `<div class="screen"><div class="empty">${i18n.t("common.loading")}</div></div>`;
   try {
@@ -73,12 +77,16 @@ window.addEventListener("hashchange", render);
 
 /* ===== Bootstrap ===== */
 async function bootstrap() {
+  // v1.4.0: splash screen con logo Education Service
+  showSplash();
   // v1.2.0: arrancar watcher de dispositivo (DPR, orientation, theme, etc).
   startDeviceWatch();
   // v1.3.0: montar selector de idioma
   mountLangSwitcher();
   // Set initial lang attribute on html
   document.documentElement.lang = i18n.lang;
+  // v1.3.1: traducir todos los data-i18n al boot (dock, etc)
+  applyI18nToDom();
 
   // API: si no hay backend en línea, usa fallback offline (localStorage).
   store.bind(api);
@@ -102,9 +110,20 @@ async function bootstrap() {
   }
 
   // v1.3.0: re-render al cambiar idioma
-  i18n.subscribe(() => render());
+  i18n.subscribe(() => {
+    applyI18nToDom();
+    render();
+  });
 
   await render();
+}
+
+/** v1.3.1: aplica i18n a todos los elementos con data-i18n en el DOM. */
+function applyI18nToDom() {
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    const key = el.dataset.i18n;
+    el.textContent = i18n.t(key);
+  });
 }
 
 bootstrap();

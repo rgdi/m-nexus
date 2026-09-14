@@ -69,7 +69,9 @@
   font-weight: 500;
   transition: background var(--dur-fast), color var(--dur-fast);
   min-height: var(--hit-target-desktop);
+  white-space: nowrap;
 }
+.dock-item .lbl { white-space: nowrap; }
 
 .dock-item:hover { color: var(--fg); }
 .dock-item .i {

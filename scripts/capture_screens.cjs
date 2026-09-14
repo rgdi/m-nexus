@@ -1,0 +1,250 @@
+// capture_screens.cjs — Playwright screenshots de todas las pantallas.
+//
+// Hace assertions ligeras (h1 visible, dock items, lang switcher) antes
+// de capturar, para confirmar que cada screen renderiza correctamente.
+
+'use strict';
+
+const { chromium } = require('/tmp/node_modules/playwright');
+const fs = require('fs');
+const path = require('path');
+
+const SCREENS_DIR = '/workspace/m-nexus/screenshots';
+const BASE = 'http://localhost:8080/public';
+const VIEWPORTS = {
+  tablet: { width: 1280, height: 800, deviceScaleFactor: 2 },
+  phone:  { width: 390,  height: 844, deviceScaleFactor: 2 },
+};
+
+const checks = [];
+function check(name, ok, detail) {
+  checks.push({ name, ok, detail });
+  console.log(`  ${ok ? '✓' : '✗'} ${name}${detail ? ' — ' + detail : ''}`);
+}
+
+async function setLang(page, lang) {
+  await page.evaluate((l) => {
+    localStorage.setItem('mnexus.lang', l);
+  }, lang);
+}
+
+async function navigate(page, hash) {
+  await page.goto(BASE + hash, { waitUntil: 'networkidle', timeout: 10000 });
+  await page.waitForTimeout(800);
+}
+
+async function shoot(page, name, v = 'tablet') {
+  await page.setViewportSize(VIEWPORTS[v]);
+  await page.waitForTimeout(300);
+  const out = `${SCREENS_DIR}/${name}-${v}.png`;
+  await page.screenshot({ path: out, fullPage: false });
+  console.log(`  📸 ${out}`);
+}
+
+async function run() {
+  const browser = await chromium.launch({
+    headless: true,
+    executablePath: '/root/.cache/ms-playwright/chromium-1243/chrome-linux/chrome',
+    args: ['--no-sandbox', '--disable-dev-shm-usage'],
+  });
+  const context = await browser.newContext({ viewport: VIEWPORTS.tablet });
+  const page = await context.newPage();
+
+  // Clear localStorage to start clean
+  await page.goto(BASE);
+  await page.evaluate(() => localStorage.clear());
+
+  // 1: Overview EN tablet
+  console.log('\n[1] Overview (en, tablet)');
+  // v1.4.0: splash screen (capture during fade-in)
+  await page.evaluate(() => localStorage.clear());
+  await page.goto(BASE, { waitUntil: 'load' });
+  // Capture ASAP while splash is visible
+  await page.waitForTimeout(150);
+  await page.screenshot({ path: `${SCREENS_DIR}/00-splash-en-tablet.png`, fullPage: false });
+  console.log(`  📸 ${SCREENS_DIR}/00-splash-en-tablet.png`);
+  await page.waitForTimeout(1500); // wait for splash to dismiss
+  await navigate(page, '#/overview');
+  await setLang(page, 'en');
+  await navigate(page, '#/overview');
+  check('h1 Overview visible', await page.locator('.h-title').first().isVisible());
+  check('h1 = Overview', (await page.locator('.h-title').first().textContent()) === 'Overview');
+  check('dock has 6 items', (await page.locator('.dock-item').count()) === 6);
+  check('lang switcher visible', await page.locator('.lang-switcher').isVisible());
+  check('subject bubbles >= 3', (await page.locator('.subj-bubble').count()) >= 3);
+  check('event cards >= 1', (await page.locator('[style*="border-left"]').count()) >= 1);
+  check('stats >= 2', (await page.locator('.stat').count()) >= 2);
+  await shoot(page, '01-overview-en', 'tablet');
+
+  // 2: Overview ES tablet
+  console.log('\n[2] Overview (es, tablet)');
+  await setLang(page, 'es');
+  await navigate(page, '#/overview');
+  check('h1 = Resumen', (await page.locator('.h-title').first().textContent()) === 'Resumen');
+  check('lang switcher = ES', (await page.locator('.lang-switcher .code').textContent()) === 'ES');
+  check('dock item translated', (await page.locator('.dock-item .lbl').first().textContent()) === 'Resumen');
+  await shoot(page, '02-overview-es', 'tablet');
+
+  // 3: Overview PT tablet
+  console.log('\n[3] Overview (pt, tablet)');
+  await setLang(page, 'pt');
+  await navigate(page, '#/overview');
+  check('h1 = Visão geral', (await page.locator('.h-title').first().textContent()) === 'Visão geral');
+  check('lang = PT', (await page.locator('.lang-switcher .code').textContent()) === 'PT');
+  await shoot(page, '03-overview-pt', 'tablet');
+
+  // 4: Calendar day EN
+  console.log('\n[4] Calendar day (en, tablet)');
+  await setLang(page, 'en');
+  await navigate(page, '#/calendar');
+  check('h1 = Calendar', (await page.locator('.h-title').first().textContent()) === 'Calendar');
+  check('view-toggle Day+Week', (await page.locator('.view-toggle .seg').count()) === 2);
+  check('create event btn visible', await page.locator('#new-event').isVisible());
+  check('calendar grid present', await page.locator('.calendar').isVisible());
+  await shoot(page, '04-calendar-day-en', 'tablet');
+
+  // 5: Calendar week
+  await page.click('.view-toggle .seg:has-text("Week")');
+  await page.waitForTimeout(300);
+  check('week-grid present', await page.locator('.week-grid').isVisible());
+  await shoot(page, '05-calendar-week-en', 'tablet');
+
+  // 6: Create event modal
+  await page.click('#new-event');
+  await page.waitForTimeout(400);
+  check('modal opened', await page.locator('.scrim').isVisible());
+  check('modal title = New event', (await page.locator('.sheet h3').textContent()).includes('New event'));
+  await shoot(page, '06-calendar-modal-en', 'tablet');
+  await page.locator('.scrim').click({ position: { x: 10, y: 10 } }).catch(() => {});
+
+  // 7: Subjects list
+  console.log('\n[7] Subjects list (en, tablet)');
+  await navigate(page, '#/subjects');
+  check('h1 = Subjects', (await page.locator('.h-title').first().textContent()) === 'Subjects');
+  check('subject bubbles = 12', (await page.locator('.subj-bubble').count()) === 12);
+  check('grade chips >= 12', (await page.locator('.subj-bubble [style*="position:absolute"][style*="top:8px"]').count()) >= 12);
+  await shoot(page, '07-subjects-list-en', 'tablet');
+
+  // 8: Subject detail
+  await page.locator('.subj-bubble').first().click();
+  await page.waitForTimeout(500);
+  check('subject detail (tabs)', await page.locator('.tabs').isVisible());
+  check('Grades card', await page.locator('.card h4:has-text("Grades")').isVisible());
+  check('Homework card', await page.locator('.card h4:has-text("Homework")').isVisible());
+  check('e-books section', await page.locator('h4:has-text("E-books")').isVisible());
+  check('notebooks section', await page.locator('h4:has-text("Notebooks")').isVisible());
+  await shoot(page, '08-subjects-detail-en', 'tablet');
+
+  // 9: New subject modal
+  await page.locator('#back').click();
+  await page.waitForTimeout(300);
+  await page.click('#new');
+  await page.waitForTimeout(400);
+  check('new subject modal', (await page.locator('.sheet h3').textContent()).includes('New subject'));
+  await shoot(page, '09-subjects-modal-en', 'tablet');
+  await page.locator('.scrim').click({ position: { x: 10, y: 10 } }).catch(() => {});
+
+  // 10: Notes list
+  console.log('\n[10] Notes list (en, tablet)');
+  await navigate(page, '#/notes');
+  check('h1 = Notes', (await page.locator('.h-title').first().textContent()) === 'Notes');
+  check('new note button', await page.locator('#new').isVisible());
+  check('search input', await page.locator('#search').isVisible());
+  const noteCount = await page.locator('.book-card').count();
+  check('notebooks >= 1', noteCount >= 1, `${noteCount} cards`);
+  await shoot(page, '10-notes-list-en', 'tablet');
+
+  // 11: Notebook open
+  if (noteCount > 0) {
+    await page.locator('.book-card').first().click();
+    await page.waitForTimeout(600);
+    check('notebook opens', await page.locator('#title[contenteditable]').isVisible());
+    check('canvas present', await page.locator('#canvas').isVisible());
+    check('pages nav', await page.locator('.pages-nav').isVisible());
+    check('pencil drawer', await page.locator('.pencil-drawer').isVisible());
+    check('notebook toolbar', await page.locator('.notebook-toolbar').isVisible());
+    check('side toolbar', await page.locator('.notebook-side').isVisible());
+    await shoot(page, '11-notes-notebook-en', 'tablet');
+
+    // 12: Intelligent overview modal
+    await page.click('#overview-btn');
+    await page.waitForTimeout(400);
+    check('overview modal', await page.locator('.scrim').isVisible());
+    check('overview title', (await page.locator('.sheet h3').textContent()).includes('Intelligent overview'));
+    await shoot(page, '12-notes-overview-modal-en', 'tablet');
+    await page.locator('.scrim').click({ position: { x: 10, y: 10 } }).catch(() => {});
+  }
+
+  // 13: Todos
+  console.log('\n[13] Todos (en, tablet)');
+  await navigate(page, '#/todos');
+  check('h1 = To-dos', (await page.locator('.h-title').first().textContent()) === 'To-dos');
+  check('stats grid (3 stats)', (await page.locator('.stat').count()) === 3);
+  check('new task button', await page.locator('#new').isVisible());
+  const taskRows = await page.locator('.todo-row').count();
+  check('task rows >= 1', taskRows >= 1, `${taskRows} tasks`);
+  await shoot(page, '13-todos-en', 'tablet');
+
+  // New task modal
+  await page.click('#new');
+  await page.waitForTimeout(400);
+  check('new task modal', (await page.locator('.sheet h3').textContent()).includes('New task'));
+  await page.locator('.scrim').click({ position: { x: 10, y: 10 } }).catch(() => {});
+
+  // 14: AI Tutor
+  console.log('\n[14] AI Tutor (en)');
+  await navigate(page, '#/ai');
+  check('h1 = AI Tutor', (await page.locator('.h-title').first().textContent()) === 'AI Tutor');
+  check('greeting shown', (await page.locator('.card div').first().textContent()).includes('RAG tutor'));
+  await shoot(page, '14-ai-en', 'tablet');
+
+  // 15: Lang menu (long-press simulation)
+  console.log('\n[15] Language menu');
+  await page.locator('#lang-switcher').click({ delay: 700 });
+  await page.waitForTimeout(400);
+  check('lang menu opens', await page.locator('.scrim').isVisible());
+  await shoot(page, '15-lang-menu-en', 'tablet');
+  await page.locator('.scrim').click({ position: { x: 10, y: 10 } }).catch(() => {});
+
+  // 16-18: Mobile screenshots ES
+  console.log('\n[16-18] Mobile screenshots (es, phone)');
+  await setLang(page, 'es');
+  await navigate(page, '#/overview');
+  await shoot(page, '16-overview-es', 'phone');
+
+  await navigate(page, '#/subjects');
+  await shoot(page, '17-subjects-es', 'phone');
+
+  await navigate(page, '#/notes');
+  await shoot(page, '18-notes-es', 'phone');
+
+  // 19: Dark mode (needs new context with colorScheme:dark)
+  console.log('\n[19] Dark mode (es, tablet)');
+  await context.close();
+  const ctxDark = await browser.newContext({ viewport: VIEWPORTS.tablet, colorScheme: 'dark' });
+  const pageDark = await ctxDark.newPage();
+  await pageDark.goto(BASE + '#/overview', { waitUntil: 'networkidle' });
+  await pageDark.evaluate(() => { localStorage.setItem('mnexus.lang', 'es'); });
+  await pageDark.reload({ waitUntil: 'networkidle' });
+  await pageDark.waitForTimeout(800);
+  await pageDark.screenshot({ path: `${SCREENS_DIR}/19-overview-dark-es-tablet.png`, fullPage: false });
+  console.log(`  📸 ${SCREENS_DIR}/19-overview-dark-es-tablet.png`);
+  await ctxDark.close();
+
+  await browser.close();
+
+  // Summary
+  const passed = checks.filter(c => c.ok).length;
+  const failed = checks.filter(c => !c.ok);
+  console.log(`\n${'='.repeat(50)}`);
+  console.log(`Results: ${passed}/${checks.length} assertions passed`);
+  if (failed.length > 0) {
+    console.log('\nFailures:');
+    failed.forEach(f => console.log(`  ✗ ${f.name}${f.detail ? ' — ' + f.detail : ''}`));
+    process.exit(1);
+  }
+  console.log(`✓ All ${checks.length} assertions passed`);
+  process.exit(0);
+}
+
+run().catch((e) => { console.error('FATAL:', e); process.exit(2); });
