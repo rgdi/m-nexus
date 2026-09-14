@@ -46,16 +46,18 @@ export const api = {
 
   // ----- Notes -----
   notes: {
-    list: () => req("GET", "/notes").catch(() => []),
+    list: () => req("GET", "/notes").then(r => r.notes ?? []).catch(() => []),
     get: (id) => req("GET", `/notes/${id}`),
     create: (body) => req("POST", "/notes", body),
     update: (id, body) => req("PATCH", `/notes/${id}`, body),
     remove: (id) => req("DELETE", `/notes/${id}`),
+    appendStroke: (id, page, stroke) => req("POST", `/notes/${id}/pages/${page}/strokes`, { stroke }),
   },
 
   // ----- Subjects -----
   subjects: {
-    list: () => req("GET", "/subjects").catch(() => []),
+    list: () => req("GET", "/subjects").then(r => r.subjects ?? []).catch(() => []),
+    get: (id) => req("GET", `/subjects/${id}`),
     create: (body) => req("POST", "/subjects", body),
     update: (id, body) => req("PATCH", `/subjects/${id}`, body),
     remove: (id) => req("DELETE", `/subjects/${id}`),
@@ -63,10 +65,21 @@ export const api = {
 
   // ----- Calendar / Events -----
   events: {
-    list: (from, to) => req("GET", `/events?from=${from}&to=${to}`).catch(() => []),
+    list: (from, to) => req("GET", `/events?from=${from ?? 0}&to=${to ?? Date.now() + 365 * 86400000}`).then(r => r.events ?? []).catch(() => []),
+    get: (id) => req("GET", `/events/${id}`),
     create: (body) => req("POST", "/events", body),
     update: (id, body) => req("PATCH", `/events/${id}`, body),
     remove: (id) => req("DELETE", `/events/${id}`),
+  },
+
+  // ----- Tasks (to-do's) -----
+  tasks: {
+    list: () => req("GET", "/tasks").then(r => r.tasks ?? []).catch(() => []),
+    get: (id) => req("GET", `/tasks/${id}`),
+    create: (body) => req("POST", "/tasks", body),
+    update: (id, body) => req("PATCH", `/tasks/${id}`, body),
+    remove: (id) => req("DELETE", `/tasks/${id}`),
+    toggle: (id) => req("POST", `/tasks/${id}/toggle`),
   },
 
   // ----- Flashcards -----
@@ -80,6 +93,7 @@ export const api = {
   ai: {
     chat: (messages, opts) => req("POST", "/ai/chat", { messages, ...opts }, { timeout: 30000 }),
     ragSearch: (query, k) => req("POST", "/ai/rag-search", { query, k }),
+    tutor: (question, snippets) => req("POST", "/ai/tutor", { question, snippets }, { timeout: 30000 }),
   },
 
   // ----- Sync -----

@@ -1,0 +1,62 @@
+[
+  {
+    "title": "Math",
+    "prof": "Mr. Meier",
+    "room": "301",
+    "type": "Homework",
+    "subject": "math",
+    "start": 1789372800000,
+    "end": 1789378200000,
+    "id": "evt-80257313-d260-493e-a823-24396dcb2636",
+    "createdAt": 1789424693390,
+    "updatedAt": 1789424693390
+  },
+  {
+    "title": "Politics-economics",
+    "prof": "Fr. Stolz",
+    "room": "301",
+    "type": "Homework",
+    "subject": "pol",
+    "start": 1789379700000,
+    "end": 1789385100000,
+    "id": "evt-6074678d-515d-4b60-9053-8c31144e0985",
+    "createdAt": 1789424693394,
+    "updatedAt": 1789424693394
+  },
+  {
+    "title": "Deutsch",
+    "prof": "Dr. Seibert",
+    "room": "207",
+    "type": "Referat",
+    "subject": "deu",
+    "start": 1789386300000,
+    "end": 1789391700000,
+    "id": "evt-7f116789-d8b8-431e-b07a-f7bc16c6fc09",
+    "createdAt": 1789424693399,
+    "updatedAt": 1789424693399
+  },
+  {
+    "title": "Physics",
+    "prof": "Dr. Müller",
+    "room": "211",
+    "type": "Homework",
+    "subject": "phy",
+    "start": 1789394400000,
+    "end": 1789398000000,
+    "id": "evt-11e39843-7d7b-4eff-b705-435544ce3cfe",
+    "createdAt": 1789424693404,
+    "updatedAt": 1789424693404
+  },
+  {
+    "title": "Chemistry",
+    "prof": "Dr. Müller",
+    "room": "301",
+    "type": "Lecture",
+    "subject": "che",
+    "start": 1789398600000,
+    "end": 1789402200000,
+    "id": "evt-02b5b788-9157-418e-b19e-62f0b56039e6",
+    "createdAt": 1789424693409,
+    "updatedAt": 1789424693409
+  }
+]

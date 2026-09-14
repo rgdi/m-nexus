@@ -1,9 +1,9 @@
 /* ============================================================
  * screens/subjects.js — list + detail (grades, homework, e-books)
- * v1.0.0 — bubbles in list, detail screen with grades grid
+ * v1.1.0 — conectado al backend via dataSource (con fallback local)
  * ============================================================ */
 
-import { collection } from "../services/store.js";
+import { dataSource } from "../services/dataSource.js";
 
 const state = { selectedId: null };
 
@@ -14,8 +14,8 @@ export async function renderSubjects(root) {
   renderSubjectList(root);
 }
 
-function renderSubjectList(root) {
-  const subjects = collection("subjects").list();
+async function renderSubjectList(root) {
+  const subjects = await dataSource.subjects.list();
 
   root.innerHTML = `
     <div class="screen">
@@ -25,14 +25,23 @@ function renderSubjectList(root) {
         <div class="spacer"></div>
         <button class="btn primary" id="new">+ New subject</button>
       </header>
-      <div class="grid grid-auto-3" id="list"></div>
+      <div class="grid grid-auto-3" id="list">
+        <div class="empty"><div class="em-title">Loading…</div></div>
+      </div>
     </div>
   `;
+  root.querySelector("#back").addEventListener("click", () => history.back());
+  root.querySelector("#new").addEventListener("click", () => openSubjectModal(null, () => renderSubjectList(root)));
+
+  if (subjects.length === 0) {
+    root.querySelector("#list").innerHTML = `<div class="empty"><div class="em-title">No subjects yet</div><div>Create your first subject to get started.</div></div>`;
+    return;
+  }
 
   root.querySelector("#list").innerHTML = subjects.map(s => `
     <div class="subj-bubble" data-id="${s.id}" style="background:${s.color}">
       <div>
-        <div class="corner"><div style="background:rgba(255,255,255,.18);border-radius:10px;width:48px;height:48px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800">${escapeHtml(s.icon || s.name[0])}</div></div>
+        <div class="corner"><div style="background:rgba(255,255,255,.18);border-radius:10px;width:48px;height:48px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800">${escapeHtml(s.icon || (s.name?.[0] ?? "?"))}</div></div>
         <div class="name">${escapeHtml(s.name)}</div>
         <div class="perf">${s.performance ? `+${s.performance}%` : ""} performance</div>
       </div>
@@ -43,15 +52,12 @@ function renderSubjectList(root) {
   root.querySelectorAll(".subj-bubble").forEach((el) => {
     el.addEventListener("click", () => { state.selectedId = el.dataset.id; renderSubjects(root); });
   });
-  root.querySelector("#new").addEventListener("click", () => openSubjectModal(null, () => renderSubjectList(root)));
 }
 
-function renderSubjectDetail(root, id) {
-  const subjects = collection("subjects");
-  const s = subjects.get(id);
+async function renderSubjectDetail(root, id) {
+  const s = await dataSource.subjects.get(id);
   if (!s) { state.selectedId = null; return renderSubjectList(root); }
 
-  // Mock grades grid (10 random but stable per subject)
   const grades = mockGrades(s.id);
 
   root.innerHTML = `
@@ -70,7 +76,7 @@ function renderSubjectDetail(root, id) {
   `;
   root.querySelector("#back").addEventListener("click", () => { state.selectedId = null; renderSubjects(root); });
   const body = root.querySelector("#tab-body");
-  const renderTab = (tab) => {
+  const renderTab = () => {
     body.innerHTML = `
       <div class="grid grid-2">
         <div class="card">
@@ -113,10 +119,10 @@ function renderSubjectDetail(root, id) {
     t.addEventListener("click", () => {
       root.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
       t.classList.add("active");
-      renderTab(t.dataset.tab);
+      renderTab();
     });
   });
-  renderTab("classes");
+  renderTab();
 }
 
 function gClass(g) {
@@ -131,7 +137,7 @@ function mockGrades(seed) {
   const r = () => { s = (s * 1103515245 + 12345) >>> 0; return s / 2 ** 32; };
   const out = [];
   for (let i = 0; i < 18; i++) {
-    const g = 4 + r() * 6.5; // 4..10.5
+    const g = 4 + r() * 6.5;
     out.push(Math.round(g * 10) / 10);
   }
   return out;
@@ -155,57 +161,63 @@ function mockNotebooks(seed) {
 }
 
 function openSubjectModal(id, onSaved) {
-  const subjects = collection("subjects");
-  const s = id ? subjects.get(id) : { name: "", icon: "", color: "var(--subj-blue)", grade: 7 };
-  const colors = ["var(--subj-red)", "var(--subj-yellow)", "var(--subj-blue)", "var(--subj-purple)", "var(--subj-green)", "var(--subj-pink)", "var(--subj-orange)", "var(--subj-teal)"];
-  const scrim = document.createElement("div");
-  scrim.className = "scrim";
-  scrim.innerHTML = `
-    <div class="sheet">
-      <div class="sheet-header">
-        <h3>${id ? "Edit" : "New"} subject</h3>
-        <button class="btn icon" data-act="close">✕</button>
-      </div>
-      <div class="col gap-3">
-        <input class="input" id="s-name" placeholder="Subject name" value="${escapeHtml(s.name)}" />
-        <input class="input" id="s-icon" placeholder="Icon letter" maxlength="2" value="${escapeHtml(s.icon || "")}" />
-        <div class="row gap-2" style="flex-wrap:wrap">
-          ${colors.map(c => `<button data-c="${c}" class="dot" style="width:30px;height:30px;background:${c};border:2px solid ${c === s.color ? "var(--fg)" : "transparent"}"></button>`).join("")}
+  dataSource.subjects.get(id).then((s) => {
+    const subj = s || { name: "", icon: "", color: "var(--subj-blue)", grade: 7 };
+    const colors = ["var(--subj-red)", "var(--subj-yellow)", "var(--subj-blue)", "var(--subj-purple)", "var(--subj-green)", "var(--subj-pink)", "var(--subj-orange)", "var(--subj-teal)"];
+    const scrim = document.createElement("div");
+    scrim.className = "scrim";
+    scrim.innerHTML = `
+      <div class="sheet">
+        <div class="sheet-header">
+          <h3>${id ? "Edit" : "New"} subject</h3>
+          <button class="btn icon" data-act="close">✕</button>
         </div>
-        <input class="input" id="s-grade" type="number" min="0" max="10" step="0.01" placeholder="Grade" value="${s.grade ?? ""}" />
-        <div class="row gap-2">
-          ${id ? `<button class="btn danger" data-act="del" style="margin-right:auto">Delete</button>` : ""}
-          <button class="btn primary" data-act="save">Save</button>
+        <div class="col gap-3">
+          <input class="input" id="s-name" placeholder="Subject name" value="${escapeHtml(subj.name)}" />
+          <input class="input" id="s-icon" placeholder="Icon letter" maxlength="2" value="${escapeHtml(subj.icon || "")}" />
+          <div class="row gap-2" style="flex-wrap:wrap">
+            ${colors.map(c => `<button data-c="${c}" class="dot" style="width:30px;height:30px;background:${c};border:2px solid ${c === subj.color ? "var(--fg)" : "transparent"}"></button>`).join("")}
+          </div>
+          <input class="input" id="s-grade" type="number" min="0" max="10" step="0.01" placeholder="Grade" value="${subj.grade ?? ""}" />
+          <div class="row gap-2">
+            ${id ? `<button class="btn danger" data-act="del" style="margin-right:auto">Delete</button>` : ""}
+            <button class="btn primary" data-act="save">Save</button>
+          </div>
         </div>
       </div>
-    </div>
-  `;
-  document.body.appendChild(scrim);
-  let chosenColor = s.color;
-  scrim.querySelectorAll('[data-c]').forEach((b) => b.addEventListener("click", () => {
-    chosenColor = b.dataset.c;
-    scrim.querySelectorAll('[data-c]').forEach(x => x.style.border = "2px solid transparent");
-    b.style.border = "2px solid var(--fg)";
-  }));
-  const close = () => scrim.remove();
-  scrim.querySelector('[data-act="close"]').addEventListener("click", close);
-  scrim.addEventListener("click", (e) => { if (e.target === scrim) close(); });
-  scrim.querySelector('[data-act="save"]').addEventListener("click", () => {
-    const name = scrim.querySelector("#s-name").value.trim();
-    if (!name) return;
-    const payload = {
-      name, icon: scrim.querySelector("#s-icon").value,
-      color: chosenColor, grade: parseFloat(scrim.querySelector("#s-grade").value) || null,
-    };
-    if (id) subjects.update(id, payload);
-    else subjects.create(payload);
-    close();
-    onSaved?.();
-  });
-  scrim.querySelector('[data-act="del"]')?.addEventListener("click", () => {
-    subjects.remove(id);
-    close();
-    onSaved?.();
+    `;
+    document.body.appendChild(scrim);
+    let chosenColor = subj.color;
+    scrim.querySelectorAll('[data-c]').forEach((b) => b.addEventListener("click", () => {
+      chosenColor = b.dataset.c;
+      scrim.querySelectorAll('[data-c]').forEach(x => x.style.border = "2px solid transparent");
+      b.style.border = "2px solid var(--fg)";
+    }));
+    const close = () => scrim.remove();
+    scrim.querySelector('[data-act="close"]').addEventListener("click", close);
+    scrim.addEventListener("click", (e) => { if (e.target === scrim) close(); });
+    scrim.querySelector('[data-act="save"]').addEventListener("click", async () => {
+      const name = scrim.querySelector("#s-name").value.trim();
+      if (!name) return;
+      const payload = {
+        name,
+        icon: scrim.querySelector("#s-icon").value,
+        color: chosenColor,
+        grade: parseFloat(scrim.querySelector("#s-grade").value) || null,
+        performance: subj.performance ?? 0,
+        prof: subj.prof ?? "",
+        next: subj.next ?? "",
+      };
+      if (id) await dataSource.subjects.update(id, payload);
+      else await dataSource.subjects.create(payload);
+      close();
+      onSaved?.();
+    });
+    scrim.querySelector('[data-act="del"]')?.addEventListener("click", async () => {
+      await dataSource.subjects.remove(id);
+      close();
+      onSaved?.();
+    });
   });
 }
 

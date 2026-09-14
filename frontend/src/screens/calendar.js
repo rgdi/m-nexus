@@ -1,9 +1,9 @@
 /* ============================================================
  * screens/calendar.js — day / week calendar
- * v1.0.0 — vertical day timeline + week mini-grid + create event
+ * v1.1.0 — conectado al backend via dataSource
  * ============================================================ */
 
-import { collection } from "../services/store.js";
+import { dataSource } from "../services/dataSource.js";
 
 const HOUR = 3600 * 1000;
 const PAD = (n) => String(n).padStart(2, "0");
@@ -35,7 +35,7 @@ export async function renderCalendar(root) {
         <button class="btn primary" id="new-event">+ Create event</button>
       </header>
 
-      <div id="cal-body"></div>
+      <div id="cal-body"><div class="empty"><div class="em-title">Loading…</div></div></div>
     </div>
   `;
   root.querySelectorAll(".view-toggle .seg").forEach((b) => {
@@ -44,30 +44,27 @@ export async function renderCalendar(root) {
   root.querySelector("#new-event").addEventListener("click", () => openEventModal(null, () => renderCalendar(root)));
 
   const body = root.querySelector("#cal-body");
-  body.innerHTML = state.view === "day" ? renderDay() : renderWeek();
+  const events = await dataSource.events.list();
+  body.innerHTML = state.view === "day" ? renderDay(events) : renderWeek(events);
   attachDayHandlers(body);
 }
 
-function renderDay() {
+function renderDay(events) {
   const date = new Date(state.date);
   date.setHours(0, 0, 0, 0);
   const dayStart = date.getTime();
   const dayEnd = dayStart + 24 * HOUR;
 
-  const events = collection("events").list()
-    .filter(e => e.start >= dayStart && e.start < dayEnd)
-    .sort((a, b) => a.start - b.start);
-
-  // Hours 6..22 (17 hours)
+  const today = events.filter(e => e.start >= dayStart && e.start < dayEnd).sort((a, b) => a.start - b.start);
   const hours = Array.from({ length: 17 }, (_, i) => 6 + i);
   const rows = hours.map(h => `
     <div class="cal-time">${PAD(h)}:00</div>
     <div class="cal-grid-line" data-h="${h}"></div>
   `).join("");
 
-  const blocks = events.map(e => {
+  const blocks = today.map(e => {
     const top = ((e.start - dayStart) / HOUR - 6) * 80;
-    const dur = Math.max(60, (e.end - e.start) / 60000); // px / min
+    const dur = Math.max(60, (e.end - e.start) / 60000);
     const h = (dur / 60) * 80;
     return `
       <div class="cal-event" data-id="${e.id}"
@@ -80,10 +77,9 @@ function renderDay() {
     `;
   }).join("");
 
-  // Now indicator
   const now = new Date();
   const sameDay = now.toDateString() === date.toDateString();
-  const nowTop = sameDay ? ((now.getHours() + now.getMinutes()/60) - 6) * 80 : -100;
+  const nowTop = sameDay ? ((now.getHours() + now.getMinutes() / 60) - 6) * 80 : -100;
 
   return `
     <div class="calendar">
@@ -96,18 +92,16 @@ function renderDay() {
   `;
 }
 
-function renderWeek() {
+function renderWeek(events) {
   const date = new Date(state.date);
-  const dow = (date.getDay() + 6) % 7; // mon=0
+  const dow = (date.getDay() + 6) % 7;
   date.setDate(date.getDate() - dow);
   date.setHours(0, 0, 0, 0);
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(date); d.setDate(d.getDate() + i);
     const dayStart = d.getTime();
     const dayEnd = dayStart + 24 * HOUR;
-    const ev = collection("events").list()
-      .filter(e => e.start >= dayStart && e.start < dayEnd)
-      .slice(0, 4);
+    const ev = events.filter(e => e.start >= dayStart && e.start < dayEnd).slice(0, 4);
     const today = new Date().toDateString() === d.toDateString();
     return `
       <div class="week-day ${today ? "today" : ""}">
@@ -132,71 +126,76 @@ function attachDayHandlers(root) {
 }
 
 function openEventModal(id, onSaved) {
-  const events = collection("events");
-  const subjects = collection("subjects").list();
-  const event = id ? events.get(id) : {
-    title: "", prof: "", room: "", type: "",
-    subject: subjects[0]?.id || "default",
-    start: Date.now(), end: Date.now() + HOUR,
-  };
-
-  const scrim = document.createElement("div");
-  scrim.className = "scrim sheet-bottom";
-  scrim.innerHTML = `
-    <div class="sheet bottom">
-      <div class="sheet-header">
-        <h3>${id ? "Edit" : "New"} event</h3>
-        <button class="btn icon" data-act="close">✕</button>
-      </div>
-      <div class="col gap-3">
-        <input class="input" id="ev-title" placeholder="Title" value="${escapeHtml(event.title)}" />
-        <div class="row gap-2">
-          <input class="input" id="ev-prof" placeholder="Prof / Teacher" value="${escapeHtml(event.prof || "")}" />
-          <input class="input" id="ev-room" placeholder="Room" value="${escapeHtml(event.room || "")}" />
-        </div>
-        <div class="row gap-2">
-          <input class="input" id="ev-start" type="datetime-local"
-                 value="${toLocalDateTime(event.start)}" />
-          <input class="input" id="ev-end" type="datetime-local"
-                 value="${toLocalDateTime(event.end)}" />
-        </div>
-        <select class="input" id="ev-subject">
-          ${subjects.map(s => `<option value="${escapeHtml(s.id)}" ${s.id === event.subject ? "selected" : ""}>${escapeHtml(s.name)}</option>`).join("")}
-        </select>
-        <div class="row gap-2">
-          ${id ? `<button class="btn danger" data-act="del" style="margin-right:auto">Delete</button>` : ""}
-          <button class="btn primary" data-act="save">Save</button>
-        </div>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(scrim);
-
-  const close = () => scrim.remove();
-  scrim.querySelector('[data-act="close"]').addEventListener("click", close);
-  scrim.addEventListener("click", (e) => { if (e.target === scrim) close(); });
-
-  scrim.querySelector('[data-act="save"]').addEventListener("click", () => {
-    const title = scrim.querySelector("#ev-title").value.trim();
-    if (!title) return;
-    const payload = {
-      title,
-      prof: scrim.querySelector("#ev-prof").value,
-      room: scrim.querySelector("#ev-room").value,
-      start: fromLocalDateTime(scrim.querySelector("#ev-start").value),
-      end:   fromLocalDateTime(scrim.querySelector("#ev-end").value),
-      subject: scrim.querySelector("#ev-subject").value,
+  dataSource.events.get(id).then((event) => {
+    const e = event || {
+      title: "", prof: "", room: "", type: "",
+      subject: "default",
+      start: Date.now(), end: Date.now() + HOUR,
     };
-    if (id) events.update(id, payload);
-    else events.create(payload);
-    close();
-    onSaved?.();
-  });
 
-  scrim.querySelector('[data-act="del"]')?.addEventListener("click", () => {
-    events.remove(id);
-    close();
-    onSaved?.();
+    const scrim = document.createElement("div");
+    scrim.className = "scrim sheet-bottom";
+    scrim.innerHTML = `
+      <div class="sheet bottom">
+        <div class="sheet-header">
+          <h3>${id ? "Edit" : "New"} event</h3>
+          <button class="btn icon" data-act="close">✕</button>
+        </div>
+        <div class="col gap-3">
+          <input class="input" id="ev-title" placeholder="Title" value="${escapeHtml(e.title)}" />
+          <div class="row gap-2">
+            <input class="input" id="ev-prof" placeholder="Prof / Teacher" value="${escapeHtml(e.prof || "")}" />
+            <input class="input" id="ev-room" placeholder="Room" value="${escapeHtml(e.room || "")}" />
+          </div>
+          <div class="row gap-2">
+            <input class="input" id="ev-start" type="datetime-local"
+                   value="${toLocalDateTime(e.start)}" />
+            <input class="input" id="ev-end" type="datetime-local"
+                   value="${toLocalDateTime(e.end)}" />
+          </div>
+          <select class="input" id="ev-type">
+            <option value="">—</option>
+            <option value="Lecture" ${e.type === "Lecture" ? "selected" : ""}>Lecture</option>
+            <option value="Homework" ${e.type === "Homework" ? "selected" : ""}>Homework</option>
+            <option value="Referat" ${e.type === "Referat" ? "selected" : ""}>Referat</option>
+            <option value="Exam" ${e.type === "Exam" ? "selected" : ""}>Exam</option>
+          </select>
+          <div class="row gap-2">
+            ${id ? `<button class="btn danger" data-act="del" style="margin-right:auto">Delete</button>` : ""}
+            <button class="btn primary" data-act="save">Save</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(scrim);
+
+    const close = () => scrim.remove();
+    scrim.querySelector('[data-act="close"]').addEventListener("click", close);
+    scrim.addEventListener("click", (e) => { if (e.target === scrim) close(); });
+
+    scrim.querySelector('[data-act="save"]').addEventListener("click", async () => {
+      const title = scrim.querySelector("#ev-title").value.trim();
+      if (!title) return;
+      const payload = {
+        title,
+        prof: scrim.querySelector("#ev-prof").value,
+        room: scrim.querySelector("#ev-room").value,
+        start: fromLocalDateTime(scrim.querySelector("#ev-start").value),
+        end: fromLocalDateTime(scrim.querySelector("#ev-end").value),
+        type: scrim.querySelector("#ev-type").value,
+        subject: e.subject ?? "default",
+      };
+      if (id) await dataSource.events.update(id, payload);
+      else await dataSource.events.create(payload);
+      close();
+      onSaved?.();
+    });
+
+    scrim.querySelector('[data-act="del"]')?.addEventListener("click", async () => {
+      await dataSource.events.remove(id);
+      close();
+      onSaved?.();
+    });
   });
 }
 

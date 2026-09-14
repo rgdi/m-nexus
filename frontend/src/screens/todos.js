@@ -1,26 +1,24 @@
 /* ============================================================
  * screens/todos.js — to-do's list with priority and due dates
- * v1.0.0 — Education Service style: chips for tags, checkboxes
+ * v1.1.0 — conectado al backend via dataSource
  * ============================================================ */
 
-import { collection } from "../services/store.js";
+import { dataSource } from "../services/dataSource.js";
 
 const PAD = (n) => String(n).padStart(2, "0");
-const fmtDate = (ms) => {
-  const d = new Date(ms);
-  return `${d.getFullYear()}-${PAD(d.getMonth() + 1)}-${PAD(d.getDate())}`;
-};
 const fmtDateTime = (ms) => {
+  if (!ms) return "";
   const d = new Date(ms);
-  return `${PAD(d.getHours())}:${PAD(d.getMinutes())} ${fmtDate(ms)}`;
+  return `${PAD(d.getHours())}:${PAD(d.getMinutes())} ${d.getFullYear()}-${PAD(d.getMonth() + 1)}-${PAD(d.getDate())}`;
 };
 const isOverdue = (ms, done) => !done && ms && ms < Date.now();
 
 const PRIORITY_LABEL = ["", "🔼", "🔺"];
 
 export async function renderTodos(root) {
-  const tasks = collection("tasks").list().sort((a, b) => {
-    if (a.done !== b.done) return a.done ? 1 : -1;
+  const tasks = await dataSource.tasks.list();
+  tasks.sort((a, b) => {
+    if ((a.done ? 1 : 0) !== (b.done ? 1 : 0)) return (a.done ? 1 : 0) - (b.done ? 1 : 0);
     if ((a.priority || 0) !== (b.priority || 0)) return (b.priority || 0) - (a.priority || 0);
     return (a.due || Infinity) - (b.due || Infinity);
   });
@@ -52,9 +50,9 @@ export async function renderTodos(root) {
 
   root.querySelectorAll(".todo-row").forEach((row) => {
     const id = row.dataset.id;
-    row.querySelector(".todo-check").addEventListener("click", () => {
-      const t = collection("tasks").get(id);
-      if (t) collection("tasks").update(id, { done: !t.done });
+    row.querySelector(".todo-check").addEventListener("click", async (e) => {
+      e.stopPropagation();
+      await dataSource.tasks_toggle(id);
       renderTodos(root);
     });
     row.addEventListener("click", (e) => {
@@ -73,7 +71,7 @@ function taskRow(t) {
       </button>
       <div style="flex:1; ${t.done ? "text-decoration:line-through;color:var(--fg-faint)" : ""}">
         <div class="bold">${escapeHtml(t.text)}</div>
-        ${t.due ? `<div class="small ${overdue ? "bad" : "muted"}" style="color:${overdue ? "var(--bad)" : "var(--fg-muted)"}">📅 ${fmtDateTime(t.due)} ${overdue ? " · OVERDUE" : ""}</div>` : ""}
+        ${t.due ? `<div class="small" style="color:${overdue ? "var(--bad)" : "var(--fg-muted)"}">📅 ${fmtDateTime(t.due)} ${overdue ? " · OVERDUE" : ""}</div>` : ""}
       </div>
       <div class="row gap-2">
         ${t.priority ? `<span class="chip warn">${PRIORITY_LABEL[t.priority] || ""}</span>` : ""}
@@ -84,56 +82,59 @@ function taskRow(t) {
 }
 
 function openTaskModal(id, onSaved) {
-  const tasks = collection("tasks");
-  const t = id ? tasks.get(id) : { text: "", due: null, priority: 0, subject: "" };
+  dataSource.tasks.get(id).then((t) => {
+    const task = t || { text: "", due: null, priority: 0, subject: "" };
 
-  const scrim = document.createElement("div");
-  scrim.className = "scrim sheet-bottom";
-  scrim.innerHTML = `
-    <div class="sheet bottom">
-      <div class="sheet-header">
-        <h3>${id ? "Edit" : "New"} task</h3>
-        <button class="btn icon" data-act="close">✕</button>
-      </div>
-      <div class="col gap-3">
-        <input class="input" id="t-text" placeholder="What needs to be done?" value="${escapeHtml(t.text)}" />
-        <div class="row gap-2">
-          <input class="input" id="t-due" type="datetime-local" value="${t.due ? toLocalDateTime(t.due) : ""}" />
-          <select class="input" id="t-priority">
-            <option value="0" ${t.priority === 0 ? "selected" : ""}>Normal</option>
-            <option value="1" ${t.priority === 1 ? "selected" : ""}>🔼 Medium</option>
-            <option value="2" ${t.priority === 2 ? "selected" : ""}>🔺 Urgent</option>
-          </select>
+    const scrim = document.createElement("div");
+    scrim.className = "scrim sheet-bottom";
+    scrim.innerHTML = `
+      <div class="sheet bottom">
+        <div class="sheet-header">
+          <h3>${id ? "Edit" : "New"} task</h3>
+          <button class="btn icon" data-act="close">✕</button>
         </div>
-        <input class="input" id="t-subject" placeholder="Subject / tag" value="${escapeHtml(t.subject || "")}" />
-        <div class="row gap-2">
-          ${id ? `<button class="btn danger" data-act="del" style="margin-right:auto">Delete</button>` : ""}
-          <button class="btn primary" data-act="save">Save</button>
+        <div class="col gap-3">
+          <input class="input" id="t-text" placeholder="What needs to be done?" value="${escapeHtml(task.text)}" />
+          <div class="row gap-2">
+            <input class="input" id="t-due" type="datetime-local" value="${task.due ? toLocalDateTime(task.due) : ""}" />
+            <select class="input" id="t-priority">
+              <option value="0" ${task.priority === 0 ? "selected" : ""}>Normal</option>
+              <option value="1" ${task.priority === 1 ? "selected" : ""}>🔼 Medium</option>
+              <option value="2" ${task.priority === 2 ? "selected" : ""}>🔺 Urgent</option>
+            </select>
+          </div>
+          <input class="input" id="t-subject" placeholder="Subject / tag" value="${escapeHtml(task.subject || "")}" />
+          <div class="row gap-2">
+            ${id ? `<button class="btn danger" data-act="del" style="margin-right:auto">Delete</button>` : ""}
+            <button class="btn primary" data-act="save">Save</button>
+          </div>
         </div>
       </div>
-    </div>
-  `;
-  document.body.appendChild(scrim);
-  const close = () => scrim.remove();
-  scrim.querySelector('[data-act="close"]').addEventListener("click", close);
-  scrim.addEventListener("click", (e) => { if (e.target === scrim) close(); });
-  scrim.querySelector('[data-act="save"]').addEventListener("click", () => {
-    const text = scrim.querySelector("#t-text").value.trim();
-    if (!text) return;
-    const payload = {
-      text,
-      due: fromLocalDateTime(scrim.querySelector("#t-due").value) || null,
-      priority: parseInt(scrim.querySelector("#t-priority").value, 10),
-      subject: scrim.querySelector("#t-subject").value.trim(),
-    };
-    if (id) tasks.update(id, payload); else tasks.create(payload);
-    close();
-    onSaved?.();
-  });
-  scrim.querySelector('[data-act="del"]')?.addEventListener("click", () => {
-    tasks.remove(id);
-    close();
-    onSaved?.();
+    `;
+    document.body.appendChild(scrim);
+    const close = () => scrim.remove();
+    scrim.querySelector('[data-act="close"]').addEventListener("click", close);
+    scrim.addEventListener("click", (e) => { if (e.target === scrim) close(); });
+    scrim.querySelector('[data-act="save"]').addEventListener("click", async () => {
+      const text = scrim.querySelector("#t-text").value.trim();
+      if (!text) return;
+      const payload = {
+        text,
+        due: fromLocalDateTime(scrim.querySelector("#t-due").value) || null,
+        priority: parseInt(scrim.querySelector("#t-priority").value, 10),
+        subject: scrim.querySelector("#t-subject").value.trim(),
+        done: task.done ?? false,
+      };
+      if (id) await dataSource.tasks.update(id, payload);
+      else await dataSource.tasks.create(payload);
+      close();
+      onSaved?.();
+    });
+    scrim.querySelector('[data-act="del"]')?.addEventListener("click", async () => {
+      await dataSource.tasks.remove(id);
+      close();
+      onSaved?.();
+    });
   });
 }
 

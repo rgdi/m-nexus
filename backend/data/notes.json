@@ -1,0 +1,53 @@
+[
+  {
+    "id": "note-ed7adc54-a2a3-4466-8fa6-0bcd4c5787f0",
+    "title": "Welcome to M-NEXUS",
+    "body": "# Welcome\n\nNotebook demo. Pulsa el lápiz para escribir.",
+    "subject": "math",
+    "tags": [
+      "welcome"
+    ],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "createdAt": 1789424693362,
+    "updatedAt": 1789424693362
+  },
+  {
+    "id": "note-6aaa6895-104c-48a7-ad30-9b5ba67d5dab",
+    "title": "Getting started",
+    "body": "# Erste Schritte\n\n- Stift\n- Auto-save",
+    "subject": "deu",
+    "tags": [
+      "onboarding"
+    ],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "createdAt": 1789424693372,
+    "updatedAt": 1789424693372
+  },
+  {
+    "id": "note-5fe47b8e-9af4-436d-a6c6-051b448cd4da",
+    "title": "Flashcards demo",
+    "body": "# Cell biology\n\nMitochondria powerhouse.",
+    "subject": "bio",
+    "tags": [
+      "biology"
+    ],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "createdAt": 1789424693377,
+    "updatedAt": 1789424693377
+  }
+]

@@ -1,16 +1,17 @@
 /* ============================================================
  * screens/notes.js — notebook con canvas stylus-first.
- * v1.0.0 — handwriting canvas + multi-page + toolbar + pencil drawer.
+ * v1.1.0 — conectado al backend via dataSource.
  *
- * Soporta stylus via PointerEvents. Pressure + tilt donde estén disponibles.
+ * Cada stroke se appenda al backend como evento (appendStroke)
+ * para sync incremental sin reenviar la nota entera.
  * ============================================================ */
 
-import { collection, store } from "../services/store.js";
+import { dataSource } from "../services/dataSource.js";
 
 const state = {
   selectedId: null,
   page: 0,
-  tool: "pen", // pen | highlighter | eraser | ruler | laser | select
+  tool: "pen",
   color: "#1a1d24",
   size: 3,
   pencils: [
@@ -23,11 +24,11 @@ const state = {
 
 export async function renderNotes(root) {
   if (!state.selectedId) return renderNotesList(root);
-  renderNotebook(root, state.selectedId);
+  await renderNotebook(root, state.selectedId);
 }
 
-function renderNotesList(root) {
-  const notes = collection("notes").list();
+async function renderNotesList(root) {
+  const notes = await dataSource.notes.list();
   root.innerHTML = `
     <div class="screen">
       <header class="screen-header">
@@ -39,12 +40,13 @@ function renderNotesList(root) {
         <input class="input with-icon" id="search" placeholder="Search notebooks" />
         <button class="btn icon" aria-label="Filter">⛁</button>
       </div>
-      <div class="book-grid" id="grid"></div>
+      <div class="book-grid" id="grid"><div class="empty"><div class="em-title">Loading…</div></div></div>
     </div>
   `;
-  root.querySelector("#new").addEventListener("click", () => {
-    const n = collection("notes").create({ title: "Untitled", body: "" });
+  root.querySelector("#new").addEventListener("click", async () => {
+    const n = await dataSource.notes.create({ title: "Untitled", body: "" });
     state.selectedId = n.id;
+    state.page = 0;
     renderNotes(root);
   });
   root.querySelector("#search").addEventListener("input", (e) => {
@@ -53,6 +55,10 @@ function renderNotesList(root) {
       c.style.display = c.dataset.title.toLowerCase().includes(q) ? "" : "none";
     });
   });
+  if (notes.length === 0) {
+    root.querySelector("#grid").innerHTML = `<div class="empty"><div class="em-title">No notebooks yet</div><div>Create one to get started.</div></div>`;
+    return;
+  }
   root.querySelector("#grid").innerHTML = notes.map(n => `
     <div class="book-card" data-id="${n.id}" data-title="${escapeHtml(n.title)}">
       <div class="cover">${escapeHtml((n.title || "?")[0])}</div>
@@ -60,16 +66,16 @@ function renderNotesList(root) {
     </div>
   `).join("");
   root.querySelectorAll(".book-card").forEach((c) => {
-    c.addEventListener("click", () => { state.selectedId = c.dataset.id; renderNotes(root); });
+    c.addEventListener("click", () => { state.selectedId = c.dataset.id; state.page = 0; renderNotes(root); });
   });
 }
 
-function renderNotebook(root, id) {
-  const notes = collection("notes");
-  const note = notes.get(id);
+async function renderNotebook(root, id) {
+  const note = await dataSource.notes.get(id);
   if (!note) { state.selectedId = null; return renderNotesList(root); }
 
-  const pages = note.pages || [{ strokes: [] }];
+  const pages = note.pages && note.pages.length > 0 ? note.pages : [{ strokes: [], placeholders: [] }];
+  if (state.page >= pages.length) state.page = pages.length - 1;
   const page = pages[state.page] || pages[0];
 
   root.innerHTML = `
@@ -122,28 +128,25 @@ function renderNotebook(root, id) {
     </div>
   `;
 
-  // Page navigation
-  root.querySelector("#back").addEventListener("click", () => { state.selectedId = null; renderNotes(root); });
+  root.querySelector("#back").addEventListener("click", () => { state.selectedId = null; state.page = 0; renderNotes(root); });
   root.querySelector("#prev").addEventListener("click", () => {
     if (state.page > 0) { state.page--; renderNotes(root); }
   });
   root.querySelector("#next").addEventListener("click", () => {
     if (state.page < pages.length - 1) { state.page++; renderNotes(root); }
   });
-  root.querySelector("#add-page").addEventListener("click", () => {
-    pages.push({ strokes: [] });
-    notes.update(id, { pages });
-    state.page = pages.length - 1;
+  root.querySelector("#add-page").addEventListener("click", async () => {
+    const next = [...pages, { strokes: [], placeholders: [] }];
+    await dataSource.notes.update(id, { pages: next });
+    state.page = next.length - 1;
     renderNotes(root);
   });
 
-  // Title editing
   const titleEl = root.querySelector("#title");
-  titleEl.addEventListener("blur", () => {
-    notes.update(id, { title: titleEl.textContent.trim() || "Untitled" });
+  titleEl.addEventListener("blur", async () => {
+    await dataSource.notes.update(id, { title: titleEl.textContent.trim() || "Untitled" });
   });
 
-  // Toolbar tool selection
   root.querySelectorAll(".tool-btn").forEach((b) => {
     b.addEventListener("click", () => {
       if (b.dataset.tool) {
@@ -151,13 +154,10 @@ function renderNotebook(root, id) {
         root.querySelectorAll(".tool-btn").forEach(x => x.classList.remove("active"));
         b.classList.add("active");
       }
-      if (b.dataset.act) {
-        handleInsertAction(b.dataset.act, root, id, state.page);
-      }
+      if (b.dataset.act) handleInsertAction(b.dataset.act, root, id, state.page, pages);
     });
   });
 
-  // Pencil drawer
   root.querySelectorAll(".pencil[data-pencil]").forEach((p) => {
     p.addEventListener("click", () => {
       const found = state.pencils.find(x => x.id === p.dataset.pencil);
@@ -169,37 +169,23 @@ function renderNotebook(root, id) {
     });
   });
 
-  // Intelligent overview (AI)
-  root.querySelector("#overview-btn").addEventListener("click", () => {
-    openOverviewModal(note);
-  });
+  root.querySelector("#overview-btn").addEventListener("click", () => openOverviewModal(note));
 
-  // Setup canvas + drawing
   setupCanvas(root, id, state.page, page.strokes, pages);
 }
 
-function handleInsertAction(act, root, noteId, pageIdx) {
-  const notes = collection("notes");
-  const note = notes.get(noteId);
-  const pages = note.pages || [{ strokes: [] }];
+function handleInsertAction(act, root, noteId, pageIdx, pages) {
   const page = pages[pageIdx] || pages[0];
-  if (act === "trash") {
-    if (confirm("¿Eliminar el lápiz activo?")) {
-      // noop for now
-    }
-    return;
-  }
-  // Stub: cada accion mete un "stroke" decorativo que represente el placeholder
-  const placeholder = {
+  if (act === "trash") return;
+  page.placeholders = page.placeholders || [];
+  page.placeholders.push({
     type: act,
     x: 60 + Math.random() * 200,
     y: 60 + Math.random() * 100,
     w: 220, h: 80,
     label: { voice: "Voice note", code: "// code", image: "Image", graph: "Graph", link: "Link", table: "Table" }[act],
-  };
-  page.placeholders = page.placeholders || [];
-  page.placeholders.push(placeholder);
-  notes.update(noteId, { pages });
+  });
+  dataSource.notes.update(noteId, { pages });
   renderNotes(root);
 }
 
@@ -208,6 +194,7 @@ function setupCanvas(root, noteId, pageIdx, strokes, pages) {
   const canvas = root.querySelector("#canvas");
   const ctx = canvas.getContext("2d");
   const dpr = window.devicePixelRatio || 1;
+  const placeholders = pages[pageIdx]?.placeholders || [];
 
   function fit() {
     const rect = wrap.getBoundingClientRect();
@@ -222,8 +209,7 @@ function setupCanvas(root, noteId, pageIdx, strokes, pages) {
   function redraw() {
     const rect = wrap.getBoundingClientRect();
     ctx.clearRect(0, 0, rect.width, rect.height);
-    // placeholders
-    (strokes._placeholders || []).forEach((p) => {
+    placeholders.forEach((p) => {
       ctx.fillStyle = "rgba(140,92,246,0.06)";
       ctx.strokeStyle = "rgba(140,92,246,0.4)";
       ctx.setLineDash([6, 4]);
@@ -234,7 +220,6 @@ function setupCanvas(root, noteId, pageIdx, strokes, pages) {
       ctx.font = "13px " + getComputedStyle(document.body).fontFamily;
       ctx.fillText("📎 " + p.label, p.x + 8, p.y + 18);
     });
-    // strokes
     for (const s of strokes) {
       if (!s.points || s.points.length < 1) continue;
       ctx.lineCap = "round";
@@ -244,15 +229,12 @@ function setupCanvas(root, noteId, pageIdx, strokes, pages) {
       ctx.lineWidth = s.size;
       ctx.beginPath();
       ctx.moveTo(s.points[0].x, s.points[0].y);
-      for (let i = 1; i < s.points.length; i++) {
-        ctx.lineTo(s.points[i].x, s.points[i].y);
-      }
+      for (let i = 1; i < s.points.length; i++) ctx.lineTo(s.points[i].x, s.points[i].y);
       ctx.stroke();
       ctx.globalAlpha = 1;
     }
   }
 
-  // Drawing state
   let drawing = false;
   let currentStroke = null;
 
@@ -277,7 +259,6 @@ function setupCanvas(root, noteId, pageIdx, strokes, pages) {
   function onMove(e) {
     if (!drawing) return;
     currentStroke.points.push(getPos(e));
-    // Live redraw (only the active stroke)
     redraw();
     ctx.beginPath();
     ctx.lineCap = "round"; ctx.lineJoin = "round";
@@ -295,13 +276,8 @@ function setupCanvas(root, noteId, pageIdx, strokes, pages) {
     drawing = false;
     if (currentStroke && currentStroke.points.length > 1) {
       strokes.push(currentStroke);
-      // autosave
-      const notes = collection("notes");
-      const n = notes.get(noteId);
-      const pages = n.pages || [];
-      if (!pages[pageIdx]) pages[pageIdx] = { strokes: [] };
-      pages[pageIdx].strokes = strokes;
-      notes.update(noteId, { pages });
+      // v1.1.0: append al backend incremental
+      dataSource.notes_appendStroke(noteId, pageIdx, currentStroke);
     }
     currentStroke = null;
   }
@@ -312,14 +288,9 @@ function setupCanvas(root, noteId, pageIdx, strokes, pages) {
   canvas.addEventListener("pointercancel", onUp);
   canvas.addEventListener("pointerleave", onUp);
 
-  // Resize handling
   const ro = new ResizeObserver(fit);
   ro.observe(wrap);
   fit();
-
-  // Expose for placeholders re-render
-  strokes._placeholders = pages[pageIdx]?.placeholders || [];
-  redraw();
 }
 
 function openOverviewModal(note) {
@@ -332,12 +303,11 @@ function openOverviewModal(note) {
         <h3>Intelligent overview</h3>
         <button class="btn icon" data-act="close">✕</button>
       </div>
-      <div class="muted small">Generated from ${(note.pages?.length ?? 1)} page(s) of handwriting and text.</div>
+      <div class="muted small">Generated from ${note.pages?.length ?? 1} page(s) of handwriting and text.</div>
       <div style="margin-top: var(--s-4); white-space: pre-wrap; font-size: var(--fs-md); line-height: 1.6">
 ${escapeHtml(body) || "No content yet. Start writing!"}
       </div>
       <div class="row gap-2" style="margin-top: var(--s-5)">
-        <button class="btn" data-act="search">⌕ Search notebook</button>
         <button class="btn primary" data-act="close">Done</button>
       </div>
     </div>

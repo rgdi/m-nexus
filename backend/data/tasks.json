@@ -1,0 +1,62 @@
+[
+  {
+    "text": "Submit politics-econ essay",
+    "done": false,
+    "due": 1789516740000,
+    "priority": 2,
+    "subject": "pol",
+    "id": "task-80c7f966-bd0d-4377-9f00-75f3c15a1a92",
+    "createdAt": 1789424693422,
+    "updatedAt": 1789424693422
+  },
+  {
+    "text": "Read chapter 7 — Biology",
+    "done": false,
+    "due": 1789585140000,
+    "priority": 1,
+    "subject": "bio",
+    "id": "task-08594abf-ab03-4639-9759-2a18b82aacc3",
+    "createdAt": 1789424693427,
+    "updatedAt": 1789424693427
+  },
+  {
+    "text": "Practice integrals (set 3)",
+    "done": false,
+    "due": 1789426740000,
+    "priority": 0,
+    "subject": "math",
+    "id": "task-8fdeee8f-3b09-435e-a34e-84ccfa877211",
+    "createdAt": 1789424693431,
+    "updatedAt": 1789424693431
+  },
+  {
+    "text": "Chemistry lab report",
+    "done": false,
+    "due": 1789775940000,
+    "priority": 1,
+    "subject": "che",
+    "id": "task-ff480282-3759-480a-b8a9-d115b38b44a2",
+    "createdAt": 1789424693436,
+    "updatedAt": 1789424693436
+  },
+  {
+    "text": "Buy lab coat",
+    "done": true,
+    "due": null,
+    "priority": 0,
+    "subject": "che",
+    "id": "task-9bffba1f-a48a-4bf9-ad99-9daba955034c",
+    "createdAt": 1789424693440,
+    "updatedAt": 1789424693440
+  },
+  {
+    "text": "Email professor about Referat",
+    "done": true,
+    "due": null,
+    "priority": 0,
+    "subject": "deu",
+    "id": "task-228b835f-db60-4ebd-bb0a-ea3d2529e3c0",
+    "createdAt": 1789424693445,
+    "updatedAt": 1789424693445
+  }
+]
