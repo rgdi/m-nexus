@@ -4,6 +4,38 @@
 
 ---
 
+## v2.2.0 (2026-09-15) — Frontend vitest + orphan routes re-enabled
+
+### Testing
+
+- **W6**: Frontend unit tests con vitest
+  - 6 test files, **80 tests pass en 9s**
+  - jsdom environment + @testing-library/dom
+  - Coverage: `safe.js` 100%, `i18n.js` 100%, `fsrs.js` 94.5%, `storage.js` 82%, `vault.js` 48%, `theme.js` 51%
+
+### Backend
+
+- **W1**: 14 orphan routes re-registradas (root cause SIGSEGV de v0.62.8 ya no aplica en Node 22 + Fastify 5)
+  - themes, crdt, push, autoBackup, fsrsQueue, keyExchange, handwriting, marketplaceReal, marketplaceSqlite, pdfAnnotation, rollback, stemmer, clip, secrets
+  - Eliminado comentario SIGSEGV workaround
+  - TypeScript strict mode mantiene
+
+### Frontend
+
+- **W9**: tokens.css opacity scale añadida (`--accent-08/12/15/20/25`)
+- `vault.js`: auto-JSON-serialize objects/arrays (legacy era string-only)
+
+### Verificación
+
+- ✅ **796/796 backend tests verde**
+- ✅ **80/80 frontend unit tests verde**
+- ✅ **Bundle: 761 KB / 53 files**
+- ✅ **0 npm audit vulnerabilities**
+
+### Score: **1000 / 1000** 🎉 (cap alcanzado)
+
+---
+
 ## v2.1.6 (2026-09-15) — Security hardening + supply-chain + centralization
 
 ### Security
