@@ -7,6 +7,8 @@ import { dataSource } from "../services/dataSource.js";
 import { i18n } from "../services/i18n.js";
 import { mountTopToolbar } from "../widgets/top_toolbar.js";
 import { openAudioRecorder } from "../widgets/audio_recorder.js";
+import { openStudySession } from "../widgets/study_session.js";
+import { downloadNoteAsPDF } from "../widgets/pdf_export.js";
 import { icon as svgIcon } from "../widgets/icons.js";
 
 const state = {
@@ -133,6 +135,7 @@ async function renderNotebook(root, id) {
 
       <div class="row gap-2" style="margin-bottom: var(--s-3)">
         <button class="btn primary" id="overview-btn">${i18n.t("notes.intelligentOverview")}</button>
+        <button class="btn" id="export-pdf">${svgIcon("text", 14)} PDF</button>
         <div class="ai-menu" id="ai-menu">
           <button class="btn primary ai-toggle" id="ai-toggle" aria-expanded="false" aria-haspopup="menu">
             ${svgIcon("sparkles", 16)} AI
@@ -231,6 +234,9 @@ async function renderNotebook(root, id) {
   });
 
   root.querySelector("#overview-btn").addEventListener("click", () => openOverviewModal(note));
+
+  // v1.7.3: export PDF
+  root.querySelector("#export-pdf").addEventListener("click", () => downloadNoteAsPDF(note));
 
   // v1.6.1: AI submenú
   setupAIMenu(root, id, note);
@@ -793,6 +799,7 @@ async function showFlashcardsPanel(noteId, justCreated) {
         ${cards.length === 0 ? `<div class="empty"><div class="em-title">${i18n.t("notes.noFlashcards")}</div><div>${i18n.t("notes.flashcardHint")}</div></div>` : ""}
       </div>
       <div class="row gap-2" style="margin-top: var(--s-5)">
+        <button class="btn primary" id="study-cards">${svgIcon("flashcard", 16)} ${i18n.t("notes.study")}</button>
         <button class="btn primary" id="add-card">${i18n.t("notes.newFlashcard")}</button>
         <button class="btn" data-act="close">${i18n.t("common.close")}</button>
       </div>
@@ -806,6 +813,14 @@ async function showFlashcardsPanel(noteId, justCreated) {
     if (e.target.dataset.act === "delete") deleteCard(noteId, e.target.dataset.id);
   });
   panel.querySelector("#add-card").addEventListener("click", () => openCardEditor(noteId, null));
+  panel.querySelector("#study-cards").addEventListener("click", async () => {
+    // v1.7.0: re-fetch latest cards before opening session
+    const fresh = await fetch(`http://localhost:4100/api/v1/flashcards/filter?noteId=${noteId}`).then((r) => r.ok ? r.json() : { cards: [] });
+    const list = fresh.cards || [];
+    if (list.length === 0) { alert(i18n.t("notes.noFlashcards")); return; }
+    close();
+    openStudySession(list);
+  });
 }
 
 async function deleteCard(noteId, id) {

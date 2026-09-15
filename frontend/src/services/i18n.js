@@ -49,6 +49,9 @@ const STRINGS = {
   "calendar.day":            { en: "Day",     es: "Día",     pt: "Dia" },
   "calendar.week":           { en: "Week",    es: "Semana",  pt: "Semana" },
   "calendar.create":         { en: "+ Create event", es: "+ Crear evento", pt: "+ Criar evento" },
+  "calendar.detail.when":    { en: "When", es: "Cuándo", pt: "Quando" },
+  "calendar.detail.linkedNotes":{en: "Linked notes", es: "Notas vinculadas", pt: "Notas vinculadas"},
+  "calendar.detail.noNotes": { en: "No notes linked to this event yet. Take one now →", es: "No hay notas vinculadas. ¡Toma una ahora →", pt: "Sem notas vinculadas. Tire uma agora →" },
   "calendar.edit":           { en: "Edit event", es: "Editar evento", pt: "Editar evento" },
   "calendar.new":            { en: "New event", es: "Nuevo evento", pt: "Novo evento" },
   "calendar.title":          { en: "Title", es: "Título", pt: "Título" },
@@ -123,6 +126,7 @@ const STRINGS = {
   "notes.flashcardRequired":{ en: "Front and back are required", es: "Anverso y reverso son obligatorios", pt: "Frente e verso são obrigatórios" },
   "notes.flashcardSourceNote": { en: "From: {note}", es: "De: {note}", pt: "De: {note}" },
   "notes.noFlashcards":     { en: "No flashcards yet", es: "Aún no hay flashcards", pt: "Ainda sem flashcards" },
+  "notes.study":            { en: "Study (FSRS)", es: "Estudiar (FSRS)", pt: "Estudar (FSRS)" },
   "notes.flashcardHint":    { en: "Use {{c1::front::back}} in the text or click + new", es: "Usa {{c1::pregunta::respuesta}} en el texto o pulsa + nueva", pt: "Use {{c1::frente::verso}} no texto ou clique + nova" },
   // v1.6.1 — AI submenu
   "notes.ai.summarize":     { en: "Summarize note", es: "Resumir nota", pt: "Resumir nota" },

@@ -5,6 +5,8 @@
 
 import { api } from "./services/api.js";
 import { detectBackend } from "./services/dataSource.js";
+import { mountThemeToggle, applyTheme, watchSystemTheme } from "./services/theme.js";
+import * as fsrs from "./services/fsrs.js";
 import { store } from "./services/store.js";
 import { device, startDeviceWatch } from "./services/device.js";
 import { i18n } from "./services/i18n.js";
@@ -93,12 +95,17 @@ window.addEventListener("hashchange", render);
 async function bootstrap() {
   // v1.6.3: detectar backend online para activar API
   await detectBackend();
+  // v1.7.1: aplicar theme persistido
+  applyTheme();
+  watchSystemTheme();
   // v1.4.0: splash screen con logo Education Service
   showSplash();
   // v1.2.0: arrancar watcher de dispositivo (DPR, orientation, theme, etc).
   startDeviceWatch();
   // v1.3.0: montar selector de idioma
   mountLangSwitcher();
+  // v1.7.1: theme toggle (light/dark/auto)
+  mountThemeToggle();
   setupHamburger();
   // Set initial lang attribute on html
   document.documentElement.lang = i18n.lang;
@@ -128,6 +135,7 @@ async function bootstrap() {
     window.__i18n = i18n;
     window.__mnexusHashQuery = parseHashQuery;
     window.__mnexusNoteState = window.__mnexusNoteState ?? { selectedId: null };
+    window.__mnexusFsrs = fsrs;
   }
 
 // v1.6.3: estado de notas (compartido entre cross-verify y notebook)

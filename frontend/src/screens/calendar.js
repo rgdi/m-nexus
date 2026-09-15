@@ -46,6 +46,7 @@ export async function renderCalendar(root) {
 
   const body = root.querySelector("#cal-body");
   const events = await dataSource.events.list();
+  eventsCache = events;
   body.innerHTML = state.view === "day" ? renderDay(events) : renderWeek(events);
   attachDayHandlers(body);
 }
@@ -122,7 +123,107 @@ function renderWeek(events) {
 
 function attachDayHandlers(root) {
   root.querySelectorAll(".cal-event").forEach((el) => {
-    el.addEventListener("click", () => openEventModal(el.dataset.id, () => renderCalendar(document.getElementById("app"))));
+    el.addEventListener("click", () => {
+      // v1.7.2: single click = detail modal (read-only), double click = edit
+      if (el._clickTimer) {
+        clearTimeout(el._clickTimer);
+        el._clickTimer = null;
+        openEventModal(el.dataset.id, () => renderCalendar(document.getElementById("app")));
+      } else {
+        el._clickTimer = setTimeout(() => {
+          el._clickTimer = null;
+          openEventDetail(el.dataset.id);
+        }, 220);
+      }
+    });
+  });
+  root.querySelectorAll(".ev").forEach((el) => {
+    el.addEventListener("click", () => {
+      const id = el.dataset.id;
+      if (id) openEventDetail(id);
+    });
+  });
+  // attach data-id to .ev elements
+  root.querySelectorAll(".ev").forEach((el, i) => {
+    const ev = eventsCache[i];
+    if (ev) el.dataset.id = ev.id;
+  });
+}
+
+let eventsCache = [];
+
+/**
+ * openEventDetail — modal read-only con info del evento + notas linkadas.
+ * v1.7.2 — linked notes = notas con mismo subject creadas en ±2 horas.
+ */
+async function openEventDetail(id) {
+  const ev = await dataSource.events.get(id).catch(() => null);
+  if (!ev) return;
+  // buscar notas linkadas (mismo subject, ventana ±2h)
+  const winStart = ev.start - 2 * HOUR;
+  const winEnd = ev.end + 2 * HOUR;
+  const allNotes = await dataSource.notes.list();
+  const linkedNotes = allNotes.filter((n) => {
+    const subMatch = n.subject === ev.subject || n.subject === ev.title;
+    const timeMatch = (n.updatedAt >= winStart && n.updatedAt <= winEnd) || (n.createdAt >= winStart && n.createdAt <= winEnd);
+    return subMatch && timeMatch;
+  });
+
+  const scrim = document.createElement("div");
+  scrim.className = "scrim";
+  scrim.innerHTML = `
+    <div class="sheet" style="max-width: 640px">
+      <div class="sheet-header">
+        <h3>${escapeHtml(ev.title)}</h3>
+        <button class="btn icon" data-act="close">✕</button>
+      </div>
+      <div class="ev-detail" style="border-left: 4px solid ${COLOR_FOR[ev.subject] || COLOR_FOR.default}; padding-left: var(--s-4); margin-bottom: var(--s-4)">
+        <div class="muted small">${i18n.t("calendar.detail.when")}</div>
+        <div style="font-size: var(--fs-md); font-weight: 600">${fmtTime(ev.start)} – ${fmtTime(ev.end)}</div>
+        ${ev.prof ? `<div class="muted small" style="margin-top: var(--s-2)">${i18n.t("calendar.prof")}: ${escapeHtml(ev.prof)}</div>` : ""}
+        ${ev.room ? `<div class="muted small">${i18n.t("calendar.room")}: ${escapeHtml(ev.room)}</div>` : ""}
+        ${ev.type ? `<div style="margin-top: var(--s-2)"><span class="badge">${escapeHtml(ev.type)}</span></div>` : ""}
+      </div>
+
+      <h4 style="margin: var(--s-4) 0 var(--s-2); font-size: var(--fs-md)">${i18n.t("calendar.detail.linkedNotes")} (${linkedNotes.length})</h4>
+      ${linkedNotes.length === 0
+        ? `<div class="muted small" style="padding: var(--s-3); background: var(--bg-sunken); border-radius: 10px">${i18n.t("calendar.detail.noNotes")}</div>`
+        : `<div class="linked-notes">${linkedNotes.slice(0, 5).map((n) => `
+            <a href="#/notes" data-note-id="${n.id}" class="linked-note">
+              <div class="title">${escapeHtml(n.title)}</div>
+              <div class="muted tiny">${escapeHtml((n.body || "").slice(0, 80))}</div>
+            </a>
+          `).join("")}</div>`
+      }
+
+      <div class="row gap-2" style="margin-top: var(--s-5)">
+        <button class="btn primary" data-act="edit">${i18n.t("common.edit")}</button>
+        <button class="btn danger" data-act="del">${i18n.t("common.delete")}</button>
+        <button class="btn" data-act="close" style="margin-left:auto">${i18n.t("common.close")}</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(scrim);
+  const close = () => scrim.remove();
+  scrim.querySelector('[data-act="close"]').addEventListener("click", close);
+  scrim.addEventListener("click", (e) => { if (e.target === scrim) close(); });
+  scrim.querySelector('[data-act="edit"]').addEventListener("click", () => {
+    close();
+    openEventModal(id, () => renderCalendar(document.getElementById("app")));
+  });
+  scrim.querySelector('[data-act="del"]').addEventListener("click", async () => {
+    await dataSource.events.remove(id);
+    close();
+    renderCalendar(document.getElementById("app"));
+  });
+  scrim.querySelectorAll(".linked-note").forEach((a) => {
+    a.addEventListener("click", (e) => {
+      e.preventDefault();
+      const nid = a.dataset.noteId;
+      document.dispatchEvent(new CustomEvent("notes:open", { detail: { id: nid } }));
+      location.hash = `#/notes/${nid}`;
+      close();
+    });
   });
 }
 

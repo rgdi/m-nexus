@@ -85,6 +85,22 @@ async function run() {
   await shoot(page, '01b-overview-cross-verify-en', 'tablet');
   await page.locator('.scrim').click({ position: { x: 10, y: 10 } }).catch(() => {});
 
+  // v1.7.1: theme toggle visible + change
+  check('theme toggle visible', await page.locator('#theme-toggle').isVisible());
+  await page.click('#theme-toggle');
+  await page.waitForTimeout(300);
+  const themeAfter = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+  check('theme changes to light', themeAfter === 'light');
+  await shoot(page, '01-overview-light-en', 'tablet');
+  await page.click('#theme-toggle');
+  await page.waitForTimeout(300);
+  const themeAfter2 = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+  check('theme cycles to dark', themeAfter2 === 'dark');
+  await shoot(page, '19-overview-dark-manual-en', 'tablet');
+  // restore auto
+  await page.click('#theme-toggle');
+  await page.waitForTimeout(300);
+
   // 2: Overview ES tablet
   console.log('\n[2] Overview (es, tablet)');
   await setLang(page, 'es');
@@ -222,6 +238,57 @@ async function run() {
     check('AI items count >= 4', (await page.locator('.ai-item').count()) >= 4);
     await shoot(page, '12e-notes-ai-menu-en', 'tablet');
     await page.evaluate(() => document.querySelectorAll('.scrim').forEach((s) => s.remove()));
+
+    // v1.7.0: FSRS study session
+    await page.waitForTimeout(500);
+    await page.evaluate(() => {
+      document.querySelectorAll('.scrim, .fc-panel, .fc-editor, .ai-menu-panel').forEach((s) => s.remove());
+    });
+    await page.waitForTimeout(300);
+    // Create test cards via backend BEFORE opening the panel
+    const noteId = await page.evaluate(() => window.__mnexusNoteState?.selectedId);
+    if (noteId) {
+      await page.evaluate(async (nid) => {
+        await fetch('http://localhost:4100/api/v1/flashcards', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ front: 'Capital of France', back: 'Paris', subject: 'math', sourceNoteId: nid }),
+        });
+        await fetch('http://localhost:4100/api/v1/flashcards', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ front: '2 + 2', back: '4', subject: 'math', sourceNoteId: nid }),
+        });
+      }, noteId);
+    }
+    await page.waitForTimeout(500);
+    // Click FAB via JS dispatch
+    await page.evaluate(() => document.getElementById('new-card-btn')?.click());
+    // Wait for panel to be visible
+    await page.waitForSelector('.fc-panel', { timeout: 5000 });
+    await page.waitForTimeout(500);
+    // Click Study button via JS dispatch
+    await page.evaluate(() => document.getElementById('study-cards')?.click());
+    // Wait for study to be visible
+    try {
+      await page.waitForSelector('.study', { timeout: 8000 });
+      await page.waitForTimeout(500);
+      check('study session visible', await page.locator('.study').isVisible());
+      check('study card visible', await page.locator('.study .card').isVisible());
+      check('study 4 ratings', (await page.locator('.study .rate-btn').count()) === 4);
+      await shoot(page, '12f-notes-study-fsrs-en', 'tablet');
+      // Flip card via JS dispatch
+      await page.evaluate(() => document.querySelector('.study .card')?.click());
+      await page.waitForTimeout(500);
+      check('study card flipped', await page.locator('.study .card.flipped').count() === 1);
+      await shoot(page, '12g-notes-study-flipped-en', 'tablet');
+      // Press "Good" via JS dispatch
+      await page.evaluate(() => document.querySelector('.study .rate-btn.good')?.click());
+      await page.waitForTimeout(500);
+      // Close via JS dispatch
+      await page.evaluate(() => document.querySelector('.study .close')?.click());
+      await page.waitForTimeout(300);
+    } catch (e) {
+      console.log('  ! study:', e.message.slice(0, 80));
+    }
   }
 
   // 13: Todos
