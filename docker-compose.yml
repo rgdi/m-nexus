@@ -23,9 +23,11 @@ services:
       HOST: 0.0.0.0
       DATA_DIR: /data
       BACKUP_DIR: /backups
-      # v0.62.2: secret env vars (puedes sobreescribir en .env)
-      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
-      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      # v2.1.5: JWT_SECRET MUST be set; backend rejects weak values
+      # (config.ts fail-fast on 'change-me' or empty).
+      # Generate one with: openssl rand -hex 32
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in .env. Run: openssl rand -hex 32}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:8080}
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
       interval: 30s

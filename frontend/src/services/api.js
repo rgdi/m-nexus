@@ -3,7 +3,10 @@
  * v1.0.0 — fetch + tiny retry layer. Falls back to local store if offline.
  * ============================================================ */
 
-const API_BASE = location.hostname === "localhost" || location.hostname.endsWith(".localhost")
+// v2.1.5: build API base URL robustly
+// - Dev: hardcode http://localhost:4100
+// - Prod: same origin (so we work behind any reverse proxy / domain)
+const API_BASE = (location.hostname === "localhost" || location.hostname === "127.0.0.1")
   ? `http://${location.hostname}:4100/api/v1`
   : `${location.protocol}//${location.host}/api/v1`;
 

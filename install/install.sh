@@ -209,6 +209,7 @@ Environment=NODE_ENV=production
 Environment=PORT=$PORT
 Environment=HOST=127.0.0.1
 Environment=DATA_DIR=$DATA_DIR
+Environment=JWT_SECRET=$JWT_SECRET
 StandardOutput=append:$INSTALL_DIR/backend.log
 StandardError=append:$INSTALL_DIR/backend.log
 
@@ -278,6 +279,16 @@ need_cmd curl
 need_cmd unzip
 install_node
 need_cmd npm
+
+# v2.1.5: generate JWT_SECRET if not provided (fail-fast on weak in config.ts)
+if [ -z "${JWT_SECRET:-}" ]; then
+  if command -v openssl >/dev/null; then
+    export JWT_SECRET="$(openssl rand -hex 32)"
+    log "Generated JWT_SECRET (32 bytes)"
+  else
+    err "JWT_SECRET not set and openssl not available. Set it via: export JWT_SECRET=...; or pass --jwt-secret=..."
+  fi
+fi
 
 hdr "Installing M-NEXUS"
 # Decide source: local if running from repo, else download

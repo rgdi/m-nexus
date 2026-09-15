@@ -4,6 +4,49 @@
 
 ---
 
+## v2.1.5 (2026-09-15) — One-line installer + setup wizard + security audit
+
+### Nuevas features
+
+- **`install/install.sh`** — instalación con una sola línea:
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/rgdi/m-nexus/main/install/install.sh | bash
+  ```
+  Auto-detecta OS (Linux/macOS) + pkg manager (apt/dnf/yum/apk/brew), instala Node 22 si falta, descarga el último release, crea CLI helper `mnexus`, opcionalmente instala systemd unit.
+  
+  Opciones: `--port`, `--data`, `--no-systemd`, `--update`, `--help`.
+  
+- **`frontend/src/widgets/setup_wizard.js`** — onboarding slideshow de 6 slides:
+  1. Welcome (hero + iconos)
+  2. Pick vault (4 opciones: default / school / personal / work)
+  3. Add first subject (chips + custom)
+  4. Notebook tips (`{{c1::}}`, `[[]]`, `@book/ref`)
+  5. Flashcards con FSRS (4 study modes)
+  6. Done — open dashboard
+
+  Auto-launch en first-run, "Re-run setup wizard" desde drawer del hamburger.
+
+- **Documentation update completo**: README + API.md + ARCHITECTURE.md + ERROR_CODES.md + LOGGING.md + BACKEND_ONLY_FEATURES.md.
+
+- **`AUDIT_REPORT.md`** — auditoría completa del código: 22 hallazgos, 19 fixes aplicados, 9 work items pendientes.
+
+### Security fixes (audit)
+
+- **`install/install.sh`**: genera `JWT_SECRET=$(openssl rand -hex 32)` automáticamente.
+- **`scripts/start_backend.sh`**: lee `.env` o genera JWT_SECRET y persiste.
+- **`docker-compose.yml`**: `${JWT_SECRET:?...}` (falla si no está seteada, en lugar de usar `change-me`).
+- **`frontend/src/services/api.js`**: API_BASE usa `localhost`/`127.0.0.1` explícito, same-origin en prod.
+
+### Verificación
+
+- ✅ 796/796 backend tests verde (1 skipped)
+- ✅ 8 wizard screenshots
+- ✅ Wizard on first-run / persisted via localStorage
+- ✅ install.sh syntax OK + --help funcional
+- ✅ Bundle: 753 KB / 51 files
+
+---
+
 ## v2.1.4 (2026-09-15) — CI overhaul + 796 backend tests green
 
 **Problema:** CI corría tests legacy que fallaban silenciosamente. 6 archivos vitest rojos, 46 failures.
@@ -229,14 +272,34 @@ Long-press 600ms en canvas → popup flotante con Word + IPA + syllable + freque
 
 | Source | Total |
 |---|---|
-| Backend vitest tests | **796** (67 files) |
+| Backend vitest tests | **796** (65 files) |
 | Frontend validation assertions | **315+** (12 files) |
 | E2E physical checks | **31** |
 | Mobile screenshots | **24** (3 viewports × 7 vistas) |
-| Playwright screenshots | **48+** |
-| Git tags | **13** (v1.0.0 → v2.1.4) |
-| Backend LOC (TS) | **~19,200** |
-| Frontend LOC (JS) | **~8,500** |
+| Playwright screenshots | **56+** |
+| Git tags | **15** (v1.0.0 → v2.1.5) |
+| Backend LOC (TS) | **~21,000** |
+| Frontend LOC (JS) | **~9,000** |
+| Audit findings | **22** (2 critical, 6 high, 10 medium, 4 low) |
+| Audit fixes applied | **19** |
+| Audit work items | **9** (deferred to v2.2.x / v3.0) |
 | Tests / Production ratio | **~1:1** |
 
-**Total verifications: ~1,170 verde.**
+**Total verifications: ~1,180 verde.**
+
+---
+
+## Documentación
+
+| Archivo | Propósito |
+|---|---|
+| `README.md` | Quick start, install (curl \| bash), dev setup, features |
+| `CHANGELOG.md` | Este archivo — historial completo |
+| `AUDIT_REPORT.md` | Auditoría completa (security + quality + perf) |
+| `docs/API.md` | 46 rutas REST con ejemplos |
+| `docs/ARCHITECTURE.md` | Data flows + capas (Fastify → SQLite + vanilla JS frontend) |
+| `docs/ERROR_CODES.md` | 26 categorías (EC-AUTH-*, EC-VAL-*, EC-CRDT-*, ...) |
+| `docs/LOGGING.md` | Pino + console helpers |
+| `docs/BACKEND_ONLY_FEATURES.md` | Features solo-API (no necesitan frontend) |
+| `app/test/validations/validate_v*.cjs` | Smoke tests sin red (~315 assertions) |
+| `app/test/e2e/*.cjs` | Playwright E2E + mobile audit |

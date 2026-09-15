@@ -278,13 +278,23 @@ Release (`release.yml`):
 - 796 backend tests green
 
 🔜 **Next**:
-- Real JWT auth (Bearer in frontend api.js) → un-protect legacy routes
-- OCR frontend integration (already in backend)
-- LLM multi-model (Anthropic, OpenAI, OpenRouter)
-- PDF diff (visual side-by-side)
-- Multi-language docs
+- Real JWT auth (Bearer in frontend api.js) → un-protect legacy routes (W8)
+- SHA256SUMS verification in install.sh (W3)
+- ws@8.18 + fastify@5 upgrades (W2)
+- Frontend unit tests with vitest (W6)
 
 ---
+
+## Documentation
+
+- **[CHANGELOG.md](CHANGELOG.md)** — Full release history (v1.0.0 → v2.1.5)
+- **[AUDIT_REPORT.md](AUDIT_REPORT.md)** — Complete code audit (22 findings, 19 fixes, 9 work items)
+- **[CHECKLIST.md](CHECKLIST.md)** — Audit checklist with deferred items
+- **[docs/API.md](docs/API.md)** — 46 REST endpoints
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — Data flows + layers
+- **[docs/ERROR_CODES.md](docs/ERROR_CODES.md)** — 26 error categories
+- **[docs/LOGGING.md](docs/LOGGING.md)** — Pino + console helpers
+- **[docs/BACKEND_ONLY_FEATURES.md](docs/BACKEND_ONLY_FEATURES.md)** — API-only features
 
 ## License
 
