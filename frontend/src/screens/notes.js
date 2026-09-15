@@ -6,6 +6,7 @@
 import { dataSource } from "../services/dataSource.js";
 import { i18n } from "../services/i18n.js";
 import { mountTopToolbar } from "../widgets/top_toolbar.js";
+import { openAudioRecorder } from "../widgets/audio_recorder.js";
 
 const state = {
   selectedId: null,
@@ -204,6 +205,16 @@ async function renderNotebook(root, id) {
 function handleInsertAction(act, root, noteId, pageIdx, pages) {
   const page = pages[pageIdx] || pages[0];
   if (act === "trash") return;
+  if (act === "voice") {
+    // v1.5.4: recorder con auto-asignación de asignatura
+    openAudioRecorder(root);
+    return;
+  }
+  if (act === "graph") {
+    // v1.5.3: inserta visor 3D en lugar de placeholder
+    open3DInPage(root, noteId);
+    return;
+  }
   page.placeholders = page.placeholders || [];
   page.placeholders.push({
     type: act,
@@ -214,6 +225,28 @@ function handleInsertAction(act, root, noteId, pageIdx, pages) {
   });
   dataSource.notes.update(noteId, { pages });
   renderNotes(root);
+}
+
+/**
+ * open3DInPage — añade un visor 3D al notebook con hotspots demo.
+ * El visor vive en la página actual (no se serializa en pages porque es
+ * pesado; se reconstruye al re-render si la nota tiene `body` con marcador
+ * `:::3d hotspots=... :::`).
+ */
+async function open3DInPage(root, noteId) {
+  const wrap = root.querySelector("#canvas-wrap");
+  const viewer = document.createElement("div");
+  viewer.className = "three-d-mount";
+  viewer.style.cssText = "margin: var(--s-4) 0;";
+  wrap.insertBefore(viewer, wrap.firstChild);
+  // hotspots demo: etiquetas anatómicas (femur, tibia, rótula)
+  const hotspots = [
+    { id: "h1", x: 0, y: 1.2, z: 0, label: "📍 Cabeza femoral" },
+    { id: "h2", x: 0.3, y: 0, z: 0, label: "📍 Trocánter mayor" },
+    { id: "h3", x: 0, y: -1.2, z: 0, label: "📍 Cóndilo medial" },
+  ];
+  const { open3DViewer } = await import("../widgets/three_d_viewer.js");
+  open3DViewer(viewer, hotspots, "bone");
 }
 
 function setupDefinitionPopup(root) {
@@ -600,8 +633,9 @@ function renderTextLayer(layer, body) {
   html = html.replace(/==(.+?)==/g, '<span class="tl-underline">$1</span>');
   // 3. resaltar !!x!!
   html = html.replace(/!!(.+?)!!/g, '<span class="tl-highlight">$1</span>');
-  // 4. wikilinks [[Nota]]
-  html = html.replace(/\[\[([^\]]+)\]\]/g, '<a class="tl-wikilink" data-wikilink="$1" href="#/notes/$1">$1</a>');
+  // 4. wikilinks [[Nota]] (v1.5.5: buscan la nota por título, navega)
+  html = html.replace(/\[\[([^\]]+)\]\]/g, (_, name) =>
+    `<a class="tl-wikilink" data-wikilink="${escapeHtml(name)}" href="#/notes">${escapeHtml(name)}</a>`);
   // 5. refs a libros @libro/parte
   html = html.replace(/@([\wÀ-ÿ\/\-\.]+)/g, '<a class="tl-bookref" data-bookref="$1">📖 $1</a>');
   // 6. flashcards inline {{c1::pregunta::respuesta}}
@@ -612,4 +646,25 @@ function renderTextLayer(layer, body) {
   // 7. párrafos por línea
   html = html.split(/\n\n+/).map((p) => `<p>${p.replace(/\n/g, "<br/>")}</p>`).join("");
   layer.innerHTML = html;
+
+  // v1.5.5: wikilink click → buscar nota por título y navegar
+  layer.querySelectorAll(".tl-wikilink").forEach((a) => {
+    a.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const target = a.dataset.wikilink;
+      const all = await dataSource.notes.list();
+      const found = all.find((n) => (n.title || "").toLowerCase() === target.toLowerCase()) || all[0];
+      if (found) {
+        state.selectedId = found.id;
+        state.page = 0;
+        location.hash = "#/notes";
+        // Trigger re-render of notes screen
+        const app = document.getElementById("app");
+        if (app) {
+          const ev = new HashChangeEvent("hashchange");
+          window.dispatchEvent(ev);
+        }
+      }
+    });
+  });
 }

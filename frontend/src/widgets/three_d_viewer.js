@@ -1,0 +1,248 @@
+/* ============================================================
+ * three_d_viewer.js — visor 3D con hotspots/billboard/callouts.
+ * v1.5.3 — replica el comportamiento de Anatomy/3D Viewer apps.
+ *
+ * Técnicas implementadas:
+ *  - Screen-space projection: 3D→2D en cada frame
+ *  - Billboard: el label siempre mira al usuario
+ *  - Callouts: líneas guía dinámicas que conectan pin↔label
+ *
+ * Si three.js falla o no está disponible, fallback a placeholder 2D.
+ * ============================================================ */
+
+const HOTSPOT_STYLE = `
+.three-d-viewer {
+  position: relative;
+  width: 100%;
+  height: 360px;
+  background: linear-gradient(135deg, #1a2030, #0d1117);
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: grab;
+}
+.three-d-viewer:active { cursor: grabbing; }
+.three-d-canvas { width: 100%; height: 100%; display: block; }
+.three-d-overlay { position: absolute; inset: 0; pointer-events: none; }
+.three-d-hotspot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  cursor: pointer;
+  user-select: none;
+}
+.three-d-hotspot .pin {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent, #5a67d8);
+  border: 2px solid white;
+  box-shadow: 0 0 0 4px rgba(90,103,216,0.3);
+  transition: transform 200ms;
+}
+.three-d-hotspot:hover .pin { transform: scale(1.4); }
+.three-d-hotspot .callout {
+  position: absolute;
+  left: 20px;
+  top: -10px;
+  background: rgba(15,17,21,0.9);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+.three-d-hotspot .line {
+  position: absolute;
+  left: 8px;
+  top: 0;
+  width: 1px;
+  background: linear-gradient(180deg, transparent, white, transparent);
+  pointer-events: none;
+}
+.three-d-controls {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  display: flex;
+  gap: 6px;
+  pointer-events: auto;
+}
+.three-d-controls button {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  border: none;
+  color: white;
+  font-size: 16px;
+  backdrop-filter: blur(8px);
+}
+.three-d-controls button:hover { background: rgba(255,255,255,0.3); }
+.three-d-no-three {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255,255,255,0.7);
+  flex-direction: column;
+  gap: 8px;
+}
+`;
+
+/**
+ * open3DViewer — abre un visor 3D dentro del contenedor root.
+ * @param root HTMLElement donde insertar el visor
+ * @param hotspots Array<{ id, x, y, z, label }>
+ * @param modelType 'cube' | 'sphere' | 'bone' (sin assets externos)
+ */
+export async function open3DViewer(root, hotspots, modelType = "bone") {
+  if (!document.getElementById("three-d-viewer-styles")) {
+    const style = document.createElement("style");
+    style.id = "three-d-viewer-styles";
+    style.textContent = HOTSPOT_STYLE;
+    document.head.appendChild(style);
+  }
+
+  const container = document.createElement("div");
+  container.className = "three-d-viewer";
+  container.innerHTML = `
+    <canvas class="three-d-canvas"></canvas>
+    <div class="three-d-overlay"></div>
+    <div class="three-d-controls">
+      <button data-act="rotL" title="Rotate left">↺</button>
+      <button data-act="rotR" title="Rotate right">↻</button>
+      <button data-act="reset" title="Reset">⟲</button>
+    </div>
+  `;
+  root.appendChild(container);
+
+  // Cargar three.js dinámicamente (CDN fallback, sin npm install)
+  let THREE;
+  try {
+    THREE = await loadThree();
+  } catch {
+    container.innerHTML = `<div class="three-d-no-three">
+      <div style="font-size: 48px">📦</div>
+      <div>3D viewer (three.js no disponible)</div>
+    </div>`;
+    return;
+  }
+
+  const canvas = container.querySelector(".three-d-canvas");
+  const overlay = container.querySelector(".three-d-overlay");
+  const rect = () => container.getBoundingClientRect();
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setSize(rect().width, rect().height);
+  renderer.setPixelRatio(window.devicePixelRatio);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, rect().width / rect().height, 0.1, 1000);
+  camera.position.set(0, 0, 5);
+
+  // Modelo: primitiva (sin assets externos)
+  let model;
+  if (modelType === "cube") {
+    model = new THREE.Mesh(
+      new THREE.BoxGeometry(2, 2, 2),
+      new THREE.MeshPhongMaterial({ color: 0x8c5cf6, shininess: 80 }),
+    );
+  } else if (modelType === "sphere") {
+    model = new THREE.Mesh(
+      new THREE.SphereGeometry(1.5, 64, 64),
+      new THREE.MeshPhongMaterial({ color: 0x56c4e6, shininess: 100 }),
+    );
+  } else {
+    // "bone" — cilindro estilizado
+    model = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.3, 0.5, 2.5, 16),
+      new THREE.MeshPhongMaterial({ color: 0xf5e6d3, shininess: 30 }),
+    );
+  }
+  scene.add(model);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  dirLight.position.set(3, 3, 3);
+  scene.add(dirLight);
+
+  // Estado rotación
+  let rotY = 0;
+  let rotX = 0;
+  let drag = null;
+
+  canvas.addEventListener("pointerdown", (e) => {
+    drag = { x: e.clientX, y: e.clientY, ry: rotY, rx: rotX };
+    canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    rotY = drag.ry + (e.clientX - drag.x) * 0.01;
+    rotX = drag.rx - (e.clientY - drag.y) * 0.01;
+  });
+  canvas.addEventListener("pointerup", () => (drag = null));
+
+  container.querySelector('[data-act="rotL"]').addEventListener("click", () => (rotY -= 0.4));
+  container.querySelector('[data-act="rotR"]').addEventListener("click", () => (rotY += 0.4));
+  container.querySelector('[data-act="reset"]').addEventListener("click", () => { rotY = 0; rotX = 0; });
+
+  // Render loop con proyección de hotspots (v1.5.3 técnica core)
+  const tmpVec = new THREE.Vector3();
+  function animate() {
+    requestAnimationFrame(animate);
+    model.rotation.y = rotY;
+    model.rotation.x = rotX;
+    renderer.render(scene, camera);
+
+    // Proyectar cada hotspot (3D → 2D)
+    overlay.innerHTML = "";
+    for (const h of hotspots) {
+      tmpVec.set(h.x, h.y, h.z);
+      model.localToWorld(tmpVec);
+      tmpVec.project(camera);
+      const x = (tmpVec.x + 1) / 2 * rect().width;
+      const y = (-tmpVec.y + 1) / 2 * rect().height;
+      const visible = tmpVec.z < 1; // detrás de cámara
+
+      const pin = document.createElement("div");
+      pin.className = "three-d-hotspot";
+      pin.style.left = `${x}px`;
+      pin.style.top = `${y}px`;
+      pin.style.opacity = visible ? "1" : "0.3";
+      pin.innerHTML = `
+        <div class="pin"></div>
+        <div class="line" style="height: 30px"></div>
+        <div class="callout">${escapeHtml(h.label || h.id || "")}</div>
+      `;
+      pin.title = h.label || "";
+      overlay.appendChild(pin);
+    }
+  }
+  animate();
+
+  // Resize
+  const ro = new ResizeObserver(() => {
+    const r = rect();
+    renderer.setSize(r.width, r.height);
+    camera.aspect = r.width / r.height;
+    camera.updateProjectionMatrix();
+  });
+  ro.observe(container);
+}
+
+function loadThree() {
+  return new Promise((resolve, reject) => {
+    if (window.THREE) return resolve(window.THREE);
+    const s = document.createElement("script");
+    s.src = "https://unpkg.com/three@0.158.0/build/three.min.js";
+    s.onload = () => (window.THREE ? resolve(window.THREE) : reject(new Error("THREE undefined")));
+    s.onerror = () => reject(new Error("three.js failed to load"));
+    document.head.appendChild(s);
+  });
+}
+
+function escapeHtml(s) {
+  return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}

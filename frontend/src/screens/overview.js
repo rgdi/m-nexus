@@ -5,6 +5,7 @@
 
 import { dataSource } from "../services/dataSource.js";
 import { i18n } from "../services/i18n.js";
+import { openCrossVerifyPanel } from "../widgets/cross_verify_panel.js";
 
 const HOUR = 3600 * 1000;
 const PAD = (n) => String(n).padStart(2, "0");
@@ -109,10 +110,16 @@ export async function renderOverview(root) {
 
           <h3 class="muted small semibold" style="margin: var(--s-5) 0 var(--s-3)">${i18n.t("overview.quickNotes")}</h3>
           <div class="grid grid-2">${renderQuickNotes(notes)}</div>
+
+          <button class="btn primary" id="cv-btn" style="margin-top: var(--s-5)">📊 ${i18n.t("overview.crossVerify")}</button>
         </div>
       </div>
     </div>
   `;
+
+  // v1.5.6: cross-verify panel
+  const cvBtn = root.querySelector("#cv-btn");
+  if (cvBtn) cvBtn.addEventListener("click", () => openCrossVerifyPanel(root));
 }
 
 function avg(arr) { return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0; }

@@ -74,7 +74,16 @@ async function run() {
   check('subject bubbles >= 3', (await page.locator('.subj-bubble').count()) >= 3);
   check('event cards >= 1', (await page.locator('[style*="border-left"]').count()) >= 1);
   check('stats >= 2', (await page.locator('.stat').count()) >= 2);
+  // v1.5.6: cross-verify button on overview
+  check('cross-verify btn visible', await page.locator('#cv-btn').isVisible());
   await shoot(page, '01-overview-en', 'tablet');
+
+  // v1.5.6: open cross-verify panel
+  await page.click('#cv-btn');
+  await page.waitForTimeout(800);
+  check('cross-verify panel visible', await page.locator('.scrim .sheet').isVisible());
+  await shoot(page, '01b-overview-cross-verify-en', 'tablet');
+  await page.locator('.scrim').click({ position: { x: 10, y: 10 } }).catch(() => {});
 
   // 2: Overview ES tablet
   console.log('\n[2] Overview (es, tablet)');
@@ -194,6 +203,15 @@ async function run() {
     check('flashcards panel visible', await page.locator('.fc-panel').isVisible());
     await shoot(page, '12c-notes-flashcards-panel-en', 'tablet');
     await page.locator('.fc-panel').click({ position: { x: 10, y: 10 } }).catch(() => {});
+
+    // v1.5.3: 3D viewer (click graph button on side toolbar)
+    await page.evaluate(() => document.querySelectorAll('.scrim').forEach((s) => s.remove()));
+    await page.waitForTimeout(200);
+    await page.click('button[data-act="graph"]');
+    await page.waitForTimeout(2500); // three.js loads from CDN
+    check('3D viewer visible', await page.locator('.three-d-viewer').isVisible());
+    check('3D hotspot count >= 3', (await page.locator('.three-d-hotspot').count()) >= 3);
+    await shoot(page, '12d-notes-3d-viewer-en', 'tablet');
   }
 
   // 13: Todos

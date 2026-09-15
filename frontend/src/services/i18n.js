@@ -33,6 +33,7 @@ const STRINGS = {
   "overview.subjects":       { en: "SUBJECTS",         es: "ASIGNATURAS",   pt: "DISCIPLINAS" },
   "overview.atGlance":       { en: "AT A GLANCE",      es: "DE UN VISTAZO",  pt: "NUM OLHADA" },
   "overview.quickNotes":     { en: "QUICK NOTES",      es: "NOTAS RÁPIDAS",  pt: "NOTAS RÁPIDAS" },
+  "overview.crossVerify":    { en: "Cross-verify notes ↔ recordings", es: "Cruzar notas ↔ grabaciones", pt: "Cruzar notas ↔ gravações" },
   "overview.dueToday":       { en: "Due today",        es: "Para hoy",       pt: "Para hoje" },
   "overview.openTasks":      { en: "open tasks total", es: "tareas abiertas",pt: "tarefas abertas" },
   "overview.nextReferat":    { en: "Next Referat",     es: "Próximo referat",pt: "Próximo referat" },

@@ -19,6 +19,8 @@ import { subjectsRoutes } from "./routes/subjects.js";
 import { notesRoutes } from "./routes/notes.js";
 import { eventsRoutes } from "./routes/events.js";
 import { tasksRoutes } from "./routes/tasks.js";
+import { recordingsRoutes } from "./routes/recordings.js";
+import { crossVerifyRoutes } from "./routes/cross_verify.js";
 
 export async function buildServer(): Promise<any> {
   const app = Fastify({
@@ -59,6 +61,10 @@ export async function buildServer(): Promise<any> {
   await app.register(tasksRoutes, { prefix: "/api/v1" });
   // v1.5.1: flashcards CRUD + extracción automática desde notas
   await app.register(flashcardsRoutes, { prefix: "/api/v1" });
+  // v1.5.4: audio recordings
+  await app.register(recordingsRoutes, { prefix: "/api/v1" });
+  // v1.5.6: cross-verify (notas vs grabaciones)
+  await app.register(crossVerifyRoutes, { prefix: "/api/v1" });
 
   // v0.62.8: minimal AI tutor endpoint that uses Ollama
   app.post("/api/v1/ai/tutor", async (req, reply) => {

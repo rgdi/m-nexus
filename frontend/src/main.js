@@ -83,6 +83,7 @@ async function bootstrap() {
   startDeviceWatch();
   // v1.3.0: montar selector de idioma
   mountLangSwitcher();
+  setupHamburger();
   // Set initial lang attribute on html
   document.documentElement.lang = i18n.lang;
   // v1.3.1: traducir todos los data-i18n al boot (dock, etc)
@@ -123,6 +124,50 @@ function applyI18nToDom() {
   document.querySelectorAll("[data-i18n]").forEach((el) => {
     const key = el.dataset.i18n;
     el.textContent = i18n.t(key);
+  });
+}
+
+/** v1.5.x: hamburger drawer (mobile only) */
+function setupHamburger() {
+  const btn = document.getElementById("hamburger");
+  if (!btn) return;
+  btn.addEventListener("click", () => openDrawer());
+  // close on outside click
+  document.addEventListener("click", (e) => {
+    if (e.target.closest(".drawer")) return;
+    const d = document.querySelector(".drawer");
+    if (d && !d.contains(e.target) && !btn.contains(e.target)) d.remove();
+  });
+}
+
+function openDrawer() {
+  document.querySelector(".drawer")?.remove();
+  const routes = [
+    { hash: "#/overview", i18n: "dock.overview", icon: "⊞" },
+    { hash: "#/calendar", i18n: "dock.calendar", icon: "▦" },
+    { hash: "#/subjects", i18n: "dock.subjects", icon: "◍" },
+    { hash: "#/notes",    i18n: "dock.notes",    icon: "✎" },
+    { hash: "#/todos",    i18n: "dock.todos",    icon: "✓" },
+    { hash: "#/ai",       i18n: "dock.tutor",    icon: "✦" },
+  ];
+  const cur = location.hash || "#/overview";
+  const drawer = document.createElement("div");
+  drawer.className = "drawer";
+  drawer.innerHTML = `
+    <div class="panel">
+      <h2 style="margin: 0 0 var(--s-3)">M-NEXUS</h2>
+      ${routes.map((r) => `
+        <a href="${r.hash}" class="${cur === r.hash ? "active" : ""}" data-i18n="${r.i18n}">
+          <span style="margin-right: 10px">${r.icon}</span>
+          <span>${i18n.t(r.i18n)}</span>
+        </a>
+      `).join("")}
+    </div>
+  `;
+  document.body.appendChild(drawer);
+  drawer.addEventListener("click", (e) => {
+    if (e.target.closest("a")) drawer.remove();
+    if (!e.target.closest(".panel")) drawer.remove();
   });
 }
 
