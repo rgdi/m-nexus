@@ -60,6 +60,9 @@ export const authMiddleware: (req: FastifyRequest, reply: FastifyReply) => Promi
     "/api/v1/upload/complete",
     "/api/v1/update",
     "/api/v1/rollback",
+    // v2.2.0: WS sync es relay-only (no data plane). Auth opcional via WS_AUTH_REQUIRED=1.
+    // Frontend usa sin Bearer (offline-first). Sin esto, conexiones WS fallan con EC-AUTH-001.
+    "/ws/sync",
   ];
   const isPublic = PUBLIC_PATHS.some((p) => req.url === p || req.url.startsWith(p + "?") || req.url.startsWith(p + "/"));
   if (isPublic) return;
