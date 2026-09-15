@@ -116,6 +116,9 @@ export async function renderOverview(root) {
           <button class="btn primary" id="cv-btn" style="margin-top: var(--s-5)">📊 ${i18n.t("overview.crossVerify")}</button>
           <button class="btn primary" id="exam-btn" style="margin-top: var(--s-3)">📋 ${i18n.t("overview.exam")}</button>
           <button class="btn primary" id="graph-btn" style="margin-top: var(--s-3)">🕸 3D Graph</button>
+
+          <h3 class="muted small semibold" style="margin: var(--s-5) 0 var(--s-3)">🎓 Syllabus tracker</h3>
+          <div id="syl-dashboard-host"></div>
         </div>
       </div>
     </div>
@@ -156,6 +159,16 @@ export async function renderOverview(root) {
       const noteList = await dataSource.notes.list();
       openGraph3D(noteList);
     });
+  }
+
+  // v2.1.1: Syllabus tracker dashboard
+  const sylHost = root.querySelector("#syl-dashboard-host");
+  if (sylHost) {
+    const { openSyllabusDashboard } = await import("../widgets/syllabus_dashboard.js");
+    const subjects = await dataSource.subjects.list().catch(() => []);
+    const notes = await dataSource.notes.list().catch(() => []);
+    const cards = await fetch("http://localhost:4100/api/v1/flashcards").then((r) => r.ok ? r.json() : { cards: [] }).then((x) => x.cards || []).catch(() => []);
+    openSyllabusDashboard(sylHost, { subjects, notes, cards, occCards: [] });
   }
 }
 
