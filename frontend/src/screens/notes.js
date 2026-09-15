@@ -154,9 +154,8 @@ async function renderNotebook(root, id) {
 
       <div class="row gap-2" style="margin-bottom: var(--s-3)">
         <button class="btn primary" id="overview-btn">${i18n.t("notes.intelligentOverview")}</button>
-        <button class="btn" id="export-pdf">${svgIcon("text", 14)} PDF</button>
         <div class="ai-menu" id="ai-menu">
-          <button class="btn primary ai-toggle" id="ai-toggle" aria-expanded="false" aria-haspopup="menu">
+          <button class="btn ai-toggle" id="ai-toggle" aria-expanded="false" aria-haspopup="menu">
             ${svgIcon("sparkles", 16)} AI
             <span class="caret">▾</span>
           </button>
@@ -167,18 +166,13 @@ async function renderNotebook(root, id) {
             <button class="ai-item" data-act="cloze">
               ${svgIcon("wand", 16)} ${i18n.t("notes.ai.cloze")}
             </button>
-            <button class="ai-item" data-act="summarize">
-              ${svgIcon("text", 16)} ${i18n.t("notes.ai.summarize")}
-            </button>
             <button class="ai-item" data-act="define">
               ${svgIcon("bulb", 16)} ${i18n.t("notes.ai.define")}
-            </button>
-            <button class="ai-item" data-act="quiz">
-              ${svgIcon("bulb", 16)} ${i18n.t("notes.ai.quiz")}
             </button>
           </div>
         </div>
         <button class="btn icon" id="search-btn" aria-label="${i18n.t("common.search")}">${svgIcon("search", 18)}</button>
+        <button class="btn icon" id="export-pdf" title="PDF">${svgIcon("text", 18)}</button>
       </div>
 
       <div class="notebook" id="canvas-wrap" style="height: calc(100vh - 320px); min-height: 480px">
@@ -187,14 +181,11 @@ async function renderNotebook(root, id) {
           <button class="tool-btn" data-tool="highlighter" title="${i18n.t("notes.tool.highlighter")}">${svgIcon("highlighter", 18)}</button>
           <button class="tool-btn" data-tool="eraser" title="${i18n.t("notes.tool.eraser")}">${svgIcon("eraser", 18)}</button>
           <button class="tool-btn" data-tool="select" title="${i18n.t("notes.tool.select")}">${svgIcon("select", 18)}</button>
-          <button class="tool-btn" data-tool="ruler" title="${i18n.t("notes.tool.ruler")}">${svgIcon("ruler", 18)}</button>
         </div>
 
         <div class="notebook-side">
           <button class="tool-btn" data-act="voice" title="${i18n.t("notes.tool.voice")}">${svgIcon("voice", 18)}</button>
-          <button class="tool-btn" data-act="code" title="${i18n.t("notes.tool.code")}">${svgIcon("code", 18)}</button>
           <button class="tool-btn" data-act="image" title="${i18n.t("notes.tool.image")}">${svgIcon("image", 18)}</button>
-          <button class="tool-btn" data-act="graph" title="${i18n.t("notes.tool.graph")}">${svgIcon("graph", 18)}</button>
           <button class="tool-btn" data-act="link" title="${i18n.t("notes.tool.link")}">${svgIcon("link", 18)}</button>
           <button class="tool-btn" data-act="table" title="${i18n.t("notes.tool.table")}">${svgIcon("table", 18)}</button>
         </div>
@@ -207,12 +198,21 @@ async function renderNotebook(root, id) {
           <button class="pencil trash" data-act="trash" title="Delete pencil">🗑</button>
         </div>
 
-        <button class="fab" id="new-card-btn" title="${i18n.t("notes.newFlashcard")}">${svgIcon("flashcard", 22, { color: "white", fill: "rgba(255,255,255,0.15)" })}</button>
+        <button class="fab fab-cards" id="new-card-btn" title="${i18n.t("notes.newFlashcard")}">${svgIcon("flashcard", 22, { color: "white", fill: "rgba(255,255,255,0.15)" })}</button>
 
         <canvas id="canvas"></canvas>
       </div>
     </div>
   `;
+
+  // v2.3.0: hide secondary FAB when AI tutor panel is open (avoid double FABs)
+  const cardsFab = root.querySelector("#new-card-btn");
+  if (cardsFab) {
+    const obs = new MutationObserver(() => {
+      cardsFab.style.display = document.body.classList.contains("ai-chat-open") ? "none" : "";
+    });
+    obs.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+  }
 
   root.querySelector("#back").addEventListener("click", () => { state.selectedId = null; state.page = 0; renderNotes(root); });
   root.querySelector("#prev").addEventListener("click", () => {

@@ -280,25 +280,41 @@
 
 /* ============================================================
  * v1.5.1 — FAB flashcards + panel cards
+ * v2.3.0 — reposicionado: no colisiona con AI tutor FAB.
+ * AI tutor FAB vive fuera del notebook (fixed bottom-right).
+ * Cards FAB dentro del notebook (absolute top-right del canvas).
  * ============================================================ */
 .fab {
   position: absolute;
-  bottom: 80px;
-  right: 80px;
-  width: 56px;
-  height: 56px;
+  bottom: var(--s-4);
+  right: var(--s-4);
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   background: linear-gradient(135deg, #56c4e6, #8c5cf6);
   color: white;
-  font-size: 24px;
+  font-size: 22px;
   border: none;
-  box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   z-index: 5;
   cursor: pointer;
   transition: transform 200ms var(--ease);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.fab:hover { transform: scale(1.08); }
-.fab:active { transform: scale(0.95); }
+.fab:hover { transform: scale(1.06); }
+.fab:active { transform: scale(0.94); }
+
+/* v2.3.0: AI tutor FAB lives globally (fixed). Inside notebook,
+   move the cards FAB up so it doesn't collide with the AI one. */
+.fab-cards {
+  bottom: calc(var(--s-4) + 56px);
+  width: 44px;
+  height: 44px;
+  font-size: 20px;
+  opacity: 0.85;
+}
 
 .fc-grid {
   display: grid;

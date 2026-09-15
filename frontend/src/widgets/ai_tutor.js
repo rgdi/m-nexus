@@ -153,13 +153,13 @@ export function mountAITutor() {
   fab.title = "AI Tutor";
   fab.textContent = "🤖";
   fab.style.cssText = `
-    position: fixed; bottom: 24px; right: 24px;
-    width: 56px; height: 56px;
+    position: fixed; bottom: 20px; right: 20px;
+    width: 48px; height: 48px;
     border-radius: 50%;
     background: linear-gradient(135deg, #56c4e6, #8c5cf6);
-    color: white; font-size: 24px;
+    color: white; font-size: 20px;
     border: none;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.2);
     z-index: 199;
     cursor: pointer;
   `;

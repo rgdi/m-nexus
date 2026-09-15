@@ -47,7 +47,7 @@ export function mountThemeToggle() {
   const btn = document.createElement("button");
   btn.id = "theme-toggle";
   btn.className = "theme-toggle";
-  btn.title = "Theme";
+  btn.title = `Theme: ${getTheme()}`;
   btn.setAttribute("aria-label", "Toggle theme");
   syncIcon(btn);
   btn.addEventListener("click", () => {
@@ -55,19 +55,14 @@ export function mountThemeToggle() {
     const next = cur === "auto" ? "light" : cur === "light" ? "dark" : "auto";
     setTheme(next);
     syncIcon(btn);
-    // también re-renderiza
+    btn.title = `Theme: ${next}`;
     document.dispatchEvent(new CustomEvent("theme:change"));
   });
+  // v2.3.0: discreet placement, no longer prominent floating button.
   document.body.appendChild(btn);
 }
 
 function syncIcon(btn) {
-  const t = getTheme();
-  const icons = {
-    auto: "🌓",
-    light: "☀️",
-    dark: "🌙",
-  };
-  btn.textContent = icons[t] || "🌓";
-  btn.dataset.theme = t;
+  // v2.3.0: CSS ::before provides the icon from data-theme; just set the attribute.
+  btn.dataset.theme = getTheme();
 }

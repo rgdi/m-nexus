@@ -52,38 +52,64 @@
 }
 
 /* ---------- Subject bubble ---------- */
+/* v2.3.0: compact horizontal layout (was square bubble, too big).
+   Smaller cards fit more per row without dominating the dashboard. */
 .subj-bubble {
   position: relative;
   display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  aspect-ratio: 1 / 1;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--s-3);
   padding: var(--s-3);
-  border-radius: var(--r-4);
-  color: #fff;
+  border-radius: var(--r-3);
+  color: var(--fg);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
   cursor: pointer;
   overflow: hidden;
   transition: transform var(--dur), box-shadow var(--dur);
-  box-shadow: var(--shadow-2);
-  min-height: 120px;
+  box-shadow: var(--shadow-1);
+  min-height: 64px;
+}
+.subj-bubble .color-stripe {
+  width: 4px;
+  align-self: stretch;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.subj-bubble .info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.subj-bubble .name { font-size: var(--fs-md); font-weight: 600; line-height: 1.2; }
+.subj-bubble .meta {
+  font-size: var(--fs-xs);
+  color: var(--fg-muted);
+  display: flex;
+  gap: var(--s-2);
+}
+.subj-bubble .corner {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: var(--fs-md);
+  color: white;
+  flex-shrink: 0;
 }
 @media (max-width: 480px) {
-  /* v2.1.3 — reduce card min-height on phones so 2-col grid fits */
-  .subj-bubble { min-height: 96px; padding: var(--s-2); }
-  .subj-bubble .corner { width: 28px; height: 28px; font-size: 14px; top: 6px; right: 6px; }
+  .subj-bubble { min-height: 56px; padding: var(--s-2); }
+  .subj-bubble .corner { width: 32px; height: 32px; font-size: var(--fs-sm); }
+  .subj-bubble .name { font-size: var(--fs-sm); }
 }
 @media (pointer: fine) and (hover: hover) {
-  .subj-bubble:hover { transform: scale(1.02); }
-}
-.subj-bubble .name { font-size: var(--fs-lg); font-weight: 700; }
-.subj-bubble .perf { margin-top: 2px; font-size: var(--fs-xs); opacity: .9; }
-.subj-bubble .corner {
-  position: absolute;
-  top: var(--s-3);
-  right: var(--s-3);
-  width: clamp(40px, 6vw, 56px);
-  height: clamp(40px, 6vw, 56px);
-  pointer-events: none;
+  .subj-bubble:hover { transform: translateY(-1px); box-shadow: var(--shadow-2); }
 }
 
 /* ---------- Subject row ---------- */
@@ -512,34 +538,31 @@ body.hide-ui .dock, body.hide-ui .lang-switcher, body.hide-ui .top-toolbar { dis
 
 /* ============================================================
  * v1.7.1 — theme toggle (light/dark/auto)
- * v2.1.1 — repositioned: bottom-right above AI tutor FAB,
- *                   fixed bottom + right, no overlap with top-bar.
+ * v2.1.1 — repositioned: bottom-right above AI tutor FAB.
+ * v2.3.0 — discreet small icon, only shows icon + label on hover.
+ *                   No longer floating at bottom-right (was clashing with FABs).
  * ============================================================ */
 .theme-toggle {
   position: fixed;
-  bottom: 96px; /* encima del dock y del AI tutor FAB */
-  right: 24px;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  font-size: 18px;
-  z-index: 96;
-  box-shadow: var(--shadow-1);
+  top: 8px;
+  right: 8px;
+  z-index: 100;
+  background: transparent;
+  border: 1px solid transparent;
+  font-size: 12px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  color: var(--fg-faint);
+  cursor: pointer;
+  transition: color 150ms var(--ease), background 150ms var(--ease);
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: transform 200ms var(--ease);
+  gap: 4px;
 }
-.theme-toggle:hover { transform: scale(1.08); }
-@media (max-width: 720px) {
-  .theme-toggle { bottom: 88px; right: 16px; width: 40px; height: 40px; }
-}
-.theme-toggle[data-theme="light"] { background: #fef3c7; }
-.theme-toggle[data-theme="dark"]  { background: #1f2937; color: #f0f0f0; }
-.theme-toggle[data-theme="auto"]  { background: linear-gradient(135deg, #fef3c7 50%, #1f2937 50%); color: #f0f0f0; }
+.theme-toggle:hover { color: var(--fg); background: var(--bg-sunken); }
+.theme-toggle[data-theme="light"]::before { content: "☀"; }
+.theme-toggle[data-theme="dark"]::before  { content: "☽"; }
+.theme-toggle[data-theme="auto"]::before  { content: "◐"; }
 
 /* ============================================================
  * v1.7.2 — calendar event detail modal

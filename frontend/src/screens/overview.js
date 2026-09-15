@@ -43,13 +43,18 @@ export async function renderOverview(root) {
     .filter(e => e.start > Date.now() && e.start - Date.now() < 48 * HOUR)
     .sort((a, b) => a.start - b.start)[0];
 
+  // v2.3.0: compact row layout (was square bubble, too dominant)
   const cardsHtml = subjects.slice(0, 5).map(s => `
-    <a class="subj-bubble" href="#/subjects" style="background:${s.color}">
-      <div>
-        <div class="corner">${renderIcon(s.icon || s.name?.[0] || "?")}</div>
+    <a class="subj-bubble" href="#/subjects">
+      <div class="color-stripe" style="background:${s.color}"></div>
+      <div class="info">
         <div class="name">${escapeHtml(s.name)}</div>
-        <div class="perf">${s.performance ? `+${s.performance}%` : ""} performance</div>
+        <div class="meta">
+          ${s.prof ? `<span>${escapeHtml(s.prof)}</span>` : ""}
+          ${s.grade ? `<span>· ${s.grade.toFixed ? s.grade.toFixed(1) : s.grade}</span>` : ""}
+        </div>
       </div>
+      <div class="corner" style="background:${s.color}">${renderIcon(s.icon || s.name?.[0] || "?")}</div>
     </a>
   `).join("");
 
