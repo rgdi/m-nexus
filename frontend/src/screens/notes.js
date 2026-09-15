@@ -75,59 +75,121 @@ export async function renderNotes(root) {
 
 async function renderNotesList(root) {
   const notes = await dataSource.notes.list();
+  const folders = await dataSource.folders.list();
   const activeTag = getActiveTag();
   // v1.9.1: expose notes for tags_cloud
   window.__mnexusNoteList = async () => await dataSource.notes.list();
   const filtered = activeTag ? notes.filter((n) => extractTags(n.body).includes(activeTag)) : notes;
+  // v2.3.0-B: tree sidebar layout (single source of nav in Notes)
   root.innerHTML = `
-    <div class="screen">
-      <header class="screen-header">
-        <h1 class="h-title">${i18n.t("dock.notes")}</h1>
-        <div class="spacer"></div>
-        <button class="btn primary" id="new">${i18n.t("notes.new")}</button>
-      </header>
-      <div class="row gap-2" style="margin-bottom: var(--s-5)">
-        <input class="input with-icon" id="search" placeholder="${i18n.t("notes.search")}" />
-        <button class="btn icon" aria-label="${i18n.t("common.filter")}">⛁</button>
-      </div>
-      <div id="tags-cloud" class="tags-bar"></div>
-      <div class="book-grid" id="grid"><div class="empty"><div class="em-title">${i18n.t("common.loading")}</div></div></div>
+    <div class="screen notes-with-sidebar">
+      <aside class="notes-tree" id="notes-tree">
+        <div class="tree-actions">
+          <button class="btn icon" id="new-folder" title="${i18n.t("notes.newFolder")}">📁+</button>
+          <button class="btn primary small" id="new-note">+ ${i18n.t("notes.new")}</button>
+        </div>
+        <div id="tree-root"></div>
+      </aside>
+      <main class="notes-content">
+        <header class="screen-header">
+          <h1 class="h-title">${i18n.t("dock.notes")}</h1>
+          <div class="spacer"></div>
+          <input class="input" id="search" placeholder="${i18n.t("notes.search")}" style="max-width:240px" />
+        </header>
+        <div id="tags-cloud" class="tags-bar"></div>
+        <div class="book-grid" id="grid"><div class="empty"><div class="em-title">${i18n.t("common.loading")}</div></div></div>
+      </main>
     </div>
   `;
-  // render tags cloud
+
+  // Render the tree (folders + notes, recursive)
+  const renderTree = () => {
+    const treeEl = root.querySelector("#tree-root");
+    const treeHtml = (parentId, depth) => {
+      const childrenFolders = folders.filter(f => f.parentId === parentId);
+      const childrenNotes = filtered.filter(n => (n.folderId ?? null) === parentId);
+      if (childrenFolders.length === 0 && childrenNotes.length === 0 && depth > 0) return "";
+      let html = "";
+      for (const f of childrenFolders) {
+        html += `<div class="tree-folder" data-id="${f.id}" data-depth="${depth}">
+          <div class="folder-row">
+            <span class="folder-icon">${f.icon === "folder" ? "📁" : f.icon}</span>
+            <span class="folder-name">${escapeHtml(f.name)}</span>
+            <button class="add-to-folder" data-folder="${f.id}" title="+ nota">+</button>
+          </div>
+          <div class="folder-children">${treeHtml(f.id, depth + 1)}</div>
+        </div>`;
+      }
+      for (const n of childrenNotes) {
+        html += `<div class="tree-note" data-id="${n.id}" data-depth="${depth}" data-title="${escapeHtml(n.title)}">
+          <span class="note-bullet">·</span>
+          <span class="note-name">${escapeHtml(n.title)}</span>
+        </div>`;
+      }
+      return html;
+    };
+    treeEl.innerHTML = treeHtml(null, 0);
+    // Wire events
+    treeEl.querySelectorAll(".tree-note").forEach((el) => {
+      el.addEventListener("click", () => { state.selectedId = el.dataset.id; state.page = 0; renderNotes(root); });
+    });
+    treeEl.querySelectorAll(".add-to-folder").forEach((b) => {
+      b.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const n = await dataSource.notes.create({ title: i18n.t("notes.untitled"), folderId: b.dataset.folder });
+        state.selectedId = n.id;
+        renderNotes(root);
+      });
+    });
+  };
+  renderTree();
+
+  // Tags cloud
   await renderTagsCloud(root.querySelector("#tags-cloud"));
-  // wire tags:change listener for live updates
   document.addEventListener("tags:change", async () => {
     if (location.hash.startsWith("#/notes")) renderNotes(root);
   });
-  root.querySelector("#new").addEventListener("click", async () => {
+
+  // Wire actions
+  root.querySelector("#new-note").addEventListener("click", async () => {
     const n = await dataSource.notes.create({ title: i18n.t("notes.untitled"), body: "" });
     state.selectedId = n.id;
     state.page = 0;
     renderNotes(root);
   });
+  root.querySelector("#new-folder").addEventListener("click", async () => {
+    const name = prompt(i18n.t("notes.folderName") || "Folder name");
+    if (!name) return;
+    await dataSource.folders.create({ name });
+    renderNotes(root);
+  });
   root.querySelector("#search").addEventListener("input", (e) => {
     const q = e.target.value.toLowerCase();
-    root.querySelectorAll(".book-card").forEach((c) => {
-      c.style.display = c.dataset.title.toLowerCase().includes(q) ? "" : "none";
+    root.querySelectorAll(".tree-note").forEach((c) => {
+      const title = c.dataset.title.toLowerCase();
+      const folder = c.closest(".tree-folder");
+      const match = title.includes(q);
+      c.style.display = match ? "" : "none";
+      // Show parent folder if any child matches
+      if (folder && q) {
+        folder.style.display = folder.querySelectorAll(".tree-note:not([style*='none'])").length > 0 ? "" : "none";
+      }
     });
   });
+
+  // Grid in main area (for visual continuity)
   if (filtered.length === 0) {
-    const emptyMsg = activeTag
-      ? `<div class="empty"><div class="em-title">${i18n.t("notes.noNotesWithTag", { tag: activeTag })}</div><div>${i18n.t("notes.tryOtherTag")}</div></div>`
-      : `<div class="empty"><div class="em-title">${i18n.t("notes.noNotes")}</div><div>${i18n.t("notes.createFirst")}</div></div>`;
+    const emptyMsg = `<div class="empty"><div class="em-title">${i18n.t("notes.noNotes")}</div><div>${i18n.t("notes.createFirst")}</div></div>`;
     root.querySelector("#grid").innerHTML = emptyMsg;
-    return;
+  } else {
+    // Show "All notes" count in main area, but most nav is via tree
+    root.querySelector("#grid").innerHTML = `
+      <div class="empty">
+        <div class="em-title">${filtered.length} ${filtered.length === 1 ? "note" : "notes"}</div>
+        <div>${i18n.t("notes.selectFromTree") || "Select from sidebar →"}</div>
+      </div>
+    `;
   }
-  root.querySelector("#grid").innerHTML = filtered.map(n => `
-    <div class="book-card" data-id="${n.id}" data-title="${escapeHtml(n.title)}">
-      <div class="cover">${escapeHtml((n.title || "?")[0])}</div>
-      <div class="title">${escapeHtml(n.title)}</div>
-    </div>
-  `).join("");
-  root.querySelectorAll(".book-card").forEach((c) => {
-    c.addEventListener("click", () => { state.selectedId = c.dataset.id; state.page = 0; renderNotes(root); });
-  });
 }
 
 async function renderNotebook(root, id) {

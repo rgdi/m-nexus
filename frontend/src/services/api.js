@@ -57,6 +57,14 @@ export const api = {
     appendStroke: (id, page, stroke) => req("POST", `/notes/${id}/pages/${page}/strokes`, { stroke }),
   },
 
+  // ----- Folders (v2.3.0-B) -----
+  folders: {
+    list: () => req("GET", "/folders").then(r => r.folders ?? []).catch(() => []),
+    create: (body) => req("POST", "/folders", body),
+    update: (id, body) => req("PATCH", `/folders/${id}`, body),
+    remove: (id) => req("DELETE", `/folders/${id}`),
+  },
+
   // ----- Subjects -----
   subjects: {
     list: () => req("GET", "/subjects").then(r => r.subjects ?? []).catch(() => []),

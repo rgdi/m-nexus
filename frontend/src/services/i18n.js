@@ -146,6 +146,9 @@ const STRINGS = {
   "notes.deletePencil":     { en: "Delete pencil", es: "Eliminar lápiz", pt: "Excluir caneta" },
   "notes.deletePencilConfirm": { en: "¿Eliminar el lápiz activo?", es: "¿Eliminar el lápiz activo?", pt: "Excluir a caneta ativa?" },
   "notes.untitled":         { en: "Untitled", es: "Sin título", pt: "Sem título" },
+  "notes.newFolder":         { en: "New folder", es: "Nueva carpeta", pt: "Nova pasta" },
+  "notes.folderName":        { en: "Folder name", es: "Nombre de carpeta", pt: "Nome da pasta" },
+  "notes.selectFromTree":    { en: "Select from sidebar →", es: "Selecciona desde la barra lateral →", pt: "Selecione da barra lateral →" },
   "notes.noNotes":          { en: "No notebooks yet", es: "Sin cuadernos", pt: "Sem cadernos" },
   "notes.createFirst":      { en: "Create one to get started.", es: "Crea uno para empezar.", pt: "Crie um para começar." },
 

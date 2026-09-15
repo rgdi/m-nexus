@@ -18,6 +18,16 @@ export interface StrokePoint { x: number; y: number; p: number; tilt: number }
 export interface Stroke { tool: string; color: string; size: number; alpha: number; points: StrokePoint[] }
 export interface Placeholder { type: string; x: number; y: number; w: number; h: number; label: string }
 export interface Page { strokes: Stroke[]; placeholders: Placeholder[] }
+// v2.3.0-B: folders for hierarchical note organization.
+export interface NoteFolder {
+  id: string;
+  name: string;
+  parentId: string | null; // null = root
+  color: string;
+  icon: string;
+  createdAt: number;
+  updatedAt: number;
+}
 export interface Note {
   id: string;
   title: string;
@@ -25,6 +35,7 @@ export interface Note {
   subject: string;
   tags: string[];
   pages: Page[];
+  folderId: string | null; // v2.3.0-B: optional folder
   createdAt: number;
   updatedAt: number;
 }
@@ -60,6 +71,7 @@ class NotesService {
       subject: input.subject ?? "",
       tags: input.tags ?? [],
       pages: input.pages ?? [{ strokes: [], placeholders: [] }],
+      folderId: input.folderId ?? null,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
@@ -93,10 +105,95 @@ class NotesService {
   }
 }
 
+/* ============================================================
+ * v2.3.0-B: Folders CRUD
+ * ============================================================ */
+const FOLDERS_FILE = join(process.cwd(), "data", "folders.json");
+
+class FoldersService {
+  private cache: NoteFolder[] | null = null;
+
+  async all(): Promise<NoteFolder[]> {
+    if (this.cache) return this.cache;
+    try {
+      const buf = await fs.readFile(FOLDERS_FILE, "utf-8");
+      this.cache = JSON.parse(buf);
+      return this.cache!;
+    } catch {
+      this.cache = [];
+      await this.save();
+      return this.cache;
+    }
+  }
+
+  async get(id: string): Promise<NoteFolder | undefined> {
+    return (await this.all()).find((f) => f.id === id);
+  }
+
+  async create(input: Partial<NoteFolder>): Promise<NoteFolder> {
+    const list = await this.all();
+    const f: NoteFolder = {
+      id: `folder-${randomUUID()}`,
+      name: input.name ?? "New folder",
+      parentId: input.parentId ?? null,
+      color: input.color ?? "var(--subj-blue)",
+      icon: input.icon ?? "folder",
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    list.push(f);
+    await this.save();
+    return f;
+  }
+
+  async update(id: string, patch: Partial<NoteFolder>): Promise<NoteFolder | null> {
+    const list = await this.all();
+    const i = list.findIndex((f) => f.id === id);
+    if (i < 0) return null;
+    list[i] = { ...list[i], ...patch, id: list[i].id, updatedAt: Date.now() };
+    await this.save();
+    return list[i];
+  }
+
+  async remove(id: string): Promise<boolean> {
+    const list = await this.all();
+    const next = list.filter((f) => f.id !== id);
+    if (next.length === list.length) return false;
+    // Move child folders + notes to root (parentId = null, folderId = null).
+    const remaining = this.cache!;
+    for (const f of remaining) if (f.parentId === id) f.parentId = null;
+    this.cache = next;
+    await this.save();
+    return true;
+  }
+
+  private async save(): Promise<void> {
+    if (!this.cache) return;
+    await fs.mkdir(join(process.cwd(), "data"), { recursive: true });
+    await fs.writeFile(FOLDERS_FILE, JSON.stringify(this.cache, null, 2), "utf-8");
+  }
+}
+
+const foldersSvc = new FoldersService();
+
 const svc = new NotesService();
 
 export async function notesRoutes(app: FastifyInstance): Promise<void> {
   await ensureSeeded(svc);
+
+  // Folders CRUD
+  app.get("/folders", async () => ({ folders: await foldersSvc.all() }));
+  app.post<{ Body: Partial<NoteFolder> }>("/folders", async (req) => foldersSvc.create(req.body));
+  app.patch<{ Params: { id: string }; Body: Partial<NoteFolder> }>("/folders/:id", async (req, reply) => {
+    const f = await foldersSvc.update(req.params.id, req.body);
+    if (!f) return reply.code(404).send({ error: "Folder not found" });
+    return f;
+  });
+  app.delete<{ Params: { id: string } }>("/folders/:id", async (req, reply) => {
+    const ok = await foldersSvc.remove(req.params.id);
+    if (!ok) return reply.code(404).send({ error: "Folder not found" });
+    return { ok: true };
+  });
 
   app.get("/notes", async () => {
     const list = await svc.all();

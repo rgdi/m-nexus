@@ -79,6 +79,7 @@ export const dataSource = {
   notes: resource("notes", api.notes),
   events: resource("events", api.events),
   tasks: resource("tasks", api.tasks),
+  folders: resource("folders", api.folders),
 
   async notes_appendStroke(noteId, page, stroke) {
     if (backendOnline) {
