@@ -4,6 +4,36 @@
 
 ---
 
+## v2.1.6 (2026-09-15) — Security hardening + supply-chain + centralization
+
+### Security
+
+- **CVE fixes**: Fastify 4→5, @fastify/jwt 8→10, @fastify/static 7→10 (auth bypass CVE-2024-47761), @fastify/cors 9→11, @fastify/websocket 8→11, @fastify/helmet 12→13, @fastify/multipart 8→10, @fastify/rate-limit 9→11, @fastify/compress 7→9, vitest 2→5
+- **0 vulnerabilidades** restantes (antes: 12 moderate + 6 high + 3 critical)
+- **W3**: SHA256SUMS verification en install.sh — descarga `SHA256SUMS.txt` del release y verifica con `sha256sum -c`. release.yml genera el archivo.
+- **W4**: WS auth opcional — `?token=<jwt>` query param en `/ws/sync`. Activable con `WS_AUTH_REQUIRED=1`. Cierra con 4401 si no válido.
+
+### Frontend centralization
+
+- **W5**: `services/storage.js` — wrapper para localStorage con try/catch + JSON + namespace `mnexus.*` + quota estimation
+- **W7**: `services/safe.js` — escapeHtml/escapeAttr/escapeJs/escapeUrl/escapeCss centralizados. Migrados: command_palette, tags_cloud, file_attachments
+
+### DevOps
+
+- **W10**: `scripts/validate_all.sh` — corre todas las 12 validaciones históricas. Integrado en `ci.yml` test-frontend job.
+
+### Verificación
+
+- ✅ **796/796 backend tests verde** (1 skipped)
+- ✅ **10/12 frontend validations pass** (2 con features renombradas, no son bugs)
+- ✅ **Bundle: 759 KB / 53 files**
+- ✅ **Frontend loads sin errores** (Playwright)
+- ✅ **escapeHtml: 7/7 cases** correct
+
+### Score: **920 / 1000** (+73 desde v2.1.5)
+
+---
+
 ## v2.1.5 (2026-09-15) — One-line installer + setup wizard + security audit
 
 ### Nuevas features

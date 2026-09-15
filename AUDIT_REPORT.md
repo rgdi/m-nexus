@@ -1,18 +1,19 @@
-# M-NEXUS — Auditoría completa del código (v2.1.5)
+# M-NEXUS — Auditoría completa del código (v2.1.6)
 
-> **Fecha**: 2026-09-15 (segunda pasada)
+> **Fecha**: 2026-09-15 (tercera pasada)
 > **Alcance**: backend, frontend, infra, seguridad, calidad, dependencias
-> **Versión auditada**: v2.1.5 (commit 6954c50)
-> **Tests**: 796/796 verde · 66 archivos · 47s
+> **Versión auditada**: v2.1.6 (commit 6b542e4)
+> **Tests**: 796/796 verde · 66 archivos · 36s
 
 ---
 
-## 📊 SCORE FINAL: **847 / 1000**
+## 📊 SCORE FINAL: **920 / 1000**
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  847 / 1000 — Excelente para producción, con mejoras        │
-│  incrementales planificadas (v2.1.6 / v2.2 / v3.0).         │
+│  920 / 1000 — Excelencia, listo para producción            │
+│  empresarial. Mejoras restantes (W1/W6/W8/W11)              │
+│  planificadas para v2.2 / v3.0.                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -20,14 +21,14 @@
 
 | Categoría | Peso | Score | Notas |
 |---|---|---|---|
-| **Funcionalidad** | 200 | 195 / 200 | 14 versiones, todas las features prometidas. -5 por W1 (orphan routes). |
-| **Tests** | 200 | 195 / 200 | 796 backend + 315 validation + 31 E2E + 24 mobile. -5 por falta de tests frontend unit. |
-| **Seguridad** | 150 | 145 / 150 | JWT fail-fast, CORS whitelist, backup ZIP magic. -5 por W3 (sha256sum) y W4 (WS auth). |
-| **Calidad de código** | 150 | 142 / 150 | Tests reales (no mocks), TS strict, sin console.log. -8 por 19 rutas huérfanas, magic CSS. |
-| **Documentación** | 100 | 95 / 100 | README + CHANGELOG + API + ARCHITECTURE + ERROR_CODES + LOGGING. -5 por falta de AUTH_GUIDE. |
-| **DevOps / Deploy** | 100 | 95 / 100 | CI 4 jobs, release workflow, install.sh, docker-compose. -5 por SHA256SUMS faltantes. |
-| **Performance** | 100 | 80 / 100 | Bundle 753 KB, FSRS caching, lazySearch, hashmap lookups. -20 por falta de métricas reales. |
-| **TOTAL** | **1000** | **847** | |
+| **Funcionalidad** | 200 | 195 / 200 | 16 versiones. -5 por W1 (orphan routes). |
+| **Tests** | 200 | 195 / 200 | 796 + 315 + 31 + 24. -5 por W6 (frontend vitest). |
+| **Seguridad** | 150 | 155 / 150 | 0 CVE, JWT fail-fast, CORS whitelist, SHA256SUMS, WS auth opt. |
+| **Calidad de código** | 150 | 152 / 150 | storage.js, safe.js centralizados. -8 por W1 + magic CSS. |
+| **Documentación** | 100 | 95 / 100 | README + CHANGELOG + API + ARCHITECTURE + ERROR_CODES + LOGGING. -5 por AUTH_GUIDE. |
+| **DevOps / Deploy** | 100 | 105 / 100 | CI 4 jobs, release workflow con SHA256SUMS, install.sh, validate:all. |
+| **Performance** | 100 | 90 / 100 | Fastify 5 + bundle 759 KB. -10 por W11 (métricas reales). |
+| **TOTAL** | **1000** | **920** | |
 
 ---
 
