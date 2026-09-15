@@ -1,4 +1,4 @@
-# M-NEXUS — Education Service (v2.1.4)
+# M-NEXUS — Education Service (v2.3.0)
 
 > **Tablet-first** Education Service for medical students.
 > Notebook (stylus), calendar, subjects, to-do's, AI tutor, **spaced repetition (FSRS-4.5)**, **syllabus tracker**, **3D knowledge graph**.
@@ -132,7 +132,7 @@ m-nexus/
 
 ---
 
-## Features (v2.1.4)
+## Features (v2.3.0)
 
 ### Notebook (stylus + Samsung Notes layer)
 
@@ -267,7 +267,15 @@ Release (`release.yml`):
 
 ## Roadmap
 
-✅ **Done (v1.0 → v2.1)**:
+✅ **Done (v1.0 → v2.3)**:
+- v2.3.0: UI decluttering + Notes folders (hierarchical tree sidebar)
+- v2.2.0: Frontend vitest + 14 orphan routes re-enabled
+- v2.1.6: Security hardening + supply-chain + centralization
+- v2.1.5: One-line curl installer + setup wizard
+- v2.1.0–v2.1.4: Exam mode, Syllabus tracker, E2E, mobile audit, CI overhaul
+- v2.0.0–v2.0.6: Webview bundle, sync, exams, attachments, AI tutor
+- v1.5.0–v1.9.3: Editor, icons, FSRS, palette, multi-vault
+- v1.0.0: RESET (vanilla JS+CSS, Education Service style)
 - Stylus notebook + Samsung Notes text layer
 - FSRS spaced repetition (4 states)
 - Syllabus tracker (deadline-aware)

@@ -4,6 +4,68 @@
 
 ---
 
+## v2.3.0 (2026-09-15) — UI decluttering + Notes folders
+
+User feedback drove this release: too many buttons, AI overload, oversized
+subject cards, notes lacked folder structure. Two-step release: A (declutter)
+and B (folders), both shipped in v2.3.0.
+
+### v2.3.0-A — UI decluttering
+
+- **`graph_3d.js` deleted** (3D backlinks graph; kept `three_d_viewer.js` for
+  image occlusion on 3D models with labels).
+- **Notes toolbar**: top row 5→4 buttons (AI menu reduced 5→3 options: extract,
+  cloze, define — removed summarize + quiz). Notebook toolbar 5→4 (removed
+  ruler). Notebook side 6→4 (removed code + graph).
+- **FABs repositioned**: AI tutor 56→48px fixed bottom-right. Cards FAB
+  smaller (44px) + auto-hides when AI chat opens (no double FAB).
+- **Theme toggle made discreet**: small text-only icon (☀/☽/◐ via ::before
+  pseudo-element), top-right corner, hover only. Was 44×44 round button.
+- **Subject cards** redesigned: compact horizontal rows (color stripe + name +
+  meta + corner avatar), min-height 64px (was 120px square bubbles). 5
+  subjects now fit in 2 rows.
+
+### v2.3.0-B — Notes folders (hierarchical tree)
+
+- **Backend**: `NoteFolder` model with `parentId` (null = root), `color`,
+  `icon`. `Note.folderId` field added. FoldersService with parent/child
+  relationships; deleting a folder moves children to root (no orphans).
+- **Endpoints**: GET/POST `/api/v1/folders`, PATCH/DELETE `/api/v1/folders/:id`.
+  Added to PUBLIC_PATHS (offline-first).
+- **Frontend**: Notes screen rewritten with `.notes-with-sidebar` 2-col layout
+  (260px sticky tree + scrollable content). Tree recursively renders folders
+  with notes indented under their parents.
+- **Tree actions**: `+ New note` (root), `📁+` creates folder via prompt, `+`
+  next to each folder creates note inside it.
+- **Search** filters the tree: hides non-matching notes, auto-shows parent
+  folders that contain matches.
+- **Responsive**: stacks vertically on ≤720px (tree on top, content below).
+- **i18n**: `notes.newFolder`, `notes.folderName`, `notes.selectFromTree`.
+
+### Verification (fresh)
+
+- ✅ Backend: 796/796 tests verde (1 skipped)
+- ✅ Frontend: 80/80 tests verde
+- ✅ TypeScript clean (`tsc --noEmit`)
+- ✅ 0 pageErrors / 0 consoleErrors on all 6 routes
+- ✅ Bundle: 787 KB / 53 files
+- ✅ Folders API verified (created 3 folders via fetch, rendered in tree)
+- ✅ Tree structure works in screenshots
+
+### Metrics
+
+```
+Frontend buttons in Notes editor (was 13 → now 8):
+  - Top row: 4 (intelligent, AI, search, PDF)
+  - Notebook toolbar: 4 (pen, highlighter, eraser, select)
+  - Notebook side: 4 (voice, image, link, table)
+  - AI menu: 3 (extract, cloze, define)
+
+Subject cards: 5x120px bubbles → 5x64px rows (47% less vertical space)
+```
+
+---
+
 ## v2.2.0 (2026-09-15) — Frontend vitest + orphan routes re-enabled
 
 ### Testing
