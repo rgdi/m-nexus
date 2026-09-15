@@ -11,6 +11,9 @@ import { openStudySession } from "../widgets/study_session.js";
 import { downloadNoteAsPDF } from "../widgets/pdf_export.js";
 import { openClozeTest } from "../widgets/cloze_test.js";
 import { extractTags, renderTagsCloud, injectTagsInline, getActiveTag } from "../widgets/tags_cloud.js";
+import { renderAttachmentsGrid, addAttachment } from "../widgets/file_attachments.js";
+import { mountAITutor, setAIContext } from "../widgets/ai_tutor.js";
+import { mountFlashcardSlash } from "../widgets/flashcard_slash.js";
 import { icon as svgIcon } from "../widgets/icons.js";
 
 const state = {
@@ -259,6 +262,39 @@ async function renderNotebook(root, id) {
 
   // v1.6.1: AI submenú
   setupAIMenu(root, id, note);
+
+  // v2.0.2: AI tutor context — el tutor sabe qué nota estás viendo
+  setAIContext({ note, subject: note.subject });
+  // v2.0.3: /flashcards slash command popup en el text-layer
+  mountFlashcardSlash(root, id, note);
+
+  // v2.0.1: attachments bar (image/pdf/glb con preview + occlusion)
+  const attBar = document.createElement("div");
+  attBar.id = "attachments-bar";
+  attBar.style.cssText = "padding: var(--s-3) var(--s-5) 0;";
+  // Insert before text-layer
+  const canvasWrap = root.querySelector("#canvas-wrap");
+  if (canvasWrap) canvasWrap.parentElement.insertBefore(attBar, canvasWrap);
+  renderAttachmentsGrid(attBar, id, () => renderNotebook(root, id));
+  // Attach button
+  const attachBtn = document.createElement("button");
+  attachBtn.className = "attach-btn";
+  attachBtn.textContent = "📎 Attach file (image, pdf, .glb)";
+  attachBtn.style.cssText = "margin: var(--s-2) var(--s-5);";
+  attBar.parentElement.insertBefore(attachBtn, attBar.nextSibling);
+  attachBtn.addEventListener("click", async () => {
+    const inp = document.createElement("input");
+    inp.type = "file";
+    inp.accept = "image/*,application/pdf,.glb";
+    inp.multiple = true;
+    inp.onchange = async () => {
+      for (const f of inp.files) {
+        await addAttachment(id, f);
+      }
+      renderAttachmentsGrid(attBar, id, () => renderNotebook(root, id));
+    };
+    inp.click();
+  });
 
   // v1.5.1: FAB abre panel de flashcards (locales primero, luego refresh backend)
   root.querySelector("#new-card-btn")?.addEventListener("click", async () => {

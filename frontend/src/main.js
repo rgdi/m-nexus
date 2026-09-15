@@ -14,6 +14,8 @@ import { mountLangSwitcher } from "./widgets/lang_switcher.js";
 import { showSplash } from "./widgets/splash.js";
 import { mountCommandPalette, openCommandPalette } from "./widgets/command_palette.js";
 import { mountVaultSwitcher } from "./services/vault.js";
+import { mountAITutor } from "./widgets/ai_tutor.js";
+import { connectSync } from "./services/sync_client.js";
 import { icon as svgIcon } from "./widgets/icons.js";
 import { renderOverview } from "./screens/overview.js";
 import { renderCalendar } from "./screens/calendar.js";
@@ -113,6 +115,10 @@ async function bootstrap() {
   setupCmdTrigger();
   // v1.9.3: vault switcher
   mountVaultSwitcher();
+  // v2.0.2: AI tutor FAB
+  mountAITutor();
+  // v2.0.6: E2E sync via WebSocket
+  connectSync();
   setupHamburger();
   // Set initial lang attribute on html
   document.documentElement.lang = i18n.lang;

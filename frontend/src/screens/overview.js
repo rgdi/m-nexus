@@ -6,6 +6,8 @@
 import { dataSource } from "../services/dataSource.js";
 import { i18n } from "../services/i18n.js";
 import { openCrossVerifyPanel } from "../widgets/cross_verify_panel.js";
+import { openExamWizard } from "../widgets/exam_runner.js";
+import { getAttachments } from "../widgets/file_attachments.js";
 
 const HOUR = 3600 * 1000;
 const PAD = (n) => String(n).padStart(2, "0");
@@ -112,6 +114,7 @@ export async function renderOverview(root) {
           <div class="grid grid-2">${renderQuickNotes(notes)}</div>
 
           <button class="btn primary" id="cv-btn" style="margin-top: var(--s-5)">📊 ${i18n.t("overview.crossVerify")}</button>
+          <button class="btn primary" id="exam-btn" style="margin-top: var(--s-3)">📋 ${i18n.t("overview.exam")}</button>
         </div>
       </div>
     </div>
@@ -120,6 +123,29 @@ export async function renderOverview(root) {
   // v1.5.6: cross-verify panel
   const cvBtn = root.querySelector("#cv-btn");
   if (cvBtn) cvBtn.addEventListener("click", () => openCrossVerifyPanel(root));
+
+  // v2.0.5: exam wizard
+  const examBtn = root.querySelector("#exam-btn");
+  if (examBtn) {
+    examBtn.addEventListener("click", async () => {
+      const cards = await fetch("http://localhost:4100/api/v1/flashcards").then((r) => r.ok ? r.json() : { cards: [] });
+      const allCards = cards.cards || [];
+      // gather approved occlusion cards
+      const occCards = [];
+      const noteList = await dataSource.notes.list();
+      for (const n of noteList) {
+        const atts = getAttachments(n.id);
+        for (const a of atts) {
+          if (a.occlusion?.approved) {
+            for (const t of a.occlusion.tags) {
+              occCards.push({ id: `${a.id}-${t.id}`, front: t.front, back: t.back, subject: n.subject, noteId: n.id });
+            }
+          }
+        }
+      }
+      openExamWizard(allCards, occCards);
+    });
+  }
 }
 
 function avg(arr) { return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0; }

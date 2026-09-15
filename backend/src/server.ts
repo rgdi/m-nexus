@@ -21,6 +21,7 @@ import { eventsRoutes } from "./routes/events.js";
 import { tasksRoutes } from "./routes/tasks.js";
 import { recordingsRoutes } from "./routes/recordings.js";
 import { crossVerifyRoutes } from "./routes/cross_verify.js";
+import { syncV2Routes, syncV2RestRoutes } from "./routes/sync_v2.js";
 
 export async function buildServer(): Promise<any> {
   const app = Fastify({
@@ -65,6 +66,9 @@ export async function buildServer(): Promise<any> {
   await app.register(recordingsRoutes, { prefix: "/api/v1" });
   // v1.5.6: cross-verify (notas vs grabaciones)
   await app.register(crossVerifyRoutes, { prefix: "/api/v1" });
+  // v2.0.6: E2E sync via WebSocket (WS at /ws/sync) + REST under /api/v1/sync
+  await syncV2Routes(app);
+  await app.register(syncV2RestRoutes, { prefix: "/api/v1" });
 
   // v0.62.8: minimal AI tutor endpoint that uses Ollama
   app.post("/api/v1/ai/tutor", async (req, reply) => {
