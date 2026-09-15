@@ -128,6 +128,7 @@ describe("HTTP /api/v1/auth/refresh", () => {
   let baseUrl: string;
 
   beforeAll(async () => {
+    process.env.AUTH_REQUIRED = "true";
     app = await buildApp();
     await app.listen({ port: 0, host: "127.0.0.1" });
     const addr = app.server.address();
@@ -141,6 +142,10 @@ describe("HTTP /api/v1/auth/refresh", () => {
   });
 
   it("register devuelve access + refresh tokens", async () => {
+
+    process.env.AUTH_REQUIRED = "true"; // v2.1.4
+
+
     const res = await fetch(`${baseUrl}/api/v1/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -161,12 +166,16 @@ describe("HTTP /api/v1/auth/refresh", () => {
   });
 
   it("refresh rota el token y devuelve uno nuevo", async () => {
+    process.env.AUTH_REQUIRED = "true"; // v2.1.4
+
     const reg = await fetch(`${baseUrl}/api/v1/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ deviceId: "auth-http-2" }),
     });
     const { refreshToken: oldToken } = await reg.json() as { refreshToken: string };
+    process.env.AUTH_REQUIRED = "true"; // v2.1.4
+
     const ref = await fetch(`${baseUrl}/api/v1/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -177,6 +186,8 @@ describe("HTTP /api/v1/auth/refresh", () => {
     expect(newToken).not.toBe(oldToken);
 
     // El viejo ya no funciona
+    process.env.AUTH_REQUIRED = "true"; // v2.1.4
+
     const ref2 = await fetch(`${baseUrl}/api/v1/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -186,6 +197,10 @@ describe("HTTP /api/v1/auth/refresh", () => {
   });
 
   it("refresh con token inválido devuelve 401", async () => {
+
+    process.env.AUTH_REQUIRED = "true"; // v2.1.4
+
+
     const res = await fetch(`${baseUrl}/api/v1/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -195,6 +210,10 @@ describe("HTTP /api/v1/auth/refresh", () => {
   });
 
   it("refresh sin token devuelve 400", async () => {
+
+    process.env.AUTH_REQUIRED = "true"; // v2.1.4
+
+
     const res = await fetch(`${baseUrl}/api/v1/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -204,6 +223,10 @@ describe("HTTP /api/v1/auth/refresh", () => {
   });
 
   it("endpoint protegido sin auth devuelve 401", async () => {
+
+    process.env.AUTH_REQUIRED = "true"; // v2.1.4
+
+
     const res = await fetch(`${baseUrl}/api/v1/llm/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -213,12 +236,16 @@ describe("HTTP /api/v1/auth/refresh", () => {
   });
 
   it("endpoint protegido con auth válido funciona", async () => {
+    process.env.AUTH_REQUIRED = "true"; // v2.1.4
+
     const reg = await fetch(`${baseUrl}/api/v1/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ deviceId: "auth-http-3" }),
     });
     const { accessToken } = await reg.json() as { accessToken: string };
+    process.env.AUTH_REQUIRED = "true"; // v2.1.4
+
     const res = await fetch(`${baseUrl}/api/v1/llm/chat`, {
       method: "POST",
       headers: {
@@ -231,6 +258,10 @@ describe("HTTP /api/v1/auth/refresh", () => {
   });
 
   it("token inválido devuelve 401", async () => {
+
+    process.env.AUTH_REQUIRED = "true"; // v2.1.4
+
+
     const res = await fetch(`${baseUrl}/api/v1/llm/chat`, {
       method: "POST",
       headers: {
@@ -243,6 +274,8 @@ describe("HTTP /api/v1/auth/refresh", () => {
   });
 
   it("GET /api/v1/audit devuelve solo las entradas del propio device", async () => {
+    process.env.AUTH_REQUIRED = "true"; // v2.1.4
+
     const reg = await fetch(`${baseUrl}/api/v1/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -250,11 +283,19 @@ describe("HTTP /api/v1/auth/refresh", () => {
     });
     const { accessToken } = await reg.json() as { accessToken: string };
     // Hacer un par de requests autenticados
+
+
+    process.env.AUTH_REQUIRED = "true"; // v2.1.4
+
+
+
     await fetch(`${baseUrl}/api/v1/llm/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${accessToken}` },
       body: JSON.stringify({ messages: [{ role: "user", content: "a" }] }),
     });
+    process.env.AUTH_REQUIRED = "true"; // v2.1.4
+
     const res = await fetch(`${baseUrl}/api/v1/audit`, {
       headers: { "Authorization": `Bearer ${accessToken}` },
     });
@@ -264,18 +305,24 @@ describe("HTTP /api/v1/auth/refresh", () => {
   });
 
   it("/api/v1/auth/revoke revoca tokens", async () => {
+    process.env.AUTH_REQUIRED = "true"; // v2.1.4
+
     const reg = await fetch(`${baseUrl}/api/v1/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ deviceId: "auth-revoke" }),
     });
     const { accessToken, refreshToken } = await reg.json() as { accessToken: string; refreshToken: string };
+    process.env.AUTH_REQUIRED = "true"; // v2.1.4
+
     const rev = await fetch(`${baseUrl}/api/v1/auth/revoke`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${accessToken}` },
       body: JSON.stringify({}),
     });
     expect(rev.status).toBe(200);
+    process.env.AUTH_REQUIRED = "true"; // v2.1.4
+
     const ref = await fetch(`${baseUrl}/api/v1/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

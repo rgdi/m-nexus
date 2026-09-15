@@ -3,7 +3,7 @@
 // v0.45: error codes estructurados con AppError.
 
 import { FastifyInstance } from "fastify";
-import { registerDevice, getDevice, isDeviceRegistered, updateDeviceToken } from "../auth/devices.js";
+import { registerDevice, getDevice, isDeviceRegistered, updateDeviceToken, getRegisteredDevices } from "../auth/devices.js";
 import {
   signAccessToken,
   issueRefreshToken,
@@ -116,7 +116,8 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
 
   // POST /api/v1/auth/revoke — revoca todos los refresh tokens del device
   app.post("/api/v1/auth/revoke", async (req, reply) => {
-    const deviceId = req.auth?.sub;
+    // v2.1.4: cast to any in case module augmentation didn't apply at runtime
+    const deviceId = (req as any).auth?.sub ?? (req as any).deviceId;
     if (!deviceId) {
       throw E.auth("EC-AUTH-025", "Autenticación requerida", { hint: "Send Authorization header" });
     }

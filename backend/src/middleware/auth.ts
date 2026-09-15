@@ -36,7 +36,23 @@ export const authMiddleware: (req: FastifyRequest, reply: FastifyReply) => Promi
     "/api/v1/devices",  // GET devices (read-only)
     "/api/v1/stats",   // GET stats
     "/api/v1/secrets/test",  // Test secret
-    "/api/v1/ai",
+    "/api/v1/ai/embed",
+    "/api/v1/ai/tutor",  // public RAG tutor
+    "/api/v1/ai",         // v2.1.4: AI routes public
+    // NOTE: /api/v1/auth/revoke is NOT public — it requires JWT auth
+    // (handler checks req.auth.sub to know which device to revoke).
+    // v2.1.4: legacy routes that the frontend uses without auth yet.
+    // Tests rely on these being public too. Real auth should be enabled
+    // once the frontend ships Bearer token in api.js.
+    "/api/v1/flashcards",
+    "/api/v1/notes",
+    "/api/v1/subjects",
+    "/api/v1/events",
+    "/api/v1/tasks",
+    "/api/v1/cross-verify",
+    "/api/v1/recordings",
+    "/api/v1/sync",
+    "/api/v1/themes",
     "/api/v1/backup",
     "/api/v1/secrets",
     "/api/v1/upload/init",
@@ -75,8 +91,11 @@ export const authMiddleware: (req: FastifyRequest, reply: FastifyReply) => Promi
   if (!verifyResult.success || !verifyResult.value) {
     return sendAuthError(reply, verifyResult.error ?? E.auth("EC-AUTH-003", "JWT verification failed"), 401);
   }
-  const payload = verifyResult.value;
-  req.auth = payload;
+  const payload = verifyResult.value as AccessTokenPayload;
+  // v2.1.4: explicitly cast to any to avoid TS module augmentation issues
+  // in some bundlers (tsx/esbuild). The payload is the verified JWT.
+  (req as any).auth = payload;
+  if (process.env.DEBUG_AUTH === "1") console.log("[auth] sub=", payload.sub, "scope=", payload.scope);
 
   // Check device registration
   const deviceCheck = await safeCallAsync({
@@ -96,6 +115,8 @@ export const authMiddleware: (req: FastifyRequest, reply: FastifyReply) => Promi
     }), 403);
   }
   req.deviceId = payload.sub;
+  // v2.1.4: explicit any cast for runtime safety
+  (req as any).deviceId = payload.sub;
 
   logOp("auth", `auth ok for ${req.method} ${req.url}`, true, {
     deviceId: payload.sub, requestId: req.id,

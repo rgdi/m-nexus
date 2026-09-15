@@ -72,3 +72,8 @@ test-results/
 playwright-report/
 releases/
 app/android/.gradle/
+
+# SQLite (transient DB files)
+*.db-shm
+*.db-wal
+*.db

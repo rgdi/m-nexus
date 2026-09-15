@@ -14,6 +14,7 @@ import { healthRoutes } from "./routes/health.js";
 import { metricsRoutes } from "./routes/metrics.js";
 import { flashcardsRoutes } from "./routes/flashcards.js";
 import { aiV2Routes } from "./routes/ai_v2.js";
+import { aiRoutes } from "./routes/ai.js";
 import { syncRoutes } from "./routes/sync.js";
 import { subjectsRoutes } from "./routes/subjects.js";
 import { notesRoutes } from "./routes/notes.js";
@@ -22,11 +23,35 @@ import { tasksRoutes } from "./routes/tasks.js";
 import { recordingsRoutes } from "./routes/recordings.js";
 import { crossVerifyRoutes } from "./routes/cross_verify.js";
 import { syncV2Routes, syncV2RestRoutes } from "./routes/sync_v2.js";
+import { authRoutes } from "./routes/auth.js";
+import { backupRoutes } from "./routes/backup.js";
+import { updateRoutes } from "./routes/update.js";
+import { wsRoutes } from "./routes/ws.js";
+import { audioRoutes } from "./routes/audio.js";
+import { llmRoutes } from "./routes/llm.js";
+import { ocrRoutes } from "./routes/ocr.js";
+import { authMiddleware } from "./middleware/auth.js";
+import { dashboardRoutes } from "./routes/dashboard.js";
+import { pdfRoutes } from "./routes/pdf.js";
 
 export async function buildServer(): Promise<any> {
   const app = Fastify({
     logger: { level: process.env.LOG_LEVEL ?? "info" },
   });
+
+  // v2.1.4: allow application/zip and application/octet-stream content types
+  // for backup upload route (and any other binary routes). Fastify default
+  // only accepts JSON, so we register a permissive parser for binaries.
+  app.addContentTypeParser(
+    "application/zip",
+    { parseAs: "buffer" },
+    (_req, body, done) => done(null, body)
+  );
+  app.addContentTypeParser(
+    "application/octet-stream",
+    { parseAs: "buffer" },
+    (_req, body, done) => done(null, body)
+  );
 
   // CORS
   const { corsOriginCallback, getAllowedOrigins } = await import("./utils/corsPolicy.js");
@@ -54,6 +79,7 @@ export async function buildServer(): Promise<any> {
   // No auth — same posture as /api/v1/ai/tutor below. Designed to be safe
   // under Node 20.19.4 + tsx (no better-sqlite3, no plugin imports).
   await app.register(aiV2Routes);
+  await app.register(aiRoutes, { prefix: "/api/v1/ai" });
   await app.register(syncRoutes);
   // v1.1.0: frontend Education Service endpoints
   await app.register(subjectsRoutes, { prefix: "/api/v1" });
@@ -70,56 +96,49 @@ export async function buildServer(): Promise<any> {
   await syncV2Routes(app);
   await app.register(syncV2RestRoutes, { prefix: "/api/v1" });
 
-  // v0.62.8: minimal AI tutor endpoint that uses Ollama
-  app.post("/api/v1/ai/tutor", async (req, reply) => {
-    try {
-      const body = req.body as any;
-      const question = body?.question || body?.message || "";
-      const vaultSnippets: string[] = body?.snippets || [];
-      if (!question) {
-        return reply.status(400).send({ error: "question required" });
-      }
-      // Build prompt with RAG context
-      const context = vaultSnippets.slice(0, 5).map((s, i) => `[${i + 1}] ${s}`).join("\n\n");
-      const prompt = context
-        ? `Eres un tutor médico. Basándote SOLO en estas notas del vault:\n\n${context}\n\nPregunta: ${question}\n\nRespuesta concisa en español (máx 200 palabras). Cita las notas con [n].`
-        : `Eres un tutor médico. Responde conciso en español (máx 150 palabras): ${question}`;
+  // v2.1.4: register auth middleware globally so all routes get checked
+  app.addHook("preHandler", authMiddleware);
 
-      const ollamaUrl = process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434";
-      const model = process.env.OLLAMA_MODEL || "llama3.2:3b";
-      // v0.62.9: timeout 45s para evitar cuelgue de UI cuando Ollama CPU es lento
-      const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), 45000);
-      const ollamaResp = await fetch(`${ollamaUrl}/api/generate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model,
-          prompt,
-          stream: false,
-          options: { temperature: 0.3, num_predict: 120 },
-        }),
-        signal: ctrl.signal,
-      }).catch((e) => {
-        clearTimeout(t);
-        throw e;
+  // v2.1.4: custom error handler — map AppError to structured JSON
+  // (Fastify's default returns {statusCode, error: "Bad Request", message};
+  // we want {error: <AppError.message>, code, category, hint})
+  app.setErrorHandler((err, _req, reply) => {
+    const statusCode = (err as any).statusCode ?? 500;
+    if ((err as any).code && (err as any).category) {
+      // AppError path
+      reply.status(statusCode).send({
+        error: err.message,
+        code: (err as any).code,
+        category: (err as any).category,
+        context: (err as any).context,
+        hint: (err as any).hint,
       });
-      clearTimeout(t);
-      if (!ollamaResp.ok) {
-        return reply.status(502).send({ error: `ollama returned ${ollamaResp.status}` });
-      }
-      const data = await ollamaResp.json() as any;
-      return reply.send({
-        answer: data.response || "(sin respuesta)",
-        model,
-        sources: vaultSnippets.slice(0, 5),
-      });
-    } catch (err: any) {
-      const msg = err?.name === 'AbortError' ? 'timeout: Ollama CPU muy lento (>45s)' : (err.message || String(err));
-      return reply.status(504).send({ error: msg, hint: 'Reduce num_predict o usa GPU' });
+      return;
     }
+    // Generic error
+    reply.status(statusCode).send({
+      error: err.message || "Internal error",
+      code: "EC-INT-001",
+      category: "INT",
+    });
   });
-  console.log("DEBUG: tutor route registered");
+
+  // v2.1.4: missing routes that tests expect
+  // authRoutes declares paths with /api/v1 prefix already, so register
+  // without prefix to avoid /api/v1/api/v1 duplication.
+  await app.register(authRoutes);
+  await app.register(backupRoutes, { prefix: "/api/v1/backup" });
+  await app.register(updateRoutes);
+  await app.register(wsRoutes);
+  await app.register(audioRoutes);
+  await app.register(llmRoutes);
+  await app.register(ocrRoutes);
+  await app.register(dashboardRoutes);
+  await app.register(pdfRoutes);
+
+  // v0.62.8: /api/v1/ai/tutor is registered by aiRoutes (./routes/ai.ts).
+  // Removed the inline handler to avoid duplicate-route registration error.
+  console.log("DEBUG: tutor route registered via aiRoutes");
 
   return app;
 }
@@ -149,3 +168,5 @@ if (isMain) {
 
 import { VERSION } from "./version.js";
 export { VERSION };
+// Alias for tests that import `buildApp` (kept for backwards compat)
+export { buildServer as buildApp };

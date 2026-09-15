@@ -128,6 +128,33 @@ export async function flashcardsRoutes(app: FastifyInstance): Promise<void> {
     return { cards: list, total: list.length };
   });
 
+  // Generar borradores desde texto (mock — devuelve cloze candidates)
+  app.post<{ Body: { noteContent?: string; noteTitle?: string; style?: string; level?: string; maxCards?: number } }>("/flashcards/generate", async (req, reply) => {
+    const body = req.body || ({} as any);
+    const noteContent = body.noteContent;
+    if (!noteContent || typeof noteContent !== "string") {
+      return reply.status(400).send({ error: "noteContent requerido" });
+    }
+    const max = body.maxCards || 5;
+    // Mock — split into sentences and turn into cloze-style Q/A
+    const sentences = noteContent
+      .split(/[.!?]+/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 5);
+    const cards = sentences.slice(0, max).map((s, i) => {
+      // Take first 6 words as front, full sentence as back
+      const words = s.split(/\s+/);
+      const front = words.slice(0, Math.min(8, words.length)).join(" ") + (words.length > 8 ? "..." : "");
+      return {
+        front,
+        back: s,
+        cardType: body.style || "cloze",
+        model: "mock-llm",
+      };
+    });
+    return { cards, model: "mock-llm" };
+  });
+
   // Filtrar por asignatura / sourceNoteId
   app.get<{ Querystring: { subject?: string; noteId?: string } }>("/flashcards/filter", async (req) => {
     const list = await svc.all();

@@ -1,19 +1,16 @@
-# GitHub Actions: M-NEXUS Auto Release (optimized for speed)
+# GitHub Actions: M-NEXUS Auto Release
 #
-# v0.46.7: Sistema de versionado 100% automatico con optimizaciones de velocidad.
+# v2.1.4: Reemplazado Flutter build (descatalogado en v2.0.0) por
+#         webview bundle (scripts/build_webview.sh). El bundle es
+#         un solo archivo HTML+CSS+JS autocontenido (612 KB) que
+#         funciona en Capacitor/Cordova/WebView nativo.
 #
 # Trigger: push a main
 # Comportamiento:
-#   1. Detecta nueva version en app/pubspec.yaml
-#   2. Si cambio: build backend, APKs (release + debug), installer
+#   1. Detecta nueva version en backend/package.json
+#   2. Si cambio: build backend ZIP + webview bundle
 #   3. Crea tag y GitHub Release con todos los assets
 #   4. Si NO cambio: solo CI tests
-#
-# Optimizaciones de velocidad:
-#   - Cache gradle (ademas de pub)
-#   - Build debug Y release en paralelo (con matrix)
-#   - No flutter clean (usa cache)
-#   - Skip analyze y tests si --skip-validation flag
 
 name: "M-NEXUS Auto Release"
 
@@ -27,19 +24,11 @@ on:
         required: false
         default: 'false'
         type: boolean
-      skip_validation:
-        description: 'Skip analyze + tests (mas rapido)'
-        required: false
-        default: 'false'
-        type: boolean
 
 permissions:
   contents: write
 
 jobs:
-  # =========================================================================
-  # 0. Detectar version
-  # =========================================================================
   detect-version:
     name: Detect version
     runs-on: ubuntu-latest
@@ -53,29 +42,17 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
-      - name: Parse version from pubspec.yaml
+      - name: Parse version from backend/package.json
         id: parse
         run: |
           set -e
-          VERSION=$(grep "^version:" app/pubspec.yaml | head -1 | awk '{print $2}' | sed 's/+.*//')
+          VERSION=$(grep '"version"' backend/package.json | head -1 | awk -F'"' '{print $4}')
           if [[ -z "$VERSION" ]]; then
-            echo "::error::No se pudo parsear la version de app/pubspec.yaml"
+            echo "::error::No se pudo parsear la version de backend/package.json"
             exit 1
           fi
           TAG="v${VERSION}"
-          BACKEND_VERSION=$(grep '"version"' backend/package.json | head -1 | awk -F'"' '{print $4}')
-          # v0.47.19: FAIL si backend y frontend difieren (antes solo warning).
-          # El install.sh de v0.47.16 genera backend/.env que asume VERSION
-          # consistente. Si difieren, el APK release del frontend apunta a un
-          # backend con código de versión distinta → comportamiento indefinido.
-          if [[ -n "$BACKEND_VERSION" && "$BACKEND_VERSION" != "$VERSION" ]]; then
-            echo "::error::backend (${BACKEND_VERSION}) != frontend (${VERSION})"
-            echo "::error::Synchronize versions: bump both or roll back one."
-            exit 1
-          fi
           LATEST_TAG=$(git tag --list 'v*' --sort=-v:refname | head -1 || echo "")
-          # v0.47.19: si no hay tags v* (repo recién clonado), no imprimir
-          # 'ultimo tag: ' vacío. Usar placeholder descriptivo.
           LATEST_TAG_DISPLAY="${LATEST_TAG:-<none>}"
           if [[ "$LATEST_TAG" == "$TAG" && "${{ inputs.force }}" != "true" ]]; then
             SHOULD_RELEASE="false"
@@ -91,7 +68,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
   # =========================================================================
-  # 1. Build backend (rapido: ~30s)
+  # 1. Build backend ZIP (~30s)
   # =========================================================================
   build-backend:
     name: Build backend ZIP
@@ -128,209 +105,41 @@ jobs:
           if-no-files-found: error
 
   # =========================================================================
-  # 2. Build APK release + debug SECUENCIAL en mismo job (comparten cache)
-  # v0.47.8: cambio de matrix a un solo job que compila ambos.
-  # Razon: el cache de gradle pesa 5+ GB. Si release y debug corren
-  # en runners separados, ambos descargan todo desde cero (2h c/u).
-  # Secuencial: 1 runner, mismo cache, ~5-10 min total.
+  # 2. Build webview bundle (~20s, v2.0.0+)
   # =========================================================================
-  build-apk:
-    name: Build APKs
-    runs-on: ubuntu-latest
-    needs: detect-version
-    if: needs.detect-version.outputs.should_release == 'true'
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.24.0'
-          channel: 'stable'
-
-      # Cache pub
-      - name: Cache pub
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pub-cache
-            app/.dart_tool
-          key: ${{ runner.os }}-pub-${{ hashFiles('app/pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-pub-
-
-      # Cache gradle (UNICA key compartida, no por target)
-      - name: Cache gradle
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-            app/android/.gradle
-          key: ${{ runner.os }}-gradle-${{ hashFiles('app/android/app/build.gradle', 'app/android/build.gradle', 'app/android/settings.gradle', 'app/android/gradle.properties', 'app/pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-
-      # Cache flutter
-      - name: Cache flutter
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/flutter
-            /opt/hostedtoolcache/flutter
-          key: ${{ runner.os }}-flutter-3.24.0-stable
-          restore-keys: |
-            ${{ runner.os }}-flutter-
-
-      - name: Clean only app/build
-        run: |
-          rm -rf app/build
-          rm -rf app/android/app/build
-          echo "Cleaned app/build only (gradle cache preserved)"
-
-      - name: Install dependencies
-        run: cd app && flutter pub get
-
-      # v0.47.20: inyectar release keystore desde GitHub Secrets.
-      # El keystore se commitea como base64 (MN_KEYSTORE_BASE64) y los passwords
-      # como secrets separados (MN_KEYSTORE_STORE_PASSWORD, MN_KEYSTORE_KEY_PASSWORD).
-      # Si los secrets no están configurados, el build.gradle cae a debug keystore
-      # (con warning) para que CI no rompa builds de desarrollo.
-      # Ver AUDIT_REPORT.md SEC-1.
-      #
-      # v0.47.25: fix CI — secrets no se pueden usar en if: directamente.
-      # Usar env var + test en script bash.
-      - name: Setup release keystore
-        env:
-          MN_KEYSTORE_BASE64: ${{ secrets.MN_KEYSTORE_BASE64 }}
-          MN_KEYSTORE_STORE_PASSWORD: ${{ secrets.MN_KEYSTORE_STORE_PASSWORD }}
-          MN_KEYSTORE_KEY_PASSWORD: ${{ secrets.MN_KEYSTORE_KEY_PASSWORD }}
-        run: |
-          if [[ -n "$MN_KEYSTORE_BASE64" ]]; then
-            mkdir -p app/android/keystores
-            echo "$MN_KEYSTORE_BASE64" | base64 -d > app/android/keystores/release.keystore
-            chmod 600 app/android/keystores/release.keystore
-            echo "Keystore restaurado desde secret. Size: $(stat -c %s app/android/keystores/release.keystore) bytes"
-            # Guardar passwords en gradle.properties (que el build.gradle lee)
-            sed -i "s|^appKeystoreStorePassword=.*|appKeystoreStorePassword=${MN_KEYSTORE_STORE_PASSWORD}|" app/android/gradle.properties
-            sed -i "s|^appKeystoreKeyPassword=.*|appKeystoreKeyPassword=${MN_KEYSTORE_KEY_PASSWORD}|" app/android/gradle.properties
-            echo "Passwords guardados en gradle.properties"
-          else
-            echo "MN_KEYSTORE_BASE64 no configurado - usando debug keystore (warning)"
-            mkdir -p app/android/keystores
-            echo "# MN_KEYSTORE_BASE64 not set - using debug keystore" > app/android/keystores/.placeholder
-          fi
-
-      # Sync version del pubspec al gradle.properties
-      - name: Sync version to Android
-        run: |
-          VERSION=$(grep "^version:" app/pubspec.yaml | head -1 | awk '{print $2}')
-          VERSION_NAME=$(echo "$VERSION" | sed 's/+.*//')
-          VERSION_CODE=$(echo "$VERSION" | sed 's/.*+//')
-          echo "versionName=${VERSION_NAME} versionCode=${VERSION_CODE}"
-          sed -i "s|^appVersionCode=.*|appVersionCode=${VERSION_CODE}|" app/android/gradle.properties
-          sed -i "s|^appVersionName=.*|appVersionName=${VERSION_NAME}|" app/android/gradle.properties
-          echo "=== Updated gradle.properties ==="
-          grep "^appVersion" app/android/gradle.properties
-
-      # Build release APK (cachea gradle)
-      - name: Build release APK
-        run: |
-          set -e
-          cd app
-          echo "=== Building release APK ==="
-          if [[ ! -f /home/runner/.android/debug.keystore ]]; then
-            echo "No hay keystore release ni debug - generando uno temporal"
-            mkdir -p /home/runner/.android
-            keytool -genkey -v -keystore /home/runner/.android/debug.keystore \
-              -storepass android -alias androiddebugkey -keypass android \
-              -keyalg RSA -keysize 2048 -validity 10000 \
-              -dname "CN=Android Debug,O=Android,C=US" 2>&1 | tail -1
-          fi
-          # Si no hay release keystore, copiar el debug como fallback
-          if [[ ! -f android/keystores/release.keystore ]]; then
-            mkdir -p android/keystores
-            cp /home/runner/.android/debug.keystore android/keystores/release.keystore
-            chmod 600 android/keystores/release.keystore
-            # Usar passwords del debug keystore
-            sed -i "s|^appKeystoreStorePassword=.*|appKeystoreStorePassword=android|" android/gradle.properties
-            sed -i "s|^appKeystoreKeyPassword=.*|appKeystoreKeyPassword=android|" android/gradle.properties
-          fi
-          flutter build apk --release --no-tree-shake-icons 2>&1 | tee /tmp/build-release.log
-        env:
-          GRADLE_OPTS: "-Xmx4G"
-
-      # Build debug APK (reusa cache de gradle del release)
-      - name: Build debug APK
-        run: |
-          set -e
-          cd app
-          echo "=== Building debug APK ==="
-          flutter build apk --debug --no-tree-shake-icons 2>&1 | tee /tmp/build-debug.log
-        env:
-          GRADLE_OPTS: "-Xmx4G"
-
-      # Copy ambos APKs
-      - name: Copy APKs
-        run: |
-          TAG="${{ needs.detect-version.outputs.tag }}"
-          mkdir -p artifacts
-          REL=$(find . -name "app-release.apk" 2>/dev/null | head -1)
-          DBG=$(find . -name "app-debug.apk" 2>/dev/null | head -1)
-          if [[ -n "$REL" && -f "$REL" ]]; then
-            cp "$REL" "artifacts/m-nexus-app-${TAG}-release.apk"
-            cp "$REL" "artifacts/m-nexus-app.apk"
-            echo "release APK: $(du -h $REL | cut -f1)"
-          else
-            echo "::error::release APK no encontrado"
-            exit 1
-          fi
-          if [[ -n "$DBG" && -f "$DBG" ]]; then
-            cp "$DBG" "artifacts/m-nexus-app-${TAG}-debug.apk"
-            echo "debug APK: $(du -h $DBG | cut -f1)"
-          else
-            echo "::error::debug APK no encontrado"
-            exit 1
-          fi
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: app
-          path: artifacts/m-nexus-app-*.apk
-          if-no-files-found: error
-
-  # =========================================================================
-  # 3. Installer (~3s)
-  # =========================================================================
-  build-installer:
-    name: Package installer
+  build-webview:
+    name: Build webview bundle
     runs-on: ubuntu-latest
     needs: detect-version
     if: needs.detect-version.outputs.should_release == 'true'
     steps:
       - uses: actions/checkout@v4
-      - name: Copy installer
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: npm install esbuild --no-audit --no-fund
+      - name: Build bundle
+        run: bash scripts/build_webview.sh /tmp/webview-bundle
+      - name: Package bundle ZIP
         run: |
+          set -e
           TAG="${{ needs.detect-version.outputs.tag }}"
           mkdir -p artifacts
-          cp install/install.sh "artifacts/m-nexus-install-${TAG}.sh"
-          cp install/install.sh "artifacts/m-nexus-install.sh"
-          chmod +x artifacts/m-nexus-install-*.sh
+          cd /tmp/webview-bundle
+          zip -r "$GITHUB_WORKSPACE/artifacts/m-nexus-webview-${TAG}.zip" .
+          cp "$GITHUB_WORKSPACE/artifacts/m-nexus-webview-${TAG}.zip" "$GITHUB_WORKSPACE/artifacts/m-nexus-webview.zip"
       - uses: actions/upload-artifact@v4
         with:
-          name: installer
-          path: artifacts/m-nexus-install-*.sh
+          name: webview
+          path: artifacts/m-nexus-webview-*.zip
           if-no-files-found: error
 
   # =========================================================================
-  # 3.5. Docker image (v0.62.2) — opcional, no rompe si falla
+  # 3. Docker image (optional, continue-on-error)
   # =========================================================================
   build-docker:
     name: Build Docker image
@@ -351,43 +160,22 @@ jobs:
             --label "org.opencontainers.image.version=${TAG}" \
             --label "org.opencontainers.image.source=https://github.com/rgdi/m-nexus" \
             --label "org.opencontainers.image.title=M-NEXUS" \
-            --label "org.opencontainers.image.description=Knowledge management + spaced repetition" \
             .
       - name: Test Docker image
         run: |
           docker run -d --name mnexus-test -p 3000:3000 mnexus/backend:latest
           sleep 5
-          curl -f http://localhost:3000/health || (docker logs mnexus-test && exit 1)
+          curl -f http://localhost:3000/health || (docker logs mnexus-test; exit 1)
           docker stop mnexus-test
           docker rm mnexus-test
-      - name: Save Docker image
-        run: |
-          mkdir -p artifacts
-          TAG="${{ needs.detect-version.outputs.tag }}"
-          docker save mnexus/backend:${TAG} | gzip > "artifacts/m-nexus-docker-${TAG}.tar.gz"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: docker
-          path: artifacts/m-nexus-docker-*.tar.gz
-          if-no-files-found: warn
-      - name: Push to GitHub Container Registry
-        if: github.event_name == 'push'
-        continue-on-error: true
-        run: |
-          TAG="${{ needs.detect-version.outputs.tag }}"
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          docker tag mnexus/backend:${TAG} ghcr.io/rgdi/m-nexus:${TAG}
-          docker tag mnexus/backend:latest ghcr.io/rgdi/m-nexus:latest
-          docker push ghcr.io/rgdi/m-nexus:${TAG} || echo "GCR push failed (no permissions)"
-          docker push ghcr.io/rgdi/m-nexus:latest || echo "GCR push failed (no permissions)"
 
   # =========================================================================
-  # 4. Create GitHub Release (~10s)
+  # 4. Create GitHub Release
   # =========================================================================
   create-release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
-    needs: [detect-version, build-backend, build-apk, build-installer]
+    needs: [detect-version, build-backend, build-webview]
     if: needs.detect-version.outputs.should_release == 'true'
     steps:
       - uses: actions/checkout@v4
@@ -403,7 +191,7 @@ jobs:
 
       - name: Flatten artifact dirs
         run: |
-          for sub in app backend installer; do
+          for sub in backend webview; do
             if [ -d "artifacts/$sub" ]; then
               mv "artifacts/$sub"/* artifacts/ 2>/dev/null || true
               rm -rf "artifacts/$sub"
@@ -422,17 +210,7 @@ jobs:
           files: |
             artifacts/m-nexus-backend-*.zip
             artifacts/m-nexus-backend.zip
-            artifacts/m-nexus-install-*.sh
-            artifacts/m-nexus-install.sh
-            artifacts/m-nexus-app-*.apk
-            artifacts/m-nexus-app.apk
+            artifacts/m-nexus-webview-*.zip
+            artifacts/m-nexus-webview.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Summary
-        if: success()
-        run: |
-          echo "### Release ${{ needs.detect-version.outputs.tag }} publicada" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Assets:**" >> $GITHUB_STEP_SUMMARY
-          ls -la artifacts/ >> $GITHUB_STEP_SUMMARY
