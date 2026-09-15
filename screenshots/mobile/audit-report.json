@@ -1,0 +1,89 @@
+{
+  "360x640": {
+    "overview": {
+      "file": "/workspace/m-nexus/screenshots/mobile/small-overview.png",
+      "issues": []
+    },
+    "calendar": {
+      "file": "/workspace/m-nexus/screenshots/mobile/small-calendar.png",
+      "issues": []
+    },
+    "subjects": {
+      "file": "/workspace/m-nexus/screenshots/mobile/small-subjects.png",
+      "issues": []
+    },
+    "notes-list": {
+      "file": "/workspace/m-nexus/screenshots/mobile/small-notes-list.png",
+      "issues": []
+    },
+    "todos": {
+      "file": "/workspace/m-nexus/screenshots/mobile/small-todos.png",
+      "issues": []
+    },
+    "ai-tutor": {
+      "file": "/workspace/m-nexus/screenshots/mobile/small-ai-tutor.png",
+      "issues": []
+    },
+    "notes-notebook": {
+      "issues": []
+    }
+  },
+  "390x844": {
+    "overview": {
+      "file": "/workspace/m-nexus/screenshots/mobile/iphone-overview.png",
+      "issues": []
+    },
+    "calendar": {
+      "file": "/workspace/m-nexus/screenshots/mobile/iphone-calendar.png",
+      "issues": []
+    },
+    "subjects": {
+      "file": "/workspace/m-nexus/screenshots/mobile/iphone-subjects.png",
+      "issues": []
+    },
+    "notes-list": {
+      "file": "/workspace/m-nexus/screenshots/mobile/iphone-notes-list.png",
+      "issues": []
+    },
+    "todos": {
+      "file": "/workspace/m-nexus/screenshots/mobile/iphone-todos.png",
+      "issues": []
+    },
+    "ai-tutor": {
+      "file": "/workspace/m-nexus/screenshots/mobile/iphone-ai-tutor.png",
+      "issues": []
+    },
+    "notes-notebook": {
+      "issues": []
+    }
+  },
+  "720x1024": {
+    "overview": {
+      "file": "/workspace/m-nexus/screenshots/mobile/tablet-overview.png",
+      "issues": []
+    },
+    "calendar": {
+      "file": "/workspace/m-nexus/screenshots/mobile/tablet-calendar.png",
+      "issues": []
+    },
+    "subjects": {
+      "file": "/workspace/m-nexus/screenshots/mobile/tablet-subjects.png",
+      "issues": []
+    },
+    "notes-list": {
+      "file": "/workspace/m-nexus/screenshots/mobile/tablet-notes-list.png",
+      "issues": []
+    },
+    "todos": {
+      "file": "/workspace/m-nexus/screenshots/mobile/tablet-todos.png",
+      "issues": []
+    },
+    "ai-tutor": {
+      "file": "/workspace/m-nexus/screenshots/mobile/tablet-ai-tutor.png",
+      "issues": []
+    },
+    "notes-notebook": {
+      "issues": []
+    }
+  }
+}

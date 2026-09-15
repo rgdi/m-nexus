@@ -67,16 +67,16 @@ function taskRow(t) {
   const overdue = isOverdue(t.due, t.done);
   return `
     <div class="todo-row" data-id="${t.id}" style="display:flex; align-items:center; gap: var(--s-3); padding: var(--s-3) var(--s-4); border-bottom: 1px solid var(--border); cursor:pointer">
-      <button class="todo-check" aria-label="Toggle" style="width:24px;height:24px;border-radius:50%;border:2px solid ${t.done ? "var(--good)" : "var(--border-strong)"};background:${t.done ? "var(--good)" : "transparent"};color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <button class="todo-check" aria-label="Toggle" style="min-width:var(--hit-target);min-height:var(--hit-target);width:32px;height:32px;border-radius:50%;border:2px solid ${t.done ? "var(--good)" : "var(--border-strong)"};background:${t.done ? "var(--good)" : "transparent"};color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0">
         ${t.done ? "✓" : ""}
       </button>
-      <div style="flex:1; ${t.done ? "text-decoration:line-through;color:var(--fg-faint)" : ""}">
-        <div class="bold">${escapeHtml(t.text)}</div>
+      <div style="flex:1; min-width:0; ${t.done ? "text-decoration:line-through;color:var(--fg-faint)" : ""}">
+        <div class="bold" style="word-break:break-word">${escapeHtml(t.text)}</div>
         ${t.due ? `<div class="small" style="color:${overdue ? "var(--bad)" : "var(--fg-muted)"}">📅 ${fmtDateTime(t.due)} ${overdue ? " · " + i18n.t("todos.overdueBadge") : ""}</div>` : ""}
-      </div>
-      <div class="row gap-2">
-        ${t.priority ? `<span class="chip warn">${PRIORITY_LABEL[t.priority] || ""}</span>` : ""}
-        ${t.subject ? `<span class="chip muted">${escapeHtml(t.subject)}</span>` : ""}
+        <div class="row gap-2 todo-chips">
+          ${t.priority ? `<span class="chip warn">${PRIORITY_LABEL[t.priority] || ""}</span>` : ""}
+          ${t.subject ? `<span class="chip muted">${escapeHtml(t.subject)}</span>` : ""}
+        </div>
       </div>
     </div>
   `;

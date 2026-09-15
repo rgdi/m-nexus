@@ -66,6 +66,8 @@ function sync(btn) {
   const cur = getCurrentVault();
   const icons = { default: "🏠", school: "🎒", personal: "✨", work: "💼" };
   btn.innerHTML = `<span class="vault-ico">${icons[cur] || "📁"}</span><span class="vault-name">${cur}</span>`;
+  btn.title = `Vault: ${cur}`;
+  btn.setAttribute("aria-label", `Switch vault (current: ${cur})`);
 }
 
 function openVaultMenu(btn) {

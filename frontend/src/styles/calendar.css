@@ -138,6 +138,10 @@
   color: var(--fg);
   box-shadow: var(--shadow-1);
 }
+@media (max-width: 480px) {
+  /* v2.1.3 — compact view-toggle + smaller buttons on phones */
+  .view-toggle .seg { padding: 6px 10px; font-size: 12px; min-height: 32px; }
+}
 
 /* ============================================================
  * v1.9.2 — drag to create event

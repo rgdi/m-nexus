@@ -16,6 +16,14 @@
   padding: var(--s-5) var(--s-6);
 }
 
+/* v2.1.3 — mobile: reserve space for fixed top-bar elements
+   (hamburger + cmd + vault + lang all sit at top:12px).
+   Declared AFTER .screen so it overrides padding-top. */
+@media (max-width: 720px) {
+  .app { padding-top: calc(var(--safe-top) + 56px); }
+  .screen { padding-top: var(--s-4); }
+}
+
 .screen-header {
   display: flex;
   align-items: baseline;
@@ -33,6 +41,16 @@
 .screen-header .h-sub {
   font-size: var(--fs-lg);
   color: var(--fg-muted);
+}
+
+.screen-header > .spacer { flex: 1; min-width: 0; }
+
+/* v2.1.3 — mobile: stack header items, drop spacer, wrap to second line */
+@media (max-width: 720px) {
+  .screen-header { gap: var(--s-2); margin-bottom: var(--s-4); flex-wrap: wrap; }
+  .screen-header .h-title { font-size: var(--fs-2xl); width: 100%; }
+  .screen-header > .spacer { display: none; }
+  .screen-header > * { flex-shrink: 0; }
 }
 
 /* ============================================================
@@ -238,4 +256,13 @@
 @supports (padding: max(0px)) {
   .app { padding-top: max(var(--safe-top), var(--s-3)); }
   body { padding-bottom: calc(var(--dock-h) + max(var(--safe-bottom), var(--s-3))); }
+}
+
+/* ============================================================
+ * v2.1.3 — mobile top-bar offset
+ * Declared LAST so it overrides the @supports safe-area rule above.
+ * ============================================================ */
+@media (max-width: 720px) {
+  .app { padding-top: calc(var(--safe-top) + 56px); }
+  .screen { padding-top: var(--s-4); }
 }

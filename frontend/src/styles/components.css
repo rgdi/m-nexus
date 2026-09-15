@@ -27,7 +27,11 @@
 .btn.primary:hover { background: var(--fg-muted); }
 .btn.ghost { background: transparent; }
 .btn.danger { color: var(--bad); }
-.btn.icon { width: var(--hit-target-desktop); padding: 0; }
+.btn.icon { width: var(--hit-target-desktop); flex-shrink: 0; padding: 0; }
+@media (pointer: coarse) {
+  /* v2.1.3 — bigger touch targets on touch devices */
+  .btn.icon { width: var(--hit-target); height: var(--hit-target); }
+}
 .btn.small { min-height: 30px; padding: 0 var(--s-3); font-size: var(--fs-xs); }
 
 /* ---------- Card ---------- */
@@ -62,6 +66,11 @@
   transition: transform var(--dur), box-shadow var(--dur);
   box-shadow: var(--shadow-2);
   min-height: 120px;
+}
+@media (max-width: 480px) {
+  /* v2.1.3 — reduce card min-height on phones so 2-col grid fits */
+  .subj-bubble { min-height: 96px; padding: var(--s-2); }
+  .subj-bubble .corner { width: 28px; height: 28px; font-size: 14px; top: 6px; right: 6px; }
 }
 @media (pointer: fine) and (hover: hover) {
   .subj-bubble:hover { transform: scale(1.02); }
@@ -599,7 +608,16 @@ body.hide-ui .dock, body.hide-ui .lang-switcher, body.hide-ui .top-toolbar { dis
   font-size: 11px;
 }
 @media (max-width: 720px) {
-  .cmd-trigger { left: 60px; transform: none; min-width: 0; padding: 8px 10px; }
+  /* v2.1.3 — collapse cmd-trigger to icon-only on mobile to free up top-bar */
+  .cmd-trigger {
+    left: auto; right: 130px; transform: none;
+    min-width: 0; padding: 8px 10px;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    justify-content: center;
+  }
+  .cmd-trigger .cmd-text { display: none; }
+  .cmd-trigger kbd { display: none; }
 }
 
 /* ============================================================
@@ -669,7 +687,11 @@ body.hide-ui .dock, body.hide-ui .lang-switcher, body.hide-ui .top-toolbar { dis
   box-shadow: var(--shadow-1);
   font-weight: 500;
 }
-@media (max-width: 720px) { .vault-switcher { right: 100px; } }
+@media (max-width: 720px) {
+  /* v2.1.3 — collapse vault-switcher to icon-only on mobile */
+  .vault-switcher { right: 60px; padding: 6px 8px; gap: 0; }
+  .vault-switcher .vault-name { display: none; }
+}
 .vault-switcher .vault-ico { font-size: 14px; }
 
 .vault-menu {
@@ -699,3 +721,12 @@ body.hide-ui .dock, body.hide-ui .lang-switcher, body.hide-ui .top-toolbar { dis
 }
 .vault-opt:hover { background: var(--bg-sunken); }
 .vault-opt.active { background: rgba(86,196,230,0.15); color: #56c4e6; }
+
+/* ============================================================
+ * v2.1.3 — mobile responsiveness for todo rows
+ * ============================================================ */
+@media (max-width: 720px) {
+  .todo-row { flex-wrap: wrap; }
+  .todo-row > div[style*="flex:1"] { width: 100%; }
+  .todo-chips { margin-top: 4px; }
+}

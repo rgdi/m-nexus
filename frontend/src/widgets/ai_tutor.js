@@ -8,6 +8,8 @@
  * ============================================================ */
 
 const STYLE = `
+body.route-ai .ai-tutor-fab,
+body.ai-chat-open .ai-tutor-fab { display: none; }
 .ai-tutor {
   position: fixed;
   bottom: 24px;
@@ -183,6 +185,7 @@ export function openAITutor() {
   if (document.querySelector(".ai-tutor")) return;
   const root = document.createElement("div");
   root.className = "ai-tutor";
+  document.body.classList.add("ai-chat-open");
   root.innerHTML = `
     <div class="head">
       <span class="ico">🤖</span>
@@ -258,7 +261,10 @@ export function openAITutor() {
   root.querySelectorAll(".quick-actions button").forEach((b) => {
     b.addEventListener("click", () => quickAct(b.dataset.act));
   });
-  root.querySelector('[data-act="close"]').addEventListener("click", () => root.remove());
+  root.querySelector('[data-act="close"]').addEventListener("click", () => {
+    root.remove();
+    document.body.classList.remove("ai-chat-open");
+  });
 }
 
 /**

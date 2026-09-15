@@ -70,6 +70,8 @@ async function render() {
   app.dataset.route = route;
   // v1.4.0: clase de pantalla para fondos diferenciados
   app.className = `app screen-${route}`;
+  // v2.1.3: also reflect route on body so fixed-position UI (FAB) can react
+  document.body.className = `route-${route}`;
   setActiveDock(route);
   app.innerHTML = `<div class="screen"><div class="empty">${i18n.t("common.loading")}</div></div>`;
   try {
@@ -207,7 +209,7 @@ function setupCmdTrigger() {
   const btn = document.createElement("button");
   btn.id = "cmd-trigger";
   btn.className = "cmd-trigger";
-  btn.innerHTML = `<span>🔍</span><span>Search…</span><kbd>⌘K</kbd>`;
+  btn.innerHTML = `<span>🔍</span><span class="cmd-text">Search…</span><kbd>⌘K</kbd>`;
   btn.addEventListener("click", () => openCommandPalette());
   document.body.appendChild(btn);
 }
