@@ -23,6 +23,39 @@ Combina:
 
 ## Quick start
 
+### Install on a fresh server (one line)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/rgdi/m-nexus/main/install/install.sh | bash
+```
+
+This single command:
+1. Detects OS (Linux/macOS) and package manager (apt/dnf/yum/apk/brew)
+2. Installs Node.js 22 if missing
+3. Downloads the latest release (backend ZIP + webview bundle, ~2 MB)
+4. Initializes the data store
+5. Installs a systemd service (if available) or runs in background
+6. Verifies the backend is healthy at `http://localhost:4100/health`
+7. Opens the **first-run setup wizard** in your browser (5 slides: pick vault, first subject, notebook tips, FSRS intro)
+
+Options:
+```bash
+curl -fsSL ...install.sh | bash -s -- --port=4100 --data=/var/lib/mnexus
+curl -fsSL ...install.sh | bash -s -- --update         # upgrade existing install
+curl -fsSL ...install.sh | bash -s -- --no-systemd    # run without systemd
+```
+
+After install:
+```bash
+mnexus status    # check backend
+mnexus logs      # tail backend.log
+mnexus restart   # restart service
+mnexus update    # re-run installer to upgrade
+mnexus uninstall # full removal
+```
+
+### Develop locally
+
 ```bash
 # Backend
 cd backend
@@ -31,15 +64,23 @@ npm run dev          # http://localhost:4100
 npm test             # 796 tests (vitest)
 
 # Frontend (vanilla JS, sin build step)
-cd frontend/public
+cd frontend
 python3 -m http.server 8080
 # Open http://localhost:8080
 
-# Webview bundle (single-file, 687 KB)
+# Webview bundle (single-file, 753 KB)
 bash scripts/build_webview.sh /tmp/mnexus-bundle
 ```
 
-Si el backend no responde, el frontend funciona **offline** con `localStorage` y datos demo.
+On first open, the **setup wizard** walks you through 6 slides:
+1. Welcome (value prop + hero)
+2. Pick your vault (default / school / personal / work)
+3. Add your first subject
+4. Notebook tips (`{{c1::}}`, `[[]]`, `@book/ref`)
+5. Flashcards with FSRS (4 study modes)
+6. Done — open dashboard
+
+Re-run anytime via the hamburger menu → "Re-run setup wizard".
 
 ---
 

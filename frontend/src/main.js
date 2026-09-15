@@ -12,6 +12,7 @@ import { device, startDeviceWatch } from "./services/device.js";
 import { i18n } from "./services/i18n.js";
 import { mountLangSwitcher } from "./widgets/lang_switcher.js";
 import { showSplash } from "./widgets/splash.js";
+import { openSetupWizard, isSetupCompleted, resetSetup } from "./widgets/setup_wizard.js";
 import { mountCommandPalette, openCommandPalette } from "./widgets/command_palette.js";
 import { mountVaultSwitcher } from "./services/vault.js";
 import { mountAITutor } from "./widgets/ai_tutor.js";
@@ -106,6 +107,11 @@ async function bootstrap() {
   watchSystemTheme();
   // v1.4.0: splash screen con logo Education Service
   showSplash();
+  // v2.1.5: first-run setup wizard (slideshow) — only if not completed yet
+  // Run after splash to avoid double-rendering animation overhead
+  setTimeout(() => {
+    if (!isSetupCompleted()) openSetupWizard();
+  }, 800);
   // v1.2.0: arrancar watcher de dispositivo (DPR, orientation, theme, etc).
   startDeviceWatch();
   // v1.3.0: montar selector de idioma
@@ -236,11 +242,22 @@ function openDrawer() {
           <span>${i18n.t(r.i18n)}</span>
         </a>
       `).join("")}
+      <div style="margin-top: var(--s-4); padding-top: var(--s-3); border-top: 1px solid var(--border)">
+        <button id="rerun-setup" style="background:none;border:none;text-align:left;padding:10px 12px;width:100%;cursor:pointer;font-size:14px;color:var(--fg-muted);border-radius:8px">
+          🎬 Re-run setup wizard
+        </button>
+      </div>
     </div>
   `;
   document.body.appendChild(drawer);
   drawer.addEventListener("click", (e) => {
     if (e.target.closest("a")) drawer.remove();
+    if (e.target.closest("#rerun-setup")) {
+      drawer.remove();
+      resetSetup();
+      openSetupWizard({ force: true });
+      return;
+    }
     if (!e.target.closest(".panel")) drawer.remove();
   });
 }
