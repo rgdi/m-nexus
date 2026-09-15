@@ -136,7 +136,7 @@ const STYLE = `
 .exam-runner .summary .lbl { color: var(--fg-muted); margin-bottom: var(--s-4); }
 `;
 
-import { buildExam, recordAnswer, loadHistory, EXAM_MODES } from "../services/exams.js";
+import { buildSession, recordAnswer, inspectSyllabus, syllabusProgress } from "../services/exams.js";
 import { initCard, review } from "../services/fsrs.js";
 
 let styleMounted = false;
@@ -155,18 +155,30 @@ export async function openExamWizard(allCards, allOcc = []) {
   // Build scope options
   const subjects = [...new Set(allCards.map((c) => c.subject).filter(Boolean))];
   const notes = [...new Set(allCards.map((c) => c.sourceNoteId).filter(Boolean))];
+  const syllabus = inspectSyllabus(allCards, allOcc);
+  const progress = syllabusProgress(allCards, allOcc);
 
   const scrim = document.createElement("div");
   scrim.className = "exam-wizard";
   scrim.innerHTML = `
     <div class="panel">
-      <h2>📋 Generate Exam</h2>
-      <p class="muted small">Pick a scope and a mode. University mode ensures full coverage of all topics before repeating.</p>
+      <h2>📚 Study Session</h2>
+      <p class="muted small">Pick a mode. <b>Study</b> = cover every topic before the exam. <b>Exam</b> = balanced quiz (need 100% coverage first).</p>
+      <div class="syllabus-bar" style="margin-bottom: var(--s-4)">
+        <div class="muted small">Syllabus coverage: <b>${Math.round(progress * 100)}%</b> across <b>${syllabus.length}</b> topics</div>
+        <div style="height:6px;background:var(--bg-sunken);border-radius:3px;margin-top:6px;overflow:hidden">
+          <div style="height:100%;width:${Math.round(progress * 100)}%;background:linear-gradient(90deg,#5b8def,#10b981)"></div>
+        </div>
+      </div>
       <h3>1. Choose mode</h3>
       <div class="scope-grid">
-        <div class="opt selected" data-mode="university">
+        <div class="opt selected" data-mode="study">
           <div class="ico">🎓</div>
-          <div><b>University</b><div class="muted tiny">Full syllabus coverage · prioritize weak</div></div>
+          <div><b>Study</b><div class="muted tiny">Walk every topic until 100% covered</div></div>
+        </div>
+        <div class="opt" data-mode="exam">
+          <div class="ico">📋</div>
+          <div><b>Exam</b><div class="muted tiny">Balanced quiz once you've covered all</div></div>
         </div>
         <div class="opt" data-mode="review">
           <div class="ico">📊</div>
@@ -195,13 +207,13 @@ export async function openExamWizard(allCards, allOcc = []) {
       <div id="scope-list-wrap"></div>
       <div class="actions">
         <button data-act="cancel">Cancel</button>
-        <button class="primary" data-act="start">Start exam →</button>
+        <button class="primary" data-act="start">Start session →</button>
       </div>
     </div>
   `;
   document.body.appendChild(scrim);
 
-  let selected = { kind: "all", value: null, mode: "university" };
+  let selected = { kind: "all", value: null, mode: "study" };
 
   function renderList() {
     const wrap = scrim.querySelector("#scope-list-wrap");
@@ -265,13 +277,13 @@ export async function openExamWizard(allCards, allOcc = []) {
       alert("Please pick a scope");
       return;
     }
-    const exam = await buildExam(selected, allCards, allOcc, { mode: selected.mode });
-    if (exam.items.length === 0) {
+    const session = await buildSession(selected, allCards, allOcc, { mode: selected.mode });
+    if (session.items.length === 0) {
       alert("No cards in this scope. Add some flashcards first.");
       return;
     }
     scrim.remove();
-    openExamSession(exam);
+    openExamSession(session);
   });
 }
 
@@ -286,6 +298,7 @@ function openExamSession(exam) {
       <div class="exam-runner">
         <div class="progress">
           <span><b id="ex-pos">1</b>/${exam.items.length}</span>
+          <span class="muted small" id="ex-topic" style="margin-left:8px"></span>
           <div class="bar"><div class="fill" id="ex-fill" style="width:0%"></div></div>
           <button class="btn icon" data-act="exit" title="Exit">✕</button>
         </div>
@@ -312,6 +325,7 @@ function openExamSession(exam) {
   const fill = scrim.querySelector("#ex-fill");
   const pos = scrim.querySelector("#ex-pos");
   const rating = scrim.querySelector("#ex-rating");
+  const topicLabel = scrim.querySelector("#ex-topic");
 
   function show() {
     if (i >= exam.items.length) return finish();
@@ -323,6 +337,7 @@ function openExamSession(exam) {
     rating.style.display = "none";
     pos.textContent = i + 1;
     fill.style.width = `${(i / exam.items.length) * 100}%`;
+    if (topicLabel && it.topic) topicLabel.textContent = `· ${it.topic}`;
   }
 
   q.addEventListener("click", () => {
@@ -351,10 +366,16 @@ function openExamSession(exam) {
   scrim.querySelector('[data-act="exit"]').addEventListener("click", () => scrim.remove());
 
   function finish() {
-    const modeLabel = exam.mode === "university" ? "🎓 University" : exam.mode === "cram" ? "⚡ Cram" : "📊 Review";
+    const labels = {
+      study: "🎓 Study",
+      exam: "📋 Exam",
+      review: "📊 Review",
+      cram: "⚡ Cram",
+    };
+    const modeLabel = labels[exam.mode] || "📚 Session";
     const coverageInfo = exam.totalTopics
-      ? `<p class="muted">Coverage: <b>${exam.coveredTopics}/${exam.totalTopics} topics</b> (${Math.round(exam.coverage * 100)}%) — cards you got wrong will appear more often.</p>`
-      : `<p class="muted">Cards you got wrong will appear more often next time. Recently seen cards are excluded.</p>`;
+      ? `<p class="muted">Topics covered: <b>${exam.coveredTopics}/${exam.totalTopics}</b> — come back to finish the syllabus before exam day.</p>`
+      : `<p class="muted">Cards you got wrong will appear more often next time.</p>`;
     scrim.querySelector(".exam-runner").innerHTML = `
       <div class="summary">
         <div class="score">${correct}/${exam.items.length}</div>

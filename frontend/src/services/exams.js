@@ -1,29 +1,62 @@
 /* ============================================================
- * exams.js — Exam generation con smart scheduling + coverage.
- * v2.1.0 — UNIVERSITY mode: ensure 100% syllabus coverage before
- *          repeating. Greedy set-cover picks cards that maximize
- *          uncovered topics first.
+ * exams.js — Study sessions con cobertura + scheduling.
+ * v2.1.0 — STUDY mode: study ALL topics until you've reviewed
+ *          each at least once. Returns a roadmap of topics
+ *          sorted weakest-first, marking which you've covered.
+ * v2.1.1 — EXAM mode: focused quiz across the syllabus.
  * ============================================================ */
 
 const HISTORY_KEY = "mnexus.exam.history.v1";
+const COVERAGE_KEY = "mnexus.exam.coverage.v1";
 const SESSION_SIZE = 20;
 
-export const EXAM_MODES = {
-  REVIEW: "review",          // smart scheduling + anti-repeat
-  UNIVERSITY: "university",  // ensure coverage + prioritize weak concepts
-  CRAM: "cram",              // rapid-fire random from scope
+export const STUDY_MODES = {
+  STUDY: "study",       // recorrer TODOS los topics, weakest first, hasta 100%
+  REVIEW: "review",     // smart scheduling + anti-repeat (dificiles primero)
+  EXAM: "exam",         // quiz balanceado (mezcla), igual cobertura
+  CRAM: "cram",         // rapid-fire random
 };
 
 /**
- * buildExam — genera una sesión de examen para un scope y modo.
- * @param scope { kind: "subject"|"folder"|"note", value: string }
- * @param cards  todas las cards del vault (filtradas por scope)
- * @param occlusionCards cards de image occlusion aprobadas (también por scope)
- * @param opts.mode "review" | "university" | "cram"
- * @param opts.sizeOverride N | null
+ * Inspect the syllabus: returns metadata per topic.
+ * Topic = subject (or tag fallback). Each topic has a cardCount +
+ * a coverage% = (cards seen at least once in last 30 days) / total.
  */
-export async function buildExam(scope, cards, occlusionCards = [], opts = {}) {
-  const mode = opts.mode || EXAM_MODES.REVIEW;
+export function inspectSyllabus(cards, occlusionCards = []) {
+  const all = [...cards, ...occlusionCards];
+  const topics = new Map();
+  for (const c of all) {
+    const t = (c.subject || c.tags?.[0] || "general").toLowerCase();
+    if (!topics.has(t)) topics.set(t, { name: t, total: 0, seen: 0, cards: [] });
+    const tt = topics.get(t);
+    tt.total += 1;
+    tt.cards.push(c);
+  }
+  // coverage: count cards seen in last 30 days per topic
+  const history = loadHistory();
+  const cutoff = Date.now() - 30 * 86400 * 1000;
+  for (const tt of topics.values()) {
+    for (const c of tt.cards) {
+      const last = (history[c.id] || []).slice(-1)[0];
+      if (last && last.at >= cutoff) tt.seen += 1;
+    }
+  }
+  return [...topics.values()].map((tt) => ({
+    name: tt.name,
+    total: tt.total,
+    seen: tt.seen,
+    coverage: tt.total === 0 ? 1 : tt.seen / tt.total,
+    cardIds: tt.cards.map((c) => c.id),
+  }));
+}
+
+/**
+ * buildSession — devuelve la siguiente tanda de cards para un
+ * modo y scope. Cada modo prioriza diferente.
+ * @returns { items, mode, syllabus?: SyllabusInfo, target: string, totalTopics, coveredTopics }
+ */
+export async function buildSession(scope, cards, occlusionCards = [], opts = {}) {
+  const mode = opts.mode || STUDY_MODES.REVIEW;
   const size = opts.sizeOverride || SESSION_SIZE;
   const filtered = filterByScope(cards, scope);
   const filteredOcc = filterByScope(occlusionCards, scope);
@@ -37,36 +70,97 @@ export async function buildExam(scope, cards, occlusionCards = [], opts = {}) {
     })),
   ];
 
-  if (mode === EXAM_MODES.CRAM) {
-    const shuffled = shuffle([...allItems]);
+  if (mode === STUDY_MODES.CRAM) {
     return {
-      items: shuffled.slice(0, size),
+      items: shuffle([...allItems]).slice(0, size),
       mode,
-      totalEstimatedMin: Math.ceil(size * 0.4),
-      skipped: 0,
-      coverage: 1,
+      totalTopics: new Set(allItems.map((it) => it.topic)).size,
+      coveredTopics: new Set(allItems.map((it) => it.topic)).size,
+      target: "cram",
     };
   }
 
-  // Anti-repeat (last 3 sessions per card)
-  const history = loadHistory();
-  const recentIds = new Set();
-  for (const cardId in history) {
-    const last3 = (history[cardId] || []).slice(-3);
-    if (last3.length > 0) recentIds.add(cardId);
+  if (mode === STUDY_MODES.STUDY) {
+    // v2.1.0 study: muestra topics empezando por LOS NO CUBIERTOS
+    // y avanza solo cuando estén dominados. Si un topic tiene
+    // coverage<1, sigue poniéndolo hasta llegar a 100%.
+    return buildStudySession(allItems, size);
   }
-  const candidates = allItems.filter((it) => !recentIds.has(it.card.id));
 
-  if (mode === EXAM_MODES.UNIVERSITY) {
-    return pickByCoverage(candidates, size, mode);
+  if (mode === STUDY_MODES.EXAM) {
+    // Equivalente a STUDY pero entrega todos los topics a la vez
+    // (cobertura debe estar 100% antes de iniciar).
+    return buildStudySession(allItems, size, { allowPartial: true });
   }
-  return pickByDifficulty(candidates, size, mode);
+
+  return pickByDifficulty(allItems, size);
 }
 
 /**
- * pickByDifficulty — greedy by FSRS difficulty/lapses/overdue.
+ * buildStudySession — STUDENT-FIRST. Iteración:
+ * 1. compute per-topic coverage from history
+ * 2. queue = uncovered topics (coverage<1) sorted weakest-first
+ * 3. fill with one card per uncovered topic (greedy)
+ * 4. if items < size, add difficult repeats as filler
+ * 5. return syllabus info so the UI can show progress + ETA
  */
-function pickByDifficulty(candidates, size, mode) {
+function buildStudySession(allItems, size, opts = {}) {
+  const coverageByTopic = computeCoverage(allItems);
+  const allTopics = [...new Set(allItems.map((it) => it.topic))];
+  if (allTopics.length === 0) {
+    return { items: [], mode: STUDY_MODES.STUDY, totalTopics: 0, coveredTopics: 0, target: "empty" };
+  }
+
+  const topics = allTopics.map((t) => ({
+    name: t,
+    coverage: coverageByTopic[t] || 0,
+    cards: allItems.filter((it) => it.topic === t),
+  }));
+  // Sort: 100% covered at the END (después), 0% covered at front
+  topics.sort((a, b) => a.coverage - b.coverage);
+
+  const picked = [];
+  const used = new Set();
+  let round = 0;
+  // Greedy: each topic must contribute at least one card while covered<1.
+  while (picked.length < size) {
+    let advanced = false;
+    for (const t of topics) {
+      if (picked.length >= size) break;
+      if (!opts.allowPartial && t.coverage >= 1) continue;
+      const unseen = t.cards.find((c) => !used.has(c.card.id));
+      if (!unseen) continue;
+      picked.push(unseen);
+      used.add(unseen.card.id);
+      advanced = true;
+    }
+    if (!advanced) break;
+    round += 1;
+    // Safety: don't loop forever
+    if (round > size * 2) break;
+  }
+  // filler: difficult cards (already covered) to push for repetition
+  if (picked.length < size) {
+    const remaining = allItems.filter((it) => !used.has(it.card.id));
+    const filler = pickByDifficulty(remaining, size - picked.length);
+    for (const f of filler.items) {
+      picked.push(f);
+      if (picked.length >= size) break;
+    }
+  }
+
+  const coveredTopics = topics.filter((t) => t.coverage >= 1).length;
+  return {
+    items: picked,
+    mode: STUDY_MODES.STUDY,
+    syllabus: topics,
+    totalTopics: topics.length,
+    coveredTopics,
+    target: opts.allowPartial ? "exam" : "study",
+  };
+}
+
+function pickByDifficulty(candidates, size) {
   const scored = candidates.map((it) => {
     const fs = JSON.parse(localStorage.getItem("mnexus.fsrs.cards.v1") || "{}")[it.card.id] || {};
     const diffWeight = (fs.difficulty || 5) / 10;
@@ -76,73 +170,31 @@ function pickByDifficulty(candidates, size, mode) {
     return { ...it, score };
   });
   scored.sort((a, b) => b.score - a.score);
-  const picked = scored.slice(0, size);
-  return {
-    items: picked,
-    mode,
-    totalEstimatedMin: Math.ceil(picked.length * 0.5),
-    skipped: candidates.length - picked.length,
-    coverage: 1,
-  };
+  return { items: scored.slice(0, size) };
 }
 
-/**
- * pickByCoverage — greedy set-cover. Each card covers 1 topic;
- * a topic is "covered" once at least 1 card from it is in the
- * session. We keep picking cards from uncovered topics until
- * either (a) all topics are covered, or (b) we hit `size`.
- * After coverage is full, we add difficult cards as filler.
- */
-function pickByCoverage(candidates, size, mode) {
-  const topics = new Map();
-  for (const it of candidates) {
-    const t = it.topic || "general";
-    if (!topics.has(t)) topics.set(t, []);
-    topics.get(t).push(it);
-  }
-  const allTopics = [...topics.keys()];
-  const picked = [];
-  const used = new Set();
-  const covered = new Set();
-  while (covered.size < allTopics.length && picked.length < size) {
-    let bestCard = null;
-    let bestTopic = null;
-    let bestScore = -Infinity;
-    for (const [topic, list] of topics) {
-      if (covered.has(topic)) continue;
-      for (const it of list) {
-        if (used.has(it.card.id)) continue;
-        const fs = JSON.parse(localStorage.getItem("mnexus.fsrs.cards.v1") || "{}")[it.card.id] || {};
-        const score = (fs.difficulty || 5) / 10 * 0.5 + cdfOverdue(fs) * 0.3 + ((fs.lapses || 0) > 0 ? 0.2 : 0);
-        if (score > bestScore) {
-          bestScore = score;
-          bestCard = it;
-          bestTopic = topic;
-        }
-      }
+/** coverage per topic = unique cards seen in last 30 days / total */
+function computeCoverage(items) {
+  const history = loadHistory();
+  const cutoff = Date.now() - 30 * 86400 * 1000;
+  const byTopic = new Map();
+  const seenIdsByTopic = new Map();
+  for (const it of items) {
+    if (!byTopic.has(it.topic)) {
+      byTopic.set(it.topic, 0);
+      seenIdsByTopic.set(it.topic, new Set());
     }
-    if (!bestCard) break;
-    picked.push(bestCard);
-    used.add(bestCard.card.id);
-    covered.add(bestTopic);
+    byTopic.set(it.topic, byTopic.get(it.topic) + 1);
+    const last = (history[it.card.id] || []).slice(-1)[0];
+    if (last && last.at >= cutoff) {
+      seenIdsByTopic.get(it.topic).add(it.card.id);
+    }
   }
-  // Filler: difficult cards (repeats allowed)
-  const remaining = candidates.filter((it) => !used.has(it.card.id));
-  const filler = pickByDifficulty(remaining, size - picked.length, mode);
-  for (const f of filler.items) {
-    picked.push(f);
-    if (picked.length >= size) break;
+  const out = {};
+  for (const [t, total] of byTopic) {
+    out[t] = total === 0 ? 0 : seenIdsByTopic.get(t).size / total;
   }
-  const coverage = allTopics.length === 0 ? 1 : covered.size / allTopics.length;
-  return {
-    items: picked,
-    mode,
-    totalEstimatedMin: Math.ceil(picked.length * 0.5),
-    skipped: candidates.length - picked.length,
-    coverage,
-    totalTopics: allTopics.length,
-    coveredTopics: covered.size,
-  };
+  return out;
 }
 
 function topicOf(c) {
@@ -188,12 +240,16 @@ function saveHistory(h) {
   try { localStorage.setItem(HISTORY_KEY, JSON.stringify(h)); } catch {}
 }
 
-export function getRecentSeenIds(n = 3) {
-  const history = loadHistory();
-  const recent = new Set();
-  for (const cardId in history) {
-    const recentEntries = (history[cardId] || []).slice(-n);
-    if (recentEntries.length > 0) recent.add(cardId);
-  }
-  return recent;
+/** progress snapshot for the syllabus — 0..1 across ALL topics. */
+export function syllabusProgress(cards, occlusionCards = []) {
+  const filtered = filterByScope(cards, { kind: "all" });
+  const allItems = [
+    ...filtered.map((c) => ({ kind: "flashcard", card: c, topic: topicOf(c) })),
+    ...occlusionCards.map((o) => ({ kind: "cloze", card: o, topic: topicOf(o) })),
+  ];
+  const cov = computeCoverage(allItems);
+  const topics = Object.keys(cov);
+  if (topics.length === 0) return 1;
+  const sum = topics.reduce((s, t) => s + cov[t], 0);
+  return sum / topics.length;
 }

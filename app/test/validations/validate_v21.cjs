@@ -22,24 +22,27 @@ async function run() {
     removeItem(k) { delete this._d[k]; },
   };
 
-  // --- v2.1.0 university exam ---
-  console.log("\n=== v2.1.0 — University exam (coverage-based) ===");
+  // --- v2.1.0 study session (sweep ALL topics) ---
+  console.log("\n=== v2.1.0 — Study session (sweep syllabus) ===");
   const examsSrc = fs.readFileSync(path.join(ROOT, "services/exams.js"), "utf8");
-  check("buildExam accepts opts.mode", /opts\.mode\s*\|\|/.test(examsSrc));
-  check("EXAM_MODES exported", /export const EXAM_MODES/.test(examsSrc));
-  check("UNIVERSITY mode present", /UNIVERSITY:\s*"university"/.test(examsSrc));
+  check("buildSession accepts opts.mode", /opts\.mode\s*\|\|/.test(examsSrc));
+  check("STUDY_MODES exported", /export const STUDY_MODES/.test(examsSrc));
+  check("STUDY mode present", /STUDY:\s*"study"/.test(examsSrc));
+  check("EXAM mode present", /EXAM:\s*"exam"/.test(examsSrc));
+  check("REVIEW mode present", /REVIEW:\s*"review"/.test(examsSrc));
   check("CRAM mode present", /CRAM:\s*"cram"/.test(examsSrc));
-  check("pickByCoverage function", /function pickByCoverage/.test(examsSrc));
-  check("set-cover greedy loop", /while \(covered\.size < allTopics\.length/.test(examsSrc));
-  check("coverage reported", /coverage:/.test(examsSrc));
-  check("totalTopics reported", /totalTopics:/.test(examsSrc));
+  check("inspectSyllabus function", /export function inspectSyllabus/.test(examsSrc));
+  check("syllabusProgress function", /export function syllabusProgress/.test(examsSrc));
+  check("coverage by topic", /function computeCoverage/.test(examsSrc));
+  check("weakest-first sort", /topics\.sort\(\(a, b\) => a\.coverage/.test(examsSrc));
 
   const runnerSrc = fs.readFileSync(path.join(ROOT, "widgets/exam_runner.js"), "utf8");
-  check("Wizard shows 3 modes", /data-mode="university"[\s\S]*data-mode="review"[\s\S]*data-mode="cram"/.test(runnerSrc));
-  check("Coverage shown in summary", /coverage/.test(runnerSrc));
-  check("Mode label in summary", /modeLabel/.test(runnerSrc));
+  check("Wizard shows 4 modes", runnerSrc.includes('data-mode="study"') && runnerSrc.includes('data-mode="exam"') && runnerSrc.includes('data-mode="review"') && runnerSrc.includes('data-mode="cram"'));
+  check("Syllabus bar shown", /syllabus-bar/.test(runnerSrc));
+  check("Coverage progress in wizard", /syllabusProgress/.test(runnerSrc));
+  check("Topic label in session", /ex-topic/.test(runnerSrc));
 
-  // Functional test with custom localStorage
+  // Functional tests
   global.localStorage = ls;
   const exams = await import(`file://${path.join(ROOT, "services/exams.js")}`);
   const cards = [
@@ -49,15 +52,41 @@ async function run() {
     { id: "c4", front: "d", back: "4", subject: "physics", tags: ["forces"] },
     { id: "c5", front: "e", back: "5", subject: "physics", tags: ["energy"] },
   ];
-  const u = await exams.buildExam({ kind: "all" }, cards, [], { mode: "university" });
-  check("UNI: 100% coverage", u.coverage === 1);
-  check("UNI: both subjects covered", u.coveredTopics === 2 && u.totalTopics === 2);
-  const u2 = await exams.buildExam({ kind: "subject", value: "anatomy" }, cards, [], { mode: "university" });
-  check("UNI per-subject: 1 topic", u2.coveredTopics === 1 && u2.totalTopics === 1);
-  const r = await exams.buildExam({ kind: "all" }, cards, [], { mode: "review" });
-  check("REVIEW: returns items", r.items.length > 0 && r.mode === "review");
-  const c = await exams.buildExam({ kind: "all" }, cards, [], { mode: "cram" });
-  check("CRAM: returns items", c.items.length > 0 && c.mode === "cram");
+  // STUDY: every topic contributes at least 1 unseen card
+  const s = await exams.buildSession({ kind: "all" }, cards, [], { mode: "study" });
+  check("STUDY: returns items", s.items.length > 0 && s.mode === "study");
+  check("STUDY: includes all topics", new Set(s.items.map(i => i.topic)).size === 2);
+  check("STUDY: totalTopics=2", s.totalTopics === 2);
+
+  // After history (all seen), coverage=1 → no items left to cover
+  for (const c of cards) exams.recordAnswer(c.id, true);
+  const s2 = await exams.buildSession({ kind: "all" }, cards, [], { mode: "study", sizeOverride: 3 });
+  check("STUDY: filler drawn when covered", s2.items.length > 0);
+  // reset history
+  for (const c of cards) delete exams.loadHistory()[c.id];
+  localStorage.removeItem("mnexus.exam.history.v1");
+
+  // EXAM: balanced, all topics
+  const e1 = await exams.buildSession({ kind: "all" }, cards, [], { mode: "exam" });
+  check("EXAM: returns items", e1.items.length > 0 && e1.mode === "study");
+
+  // REVIEW
+  const r1 = await exams.buildSession({ kind: "all" }, cards, [], { mode: "review" });
+  check("REVIEW: returns items", r1.items.length > 0);
+
+  // CRAM
+  const c1 = await exams.buildSession({ kind: "all" }, cards, [], { mode: "cram" });
+  check("CRAM: returns items", c1.items.length > 0 && c1.mode === "cram");
+
+  // inspectSyllabus
+  const syl = exams.inspectSyllabus(cards, []);
+  check("inspectSyllabus: 2 topics", syl.length === 2);
+  check("inspectSyllabus: total per topic", syl.every(t => t.total > 0));
+  check("inspectSyllabus: coverage 0..1", syl.every(t => t.coverage >= 0 && t.coverage <= 1));
+
+  // syllabusProgress
+  const prog = exams.syllabusProgress(cards, []);
+  check("syllabusProgress: 0..1", prog >= 0 && prog <= 1);
 
   // --- v2.1.1 theme toggle ---
   console.log("\n=== v2.1.1 — Theme toggle repositioned ===");
@@ -80,8 +109,8 @@ async function run() {
   const crdt = await import(`file://${path.join(ROOT, "services/crdt.js")}`);
   const cid = "dev-A";
   crdt.lwwWrite("note:1", { title: "hello" }, cid);
-  const r1 = crdt.lwwRead("note:1");
-  check("CRDT LWW write/read", r1.value.title === "hello");
+  const crdtRead = crdt.lwwRead("note:1");
+  check("CRDT LWW write/read", crdtRead.value.title === "hello");
   const remoteNewer = { value: { title: "world" }, ts: Date.now() + 10000, v: { "dev-B": 5 } };
   crdt.lwwMerge("note:1", remoteNewer, cid);
   check("CRDT merge newer wins", crdt.lwwRead("note:1").value.title === "world");
