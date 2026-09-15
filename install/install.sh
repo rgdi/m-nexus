@@ -154,6 +154,25 @@ download_release() {
     || err "could not download backend ZIP"
   curl -fsSL "$base/m-nexus-webview.zip" -o "$tmp/webview.zip" \
     || err "could not download webview bundle"
+  # v2.1.5+ W3: SHA256SUMS verification (supply-chain hardening)
+  # Releases publish SHA256SUMS.txt with one <sha>  per line.
+  # If the file is missing, we warn but don't fail (back-compat with older releases).
+  if curl -fsSL "$base/SHA256SUMS.txt" -o "$tmp/SHA256SUMS.txt" 2>/dev/null; then
+    log "Verifying SHA256SUMS..."
+    if command -v sha256sum >/dev/null; then
+      (cd "$tmp" && sha256sum -c --strict SHA256SUMS.txt) \
+        || err "SHA256SUMS verification failed — refusing to install"
+      ok "SHA256SUMS verified"
+    elif command -v shasum >/dev/null; then
+      (cd "$tmp" && shasum -a 256 -c SHA256SUMS.txt) \
+        || err "SHA256SUMS verification failed — refusing to install"
+      ok "SHA256SUMS verified"
+    else
+      warn "no sha256sum/shasum available — skipping verification"
+    fi
+  else
+    warn "no SHA256SUMS.txt in release — skipping verification (older release?)"
+  fi
   ok "Downloaded $tag ($(du -h "$tmp/backend.zip" | cut -f1) + $(du -h "$tmp/webview.zip" | cut -f1))"
   echo "$tmp"
 }

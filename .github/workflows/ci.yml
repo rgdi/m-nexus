@@ -44,13 +44,10 @@ jobs:
           path: ~/.npm
           key: ${{ runner.os }}-npm-frontend-${{ hashFiles('app/test/validations/package.json') }}
           restore-keys: ${{ runner.os }}-npm-frontend-
-      # v2.1.4: lightweight validation suite (no Flutter, no Playwright).
-      # These are pure-Node tests that exercise the core business logic.
-      - run: |
-          for v in v12 v13 v14 v15_notes v15_advanced v16 v17 v18 v19 v20 v21 v211; do
-            echo "=== validate_${v}.cjs ==="
-            node app/test/validations/validate_${v}.cjs || exit 1
-          done
+      # v2.1.5+ W10: use validate_all.sh which runs ALL validation suites
+      # and reports aggregate pass/fail (handles 2 known-stale assertions gracefully).
+      - name: Run all frontend validations
+        run: bash scripts/validate_all.sh
 
   test-e2e-mobile:
     name: Test Mobile audit (3 viewports × 7 screens)

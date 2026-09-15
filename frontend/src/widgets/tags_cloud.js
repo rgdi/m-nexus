@@ -2,7 +2,10 @@
  * tags_cloud.js — extrae hashtags (#tag) del body de la nota y
  * los muestra como pills clickables. Click = filtro por tag.
  * v1.9.1 — auto-tagging desde el body.
+ * v2.1.5+ W7 — usa escapeHtml/escapeAttr centralizados.
  * ============================================================ */
+
+import { escapeHtml, escapeAttr } from "../services/safe.js";
 
 const TAG_RE = /(?:^|\s)#([\p{L}0-9_\-]+)/gu;
 const TAG_KEY = "mnexus.activeTag";
@@ -69,12 +72,7 @@ export async function renderTagsCloud(rootEl) {
   });
 }
 
-function escapeHtml(s) {
-  return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-function escapeAttr(s) {
-  return String(s ?? "").replace(/"/g, "&quot;");
-}
+// v2.1.5+ W7: escapeHtml/escapeAttr imported from services/safe.js (top of file)
 function escapeRe(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

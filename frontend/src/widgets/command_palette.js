@@ -3,7 +3,10 @@
  * v1.9.0 — busca en notas, flashcards, tasks, eventos, asignaturas.
  *
  * Atajo: Ctrl+K (Cmd+K en Mac). Botón en dock top-right.
+ * v2.1.5+ W7 — usa escapeHtml/escapeAttr centralizados.
  * ============================================================ */
+
+import { escapeHtml, escapeAttr } from "../services/safe.js";
 
 const STYLE = `
 .cmd-palette {
@@ -335,9 +338,4 @@ function navigateToItem(it) {
   }
 }
 
-function escapeHtml(s) {
-  return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-function escapeAttr(s) {
-  return String(s ?? "").replace(/"/g, "&quot;");
-}
+// v2.1.5+ W7: escapeHtml/escapeAttr imported from services/safe.js (top of file)

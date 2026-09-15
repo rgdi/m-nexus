@@ -4,7 +4,10 @@
  *
  * Modelo: cada nota tiene una lista de attachments (base64 o blob URL)
  * Persistencia: localStorage + sync con backend (base64 < 1MB).
+ * v2.1.5+ W7 — usa escapeHtml/escapeAttr centralizados.
  * ============================================================ */
+
+import { escapeHtml, escapeAttr } from "../services/safe.js";
 
 const STYLE = `
 .attachments-grid {
@@ -456,9 +459,5 @@ function saveOcc(att, noteId, occ) {
   saveAttachments(noteId, list);
 }
 
-function escapeHtml(s) {
-  return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-function escapeAttr(s) {
-  return String(s ?? "").replace(/"/g, "&quot;");
-}
+// v2.1.5+ W7: escapeHtml/escapeAttr imported from services/safe.js (top of file)
+
