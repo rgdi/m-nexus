@@ -49,5 +49,55 @@
     ],
     "createdAt": 1789424693377,
     "updatedAt": 1789424693377
+  },
+  {
+    "id": "note-47f1460c-e2bf-47a5-9f88-351d4b2c7f33",
+    "title": "Test",
+    "body": "Pregunta de prueba {{c1::Capital de Francia::París}}\n{{c1::2+2::4}}",
+    "subject": "math",
+    "tags": [
+      "algebra"
+    ],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "createdAt": 1789460472878,
+    "updatedAt": 1789460472878
+  },
+  {
+    "id": "note-96b45e6b-4859-450f-a45b-192a734e1a3a",
+    "title": "Algebra",
+    "body": "Suma: {{c1::2+2::4}}\nProducto: {{c1::3*5::15}}",
+    "subject": "math",
+    "tags": [
+      "algebra",
+      "basics"
+    ],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "createdAt": 1789460651203,
+    "updatedAt": 1789460651203
+  },
+  {
+    "id": "note-3b7220c3-3104-42c9-81c2-2261a4d1bce7",
+    "title": "X",
+    "body": "{{c1::A::B}}",
+    "subject": "bio",
+    "tags": [],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "createdAt": 1789460651226,
+    "updatedAt": 1789460651226
   }
 ]

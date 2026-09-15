@@ -93,6 +93,7 @@ async function renderNotebook(root, id) {
 
       <div class="row gap-2" style="margin-bottom: var(--s-3)">
         <button class="btn primary" id="overview-btn">${i18n.t("notes.intelligentOverview")}</button>
+        <button class="btn primary" id="extract-cards-btn">${i18n.t("notes.extractFlashcards")}</button>
         <button class="btn icon" id="search-btn" aria-label="${i18n.t("common.search")}">⌕</button>
       </div>
 
@@ -121,6 +122,8 @@ async function renderNotebook(root, id) {
           `).join("")}
           <button class="pencil trash" data-act="trash" title="Delete pencil">🗑</button>
         </div>
+
+        <button class="fab" id="new-card-btn" title="${i18n.t("notes.newFlashcard")}">🎴</button>
 
         <canvas id="canvas"></canvas>
       </div>
@@ -169,6 +172,24 @@ async function renderNotebook(root, id) {
   });
 
   root.querySelector("#overview-btn").addEventListener("click", () => openOverviewModal(note));
+
+  // v1.5.1: extraer flashcards inline ({{c1::front::back}})
+  root.querySelector("#extract-cards-btn").addEventListener("click", () => extractFlashcardsFromNote(id));
+
+  // v1.5.1: FAB abre panel de flashcards (locales primero, luego refresh backend)
+  root.querySelector("#new-card-btn")?.addEventListener("click", async () => {
+    // siempre abrir panel; si la nota tiene inline {{c1::...}}, intentar extraer
+    const re = /\{\{c1::([^}]+?)\}\}/g;
+    const hasInline = [...((note.body || "").matchAll(re))].length > 0;
+    let justCreated = { created: [], skipped: 0 };
+    if (hasInline) {
+      try {
+        const r = await fetch(`http://localhost:4100/api/v1/notes/${id}/extract-flashcards`, { method: "POST" });
+        if (r.ok) justCreated = await r.json();
+      } catch {}
+    }
+    await showFlashcardsPanel(id, justCreated);
+  });
 
   // v1.3.1: definition popup on long-press / double-tap (model feature)
   root._note = note;
@@ -264,6 +285,19 @@ function setupCanvas(root, noteId, pageIdx, strokes, pages) {
   const ctx = canvas.getContext("2d");
   const dpr = window.devicePixelRatio || 1;
   const placeholders = pages[pageIdx]?.placeholders || [];
+  const note = root._note || { body: "" };
+
+  // v1.5.0: capa de texto (debajo del canvas). Soporta [[wikilinks]],
+  // ==subrayado==, !!resaltado!!, ==flashcards== `{{c1::front::back}}`.
+  // Render con divs absolutos, NO contenido del canvas (puede haber
+  // dibujo encima).
+  let textLayer = wrap.querySelector(".text-layer");
+  if (!textLayer) {
+    textLayer = document.createElement("div");
+    textLayer.className = "text-layer";
+    wrap.insertBefore(textLayer, canvas);
+  }
+  renderTextLayer(textLayer, note.body || "");
 
   function fit() {
     const rect = wrap.getBoundingClientRect();
@@ -386,8 +420,196 @@ ${escapeHtml(body) || i18n.t("notes.overviewEmpty")}
   scrim.addEventListener("click", (e) => { if (e.target === scrim || e.target.dataset.act === "close") close(); });
 }
 
+/* ============================================================
+ * v1.5.1 — extracción de flashcards inline `{{c1::...::...}}`
+ * Llama al backend y refresca el panel con las tarjetas creadas.
+ * ============================================================ */
+async function extractFlashcardsFromNote(noteId) {
+  const r = await fetch(`http://localhost:4100/api/v1/notes/${noteId}/extract-flashcards`, { method: "POST" });
+  if (!r.ok) { alert(`Error: ${r.status}`); return; }
+  const data = await r.json();
+  showFlashcardsPanel(noteId, data);
+}
+
+/* ============================================================
+ * v1.5.1 — panel flotante con flashcards extraídas y editor manual
+ * ============================================================ */
+async function showFlashcardsPanel(noteId, justCreated) {
+  document.querySelectorAll(".fc-panel").forEach((p) => p.remove());
+  let cards = [];
+  try {
+    const r = await fetch(`http://localhost:4100/api/v1/flashcards/filter?noteId=${noteId}`);
+    if (r.ok) {
+      const all = await r.json();
+      cards = all.cards || [];
+    }
+  } catch {}
+  // fallback: extraer del body localmente para que el panel nunca esté vacío
+  // cuando la nota tiene inline cards pero el backend no está conectado
+  if (cards.length === 0) {
+    try {
+      const note = await dataSource.notes.get(noteId);
+      const re = /\{\{c1::([^}]+?)\}\}/g;
+      const matches = [...((note?.body || "").matchAll(re))];
+      cards = matches.map((m, i) => {
+        const inner = m[1];
+        const [front, back] = inner.split("::").map((s) => s.trim());
+        return {
+          id: `local-${noteId}-${i}`,
+          front: front || "card",
+          back: back || "",
+          subject: note.subject || "",
+          tags: note.tags || [],
+          sourceNoteId: noteId,
+          sourceExcerpt: inner.slice(0, 80),
+        };
+      });
+    } catch {}
+  }
+  const panel = document.createElement("div");
+  panel.className = "fc-panel scrim";
+  panel.innerHTML = `
+    <div class="sheet">
+      <div class="sheet-header">
+        <h3>${i18n.t("notes.flashcardsTitle")}</h3>
+        <button class="btn icon" data-act="close">✕</button>
+      </div>
+      <div class="muted small">${i18n.t("notes.flashcardsSubtitle", { created: justCreated?.created?.length ?? 0, skipped: justCreated?.skipped ?? 0, total: cards.length })}</div>
+      <div class="fc-grid">
+        ${cards.map((c) => `
+          <div class="fc-card" data-id="${c.id}">
+            <div class="fc-front">${escapeHtml(c.front)}</div>
+            <div class="fc-back">${escapeHtml(c.back)}</div>
+            <div class="fc-meta">${escapeHtml(c.subject || "—")} · ${(c.tags || []).map((t) => "#" + t).join(" ")}</div>
+            <button class="btn small" data-act="edit" data-id="${c.id}">${i18n.t("common.edit")}</button>
+            <button class="btn small danger" data-act="delete" data-id="${c.id}">${i18n.t("common.delete")}</button>
+          </div>
+        `).join("")}
+        ${cards.length === 0 ? `<div class="empty"><div class="em-title">${i18n.t("notes.noFlashcards")}</div><div>${i18n.t("notes.flashcardHint")}</div></div>` : ""}
+      </div>
+      <div class="row gap-2" style="margin-top: var(--s-5)">
+        <button class="btn primary" id="add-card">${i18n.t("notes.newFlashcard")}</button>
+        <button class="btn" data-act="close">${i18n.t("common.close")}</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(panel);
+  const close = () => panel.remove();
+  panel.addEventListener("click", (e) => {
+    if (e.target === panel || e.target.dataset.act === "close") close();
+    if (e.target.dataset.act === "edit") openCardEditor(noteId, cards.find((c) => c.id === e.target.dataset.id));
+    if (e.target.dataset.act === "delete") deleteCard(noteId, e.target.dataset.id);
+  });
+  panel.querySelector("#add-card").addEventListener("click", () => openCardEditor(noteId, null));
+}
+
+async function deleteCard(noteId, id) {
+  if (!id.startsWith("local-")) {
+    try {
+      await fetch(`http://localhost:4100/api/v1/flashcards/${id}`, { method: "DELETE" });
+    } catch {}
+  }
+  showFlashcardsPanel(noteId, { created: [], skipped: 0 });
+}
+
+function openFlashcardEditor(noteId, note) {
+  openCardEditor(noteId, null, note);
+}
+
+/* v1.5.1 — editor de flashcard individual (front/back + asignatura) */
+async function openCardEditor(noteId, card, noteCtx) {
+  document.querySelectorAll(".fc-editor").forEach((p) => p.remove());
+  const subjects = await fetch("http://localhost:4100/api/v1/subjects").then((r) => r.json());
+  const subjectOpts = (subjects.subjects || []).map((s) => `<option value="${escapeHtml(s.id)}" ${card?.subject === s.id ? "selected" : ""}>${escapeHtml(s.name)}</option>`).join("");
+  const note = noteCtx || (await fetch(`http://localhost:4100/api/v1/notes/${noteId}`).then((r) => r.json()));
+  const editor = document.createElement("div");
+  editor.className = "fc-editor scrim";
+  editor.innerHTML = `
+    <div class="sheet">
+      <div class="sheet-header">
+        <h3>${card ? i18n.t("notes.editFlashcard") : i18n.t("notes.newFlashcard")}</h3>
+        <button class="btn icon" data-act="close">✕</button>
+      </div>
+      <div class="muted small">${i18n.t("notes.flashcardSourceNote", { note: escapeHtml(note.title || noteId) })}</div>
+      <div style="margin-top: var(--s-4); display: flex; flex-direction: column; gap: 12px">
+        <label class="lbl">${i18n.t("notes.flashcardFront")}</label>
+        <textarea class="input" id="fc-front" rows="3" placeholder="${i18n.t("notes.flashcardFrontPh")}">${escapeHtml(card?.front || "")}</textarea>
+        <label class="lbl">${i18n.t("notes.flashcardBack")}</label>
+        <textarea class="input" id="fc-back" rows="3" placeholder="${i18n.t("notes.flashcardBackPh")}">${escapeHtml(card?.back || "")}</textarea>
+        <label class="lbl">${i18n.t("notes.flashcardSubject")}</label>
+        <select class="input" id="fc-subject">
+          <option value="">—</option>
+          ${subjectOpts}
+        </select>
+      </div>
+      <div class="row gap-2" style="margin-top: var(--s-5)">
+        <button class="btn primary" id="fc-save">${i18n.t("common.save")}</button>
+        <button class="btn" data-act="close">${i18n.t("common.cancel")}</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(editor);
+  const close = () => editor.remove();
+  editor.addEventListener("click", (e) => { if (e.target === editor || e.target.dataset.act === "close") close(); });
+  editor.querySelector("#fc-save").addEventListener("click", async () => {
+    const front = editor.querySelector("#fc-front").value.trim();
+    const back = editor.querySelector("#fc-back").value.trim();
+    const subject = editor.querySelector("#fc-subject").value;
+    if (!front || !back) { alert(i18n.t("notes.flashcardRequired")); return; }
+    const payload = {
+      front, back, subject, tags: note.tags || [],
+      sourceNoteId: noteId,
+      sourceExcerpt: (front + "::" + back).slice(0, 80),
+    };
+    const url = card ? `http://localhost:4100/api/v1/flashcards/${card.id}` : `http://localhost:4100/api/v1/flashcards`;
+    const method = card ? "PATCH" : "POST";
+    const r = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    if (!r.ok) { alert(`Error: ${r.status}`); return; }
+    close();
+    showFlashcardsPanel(noteId, { created: [], skipped: 0 });
+  });
+}
+
 function escapeHtml(s) {
   return String(s ?? "")
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+/* ============================================================
+ * renderTextLayer — v1.5.0 Samsung Notes style
+ *
+ * Sintaxis soportada en `body`:
+ *   ==texto==          → subrayado (yellow underline)
+ *   !!texto!!          → resaltado (yellow highlighter bg)
+ *   [[Nota]]           → wikilink a otra nota
+ *   @libro/parte       → referencia a parte subrayada de libro
+ *   {{c1::pregunta::respuesta}} → flashcard inline (se extrae)
+ *
+ * El texto va DEBAJO del canvas; los strokes quedan encima,
+ * igual que en Samsung Notes: escribes con stylus encima del texto.
+ * ============================================================ */
+function renderTextLayer(layer, body) {
+  if (!body || !body.trim()) {
+    layer.innerHTML = `<div class="tl-hint">${i18n.t("notes.textHint")}</div>`;
+    return;
+  }
+  // 1. escapar html
+  let html = escapeHtml(body);
+  // 2. subrayar ==x==
+  html = html.replace(/==(.+?)==/g, '<span class="tl-underline">$1</span>');
+  // 3. resaltar !!x!!
+  html = html.replace(/!!(.+?)!!/g, '<span class="tl-highlight">$1</span>');
+  // 4. wikilinks [[Nota]]
+  html = html.replace(/\[\[([^\]]+)\]\]/g, '<a class="tl-wikilink" data-wikilink="$1" href="#/notes/$1">$1</a>');
+  // 5. refs a libros @libro/parte
+  html = html.replace(/@([\wÀ-ÿ\/\-\.]+)/g, '<a class="tl-bookref" data-bookref="$1">📖 $1</a>');
+  // 6. flashcards inline {{c1::pregunta::respuesta}}
+  html = html.replace(/\{\{c1::([^}]+)\}\}/g, (_, inner) => {
+    const [front, back] = inner.split("::");
+    return `<span class="tl-flashcard" data-front="${escapeHtml(front || "")}" data-back="${escapeHtml(back || "")}">🎴 ${escapeHtml(front || "card")}</span>`;
+  });
+  // 7. párrafos por línea
+  html = html.split(/\n\n+/).map((p) => `<p>${p.replace(/\n/g, "<br/>")}</p>`).join("");
+  layer.innerHTML = html;
 }

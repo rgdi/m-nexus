@@ -207,3 +207,117 @@
 @media (max-width: 480px) {
   .book-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
 }
+/* ============================================================
+ * v1.5.0 — text layer Samsung Notes style (debajo del canvas)
+ * ============================================================ */
+.notebook {
+  position: relative; /* ya existía pero reforzamos */
+}
+.text-layer {
+  position: absolute;
+  inset: 0;
+  padding: var(--s-7) var(--s-6);
+  font-size: clamp(15px, 1.6vw, 18px);
+  line-height: 1.7;
+  color: rgba(26,29,36,0.85);
+  pointer-events: none; /* stylus pasa al canvas */
+  overflow-y: auto;
+  z-index: 1;
+  font-family: var(--font-sans);
+}
+.text-layer .tl-wikilink, .text-layer .tl-bookref, .text-layer .tl-flashcard { pointer-events: auto; }
+.text-layer p { margin: 0 0 1em; }
+.text-layer .tl-hint {
+  color: rgba(26,29,36,0.35);
+  font-style: italic;
+  font-size: var(--fs-md);
+}
+.tl-underline {
+  border-bottom: 2px solid #f4b400;
+  padding-bottom: 1px;
+}
+.tl-highlight {
+  background: linear-gradient(180deg, transparent 60%, rgba(244,180,0,0.45) 60%);
+  padding: 0 2px;
+}
+.tl-wikilink {
+  color: #5a67d8;
+  text-decoration: none;
+  border-bottom: 1px solid #5a67d8;
+  cursor: pointer;
+}
+.tl-wikilink:hover { background: rgba(90,103,216,0.08); }
+.tl-bookref {
+  color: #8c5cf6;
+  text-decoration: none;
+  font-size: 0.92em;
+  border-bottom: 1px dashed #8c5cf6;
+  cursor: pointer;
+}
+.tl-bookref:hover { background: rgba(140,92,246,0.08); }
+.tl-flashcard {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  margin: 0 2px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(86,196,230,0.18), rgba(140,92,246,0.18));
+  border: 1px solid rgba(86,196,230,0.4);
+  color: #1a1d24;
+  font-size: 0.9em;
+  cursor: pointer;
+}
+.tl-flashcard:hover { background: linear-gradient(135deg, rgba(86,196,230,0.32), rgba(140,92,246,0.32)); }
+
+/* Dark mode */
+[data-theme="dark"] .text-layer,
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .text-layer { color: rgba(245,245,245,0.9); }
+  :root:not([data-theme="light"]) .tl-wikilink { color: #a3b3ff; border-bottom-color: #a3b3ff; }
+  :root:not([data-theme="light"]) .tl-bookref { color: #c4a8ff; border-bottom-color: #c4a8ff; }
+}
+
+/* ============================================================
+ * v1.5.1 — FAB flashcards + panel cards
+ * ============================================================ */
+.fab {
+  position: absolute;
+  bottom: 80px;
+  right: 80px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #56c4e6, #8c5cf6);
+  color: white;
+  font-size: 24px;
+  border: none;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+  z-index: 5;
+  cursor: pointer;
+  transition: transform 200ms var(--ease);
+}
+.fab:hover { transform: scale(1.08); }
+.fab:active { transform: scale(0.95); }
+
+.fc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--s-4);
+  margin-top: var(--s-4);
+  max-height: 50vh;
+  overflow-y: auto;
+}
+.fc-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: var(--s-4);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.fc-front { font-weight: 700; font-size: var(--fs-md); color: var(--fg); }
+.fc-back { color: var(--fg-muted); font-size: var(--fs-sm); }
+.fc-meta { font-size: var(--fs-xs); color: var(--fg-muted); margin-top: 4px; }
+.fc-card .btn.small { padding: 4px 10px; font-size: var(--fs-xs); border-radius: 8px; }

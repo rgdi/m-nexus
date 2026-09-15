@@ -76,19 +76,19 @@ export function seedDemo(store) {
   notes.create({
     title: "Welcome to M-NEXUS",
     subject: "math",
-    body: "# Welcome\n\nEste es tu notebook. **Pulsa el lápiz para escribir**, el icono de imagen para insertar fotos, el código para snippets, etc.",
+    body: "# Welcome\n\nEste es tu notebook. **Pulsa el lápiz para escribir**, el icono de imagen para insertar fotos, el código para snippets, etc.\n\nUsa ==subrayado==, !!resaltado!!, [[Getting started]] o {{c1::Capital de Francia::París}} para crear flashcards.",
     tags: ["welcome"],
   });
   notes.create({
     title: "Getting started",
     subject: "deu",
-    body: "# Erste Schritte\n\n- Schreib mit dem Stift\n- Speichere oft (auto-save alle 5s)\n- Nutze die AI-Taste für Übersetzung",
+    body: "# Erste Schritte\n\n- Schreib mit dem Stift\n- Speichere oft (auto-save alle 5s)\n- Nutze die AI-Taste für Übersetzung\n\nBeispiel: !!Hervorhebung!! oder ==unterstreichen==",
     tags: ["onboarding"],
   });
   notes.create({
     title: "Flashcards demo",
     subject: "bio",
-    body: "# Cell biology\n\nMitochondria: the powerhouse of the cell.",
+    body: "# Cell biology\n\nMitochondria: the powerhouse of the cell.\n\n- {{c1::Main energy molecule::ATP}}\n- {{c1::Photosynthesis location::Chloroplast}}\n\nReferencia: @campbell/cap9",
     tags: ["biology", "review"],
   });
 

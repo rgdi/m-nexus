@@ -173,6 +173,27 @@ async function run() {
     check('overview title', (await page.locator('.sheet h3').textContent()).includes('Intelligent overview'));
     await shoot(page, '12-notes-overview-modal-en', 'tablet');
     await page.locator('.scrim').click({ position: { x: 10, y: 10 } }).catch(() => {});
+
+    // v1.5.1: notebook with text-layer rendered
+    check('text layer visible', await page.locator('.text-layer').first().isVisible());
+    check('extract flashcards button', await page.locator('#extract-cards-btn').isVisible());
+    check('new card FAB', await page.locator('#new-card-btn').isVisible());
+    await shoot(page, '12b-notes-textlayer-en', 'tablet');
+
+    // v1.5.1: flashcards panel — dismiss any leftover scrim first
+    await page.evaluate(() => document.querySelectorAll('.scrim').forEach((s) => s.remove()));
+    await page.waitForTimeout(200);
+    // FAB might be obscured by other UI; click via JS dispatch to be safe
+    const fcOk = await page.evaluate(() => {
+      const fab = document.getElementById('new-card-btn');
+      if (!fab) return false;
+      fab.click();
+      return true;
+    });
+    await page.waitForTimeout(1000);
+    check('flashcards panel visible', await page.locator('.fc-panel').isVisible());
+    await shoot(page, '12c-notes-flashcards-panel-en', 'tablet');
+    await page.locator('.fc-panel').click({ position: { x: 10, y: 10 } }).catch(() => {});
   }
 
   // 13: Todos

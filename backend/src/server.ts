@@ -47,7 +47,6 @@ export async function buildServer(): Promise<any> {
   // Routes — basic monitoring + flashcards generation
   await app.register(healthRoutes);
   await app.register(metricsRoutes);
-  await app.register(flashcardsRoutes);
   // FASE 4 prep: minimal AI v2 endpoints (chat, embeddings, rag-search).
   // No auth — same posture as /api/v1/ai/tutor below. Designed to be safe
   // under Node 20.19.4 + tsx (no better-sqlite3, no plugin imports).
@@ -58,6 +57,8 @@ export async function buildServer(): Promise<any> {
   await app.register(notesRoutes, { prefix: "/api/v1" });
   await app.register(eventsRoutes, { prefix: "/api/v1" });
   await app.register(tasksRoutes, { prefix: "/api/v1" });
+  // v1.5.1: flashcards CRUD + extracción automática desde notas
+  await app.register(flashcardsRoutes, { prefix: "/api/v1" });
 
   // v0.62.8: minimal AI tutor endpoint that uses Ollama
   app.post("/api/v1/ai/tutor", async (req, reply) => {
