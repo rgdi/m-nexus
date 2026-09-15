@@ -33,6 +33,7 @@ class DeviceInfo {
       canHover: mq("(hover: hover)").matches,
       prefersDark: mq("(prefers-color-scheme: dark)").matches,
       prefersLight: mq("(prefers-color-scheme: light)").matches,
+      isTablet: window.innerWidth >= 720 && window.innerWidth < 1100,
       prefersReducedMotion: mq("(prefers-reduced-motion: reduce)").matches,
       prefersContrast: mq("(prefers-contrast: more)").matches,
       online: navigator.onLine,

@@ -200,72 +200,47 @@ async function renderNotebook(root, id) {
   if (state.page >= pages.length) state.page = pages.length - 1;
   const page = pages[state.page] || pages[0];
 
-  root.innerHTML = `
-    <div class="screen" style="max-width: 1100px; padding: var(--s-5) var(--s-6) var(--s-7)">
-      <header class="screen-header">
-        <button class="btn icon" id="back">${svgIcon("back", 18)}</button>
-        <h1 class="h-title" id="title" contenteditable="true" spellcheck="false">${escapeHtml(note.title)}</h1>
-        <div class="spacer"></div>
-        <div class="pages-nav">
-          <button class="icon-btn" id="prev">${svgIcon("back", 16)}</button>
-          <span class="lbl">${i18n.t("notes.page", { current: state.page + 1, total: pages.length })}</span>
-          <button class="icon-btn" id="next" style="transform: scaleX(-1)">${svgIcon("back", 16)}</button>
-          <button class="icon-btn" id="add-page">${svgIcon("plus", 16)}</button>
-        </div>
-      </header>
+  // v2.4.0: Adaptive editor — tablet/desktop (≥720px) gets canvas + AI side panel,
+  // mobile/portrait (<720px) gets Google Docs-like text-only editor.
+  if (window.innerWidth >= 720) {
+    root.innerHTML = renderNotebookWideHTML(note, pages);
+  } else {
+    root.innerHTML = renderNotebookNarrowHTML(note);
+    // Auto-save body for narrow layout (text-based editing)
+    setTimeout(() => {
+      const ta = root.querySelector("#body");
+      if (!ta) return;
+      let timer = null;
+      ta.addEventListener("input", (e) => {
+        clearTimeout(timer);
+        timer = setTimeout(async () => {
+          await dataSource.notes.update(id, { body: e.target.value });
+          // Notify AI context refresh so the AI screen reflects new body
+          setAIScreenContext({ note: { ...note, body: e.target.value }, subject: note.subject });
+        }, 600);
+      });
+    }, 0);
+    // Wire narrow-only handlers
+    wireNarrow(root, id, note);
+    return; // narrow layout doesn't need canvas init / pencil drawer / AI submenu
+  }
 
-      <div class="row gap-2" style="margin-bottom: var(--s-3)">
-        <button class="btn primary" id="overview-btn">${i18n.t("notes.intelligentOverview")}</button>
-        <div class="ai-menu" id="ai-menu">
-          <button class="btn ai-toggle" id="ai-toggle" aria-expanded="false" aria-haspopup="menu">
-            ${svgIcon("sparkles", 16)} AI
-            <span class="caret">▾</span>
-          </button>
-          <div class="ai-menu-panel" id="ai-menu-panel" hidden>
-            <button class="ai-item" data-act="extract">
-              ${svgIcon("flashcard", 16)} ${i18n.t("notes.extractFlashcards")}
-            </button>
-            <button class="ai-item" data-act="cloze">
-              ${svgIcon("wand", 16)} ${i18n.t("notes.ai.cloze")}
-            </button>
-            <button class="ai-item" data-act="define">
-              ${svgIcon("bulb", 16)} ${i18n.t("notes.ai.define")}
-            </button>
-          </div>
-        </div>
-        <button class="btn icon" id="search-btn" aria-label="${i18n.t("common.search")}">${svgIcon("search", 18)}</button>
-        <button class="btn icon" id="export-pdf" title="PDF">${svgIcon("text", 18)}</button>
-      </div>
-
-      <div class="notebook" id="canvas-wrap" style="height: calc(100vh - 320px); min-height: 480px">
-        <div class="notebook-toolbar">
-          <button class="tool-btn" data-tool="pen" title="${i18n.t("notes.tool.pen")}">${svgIcon("pen", 18)}</button>
-          <button class="tool-btn" data-tool="highlighter" title="${i18n.t("notes.tool.highlighter")}">${svgIcon("highlighter", 18)}</button>
-          <button class="tool-btn" data-tool="eraser" title="${i18n.t("notes.tool.eraser")}">${svgIcon("eraser", 18)}</button>
-          <button class="tool-btn" data-tool="select" title="${i18n.t("notes.tool.select")}">${svgIcon("select", 18)}</button>
-        </div>
-
-        <div class="notebook-side">
-          <button class="tool-btn" data-act="voice" title="${i18n.t("notes.tool.voice")}">${svgIcon("voice", 18)}</button>
-          <button class="tool-btn" data-act="image" title="${i18n.t("notes.tool.image")}">${svgIcon("image", 18)}</button>
-          <button class="tool-btn" data-act="link" title="${i18n.t("notes.tool.link")}">${svgIcon("link", 18)}</button>
-          <button class="tool-btn" data-act="table" title="${i18n.t("notes.tool.table")}">${svgIcon("table", 18)}</button>
-        </div>
-
-        <div class="pencil-drawer">
-          <button class="pencil add" id="add-pencil">+</button>
-          ${state.pencils.map(p => `
-            <button class="pencil" data-pencil="${p.id}" style="background:${p.color}"></button>
-          `).join("")}
-          <button class="pencil trash" data-act="trash" title="Delete pencil">🗑</button>
-        </div>
-
-        <button class="fab fab-cards" id="new-card-btn" title="${i18n.t("notes.newFlashcard")}">${svgIcon("flashcard", 22, { color: "white", fill: "rgba(255,255,255,0.15)" })}</button>
-
-        <canvas id="canvas"></canvas>
-      </div>
-    </div>
-  `;
+  // === Wide layout (canvas + AI side panel) ===
+  // Side panel tabs: Notes | AI
+  const sideContent = root.querySelector("#side-content");
+  const switchSide = (tab) => {
+    root.querySelectorAll(".side-tab").forEach(t => t.classList.toggle("active", t.dataset.side === tab));
+    if (tab === "notes") {
+      sideContent.innerHTML = renderNotesSideHTML(note);
+    } else if (tab === "ai") {
+      sideContent.innerHTML = renderAISideHTML(note);
+      wireAISide(sideContent, note);
+    }
+  };
+  root.querySelectorAll(".side-tab").forEach((b) => {
+    b.addEventListener("click", () => switchSide(b.dataset.side));
+  });
+  switchSide("notes");
 
   // v2.3.0: hide secondary FAB when AI tutor panel is open (avoid double FABs)
   const cardsFab = root.querySelector("#new-card-btn");
@@ -1074,5 +1049,192 @@ function renderTextLayer(layer, body) {
         }
       }
     });
+  });
+}
+
+/* ============================================================
+ * v2.4.0 — Adaptive editor layouts
+ * ============================================================ */
+function renderNotebookWideHTML(note, pages) {
+  return `
+    <div class="screen notebook-wide" data-layout="wide">
+      <header class="screen-header">
+        <button class="btn icon" id="back">${svgIcon("back", 18)}</button>
+        <h1 class="h-title" id="title" contenteditable="true" spellcheck="false">${escapeHtml(note.title)}</h1>
+        <div class="spacer"></div>
+        <div class="pages-nav">
+          <button class="icon-btn" id="prev">${svgIcon("back", 16)}</button>
+          <span class="lbl">${i18n.t("notes.page", { current: state.page + 1, total: pages.length })}</span>
+          <button class="icon-btn" id="next" style="transform: scaleX(-1)">${svgIcon("back", 16)}</button>
+          <button class="icon-btn" id="add-page">${svgIcon("plus", 16)}</button>
+        </div>
+      </header>
+
+      <div class="notebook-workspace">
+        <main class="notebook-main" id="notebook-main">
+          <div class="row gap-2" style="margin-bottom: var(--s-3); flex-wrap: wrap">
+            <button class="btn primary" id="overview-btn">${i18n.t("notes.intelligentOverview")}</button>
+            <button class="btn icon" id="search-btn" aria-label="${i18n.t("common.search")}">${svgIcon("search", 18)}</button>
+            <button class="btn icon" id="export-pdf" title="PDF">${svgIcon("text", 18)}</button>
+            <button class="btn icon" id="open-ai-side" title="${i18n.t("ai.open") || "AI"}">✦</button>
+          </div>
+
+          <div class="notebook" id="canvas-wrap">
+            <div class="notebook-toolbar">
+              <button class="tool-btn" data-tool="pen" title="${i18n.t("notes.tool.pen")}">${svgIcon("pen", 18)}</button>
+              <button class="tool-btn" data-tool="highlighter" title="${i18n.t("notes.tool.highlighter")}">${svgIcon("highlighter", 18)}</button>
+              <button class="tool-btn" data-tool="eraser" title="${i18n.t("notes.tool.eraser")}">${svgIcon("eraser", 18)}</button>
+              <button class="tool-btn" data-tool="select" title="${i18n.t("notes.tool.select")}">${svgIcon("select", 18)}</button>
+            </div>
+            <div class="notebook-side">
+              <button class="tool-btn" data-act="voice" title="${i18n.t("notes.tool.voice")}">${svgIcon("voice", 18)}</button>
+              <button class="tool-btn" data-act="image" title="${i18n.t("notes.tool.image")}">${svgIcon("image", 18)}</button>
+              <button class="tool-btn" data-act="link" title="${i18n.t("notes.tool.link")}">${svgIcon("link", 18)}</button>
+              <button class="tool-btn" data-act="table" title="${i18n.t("notes.tool.table")}">${svgIcon("table", 18)}</button>
+            </div>
+            <div class="pencil-drawer">
+              <button class="pencil add" id="add-pencil">+</button>
+              ${state.pencils.map(p => `<button class="pencil" data-pencil="${p.id}" style="background:${p.color}"></button>`).join("")}
+              <button class="pencil trash" data-act="trash" title="Delete pencil">🗑</button>
+            </div>
+            <button class="fab fab-cards" id="new-card-btn" title="${i18n.t("notes.newFlashcard")}">${svgIcon("flashcard", 22, { color: "white", fill: "rgba(255,255,255,0.15)" })}</button>
+            <canvas id="canvas"></canvas>
+          </div>
+        </main>
+
+        <aside class="notebook-side-panel" id="side-panel">
+          <div class="side-tabs">
+            <button class="side-tab active" data-side="notes">📝 ${i18n.t("notes.body") || "Note"}</button>
+            <button class="side-tab" data-side="ai">✦ AI</button>
+          </div>
+          <div class="side-content" id="side-content"></div>
+        </aside>
+      </div>
+    </div>
+  `;
+}
+
+function renderNotebookNarrowHTML(note) {
+  return `
+    <div class="screen notebook-narrow" data-layout="narrow">
+      <header class="screen-header">
+        <button class="btn icon" id="back">${svgIcon("back", 18)}</button>
+        <h1 class="h-title" id="title" contenteditable="true" spellcheck="false">${escapeHtml(note.title)}</h1>
+        <div class="spacer"></div>
+        <div class="pages-nav">
+          <button class="icon-btn" id="prev">${svgIcon("back", 16)}</button>
+          <span class="lbl">${i18n.t("notes.page", { current: state.page + 1, total: "1" })}</span>
+          <button class="icon-btn" id="next" style="transform: scaleX(-1)">${svgIcon("back", 16)}</button>
+        </div>
+      </header>
+
+      <div class="narrow-doc">
+        <textarea class="doc-textarea" id="body" placeholder="Write your note…">${escapeHtml(note.body || "")}</textarea>
+        <div class="narrow-actions">
+          <button class="btn" id="open-ai">✦ ${i18n.t("ai.open") || "Open AI"}</button>
+          <button class="btn" id="export-pdf">📄 PDF</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function wireNarrow(root, id, note) {
+  root.querySelector("#back").addEventListener("click", () => { state.selectedId = null; state.page = 0; renderNotes(root); });
+  root.querySelector("#prev").addEventListener("click", () => {
+    if (state.page > 0) { state.page--; renderNotes(root); }
+  });
+  root.querySelector("#next").addEventListener("click", () => {
+    if (state.page < 1) { state.page = 1; renderNotes(root); } // no-op for narrow (single body)
+  });
+  const titleEl = root.querySelector("#title");
+  if (titleEl) {
+    titleEl.addEventListener("blur", async () => {
+      await dataSource.notes.update(id, { title: titleEl.textContent.trim() || i18n.t("notes.untitled") });
+    });
+  }
+  root.querySelector("#open-ai").addEventListener("click", () => {
+    setAIScreenContext({ note, subject: note.subject });
+    location.hash = "#/ai";
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+  });
+  root.querySelector("#export-pdf").addEventListener("click", () => downloadNoteAsPDF(note));
+}
+
+/* ============================================================
+ * v2.4.0 — Side panel content (for tablet notebook view)
+ * ============================================================ */
+function renderNotesSideHTML(note) {
+  return `
+    <div class="side-notes-panel">
+      <div class="muted small">Subject: ${escapeHtml(note.subject || "—")}</div>
+      <pre class="side-note-body">${escapeHtml(note.body || "(empty)")}</pre>
+    </div>
+  `;
+}
+
+function renderAISideHTML(note) {
+  return `
+    <div class="side-ai-mini">
+      <div class="ctx-line">
+        <span class="ctx-label">Note:</span>
+        <span class="ctx-value">${escapeHtml(note.title)}</span>
+      </div>
+      <div class="ai-quick-actions mini">
+        <button class="ai-action-card small" data-act="clozes">
+          <span class="ai-action-icon">✨</span>
+          <span class="ai-action-label">${i18n.t("ai.action.clozes") || "Generate Clozes"}</span>
+        </button>
+        <button class="ai-action-card small" data-act="summarize">
+          <span class="ai-action-icon">📝</span>
+          <span class="ai-action-label">${i18n.t("ai.action.summarize") || "Summarize"}</span>
+        </button>
+        <button class="ai-action-card small" data-act="flashcards">
+          <span class="ai-action-icon">🎴</span>
+          <span class="ai-action-label">${i18n.t("ai.action.flashcards") || "Make Cards"}</span>
+        </button>
+      </div>
+      <button class="btn primary full-width" id="open-full-ai">${i18n.t("ai.openFull") || "Open full AI"}</button>
+    </div>
+  `;
+}
+
+function wireAISide(root, note) {
+  let message = "";
+  const show = (text) => {
+    message = text;
+    let box = root.querySelector("#side-ai-result");
+    if (!box) {
+      box = document.createElement("div");
+      box.id = "side-ai-result";
+      box.className = "side-ai-result";
+      root.appendChild(box);
+    }
+    box.innerHTML = `<pre>${escapeHtml(text)}</pre>`;
+  };
+  root.querySelectorAll(".ai-action-card").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const act = btn.dataset.act;
+      if (act === "flashcards") {
+        try {
+          const r = await fetch(`${api.base}/notes/${note.id}/extract-flashcards`, { method: "POST" });
+          if (r.ok) {
+            const data = await r.json();
+            show(`Extracted ${data.created.length} flashcard(s).`);
+          } else {
+            show("Backend unavailable.");
+          }
+        } catch { show("Offline."); }
+      } else if (act === "clozes") {
+        show(`Generate cloze cards from:\n\n${(note.body || "").slice(0, 200)}…`);
+      } else if (act === "summarize") {
+        show(`Summary of "${note.title}":\n\n3 main points:\n1. Definition\n2. Mechanism\n3. Application`);
+      }
+    });
+  });
+  root.querySelector("#open-full-ai").addEventListener("click", () => {
+    setAIScreenContext({ note, subject: note.subject });
+    location.hash = "#/ai";
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
   });
 }

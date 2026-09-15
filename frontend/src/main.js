@@ -75,6 +75,9 @@ async function render() {
   app.className = `app screen-${route}`;
   // v2.1.3: also reflect route on body so fixed-position UI (FAB) can react
   document.body.className = `route-${route}`;
+  document.body.dataset.activeRoute = route;
+  // v2.4.0: also expose to global so AI screen can detect current context
+  window.__mnexusActiveRoute = route;
   setActiveDock(route);
   app.innerHTML = `<div class="screen"><div class="empty">${i18n.t("common.loading")}</div></div>`;
   try {
@@ -134,6 +137,7 @@ async function bootstrap() {
   // v2.0.6: E2E sync via WebSocket
   connectSync();
   setupHamburger();
+  setupDockCollapse();
   // Set initial lang attribute on html
   document.documentElement.lang = i18n.lang;
   // v1.3.1: traducir todos los data-i18n al boot (dock, etc)
@@ -265,6 +269,53 @@ function openDrawer() {
       return;
     }
     if (!e.target.closest(".panel")) drawer.remove();
+  });
+}
+
+/* ============================================================
+ * v2.4.0 — Collapsible main menu (dock).
+ *
+ * User can hide the dock to maximize content area. A small
+ * hamburger button re-appears at bottom-left when collapsed.
+ *
+ * State persists in localStorage["mnexus.dock.collapsed"] = "1"|"0".
+ * ============================================================ */
+function setupDockCollapse() {
+  const expand = document.getElementById("dock-expand");
+  if (!expand) return;
+
+  // Restore previous state
+  if (localStorage.getItem("mnexus.dock.collapsed") === "1") {
+    document.body.classList.add("dock-collapsed");
+  }
+
+  // Click expand button → show dock again
+  expand.addEventListener("click", () => {
+    document.body.classList.remove("dock-collapsed");
+    localStorage.setItem("mnexus.dock.collapsed", "0");
+  });
+
+  // Keyboard shortcut: Cmd/Ctrl + B (like browsers)
+  document.addEventListener("keydown", (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === "b" && !e.shiftKey) {
+      e.preventDefault();
+      const collapsed = document.body.classList.toggle("dock-collapsed");
+      localStorage.setItem("mnexus.dock.collapsed", collapsed ? "1" : "0");
+    }
+  });
+
+  // v2.4.0: click any active dock item toggles collapse (so user can collapse via dock itself)
+  document.querySelectorAll("#dock .dock-item").forEach((item) => {
+    item.addEventListener("click", (e) => {
+      // Only collapse on second click on the same item (avoid hiding during navigation)
+      const current = document.body.dataset.activeRoute;
+      const target = item.dataset.route;
+      if (current === target) {
+        e.preventDefault();
+        const collapsed = document.body.classList.toggle("dock-collapsed");
+        localStorage.setItem("mnexus.dock.collapsed", collapsed ? "1" : "0");
+      }
+    });
   });
 }
 

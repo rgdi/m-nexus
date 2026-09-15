@@ -8,7 +8,7 @@
  * ============================================================ */
 
 const STYLE = `
-body.route-ai .ai-tutor-fab,
+body[data-active-route="ai"] .ai-tutor-fab,
 body.ai-chat-open .ai-tutor-fab { display: none; }
 .ai-tutor {
   position: fixed;

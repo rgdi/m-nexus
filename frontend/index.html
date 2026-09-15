@@ -20,6 +20,10 @@
   <div id="app" class="app" data-route="overview"></div>
   <!-- v1.5.x: hamburger drawer (mobile only) -->
   <button class="hamburger" id="hamburger" aria-label="Menu">≡</button>
+  <!-- v2.4.0: hamburger button to expand collapsed dock (always visible when dock is hidden) -->
+  <button class="dock-expand" id="dock-expand" aria-label="Show menu" hidden>
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+  </button>
   <nav class="dock" id="dock" aria-label="Primary">
     <a href="#/overview" class="dock-item" data-route="overview"><span class="i" data-icon="overview"></span><span class="lbl" data-i18n="dock.overview">Overview</span></a>
     <a href="#/calendar" class="dock-item" data-route="calendar"><span class="i" data-icon="calendar"></span><span class="lbl" data-i18n="dock.calendar">Calendar</span></a>

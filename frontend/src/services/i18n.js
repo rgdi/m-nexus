@@ -147,6 +147,9 @@ const STRINGS = {
   "notes.deletePencil":     { en: "Delete pencil", es: "Eliminar lápiz", pt: "Excluir caneta" },
   "notes.deletePencilConfirm": { en: "¿Eliminar el lápiz activo?", es: "¿Eliminar el lápiz activo?", pt: "Excluir a caneta ativa?" },
   "notes.untitled":         { en: "Untitled", es: "Sin título", pt: "Sem título" },
+  "notes.body":              { en: "Note", es: "Nota", pt: "Nota" },
+  "notes.notes":             { en: "Notes", es: "Notas", pt: "Notas" },
+  "notes.hasStrokes":       { en: "This page has drawings (view on tablet)", es: "Esta página tiene dibujos (ver en tablet)", pt: "Esta página tem desenhos (ver no tablet)" },
   "notes.newFolder":         { en: "New folder", es: "Nueva carpeta", pt: "Nova pasta" },
   "notes.folderName":        { en: "Folder name", es: "Nombre de carpeta", pt: "Nome da pasta" },
   "notes.selectFromTree":    { en: "Select from sidebar →", es: "Selecciona desde la barra lateral →", pt: "Selecione da barra lateral →" },
@@ -176,8 +179,15 @@ const STRINGS = {
   // ============================================================
   // AI Tutor
   // ============================================================
-  "ai.title":               { en: "AI Tutor", es: "Tutor IA", pt: "Tutor IA" },
+  "ai.title":               { en: "AI", es: "IA", pt: "IA" },
   "ai.subtitle":            { en: "Ask anything from your notes", es: "Pregunta lo que quieras sobre tus notas", pt: "Pergunte o que quiser sobre suas notas" },
+  "ai.lookingAt":           { en: "Looking at", es: "Mirando", pt: "A olhar para" },
+  "ai.open":                { en: "Open AI", es: "Abrir IA", pt: "Abrir IA" },
+  "ai.openFull":            { en: "Open full AI", es: "Abrir IA completa", pt: "Abrir IA completa" },
+  "ai.action.clozes":       { en: "Generate Clozes", es: "Generar Clozes", pt: "Gerar Clozes" },
+  "ai.action.summarize":    { en: "Summarize Note", es: "Resumir Nota", pt: "Resumir Nota" },
+  "ai.action.flashcards":   { en: "Make Flashcards", es: "Crear Flashcards", pt: "Criar Flashcards" },
+  "ai.action.explain":      { en: "Explain concept", es: "Explicar concepto", pt: "Explicar conceito" },
   "ai.greeting":            { en: "Hi! I'm your RAG tutor. Ask me anything about your notes.", es: "¡Hola! Soy tu tutor con RAG. Pregúntame sobre cualquier tema de tus notas.", pt: "Olá! Sou seu tutor com RAG. Pergunte sobre qualquer tema das suas notas." },
   "ai.placeholder":         { en: "Ask a question… (Enter to send)", es: "Haz una pregunta… (Enter para enviar)", pt: "Faça uma pergunta… (Enter para enviar)" },
   "ai.send":                { en: "Send", es: "Enviar", pt: "Enviar" },

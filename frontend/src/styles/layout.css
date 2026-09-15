@@ -74,7 +74,37 @@
   /* v1.2.0: blur backdrop when supported */
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  transition: transform var(--dur) var(--ease), opacity var(--dur) var(--ease);
 }
+
+/* v2.4.0: dock collapsed state (hidden, replaced by dock-expand button) */
+body.dock-collapsed .dock {
+  transform: translateX(-50%) translateY(calc(100% + 24px));
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* v2.4.0: hamburger button to re-expand the dock */
+.dock-expand {
+  position: fixed;
+  bottom: calc(var(--safe-bottom) + 12px);
+  left: 12px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  box-shadow: var(--shadow-2);
+  transition: background 150ms var(--ease);
+}
+.dock-expand:hover { background: var(--bg-sunken); }
+body:not(.dock-collapsed) .dock-expand { display: none; }
 
 .dock-item {
   display: flex;
