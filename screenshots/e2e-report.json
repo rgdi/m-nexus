@@ -1,0 +1,162 @@
+{
+  "total": 31,
+  "pass": 31,
+  "fail": 0,
+  "results": [
+    {
+      "label": "1.1 Overview renders",
+      "ok": true,
+      "detail": "title=\"Overview\""
+    },
+    {
+      "label": "1.2 Notes screen renders",
+      "ok": true,
+      "detail": "title=\"Notes\""
+    },
+    {
+      "label": "1.3 Note editor opens",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "1.4 Title typed",
+      "ok": true,
+      "detail": "title=\"Anatomía: Fémur\""
+    },
+    {
+      "label": "1.4b Note id captured",
+      "ok": true,
+      "detail": "id=note-b8984c42-0dc7-493e-82d8-98f6765ae8ac"
+    },
+    {
+      "label": "1.5 Body written with cloze + wikilink + bookref",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "1.6 AI extract flashcards action triggered",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "1.7 Flashcards extracted to backend",
+      "ok": true,
+      "detail": "count=1213"
+    },
+    {
+      "label": "1.8 AI Tutor chat opened + message sent",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "1.9 Syllabus dashboard shows 2 subjects",
+      "ok": true,
+      "detail": "count=2"
+    },
+    {
+      "label": "1.10 Countdowns show days",
+      "ok": true,
+      "detail": "countdowns=[\"14 día(s)\",\"2 día(s)\"]"
+    },
+    {
+      "label": "1.11 Tips actionable present",
+      "ok": true,
+      "detail": "tips=4"
+    },
+    {
+      "label": "1.12 Study wizard has 4 modes",
+      "ok": true,
+      "detail": "modes=[\"study\",\"exam\",\"review\",\"cram\"]"
+    },
+    {
+      "label": "1.13 Study session rates cards",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "1.14 FSRS state persists in localStorage",
+      "ok": true,
+      "detail": "cards=3"
+    },
+    {
+      "label": "2.1 Hamburger drawer works on mobile",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "2.2 No horizontal overflow at 360px",
+      "ok": true,
+      "detail": "docW=360 winW=360"
+    },
+    {
+      "label": "3.1 Syllabus renders at tablet width",
+      "ok": true,
+      "detail": "cards=0"
+    },
+    {
+      "label": "3.2 No horizontal overflow at 720px",
+      "ok": true,
+      "detail": "docW=720 winW=720"
+    },
+    {
+      "label": "4.1 Created 5 subjects",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "4.2 Created 50 notes via API",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "4.3 Created 200 flashcards",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "4.4 Overview renders with 50 notes",
+      "ok": true,
+      "detail": "title=\"Overview\""
+    },
+    {
+      "label": "4.5 Notes screen lists notes",
+      "ok": true,
+      "detail": "visible=361"
+    },
+    {
+      "label": "4.6 Command palette opens with Cmd+K",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "4.7 Cmd+K search returns results",
+      "ok": true,
+      "detail": "results=1"
+    },
+    {
+      "label": "4.8 Answered cards in stress test",
+      "ok": true,
+      "detail": "answered=5"
+    },
+    {
+      "label": "4.9 Backend has all notes",
+      "ok": true,
+      "detail": "notes=361"
+    },
+    {
+      "label": "4.10 Backend has all flashcards",
+      "ok": true,
+      "detail": "cards=1413"
+    },
+    {
+      "label": "4.11 Backend has all subjects",
+      "ok": true,
+      "detail": "subjects=47"
+    },
+    {
+      "label": "5.1 Theme toggle at bottom-right (v2.1.1 fix)",
+      "ok": true,
+      "detail": "{\"x\":1212,\"y\":660,\"width\":44,\"height\":44}"
+    }
+  ]
+}
