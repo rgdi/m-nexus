@@ -9,6 +9,7 @@ import { mountTopToolbar } from "../widgets/top_toolbar.js";
 import { openAudioRecorder } from "../widgets/audio_recorder.js";
 import { openStudySession } from "../widgets/study_session.js";
 import { downloadNoteAsPDF } from "../widgets/pdf_export.js";
+import { openClozeTest } from "../widgets/cloze_test.js";
 import { icon as svgIcon } from "../widgets/icons.js";
 
 const state = {
@@ -145,6 +146,9 @@ async function renderNotebook(root, id) {
             <button class="ai-item" data-act="extract">
               ${svgIcon("flashcard", 16)} ${i18n.t("notes.extractFlashcards")}
             </button>
+            <button class="ai-item" data-act="cloze">
+              ${svgIcon("wand", 16)} ${i18n.t("notes.ai.cloze")}
+            </button>
             <button class="ai-item" data-act="summarize">
               ${svgIcon("text", 16)} ${i18n.t("notes.ai.summarize")}
             </button>
@@ -152,7 +156,7 @@ async function renderNotebook(root, id) {
               ${svgIcon("bulb", 16)} ${i18n.t("notes.ai.define")}
             </button>
             <button class="ai-item" data-act="quiz">
-              ${svgIcon("wand", 16)} ${i18n.t("notes.ai.quiz")}
+              ${svgIcon("bulb", 16)} ${i18n.t("notes.ai.quiz")}
             </button>
           </div>
         </div>
@@ -276,7 +280,7 @@ async function renderNotebook(root, id) {
 }
 
 /* ============================================================
- * v1.6.1 — AI submenú
+ * v1.6.1 — AI submenú (v1.8.1: closure robusta via setTimeout cleanup)
  * ============================================================ */
 function setupAIMenu(root, noteId, note) {
   const toggle = root.querySelector("#ai-toggle");
@@ -288,17 +292,20 @@ function setupAIMenu(root, noteId, note) {
     toggle.setAttribute("aria-expanded", String(open));
     toggle.classList.toggle("open", open);
   });
-  // close on outside click
-  setTimeout(() => {
-    const handler = (e) => {
-      if (!panel.contains(e.target) && !toggle.contains(e.target)) {
-        panel.hidden = true;
-        toggle.setAttribute("aria-expanded", "false");
-        toggle.classList.remove("open");
-      }
-    };
-    document.addEventListener("pointerdown", handler);
-  }, 100);
+  // close on outside click — defer setup so the initial toggle click
+  // doesn't immediately close the menu.
+  const handler = (e) => {
+    if (!document.contains(toggle) || !document.contains(panel)) {
+      // DOM was re-rendered, detach stale handler
+      document.removeEventListener("click", handler);
+      return;
+    }
+    if (toggle.contains(e.target) || panel.contains(e.target)) return;
+    panel.hidden = true;
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.classList.remove("open");
+  };
+  setTimeout(() => document.addEventListener("click", handler), 150);
   panel.querySelectorAll(".ai-item").forEach((b) => {
     b.addEventListener("click", async () => {
       panel.hidden = true;
@@ -306,6 +313,7 @@ function setupAIMenu(root, noteId, note) {
       toggle.classList.remove("open");
       const act = b.dataset.act;
       if (act === "extract") await extractFlashcardsFromNote(noteId);
+      else if (act === "cloze") openClozeTest(note);
       else if (act === "summarize") await aiSummarize(note);
       else if (act === "define") openDefinitionPopupFromText(note);
       else if (act === "quiz") await aiQuizFromNote(noteId);

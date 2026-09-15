@@ -1,8 +1,8 @@
 [
   {
-    "id": "note-ed71fe1e-ca55-4f04-b82b-c970704b70c1",
+    "id": "note-6ee37385-74e1-4120-b4f6-adf1c89a52c5",
     "title": "Welcome to M-NEXUS",
-    "body": "# Welcome\n\nNotebook demo. Pulsa el lápiz para escribir.",
+    "body": "# Welcome\n\nEste es tu notebook. **Pulsa el lápiz para escribir**, el icono de imagen para insertar fotos, el código para snippets, etc.\n\nUsa ==subrayado==, !!resaltado!!, [[Getting started]] o {{c1::Capital de Francia::París}} para crear flashcards.",
     "subject": "math",
     "tags": [
       "welcome"
@@ -13,13 +13,13 @@
         "placeholders": []
       }
     ],
-    "createdAt": 1789462577466,
-    "updatedAt": 1789462577466
+    "createdAt": 1789470646982,
+    "updatedAt": 1789470646982
   },
   {
-    "id": "note-9004c168-e187-4a83-bdf0-cf92c2824c57",
+    "id": "note-3cc06515-662f-45cd-bdef-d7bbac5516a1",
     "title": "Getting started",
-    "body": "# Erste Schritte\n\n- Stift\n- Auto-save",
+    "body": "# Erste Schritte\n\n- Schreib mit dem Stift\n- Speichere oft (auto-save alle 5s)\n- Nutze die AI-Taste für Übersetzung\n\nBeispiel: !!Hervorhebung!! oder ==unterstreichen==",
     "subject": "deu",
     "tags": [
       "onboarding"
@@ -30,16 +30,17 @@
         "placeholders": []
       }
     ],
-    "createdAt": 1789462577471,
-    "updatedAt": 1789462577471
+    "createdAt": 1789470646988,
+    "updatedAt": 1789470646988
   },
   {
-    "id": "note-fe2e875c-2d53-4874-ba8a-fb0a8951d2c2",
+    "id": "note-d42c99d9-1c92-45c2-9df9-cc27d25c9240",
     "title": "Flashcards demo",
-    "body": "# Cell biology\n\nMitochondria powerhouse.",
+    "body": "# Cell biology\n\nMitochondria: the powerhouse of the cell.\n\n- {{c1::Main energy molecule::ATP}}\n- {{c1::Photosynthesis location::Chloroplast}}\n- {{c1::Number of chromosomes in humans::46}}\n- {{c1::DNA stands for::Deoxyribonucleic Acid}}\n\nReferencia: @campbell/cap9 (mitochondria) y @campbell/cap10 (cloroplastos).",
     "subject": "bio",
     "tags": [
-      "biology"
+      "biology",
+      "review"
     ],
     "pages": [
       {
@@ -47,52 +48,7 @@
         "placeholders": []
       }
     ],
-    "createdAt": 1789462577476,
-    "updatedAt": 1789462577476
-  },
-  {
-    "id": "note-67936f8b-39c0-4d54-bed3-c8f186f329c9",
-    "title": "Cell bio",
-    "body": "@campbell/cap9 mitochondria",
-    "subject": "bio",
-    "tags": [],
-    "pages": [
-      {
-        "strokes": [],
-        "placeholders": []
-      }
-    ],
-    "createdAt": 1789462680043,
-    "updatedAt": 1789462680043
-  },
-  {
-    "id": "note-f9073a6d-c506-4e9b-a5c6-558806d532b9",
-    "title": "Test FSRS",
-    "body": "Test",
-    "subject": "math",
-    "tags": [],
-    "pages": [
-      {
-        "strokes": [],
-        "placeholders": []
-      }
-    ],
-    "createdAt": 1789465167043,
-    "updatedAt": 1789465167043
-  },
-  {
-    "id": "note-03ac5865-dd60-4807-952d-07b01da9d45c",
-    "title": "Test FSRS",
-    "body": "Test",
-    "subject": "math",
-    "tags": [],
-    "pages": [
-      {
-        "strokes": [],
-        "placeholders": []
-      }
-    ],
-    "createdAt": 1789465177966,
-    "updatedAt": 1789465177966
+    "createdAt": 1789470646993,
+    "updatedAt": 1789470646993
   }
 ]

@@ -1,35 +1,15 @@
 [
   {
-    "id": "fc-fea06fc4-99b8-47a8-a147-804d8e05874f",
-    "front": "Test Q",
-    "back": "Test A",
+    "id": "fc-2967f731-e5e1-4741-972f-d70963b506de",
+    "front": "Capital de Francia",
+    "back": "París",
     "subject": "math",
-    "tags": [],
-    "sourceNoteId": "note-f9073a6d-c506-4e9b-a5c6-558806d532b9",
-    "sourceExcerpt": "",
-    "createdAt": 1789465167053,
-    "updatedAt": 1789465167053
-  },
-  {
-    "id": "fc-10d8a4fb-8114-423f-b33b-cd9d6d559065",
-    "front": "Test Q",
-    "back": "Test A",
-    "subject": "math",
-    "tags": [],
-    "sourceNoteId": "note-03ac5865-dd60-4807-952d-07b01da9d45c",
-    "sourceExcerpt": "",
-    "createdAt": 1789465177977,
-    "updatedAt": 1789465177977
-  },
-  {
-    "id": "fc-4dcb6ff5-b996-4306-87f7-92a0dd743f10",
-    "front": "Test Q",
-    "back": "Test A",
-    "subject": "math",
-    "tags": [],
-    "sourceNoteId": "note-ed71fe1e-ca55-4f04-b82b-c970704b70c1",
-    "sourceExcerpt": "",
-    "createdAt": 1789465235160,
-    "updatedAt": 1789465235160
+    "tags": [
+      "welcome"
+    ],
+    "sourceNoteId": "note-6ee37385-74e1-4120-b4f6-adf1c89a52c5",
+    "sourceExcerpt": "Capital de Francia::París",
+    "createdAt": 1789470685342,
+    "updatedAt": 1789470685342
   }
 ]

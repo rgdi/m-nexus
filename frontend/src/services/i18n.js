@@ -132,6 +132,7 @@ const STRINGS = {
   "notes.ai.summarize":     { en: "Summarize note", es: "Resumir nota", pt: "Resumir nota" },
   "notes.ai.define":        { en: "Define words", es: "Definir palabras", pt: "Definir palavras" },
   "notes.ai.quiz":          { en: "Quiz me (from flashcards)", es: "Pregúntame (con flashcards)", pt: "Teste-me (com flashcards)" },
+  "notes.ai.cloze":         { en: "Cloze test (open deletion)", es: "Test cloze (eliminación abierta)", pt: "Teste cloze (eliminación aberta)" },
   "notes.ai.stubNote":      { en: "(local stub — production calls AI tutor)", es: "(stub local — en producción llama al tutor AI)", pt: "(stub local — em produção chama o tutor AI)" },
   "notes.ai.defineSubtitle":{ en: "Pick a word to look up:", es: "Elige una palabra para consultar:", pt: "Escolha uma palavra para consultar:" },
   "notes.ai.noFlashcardsYet":{en: "Generate flashcards first.", es: "Genera flashcards primero.", pt: "Gere flashcards primeiro." },

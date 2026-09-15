@@ -149,9 +149,9 @@ async function ensureSeeded(svc: NotesService) {
   const list = await svc.all();
   if (list.length > 0) return;
   const seed: Array<Partial<Note>> = [
-    { title: "Welcome to M-NEXUS", subject: "math", tags: ["welcome"], body: "# Welcome\n\nNotebook demo. Pulsa el lápiz para escribir.", pages: [{ strokes: [], placeholders: [] }] },
-    { title: "Getting started", subject: "deu", tags: ["onboarding"], body: "# Erste Schritte\n\n- Stift\n- Auto-save", pages: [{ strokes: [], placeholders: [] }] },
-    { title: "Flashcards demo", subject: "bio", tags: ["biology"], body: "# Cell biology\n\nMitochondria powerhouse.", pages: [{ strokes: [], placeholders: [] }] },
+    { title: "Welcome to M-NEXUS", subject: "math", tags: ["welcome"], body: "# Welcome\n\nEste es tu notebook. **Pulsa el lápiz para escribir**, el icono de imagen para insertar fotos, el código para snippets, etc.\n\nUsa ==subrayado==, !!resaltado!!, [[Getting started]] o {{c1::Capital de Francia::París}} para crear flashcards.", pages: [{ strokes: [], placeholders: [] }] },
+    { title: "Getting started", subject: "deu", tags: ["onboarding"], body: "# Erste Schritte\n\n- Schreib mit dem Stift\n- Speichere oft (auto-save alle 5s)\n- Nutze die AI-Taste für Übersetzung\n\nBeispiel: !!Hervorhebung!! oder ==unterstreichen==", pages: [{ strokes: [], placeholders: [] }] },
+    { title: "Flashcards demo", subject: "bio", tags: ["biology", "review"], body: "# Cell biology\n\nMitochondria: the powerhouse of the cell.\n\n- {{c1::Main energy molecule::ATP}}\n- {{c1::Photosynthesis location::Chloroplast}}\n- {{c1::Number of chromosomes in humans::46}}\n- {{c1::DNA stands for::Deoxyribonucleic Acid}}\n\nReferencia: @campbell/cap9 (mitochondria) y @campbell/cap10 (cloroplastos).", pages: [{ strokes: [], placeholders: [] }] },
   ];
   for (const s of seed) await svc.create(s);
 }

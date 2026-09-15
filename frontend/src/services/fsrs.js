@@ -47,13 +47,17 @@ function nextStabilitySuccess(d, s, r, rating) {
   return Math.max(0.01, newS);
 }
 
-/** Stability After Lapse (Again) */
+/** Stability After Lapse (Again) — fórmula FSRS-4.5 + cap para que decremente */
 function nextStabilityLapse(d, s, r) {
-  const newS = W[11] *
+  // FSRS-4.5: S' = w[11] * d^(-w[12]) * ((S+1)^w[13] - 1) * e^((1-r)*w[14])
+  // Esta fórmula puede ser > S si r es alta. Cap S' = 0.9 * S para forzar decremento.
+  const raw = W[11] *
     Math.pow(d, -W[12]) *
     (Math.pow(s + 1, W[13]) - 1) *
     Math.exp((1 - r) * W[14]);
-  return Math.max(0.01, newS);
+  // Cap: lapse debe reducir stability al menos un poco
+  const capped = Math.min(raw, s * 0.9, Math.max(0.5, s - 0.5));
+  return Math.max(0.01, capped);
 }
 
 /** Next difficulty based on rating */
@@ -68,28 +72,75 @@ function meanRevalidation(s) { return s; }
 
 /**
  * Review — devuelve el siguiente state y la retrievability.
- * @param card {stability, difficulty, lastReview, due, reps, state}
+ *
+ * Anki-grade: 3 estados diferenciados:
+ *   - "new"        → primera vez, se muestra
+ *   - "learning"   → rating < Good → reaparece en pocos minutos (misma sesión)
+ *   - "relearning" → después de un lapse, relearning hasta Good
+ *   - "review"     → schedule de días
+ *
+ * @param card {stability, difficulty, lastReview, due, reps, state, learningStep}
  * @param rating 1=Again, 2=Hard, 3=Good, 4=Easy
  */
 export function review(card, rating, now = Date.now()) {
   const elapsedDays = Math.max(0, (now - (card.lastReview || now)) / DAY_MS);
   const r = forgettingCurve(elapsedDays, card.stability || 0.01);
 
-  let newS, newD, newState;
-  if (rating === 1) {
-    // Again → lapse
-    newS = nextStabilityLapse(card.difficulty || 5, card.stability || 1, r);
-    newD = clamp((card.difficulty || 5) - W[6] * (10 - (card.difficulty || 5)) / 9, 1, 10);
-    newState = card.reps >= 1 ? "relearning" : "learning";
+  const curState = card.state || "new";
+  const step = card.learningStep ?? 0;
+  let newS, newD, newState, intervalDays, due;
+
+  if (curState === "new" || curState === "learning" || curState === "relearning") {
+    // Learning steps: 1min, 10min. Good/Easy graduate, Again stays.
+    if (rating === 1) {
+      // Again — vuelve al primer step
+      newState = curState === "new" ? "learning" : "relearning";
+      newS = card.stability || 0.01;
+      newD = clamp((card.difficulty || 5) - W[6] * (10 - (card.difficulty || 5)) / 9, 1, 10);
+      due = now + 60 * 1000; // 1 minuto
+      intervalDays = 1 / (24 * 60); // en días
+    } else if (rating === 2) {
+      // Hard — vuelve al step 1 (relearning), no graduate
+      newState = curState === "new" ? "learning" : curState;
+      newS = card.stability || 0.01;
+      newD = clamp((card.difficulty || 5) + W[5] * (10 - (card.difficulty || 5)) / 9 * 0.3, 1, 10);
+      due = now + 10 * 60 * 1000; // 10 minutos
+      intervalDays = 10 / (24 * 60);
+    } else if (rating === 3) {
+      // Good — graduate
+      newState = "review";
+      newS = Math.max(0.01, card.stability || 1);
+      newD = clamp(card.difficulty || 5, 1, 10);
+      // graduate interval = 4 días por defecto (primer review)
+      intervalDays = 4;
+      due = now + intervalDays * DAY_MS;
+    } else {
+      // Easy — graduate con bonus
+      newState = "review";
+      newS = Math.max(0.01, (card.stability || 1) * 1.3);
+      newD = clamp((card.difficulty || 5) + W[4] * (10 - (card.difficulty || 5)) / 9, 1, 10);
+      intervalDays = 7;
+      due = now + intervalDays * DAY_MS;
+    }
   } else {
-    // Hard/Good/Easy
-    newD = nextDifficulty(card.difficulty || 5, rating);
-    newS = nextStabilitySuccess(newD, card.stability || 1, r, rating);
-    newState = card.state === "new" || card.state === "learning" ? "review" : "review";
+    // "review" — algoritmo FSRS estándar
+    if (rating === 1) {
+      // Lapse → relearning
+      newS = nextStabilityLapse(card.difficulty || 5, card.stability || 1, r);
+      newD = clamp((card.difficulty || 5) - W[6] * (10 - (card.difficulty || 5)) / 9, 1, 10);
+      newState = "relearning";
+      // después de relearning gradua a review otra vez
+      due = now + 10 * 60 * 1000;
+      intervalDays = 10 / (24 * 60);
+    } else {
+      newD = nextDifficulty(card.difficulty || 5, rating);
+      newS = nextStabilitySuccess(newD, card.stability || 1, r, rating);
+      newState = "review";
+      intervalDays = Math.max(1, nextInterval(newS));
+      due = now + intervalDays * DAY_MS;
+    }
   }
-  // Interval (días) → ms. Use FSRS optimal interval from stability
-  const optimalDays = nextInterval(newS);
-  const due = now + optimalDays * DAY_MS;
+
   const reps = card.reps + 1;
   const lapses = card.lapses + (rating === 1 ? 1 : 0);
 
@@ -102,7 +153,7 @@ export function review(card, rating, now = Date.now()) {
     lapses,
     state: newState,
     retrievability: r,
-    intervalDays: optimalDays,
+    intervalDays,
   };
 }
 

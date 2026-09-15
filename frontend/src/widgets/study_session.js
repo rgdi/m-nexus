@@ -118,6 +118,44 @@ const STYLE = `
   cursor: pointer;
 }
 
+/* v1.8.0: card meta (state + reps + due) */
+.study .card-meta {
+  display: flex;
+  gap: 12px;
+  margin-bottom: var(--s-3);
+  max-width: 720px;
+  width: 100%;
+  align-items: center;
+  font-size: var(--fs-sm);
+  color: var(--fg-muted);
+}
+.study .card-meta .state {
+  padding: 4px 12px;
+  border-radius: 12px;
+  background: var(--bg-sunken);
+  font-weight: 600;
+}
+.study .card-meta .reps {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: rgba(140,92,246,0.15);
+  color: #8c5cf6;
+}
+.study .card-meta .due {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: rgba(34,197,94,0.15);
+  color: #16a34a;
+}
+.study .card-meta .due.now {
+  background: rgba(220,38,38,0.15);
+  color: #dc2626;
+}
+
 .study .stats {
   display: flex;
   gap: 16px;
@@ -178,6 +216,19 @@ export async function openStudySession(cards) {
     fsrs: getCardState(c.id) || { stability: 0, difficulty: 0, lastReview: 0, due: Date.now(), reps: 0, lapses: 0, state: "new" },
   }));
 
+  // v1.8.0: requeue learning/relearning cards que aún están dentro de su step time.
+  // Una card con rating=1/2 vuelve a aparecer hasta que sea Good.
+  // Lo simulamos aquí: si due está dentro de 30 minutos, la requeueamos
+  // al final de la cola hasta que reps >= 3 o rating >= Good.
+  const REQUEUE_MAX = 3;
+  function requeue(card) {
+    // Si está en learning/relearning y reps < REQUEUE_MAX, vuelve al final
+    const fs = card.fsrs || {};
+    if ((fs.state === "learning" || fs.state === "relearning") && (fs.reps ?? 0) < REQUEUE_MAX) {
+      queue.push(card);
+    }
+  }
+
   // Stats globales
   let reviewed = 0, correct = 0, total = queue.length;
 
@@ -195,6 +246,14 @@ export async function openStudySession(cards) {
 
   function renderCard(card, showBack) {
     const pct = total > 0 ? ((reviewed) / total) * 100 : 0;
+    const fs = card.fsrs || {};
+    const stateLabel = {
+      new: "🆕 New",
+      learning: "🔁 Learning",
+      relearning: "🔄 Relearning",
+      review: "✓ Review",
+    }[fs.state || "new"];
+    const repsLabel = fs.reps ? `rep ${fs.reps}` : "";
     root.innerHTML = `
       <div class="head">
         <button class="close" data-act="close">✕</button>
@@ -205,6 +264,11 @@ export async function openStudySession(cards) {
         <div class="stat-pill"><div class="v">${correct}</div><div class="l">Correct</div></div>
         <div class="stat-pill"><div class="v">${reviewed - correct}</div><div class="l">Wrong</div></div>
         <div class="stat-pill"><div class="v">${total - reviewed}</div><div class="l">Left</div></div>
+      </div>
+      <div class="card-meta">
+        <span class="state">${stateLabel}</span>
+        <span class="reps">${repsLabel}</span>
+        <span class="due">due ${formatMmss(Math.max(0, (fs.due || 0) - Date.now()))}</span>
       </div>
       <div class="card-wrap">
         <div class="card ${showBack ? "flipped" : ""}" data-act="flip">
@@ -271,6 +335,12 @@ export async function openStudySession(cards) {
     reviewed++;
     if (rating >= 3) correct++;
     queue.shift();
+    // v1.8.0: si quedó en learning/relearning y aún no graduó,
+    // la requeueamos al final hasta que reps >= REQUEUE_MAX.
+    if ((updated.state === "learning" || updated.state === "relearning") && updated.reps < REQUEUE_MAX) {
+      const cardCopy = { ...card, fsrs: updated, _requeued: (card._requeued || 0) + 1 };
+      queue.push(cardCopy);
+    }
     render();
   }
 
@@ -305,3 +375,16 @@ export async function openStudySession(cards) {
 function escapeHtml(s) {
   return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
+
+function formatMmss(ms) {
+  if (ms <= 0) return "now";
+  const totalSec = Math.floor(ms / 1000);
+  if (totalSec < 60) return `${totalSec}s`;
+  const m = Math.floor(totalSec / 60);
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  const d = Math.floor(h / 24);
+  return `${d}d`;
+}
+const _no = 0;

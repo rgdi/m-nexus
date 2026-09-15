@@ -144,6 +144,15 @@
   .hamburger { display: inline-flex; align-items: center; justify-content: center; }
   .dock { display: none !important; }
 }
+/* v1.8.2: tighter top-bar spacing on small screens */
+@media (max-width: 480px) {
+  .screen-header { flex-wrap: wrap; gap: 8px; }
+  .screen-header .h-title { width: 100%; order: 1; }
+  .screen-header .spacer { display: none; }
+  .screen-header .btn { order: 2; }
+  .screen-header input { order: 3; flex: 1 1 100%; }
+  .theme-toggle { right: 12px; }
+}
 .drawer {
   position: fixed; inset: 0 0 0 0; z-index: 96;
   background: rgba(0,0,0,0.4);

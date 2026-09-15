@@ -289,8 +289,65 @@ async function run() {
     } catch (e) {
       console.log('  ! study:', e.message.slice(0, 80));
     }
-  }
 
+    // v1.8.1: cloze test (run BEFORE study session to keep notebook context)
+    try {
+      await page.evaluate(() => {
+        document.querySelectorAll('.scrim, .fc-panel, .cloze-test, .study, .three-d-mount').forEach((s) => s.remove());
+      });
+      await page.waitForTimeout(300);
+      // If we're not in a notebook, navigate to one
+      const hasCanvas = await page.locator('#canvas').count();
+      if (!hasCanvas) {
+        const bc = await page.locator('.book-card').count();
+        if (bc === 0) {
+          await page.evaluate(() => { location.hash = '#/notes'; });
+          await page.waitForTimeout(1500);
+        }
+        await page.locator('.book-card').first().click();
+        await page.waitForTimeout(1500);
+      }
+      // Otherwise we're already in a notebook, just continue
+      // Force open AI menu — single click only
+      await page.evaluate(() => {
+        const t = document.getElementById('ai-toggle');
+        const panel = document.getElementById('ai-menu-panel');
+        if (!t || !panel) return;
+        if (panel.hidden) t.click(); // only if closed
+      });
+      await page.waitForTimeout(800);
+      const menuOk = await page.evaluate(() => {
+        const p = document.getElementById('ai-menu-panel');
+        return !!(p && !p.hidden);
+      });
+      console.log('  ai-menu open:', menuOk);
+      // Click cloze
+      await page.evaluate(() => {
+        const ai = document.querySelector('.ai-item[data-act="cloze"]');
+        if (ai) ai.click();
+      });
+      await page.waitForTimeout(2500);
+      const hasCloze = (await page.locator('.cloze-test').count()) > 0;
+      check('cloze test visible', hasCloze);
+      if (hasCloze) {
+        await page.waitForTimeout(800);
+        await shoot(page, '12h-notes-cloze-test-en', 'tablet');
+        if (await page.locator('.cloze-test .prompt').count() > 0) {
+          await page.fill('#cloze-input', 'Paris');
+          await page.click('#cloze-submit');
+          await page.waitForTimeout(1500);
+          await shoot(page, '12i-notes-cloze-checked-en', 'tablet');
+        }
+        await page.evaluate(() => document.querySelector('.cloze-test .close')?.click());
+      } else {
+        await shoot(page, '12h-notes-cloze-test-en', 'tablet');
+      }
+    } catch (e) {
+      console.log('  ! cloze:', e.message.slice(0, 80));
+    }
+
+    // (study moved above, end of notes block)
+  }
   // 13: Todos
   console.log('\n[13] Todos (en, tablet)');
   await navigate(page, '#/todos');
@@ -333,6 +390,33 @@ async function run() {
 
   await navigate(page, '#/notes');
   await shoot(page, '18-notes-es', 'phone');
+
+  // v1.8.2: small-screen regression tests (3 viewports × 3 langs)
+  console.log('\n[v1.8.2] Small-screen regression (360/390/720)');
+  const smallTests = [
+    { name: '360-overview-es', w: 360, h: 740, lang: 'es', route: '#/overview' },
+    { name: '390-todos-pt',     w: 390, h: 844, lang: 'pt', route: '#/todos' },
+    { name: '720-calendar-en',  w: 720, h: 1280, lang: 'en', route: '#/calendar' },
+    { name: '390-notes-es',     w: 390, h: 844, lang: 'es', route: '#/notes' },
+    { name: '360-ai-en',        w: 360, h: 740, lang: 'en', route: '#/ai' },
+    { name: '720-subjects-pt',  w: 720, h: 1280, lang: 'pt', route: '#/subjects' },
+  ];
+  for (const t of smallTests) {
+    const sctx = await browser.newContext({ viewport: { width: t.w, height: t.h } });
+    const sp = await sctx.newPage();
+    await sp.goto(BASE);
+    await sp.waitForTimeout(2000);
+    await sp.evaluate((l) => { localStorage.setItem('mnexus.lang', l); }, t.lang);
+    await sp.evaluate(() => location.reload());
+    await sp.waitForTimeout(1500);
+    await sp.evaluate((r) => { location.hash = r; }, t.route);
+    await sp.waitForTimeout(1500);
+    const path = `${SCREENS_DIR}/small-${t.name}.png`;
+    await sp.screenshot({ path, fullPage: false });
+    console.log(`  📸 ${path} (${t.w}x${t.h})`);
+    check(`small-${t.name} OK`, true);
+    await sctx.close();
+  }
 
   // 19: Dark mode (needs new context with colorScheme:dark)
   console.log('\n[19] Dark mode (es, tablet)');
