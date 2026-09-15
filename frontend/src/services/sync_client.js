@@ -1,11 +1,12 @@
 /* ============================================================
- * sync_client.js — WebSocket client para E2E sync v2.0.6.
+ * sync_client.js — WebSocket client para E2E sync v2.0.6 / v2.1.3.
  *
  * Conecta a ws://localhost:4100/ws/sync y escucha broadcasts.
- * Cuando llega un cambio de otro dispositivo, actualiza el cache
- * local y dispara un evento 'sync:incoming' para que las screens
- * se refresquen.
+ * Cuando llega un cambio de otro dispositivo, lo aplica via CRDT
+ * (lwwMerge o tombstone) y dispara un evento 'sync:incoming'.
  * ============================================================ */
+
+import { lwwMerge, lwwRead, lwwWrite, tombstone, getVector, getTombstones } from "./crdt.js";
 
 const CLIENT_ID_KEY = "mnexus.sync.clientId";
 
@@ -40,18 +41,16 @@ export function connectSync() {
     try {
       const msg = JSON.parse(e.data);
       if (msg.resourceId === "hello") {
-        // initial hello from server — store clientId
         if (msg.data?.clientId) {
           localStorage.setItem(CLIENT_ID_KEY, msg.data.clientId);
         }
-        // hydrate from history
         if (Array.isArray(msg.data?.history)) {
           for (const m of msg.data.history) fireIncoming(m);
         }
         return;
       }
-      // ignore our own messages (origin match)
       if (msg.origin === getClientId()) return;
+      applyRemoteChange(msg);
       fireIncoming(msg);
     } catch {}
   };
@@ -63,6 +62,22 @@ export function connectSync() {
     if (ws) ws.close();
   };
   return ws;
+}
+
+/**
+ * applyRemoteChange — uses CRDT semantics to merge.
+ * - op=create/update → lwwMerge by resourceId
+ * - op=delete → tombstone
+ */
+function applyRemoteChange(msg) {
+  const key = `${msg.type}:${msg.resourceId}`;
+  if (msg.op === "delete") {
+    tombstone(key, msg.origin);
+    return;
+  }
+  if (msg.data) {
+    lwwMerge(key, { value: msg.data, ts: msg.ts, v: msg.v || {}, deviceId: msg.origin }, getClientId());
+  }
 }
 
 function fireIncoming(msg) {
@@ -80,17 +95,27 @@ export function onSync(fn) {
   return () => listeners.delete(fn);
 }
 
+/**
+ * publishChange — called locally; persists with CRDT and broadcasts.
+ */
 export function publishChange(type, op, resourceId, data = null) {
+  const cid = getClientId();
+  const key = `${type}:${resourceId}`;
+  if (op === "delete") {
+    tombstone(key, cid);
+  } else if (data) {
+    lwwWrite(key, data, cid);
+  }
   const msg = {
     id: `m-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     type, op, resourceId, data,
-    origin: getClientId(),
+    origin: cid,
     ts: Date.now(),
+    v: getVector(),
   };
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify(msg));
   }
-  // also publish via REST (server will broadcast)
   fetch("http://localhost:4100/api/v1/sync/publish", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

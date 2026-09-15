@@ -115,6 +115,7 @@ export async function renderOverview(root) {
 
           <button class="btn primary" id="cv-btn" style="margin-top: var(--s-5)">📊 ${i18n.t("overview.crossVerify")}</button>
           <button class="btn primary" id="exam-btn" style="margin-top: var(--s-3)">📋 ${i18n.t("overview.exam")}</button>
+          <button class="btn primary" id="graph-btn" style="margin-top: var(--s-3)">🕸 3D Graph</button>
         </div>
       </div>
     </div>
@@ -144,6 +145,16 @@ export async function renderOverview(root) {
         }
       }
       openExamWizard(allCards, occCards);
+    });
+  }
+
+  // v2.1.5: 3D graph
+  const graphBtn = root.querySelector("#graph-btn");
+  if (graphBtn) {
+    graphBtn.addEventListener("click", async () => {
+      const { openGraph3D } = await import("../widgets/graph_3d.js");
+      const noteList = await dataSource.notes.list();
+      openGraph3D(noteList);
     });
   }
 }

@@ -294,13 +294,17 @@ function buildOcclusionTool(att, noteId, scrim) {
   // Cargar occlusion si existe
   let occ = att.occlusion || { tags: [], approved: false };
 
-  // Auto-generar tags si la imagen es grande (cuadrícula 3x3)
+  // v2.1.2: no limit on tags. Auto-generate a denser grid (5x5)
+  // proportional to image size, but cap to a reasonable number.
   const ensureAutoTags = (img) => {
     if (occ.tags.length > 0) return occ;
-    const w = img.naturalWidth, h = img.naturalHeight;
-    const cols = 3, rows = 3;
+    const w = img.naturalWidth || 800;
+    const h = img.naturalHeight || 600;
+    // Aim for ~5x5 = 25 tags by default; smaller img → 4x4; bigger → 6x6
+    const cols = w > 1000 ? 6 : 5;
+    const rows = h > 800 ? 6 : 5;
+    const total = cols * rows;
     const tags = [];
-    const labels = ["?", "?", "?", "?", "?", "?", "?", "?", "?"];
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         tags.push({
@@ -308,23 +312,24 @@ function buildOcclusionTool(att, noteId, scrim) {
           x: (c + 0.5) / cols * 100,
           y: (r + 0.5) / rows * 100,
           front: "?",
-          back: labels[r * cols + c],
-          state: "hidden", // hidden | revealed
+          back: `${r + 1}-${c + 1}`,
+          state: "hidden",
         });
       }
     }
-    return { tags, approved: false, auto: true };
+    return { tags, approved: false, auto: true, count: total };
   };
 
   wrap.innerHTML = `
     <div class="occlusion-toolbar">
-      <span style="font-weight:600">🖼 Image Occlusion</span>
-      <button class="btn small" data-act="auto">Auto-generate 3×3</button>
+      <span style="font-weight:600">🖼 Image Occlusion <span class="muted small">(${occ.tags.length} tags)</span></span>
+      <button class="btn small" data-act="auto">Auto-generate</button>
       <button class="btn small" data-act="manual">+ Manual tag</button>
       <button class="btn small" data-act="reveal">Reveal all</button>
       <button class="btn small" data-act="hide">Hide all</button>
+      <button class="btn small primary" data-act="quiz-mode">🎴 Quiz mode</button>
       <button class="btn small primary" data-act="approve">${occ.approved ? "✓ Approved" : "Approve"}</button>
-      <span class="muted small" style="margin-left:auto">Click a tag to toggle reveal/hide</span>
+      <span class="muted small" style="margin-left:auto">Click a tag to toggle · double-click to edit</span>
     </div>
     <div class="occlusion-canvas-wrap" id="occ-wrap">
       <img id="occ-img" src="${att.dataUrl}">
@@ -412,7 +417,36 @@ function buildOcclusionTool(att, noteId, scrim) {
       : "⏳ Unapproved — tags are stored but NOT pushed to the study queue.";
   });
 
+  // v2.1.2: quiz mode — reveal tags one by one with random delay
+  wrap.querySelector('[data-act="quiz-mode"]').addEventListener("click", async () => {
+    if (occ.tags.length === 0) {
+      alert("Add tags first (auto-generate or manual).");
+      return;
+    }
+    // Shuffle tags, then reveal each one for a random 0.5–1.5s,
+    // then re-hide. After all visited, return.
+    const order = shuffle([...occ.tags]);
+    for (const tag of order) {
+      tag.state = "revealed";
+      saveOcc(att, noteId, occ);
+      renderTags();
+      await new Promise((r) => setTimeout(r, 600 + Math.random() * 900));
+      tag.state = "hidden";
+      saveOcc(att, noteId, occ);
+      renderTags();
+      await new Promise((r) => setTimeout(r, 200));
+    }
+  });
+
   return wrap;
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
 }
 
 function saveOcc(att, noteId, occ) {

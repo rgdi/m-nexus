@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f1115" />
+  <title>M-NEXUS — Education Service</title>
+  <meta name="description" content="Notebook, calendar, subjects and AI tutor for medical students. Tablet-first with stylus support." />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="stylesheet" href="/src/styles/tokens.css" />
+  <link rel="stylesheet" href="/src/styles/base.css" />
+  <link rel="stylesheet" href="/src/styles/layout.css" />
+  <link rel="stylesheet" href="/src/styles/components.css" />
+  <link rel="stylesheet" href="/src/styles/notebook.css" />
+  <link rel="stylesheet" href="/src/styles/calendar.css" />
+</head>
+<body>
+  <!-- v1.0.0 — entry point. Router + bootstrap -->
+  <div id="app" class="app" data-route="overview"></div>
+  <!-- v1.5.x: hamburger drawer (mobile only) -->
+  <button class="hamburger" id="hamburger" aria-label="Menu">≡</button>
+  <nav class="dock" id="dock" aria-label="Primary">
+    <a href="#/overview" class="dock-item" data-route="overview"><span class="i" data-icon="overview"></span><span class="lbl" data-i18n="dock.overview">Overview</span></a>
+    <a href="#/calendar" class="dock-item" data-route="calendar"><span class="i" data-icon="calendar"></span><span class="lbl" data-i18n="dock.calendar">Calendar</span></a>
+    <a href="#/subjects" class="dock-item" data-route="subjects"><span class="i" data-icon="subjects"></span><span class="lbl" data-i18n="dock.subjects">Subjects</span></a>
+    <a href="#/notes"    class="dock-item" data-route="notes"><span class="i" data-icon="notes"></span><span class="lbl" data-i18n="dock.notes">Notes</span></a>
+    <a href="#/todos"    class="dock-item" data-route="todos"><span class="i" data-icon="todos"></span><span class="lbl" data-i18n="dock.todos">To-dos</span></a>
+    <a href="#/ai"       class="dock-item" data-route="ai"><span class="i" data-icon="tutor"></span><span class="lbl" data-i18n="dock.tutor">Tutor</span></a>
+  </nav>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

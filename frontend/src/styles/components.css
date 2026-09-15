@@ -503,13 +503,15 @@ body.hide-ui .dock, body.hide-ui .lang-switcher, body.hide-ui .top-toolbar { dis
 
 /* ============================================================
  * v1.7.1 — theme toggle (light/dark/auto)
+ * v2.1.1 — repositioned: bottom-right above AI tutor FAB,
+ *                   fixed bottom + right, no overlap with top-bar.
  * ============================================================ */
 .theme-toggle {
   position: fixed;
-  top: 12px;
-  right: 140px; /* junto al lang switcher */
-  width: 40px;
-  height: 40px;
+  bottom: 96px; /* encima del dock y del AI tutor FAB */
+  right: 24px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: var(--bg-elevated);
   border: 1px solid var(--border);
@@ -520,9 +522,11 @@ body.hide-ui .dock, body.hide-ui .lang-switcher, body.hide-ui .top-toolbar { dis
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  transition: transform 200ms var(--ease);
 }
+.theme-toggle:hover { transform: scale(1.08); }
 @media (max-width: 720px) {
-  .theme-toggle { right: 60px; }
+  .theme-toggle { bottom: 88px; right: 16px; width: 40px; height: 40px; }
 }
 .theme-toggle[data-theme="light"] { background: #fef3c7; }
 .theme-toggle[data-theme="dark"]  { background: #1f2937; color: #f0f0f0; }

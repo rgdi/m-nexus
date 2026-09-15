@@ -136,13 +136,13 @@ const STYLE = `
 .exam-runner .summary .lbl { color: var(--fg-muted); margin-bottom: var(--s-4); }
 `;
 
-import { buildExam, recordAnswer, loadHistory } from "../services/exams.js";
+import { buildExam, recordAnswer, loadHistory, EXAM_MODES } from "../services/exams.js";
 import { initCard, review } from "../services/fsrs.js";
 
 let styleMounted = false;
 
 /**
- * openExamWizard — modal con selector de scope + start.
+ * openExamWizard — modal con selector de scope + mode + start.
  */
 export async function openExamWizard(allCards, allOcc = []) {
   if (!styleMounted) {
@@ -161,8 +161,23 @@ export async function openExamWizard(allCards, allOcc = []) {
   scrim.innerHTML = `
     <div class="panel">
       <h2>📋 Generate Exam</h2>
-      <p class="muted small">Pick a scope — the system prioritizes difficult cards, balances topics, and avoids repeats from the last 3 sessions.</p>
-      <h3>1. Choose scope type</h3>
+      <p class="muted small">Pick a scope and a mode. University mode ensures full coverage of all topics before repeating.</p>
+      <h3>1. Choose mode</h3>
+      <div class="scope-grid">
+        <div class="opt selected" data-mode="university">
+          <div class="ico">🎓</div>
+          <div><b>University</b><div class="muted tiny">Full syllabus coverage · prioritize weak</div></div>
+        </div>
+        <div class="opt" data-mode="review">
+          <div class="ico">📊</div>
+          <div><b>Review</b><div class="muted tiny">Difficult cards · spaced repetition</div></div>
+        </div>
+        <div class="opt" data-mode="cram">
+          <div class="ico">⚡</div>
+          <div><b>Cram</b><div class="muted tiny">Rapid-fire random</div></div>
+        </div>
+      </div>
+      <h3>2. Choose scope type</h3>
       <div class="scope-grid">
         <div class="opt selected" data-kind="all">
           <div class="ico">🎲</div>
@@ -186,7 +201,8 @@ export async function openExamWizard(allCards, allOcc = []) {
   `;
   document.body.appendChild(scrim);
 
-  let selected = { kind: "all", value: null };
+  let selected = { kind: "all", value: null, mode: "university" };
+
   function renderList() {
     const wrap = scrim.querySelector("#scope-list-wrap");
     if (selected.kind === "all") {
@@ -195,7 +211,7 @@ export async function openExamWizard(allCards, allOcc = []) {
     }
     if (selected.kind === "subject") {
       wrap.innerHTML = `
-        <h3>2. Pick a subject</h3>
+        <h3>3. Pick a subject</h3>
         <div class="scope-list">
           ${subjects.map((s) => `
             <div class="opt ${s === selected.value ? "selected" : ""}" data-v="${s}">
@@ -208,7 +224,7 @@ export async function openExamWizard(allCards, allOcc = []) {
       `;
     } else if (selected.kind === "note") {
       wrap.innerHTML = `
-        <h3>2. Pick a note</h3>
+        <h3>3. Pick a note</h3>
         <div class="scope-list">
           ${notes.map((n) => `
             <div class="opt ${n === selected.value ? "selected" : ""}" data-v="${n}">
@@ -227,9 +243,16 @@ export async function openExamWizard(allCards, allOcc = []) {
       });
     });
   }
-  scrim.querySelectorAll(".scope-grid .opt").forEach((o) => {
+  scrim.querySelectorAll(".scope-grid .opt[data-mode]").forEach((o) => {
     o.addEventListener("click", () => {
-      scrim.querySelectorAll(".scope-grid .opt").forEach((x) => x.classList.remove("selected"));
+      scrim.querySelectorAll(".scope-grid .opt[data-mode]").forEach((x) => x.classList.remove("selected"));
+      o.classList.add("selected");
+      selected.mode = o.dataset.mode;
+    });
+  });
+  scrim.querySelectorAll(".scope-grid .opt[data-kind]").forEach((o) => {
+    o.addEventListener("click", () => {
+      scrim.querySelectorAll(".scope-grid .opt[data-kind]").forEach((x) => x.classList.remove("selected"));
       o.classList.add("selected");
       selected.kind = o.dataset.kind;
       if (selected.kind === "all") selected.value = null;
@@ -242,7 +265,7 @@ export async function openExamWizard(allCards, allOcc = []) {
       alert("Please pick a scope");
       return;
     }
-    const exam = await buildExam(selected, allCards, allOcc);
+    const exam = await buildExam(selected, allCards, allOcc, { mode: selected.mode });
     if (exam.items.length === 0) {
       alert("No cards in this scope. Add some flashcards first.");
       return;
@@ -328,11 +351,16 @@ function openExamSession(exam) {
   scrim.querySelector('[data-act="exit"]').addEventListener("click", () => scrim.remove());
 
   function finish() {
+    const modeLabel = exam.mode === "university" ? "🎓 University" : exam.mode === "cram" ? "⚡ Cram" : "📊 Review";
+    const coverageInfo = exam.totalTopics
+      ? `<p class="muted">Coverage: <b>${exam.coveredTopics}/${exam.totalTopics} topics</b> (${Math.round(exam.coverage * 100)}%) — cards you got wrong will appear more often.</p>`
+      : `<p class="muted">Cards you got wrong will appear more often next time. Recently seen cards are excluded.</p>`;
     scrim.querySelector(".exam-runner").innerHTML = `
       <div class="summary">
         <div class="score">${correct}/${exam.items.length}</div>
         <div class="lbl">${Math.round((correct / exam.items.length) * 100)}% correct</div>
-        <p class="muted">Cards you got wrong will appear more often next time. Cards you've seen recently are excluded from future exams.</p>
+        <div class="muted small" style="margin-bottom: 12px">${modeLabel}</div>
+        ${coverageInfo}
         <button class="btn primary" data-act="close" style="margin-top: 16px">Close</button>
       </div>
     `;
