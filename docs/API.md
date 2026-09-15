@@ -1,13 +1,14 @@
-# M-NEXUS Backend API (v0.35.0)
+# M-NEXUS Backend API (v2.1.4)
 
-API REST del backend Node.js (Fastify 5 + TypeScript).
+REST API del backend Node.js (Fastify 5 + TypeScript + SQLite).
 
-**Base URL:** `http://localhost:8787` (default) · **Versión API:** v1
+**Base URL:** `http://localhost:4100/api/v1` · **Versión:** v1
 
-**Auth:** todas las rutas (excepto `/health`, `/metrics`, `/push/*` y `/transcription/stream`) requieren
-header `Authorization: Bearer <token>` excepto si la auth está deshabilitada.
+**Auth (v2.1.4):** JWT Bearer tokens en `Authorization: Bearer <token>`.
+Para desarrollo / tests, `AUTH_REQUIRED=false` desactiva el middleware (modo legacy).
+Sin auth, las rutas legacy (`/flashcards`, `/notes`, `/subjects`, etc.) son públicas.
 
-**Header universal:** `X-Device-Id` (recomendado, identifica el device companion/app).
+**Header recomendado:** `X-Device-Id` identifica el device companion.
 
 ---
 
@@ -16,526 +17,292 @@ header `Authorization: Bearer <token>` excepto si la auth está deshabilitada.
 - [Health & Metrics](#health--metrics)
 - [Auth](#auth)
 - [Devices & Stats](#devices--stats)
-- [Vaults (sync)](#vaults-sync)
-- [Audio & Transcription](#audio--transcription)
-- [LLM & Embeddings](#llm--embeddings)
-- [OCR](#ocr)
-- [PDF](#pdf)
-- [Flashcards (proposals)](#flashcards-proposals)
+- [Subjects / Notes / Events / Tasks / Recordings](#crud)
+- [Flashcards](#flashcards)
 - [AI Routes (vault eval, quiz, proposals, knowledge)](#ai-routes)
-- [FSRS Queue (async spaced repetition)](#fsrs-queue)
-- [Push Notifications](#push-notifications)
-- [Backup](#backup)
-- [Update (auto-update del backend)](#update)
-- [Secrets (AES-256-GCM)](#secrets)
-- [Databases (Notion-style)](#databases-notion-style)
-- [Upload (chunked, resumable)](#upload-chunked-resumable)
-- [Rollback](#rollback)
-- [WebSocket](#websocket)
+- [AI v2 (chat, embeddings, RAG)](#ai-v2)
+- [LLM (multi-provider)](#llm)
+- [OCR / PDF / Audio / Transcription](#ocr-pdf-audio)
+- [Cross-verify](#cross-verify)
+- [FSRS (spaced repetition)](#fsrs)
+- [Sync (WebSocket + REST)](#sync)
+- [Push Notifications](#push)
+- [Backup / Update / Secrets](#backup-update-secrets)
+- [Themes](#themes)
+- [Stemmer](#stemmer)
+- [Search](#search)
+- [Import](#import)
+- [Databases (linked)](#databases)
+- [Structured views / rows](#structured)
 
 ---
 
 ## Health & Metrics
 
-### `GET /api/v1/health`
-Verifica que el backend está corriendo.
-
-**Respuesta 200:**
-```json
-{
-  "status": "ok",
-  "version": "0.35.0",
-  "uptime": 12345,
-  "nodeVersion": "v22.0.0"
-}
 ```
-
-### `GET /metrics`
-Métricas Prometheus. No requiere auth.
-
----
+GET  /health                              # basic OK
+GET  /api/v1/health                       # full status + version + providers
+GET  /metrics                             # Prometheus format
+GET  /api/v1/ai/cache-stats               # AI cache stats
+GET  /api/v1/llm/embed/cache              # LLM embed cache stats
+POST /api/v1/llm/embed/cache/clear        # clear embed cache
+GET  /api/v1/stats                        # version, uptime, memory
+```
 
 ## Auth
 
-### `POST /api/v1/register`
-Registra un device companion.
-
-**Body:**
-```json
-{
-  "deviceId": "uuid-v4",
-  "model": "Google Pixel 7",
-  "osVersion": "Android 14 (SDK 34)",
-  "displayName": "Mi Pixel"
-}
 ```
-
-**Respuesta 200:**
-```json
-{ "registered": true, "authToken": "..." }
+POST /api/v1/register                     # register device, returns access + refresh
+POST /api/v1/auth/refresh                 # rotate refresh token
+POST /api/v1/auth/revoke                  # revoke all tokens for device
+GET  /api/v1/audit                        # audit log for current device
 ```
-
-### `POST /api/v1/auth/refresh`
-Refresca el token de auth.
-
-### `POST /api/v1/auth/revoke`
-Revoca el token (logout).
-
-### `POST /api/v1/auth/block`
-Bloquea un device (admin).
-
-### `GET /api/v1/audit`
-Log de auditoría (admin).
-
----
 
 ## Devices & Stats
 
-### `GET /api/v1/devices`
-Lista devices registrados.
-
-### `GET /api/v1/stats`
-Estadísticas globales (vaults, flashcards, recordings, etc.).
-
-**Respuesta 200:**
-```json
-{
-  "users": 1,
-  "vaults": 3,
-  "notes": 1234,
-  "flashcards": 567,
-  "recordings": 89,
-  "lastSync": "2026-09-04T23:00:00Z"
-}
+```
+GET  /api/v1/devices                      # list registered devices (public, count + sanitized list)
 ```
 
----
+## CRUD: Subjects / Notes / Events / Tasks / Recordings
 
-## Vaults (sync)
+```
+GET    /subjects
+POST   /subjects
+GET    /subjects/:id
+PATCH  /subjects/:id
+DELETE /subjects/:id
 
-> **Estado:** El endpoint existe en backend, pero la app standalone aún no sincroniza notas vía este endpoint (solo recordings). Sync E2E de notas está en roadmap (Fase 4 del [CHECKLIST.md](../CHECKLIST.md)).
+GET    /notes
+POST   /notes
+GET    /notes/:id
+PATCH  /notes/:id                  # body, subject, etc.
+DELETE /notes/:id
+GET    /notes/sync/status
+POST   /notes/:id/extract-flashcards  # parse {{c1::...::...}} → flashcards
 
-### `POST /api/v1/notes/sync`
-Sincroniza un batch de notas.
+GET    /events
+POST   /events
+PATCH  /events/:id
+DELETE /events/:id
 
-**Body:**
-```json
-{
-  "snapshots": [
-    { "path": "Flashcards/c1.md", "front": "...", "back": "...", "tags": ["anatomia"], "updatedAt": 1693838400 }
-  ]
-}
+GET    /tasks
+POST   /tasks
+PATCH  /tasks/:id
+DELETE /tasks/:id
+POST   /tasks/:id/toggle            # toggle done
+
+GET    /recordings
+POST   /recordings
+GET    /recordings/filter
+DELETE /recordings/:id
 ```
 
----
+## Flashcards
 
-## Audio & Transcription
-
-### `POST /api/v1/audio/transcribe`
-Transcribe un archivo de audio.
-
-**Body:** `multipart/form-data` con campo `audio`.
-
-**Respuesta 200:**
-```json
-{
-  "text": "El diafragma es un músculo...",
-  "segments": [{ "start": 0, "end": 2.5, "text": "El diafragma" }],
-  "language": "es",
-  "duration": 300.5
-}
 ```
-
-### `POST /api/v1/audio/transcribe/stream`
-Transcribe en streaming (WebSocket upgrade).
-
-### `GET /transcription/stream` (WebSocket)
-Stream de transcripción en tiempo real.
-
----
-
-## LLM & Embeddings
-
-### `POST /api/v1/llm/chat`
-Chat con un LLM (DeepSeek, OpenAI, Ollama).
-
-**Body:**
-```json
-{
-  "messages": [{ "role": "user", "content": "Explica el diafragma" }],
-  "model": "deepseek-chat",
-  "temperature": 0.7
-}
+POST /api/v1/flashcards                     # create
+GET  /api/v1/flashcards                     # list all
+GET  /api/v1/flashcards/filter?subject=X    # filter
+GET  /api/v1/flashcards/:id
+PATCH /api/v1/flashcards/:id                # update front/back
+DELETE /api/v1/flashcards/:id
+POST /api/v1/flashcards/generate            # mock: extract from note text
 ```
-
-### `POST /api/v1/llm/embed`
-Genera embeddings de un texto.
-
-**Body:**
-```json
-{ "text": "El diafragma es un músculo..." }
-```
-
-**Respuesta:**
-```json
-{ "embedding": [0.012, -0.034, ...], "model": "text-embedding-3-small" }
-```
-
-### `GET /api/v1/llm/embed/cache`
-Estadísticas de la caché de embeddings.
-
-### `POST /api/v1/llm/embed/cache/clear`
-Limpia la caché.
-
----
-
-## OCR
-
-### `POST /api/v1/ocr/image`
-OCR de una imagen (DeepSeek OCR V2).
-
-**Body:** `multipart/form-data` con campo `image`.
-
-**Respuesta:**
-```json
-{
-  "text": "...",
-  "confidence": 0.95,
-  "language": "es",
-  "model": "deepseek-ocr-v2"
-}
-```
-
----
-
-## PDF
-
-### `POST /api/v1/pdf/diff`
-Compara dos PDFs (versiones, cambios).
-
-**Body:**
-```json
-{ "pdf1Path": "...", "pdf2Path": "..." }
-```
-
----
-
-## Flashcards (proposals)
-
-### `POST /api/v1/flashcards/generate`
-Genera propuestas de flashcards desde una nota.
-
-**Body:**
-```json
-{ "notePath": "Apuntes/Clase3.md", "count": 5 }
-```
-
----
 
 ## AI Routes
 
-### `POST /api/v1/ai/eval-vault`
-Evalúa el estado de un vault (qué estudiar, qué repasar).
-
-### `POST /api/v1/ai/proposals`
-Genera propuestas de flashcards/knowledge layers.
-
-### `POST /api/v1/ai/quiz`
-Inicia una sesión de quiz adaptativo.
-
-### `GET /api/v1/ai/quiz/:id`
-Obtiene estado de una sesión de quiz.
-
-### `POST /api/v1/ai/quiz/:id/answer`
-Envía respuesta a una pregunta.
-
-### `POST /api/v1/ai/cross-relevance`
-Calcula relevancia cruzada entre notas.
-
-### `POST /api/v1/ai/embeddings/rebuild`
-Recalcula embeddings de un vault.
-
-### `POST /api/v1/ai/knowledge-graph`
-Genera grafo de conocimiento de un vault.
-
----
-
-## FSRS Queue
-
-FSRS async con worker queue (no bloquea el event loop).
-
-### `POST /api/v1/fsrs/eval`
-Encola una evaluación FSRS.
-
-**Body:**
-```json
-{ "userId": "...", "cardIds": ["c1", "c2", "c3"], "algorithm": "fsrs-v5" }
+```
+POST /api/v1/ai/vault/eval                  # evaluate vault health
+POST /api/v1/ai/proposals/generate          # generate flashcard proposals
+POST /api/v1/ai/proposals/cache/clear       # clear proposals cache
+GET  /api/v1/ai/knowledge/:userId           # knowledge graph
+GET  /api/v1/ai/knowledge/:userId/gaps      # weak topics
+POST /api/v1/ai/quiz/:userId/session        # start adaptive quiz
+GET  /api/v1/ai/quiz/:userId/next           # next question
+POST /api/v1/ai/quiz/:userId/result         # submit answer
+POST /api/v1/ai/cross-relevance/analyze     # find related notes
+POST /api/v1/ai/tutor                       # RAG tutor (uses Ollama)
 ```
 
-**Respuesta:**
-```json
-{ "jobId": "fsrs-abc123", "queued": true }
+## AI v2
+
+```
+POST /api/v1/ai/chat                        # conversational
+POST /api/v1/ai/embeddings                  # vector embeddings
+POST /api/v1/ai/rag-search                  # RAG over notes
 ```
 
-### `GET /api/v1/fsrs/job/:id`
-Obtiene estado de un job.
+## LLM (multi-provider)
 
-**Respuesta:**
-```json
-{
-  "state": "done",
-  "result": { "jobId": "...", "cardsEvaluated": 100, "durationMs": 234 }
-}
+```
+POST /api/v1/llm/chat                       # Ollama / OpenRouter / Anthropic / OpenAI
+POST /api/v1/llm/embed                      # embeddings
 ```
 
-### `GET /api/v1/fsrs/stats`
-Métricas de la cola (queued, running, processed, failed).
+## OCR / PDF / Audio / Transcription
 
-### `POST /api/v1/fsrs/wait/:id`
-Long polling (espera a que un job termine, max 60s).
+```
+POST /api/v1/ocr/image                      # OCR image → text
+POST /api/v1/pdf/diff                       # compare two PDFs
+POST /api/v1/audio/transcribe               # one-shot Whisper
+WS   /api/v1/audio/transcribe/stream        # streaming Whisper
+POST /api/v1/handwriting/recognize          # (alias of OCR)
+GET  /api/v1/transcription/stream           # (alias)
+POST /api/v1/upload                         # generic upload
+```
 
-### `GET /api/v1/fsrs/list`
-Lista todos los jobs (debug).
+## Cross-verify
 
----
+```
+GET  /api/v1/cross-verify                   # coverage between notes and recordings
+```
+
+Returns coverage % + gap topics (topics in notes with no recording).
+
+## FSRS (spaced repetition)
+
+```
+GET  /api/v1/fsrs/list                      # all FSRS state per card
+GET  /api/v1/fsrs/stats                     # aggregate stats
+```
+
+## Sync (WebSocket + REST)
+
+```
+WS   /ws/sync                                # WebSocket relay (low-latency broadcasts)
+POST /api/v1/sync/publish                    # publish a change (dual-channel)
+GET  /api/v1/sync/history                    # recent messages (for late joiners)
+GET  /api/v1/sync/stats                      # connected count + history size
+```
+
+CRDT semantics applied on receive (LWW + tombstones).
 
 ## Push Notifications
 
-### `POST /push/register`
-Registra un device para push.
-
-### `POST /push/token/:deviceId`
-Registra token FCM.
-
-### `POST /push/send`
-Envía push a un device.
-
-### `POST /push/broadcast`
-Envía push a todos los devices.
-
-### `GET /push/tokens`
-Lista tokens registrados.
-
-### `GET /push/stats`
-Estadísticas de push.
-
----
-
-## Backup
-
-### `POST /api/v1/backup/upload`
-Sube un backup binario (ZIP).
-
-### `GET /api/v1/backup/list`
-Lista backups disponibles.
-
-### `GET /api/v1/backup/download/:id`
-Descarga un backup.
-
-### `DELETE /api/v1/backup/:id`
-Borra un backup.
-
-### `GET /api/v1/backup/dump`
-Dump completo del estado del backend.
-
----
-
-## Update
-
-### `GET /api/v1/update`
-Información sobre updates disponibles (changelog, download URL).
-
-### `GET /api/v1/update/check`
-Chequea si hay una nueva versión.
-
-### `POST /api/v1/update/apply`
-Aplica una actualización (descarga + reinicia).
-
----
-
-## Secrets
-
-API keys cifradas con AES-256-GCM.
-
-### `GET /api/v1/secrets`
-Lista nombres de secrets (nunca los valores).
-
-### `GET /api/v1/secrets/:name`
-```json
-{ "name": "openai_api_key", "configured": true }
+```
+POST /api/v1/push/register
+POST /api/v1/push/token/:deviceId
+GET  /api/v1/push/tokens
+POST /api/v1/push/send
+POST /api/v1/push/broadcast
+GET  /api/v1/push/stats
 ```
 
-### `POST /api/v1/secrets/:name`
-Guarda un secret (cifrado).
+## Backup / Update / Secrets
 
-**Body:**
-```json
-{ "value": "sk-..." }
+```
+POST   /api/v1/backup/upload                 # upload ZIP (X-Backup-Metadata header)
+GET    /api/v1/backup/list
+GET    /api/v1/backup/download/:id
+DELETE /api/v1/backup/:id
+GET    /api/v1/backup/dump
+
+GET    /api/v1/update                         # current vs latest version
+POST   /api/v1/update/check                   # force re-check
+POST   /api/v1/update/apply                   # apply update
+
+GET    /api/v1/secrets
+PUT    /api/v1/secrets/:name
+GET    /api/v1/secrets/test/:name             # check if a secret works
 ```
 
-### `DELETE /api/v1/secrets/:name`
-Borra un secret.
+## Themes
 
-### `POST /api/v1/secrets/test/:name`
-Verifica que un secret se puede descifrar.
+```
+GET    /themes
+POST   /themes
+GET    /themes/:id
+PATCH  /themes/:id
+DELETE /themes/:id
+GET    /themes/:id/css                       # CSS for the theme
+GET    /themes/export
+GET    /themes/active/:id
+```
+
+## Stemmer (Spanish/English)
+
+```
+POST /api/v1/stemmer/stem
+POST /api/v1/stemmer/normalize
+POST /api/v1/stemmer/tokenize
+POST /api/v1/stemmer/query
+POST /api/v1/stemmer/detect
+GET  /api/v1/search/stats
+```
+
+## Search
+
+```
+POST /api/v1/search                         # FTS5 full-text + stemmer
+```
+
+## Import
+
+```
+POST /api/v1/import/analyze                  # detect format (HTML/MD/Notion/etc.)
+POST /api/v1/import/execute                  # convert to native format
+GET  /api/v1/import/formats
+```
+
+## Databases (linked)
+
+```
+GET    /api/v1/databases
+POST   /api/v1/databases
+GET    /api/v1/databases/:id
+PATCH  /api/v1/databases/:id
+DELETE /api/v1/databases/:id
+GET    /api/v1/databases/:id/views
+```
+
+## Structured views / rows
+
+```
+GET    /api/v1/structured/views             # list views in a database
+POST   /api/v1/structured/views
+GET    /api/v1/structured/views/:id
+PATCH  /api/v1/structured/views/:id
+DELETE /api/v1/structured/views/:id
+
+GET    /api/v1/structured/rows
+POST   /api/v1/structured/rows
+PATCH  /api/v1/structured/rows/:id
+DELETE /api/v1/structured/rows/:id
+```
 
 ---
 
-## Databases (Notion-style)
+## Auth (v2.1.4 mode)
 
-### `GET /api/v1/databases`
-Lista databases de un vault.
+Default `AUTH_REQUIRED=true`. Endpoints PUBLIC in `middleware/auth.ts`:
 
-### `POST /api/v1/databases`
-Crea una database.
+| Path | Reason |
+|---|---|
+| `/health`, `/metrics` | health checks |
+| `/api/v1/health`, `/api/v1/stats` | status |
+| `/api/v1/register`, `/api/v1/auth/refresh` | bootstrap |
+| `/api/v1/devices` | public list |
+| `/api/v1/ai/embed`, `/api/v1/ai/tutor`, `/api/v1/ai` | AI public |
+| `/api/v1/audio/transcribe`, `/api/v1/ocr/image`, `/api/v1/llm/embed` | ML inference |
+| `/api/v1/flashcards/generate`, `/api/v1/pdf/diff` | utilities |
+| `/api/v1/backup`, `/api/v1/secrets/test`, `/api/v1/update` | admin utilities |
+| **Legacy routes** (public until frontend ships Bearer token): `/api/v1/flashcards`, `/api/v1/notes`, `/api/v1/subjects`, `/api/v1/events`, `/api/v1/tasks`, `/api/v1/cross-verify`, `/api/v1/recordings`, `/api/v1/sync`, `/api/v1/themes` |
 
-**Body:**
+`/api/v1/auth/revoke` is **NOT public** — it requires JWT to know which device to revoke.
+
+---
+
+## Error format
+
 ```json
 {
-  "vaultId": "...",
-  "name": "Casos clínicos",
-  "folder": "_M-NEXUS/Cases",
-  "properties": [
-    { "name": "title", "type": "text" },
-    { "name": "severity", "type": "number" },
-    { "name": "status", "type": "select", "options": ["draft", "reviewed", "mastered"] }
-  ]
+  "error": "human-readable message",
+  "code": "EC-AUTH-001",
+  "category": "AUTH",
+  "context": {...},
+  "hint": "..."
 }
 ```
 
-### `GET /api/v1/databases/:id`
-Obtiene una database.
-
-### `PATCH /api/v1/databases/:id`
-Actualiza schema.
-
-### `DELETE /api/v1/databases/:id`
-Borra database (no borra las notas).
-
-### `GET /api/v1/databases/:id/rows`
-Lista rows (con filtros y sorts).
-
-**Querystring:** `filters=...&sort=...` (JSON-encoded).
-
-### `POST /api/v1/databases/:id/rows`
-Crea un row.
-
-### `PATCH /api/v1/databases/:id/rows/:rowId`
-Actualiza un row (con conflict detection via `expectedClock`).
-
-**Body:**
-```json
-{
-  "properties": { "status": "reviewed" },
-  "expectedClock": { "deviceA": 3 }
-}
-```
-
-### `DELETE /api/v1/databases/:id/rows/:rowId`
-Borra un row.
-
-### `GET/POST /api/v1/databases/:id/views`
-Vistas (table, kanban, calendar, gallery, list).
-
----
-
-## Upload (chunked, resumable)
-
-Para subir archivos grandes (audio, PDF, etc.) sin riesgo de timeout.
-
-### `POST /api/v1/upload/init`
-Inicia una sesión de upload.
-
-**Body:**
-```json
-{
-  "filename": "clase-2026-09-04.m4a",
-  "totalSize": 52428800,
-  "chunkSize": 1048576,
-  "deviceId": "d1",
-  "expectedSha256": "...",  // opcional
-  "targetSubdir": "recordings/2026-09"
-}
-```
-
-**Respuesta:**
-```json
-{
-  "uploadId": "up-abc123",
-  "totalChunks": 50,
-  "chunkSize": 1048576
-}
-```
-
-### `PUT /api/v1/upload/:id/chunk/:n`
-Sube un chunk (raw bytes, Content-Type: `application/octet-stream`).
-
-**Idempotente:** reenviar el mismo chunk retorna `{ duplicate: true }`.
-
-### `GET /api/v1/upload/:id/status`
-Estado del upload (qué chunks ya se recibieron).
-
-**Respuesta:**
-```json
-{ "received": [0, 1, 2, 5], "total": 50 }
-```
-
-### `POST /api/v1/upload/:id/complete`
-Finaliza el upload (ensambla + verifica SHA-256).
-
-**Body (opcional):**
-```json
-{ "expectedSha256": "..." }
-```
-
-**Respuesta:**
-```json
-{ "sha256": "...", "path": "uploads/final/recording.m4a" }
-```
-
-### `DELETE /api/v1/upload/:id`
-Cancela y limpia chunks.
-
----
-
-## Rollback
-
-Backup del estado del backend antes/después de updates.
-
-### `POST /api/v1/rollback/create`
-Crea un backup del estado.
-
-**Respuesta:**
-```json
-{
-  "backup": { "id": "backup-1693838400", "size": 1024, "path": "..." }
-}
-```
-
-### `GET /api/v1/rollback/list`
-Lista backups disponibles.
-
-### `POST /api/v1/rollback/restore`
-Restaura desde un backup.
-
-**Body:**
-```json
-{ "backupId": "backup-1693838400", "confirm": true }
-```
-
-### `GET /api/v1/rollback/strategy`
-Describe la estrategia (qué se guarda, qué se excluye).
-
----
-
-## WebSocket
-
-### `WS /api/v1/ws`
-WebSocket para sync en tiempo real y notificaciones.
-
-**Eventos:**
-- `note.updated` — una nota fue modificada
-- `recording.transcribed` — transcripción completa
-- `proposal.ready` — propuesta de IA lista
-- `flashcard.due` — flashcard vence
-- `update.available` — nueva versión disponible
+Custom error handler in `server.ts` maps `AppError` fields directly to body.

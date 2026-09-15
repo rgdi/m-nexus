@@ -1,7 +1,7 @@
-# E2E Physical Test Report — M-NEXUS v2.1.1
+# E2E Physical Test Report — M-NEXUS v2.1.2
 
 **Date:** 2026-09-15  
-**Commit:** a650dac + pending v2.1.1  
+**Commit:** 06b9283 (v2.1.2)  
 **Tester:** Playwright automation (simulates real user)  
 **Result:** ✅ **31/31 checks passed** in 22 screenshots
 

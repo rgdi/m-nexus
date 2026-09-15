@@ -1,6 +1,6 @@
 # Mobile Audit & Optimization Report — v2.1.3
 
-**Date:** 2026-09-15  
+**Date:** 2026-09-15 (audit)  
 **Scope:** All 6 main screens (overview, calendar, subjects, notes list, todos, ai) + notes notebook view  
 **Viewports tested:** 360×640, 390×844, 720×1024  
 

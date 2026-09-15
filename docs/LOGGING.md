@@ -1,409 +1,242 @@
 # M-NEXUS Logging Guide
 
-> **v0.45+** — Sistema unificado de logging estructurado para frontend (Flutter) y backend (Node.js).
-
-## Índice
-
-1. [Visión general](#visión-general)
-2. [Estructura del log](#estructura-del-log)
-3. [Helpers disponibles](#helpers-disponibles)
-4. [Ver logs en desarrollo](#ver-logs-en-desarrollo)
-5. [Ver logs en Android (producción)](#ver-logs-en-android-producción)
-6. [Ver logs del backend en producción](#ver-logs-del-backend-en-producción)
-7. [Correlación frontend ↔ backend](#correlación-frontend--backend)
-8. [Buenas prácticas](#buenas-prácticas)
-9. [Debugging de problemas comunes](#debugging-de-problemas-comunes)
+> **v2.1.4** — Sistema unificado de logging estructurado.
+> Backend: **pino** (JSON). Frontend: `console.*` + listeners opcionales.
 
 ---
 
 ## Visión general
 
-M-NEXUS usa **logging estructurado** en ambas plataformas:
+M-NEXUS usa logging estructurado para poder buscar, agregar y alertar sobre eventos.
 
-- **Frontend (Flutter)**: `dart:developer` log + `print` (interceptable por `adb logcat`).
-- **Backend (Node.js)**: `pino` (JSON estructurado, ideal para agregación).
+- **Backend (Node.js)**: `pino` — JSON estructurado, ideal para agregación
+- **Frontend (vanilla JS)**: `console.debug/info/warn/error` + listeners opcionales vía `document.dispatchEvent`
 
-Todos los logs comparten los **mismos campos clave**, lo que permite hacer queries consistentes:
-
-| Campo | Tipo | Descripción | Ejemplo |
-|-------|------|-------------|---------|
-| `level` | string | Nivel: `debug`, `info`, `warn`, `error` | `"info"` |
-| `time` / `timestamp` | ISO-8601 | Momento del log | `"2026-09-07T14:23:11.456Z"` |
-| `component` | string | Componente que emite (`vault`, `auth`, `llm`, ...) | `"vault"` |
-| `code` | string | Código de error si aplica (`EC-XXX-NNN`) | `"EC-VAULT-003"` |
-| `category` | string | Categoría del error | `"VAULT"` |
-| `message` | string | Mensaje legible para humanos | `"No se pudo leer la nota"` |
-| `context` | object | Metadata adicional | `{"path": "...", "size": 1234}` |
-| `hint` | string | Sugerencia para resolver | `"Check storage permissions"` |
-| `durationMs` | number | Duración de la operación (si aplica) | `1234` |
-| `error` / `cause` | string | Mensaje de la causa original | `"FileSystemException: ..."` |
-| `stack` | string | Stack trace (solo errores) | `"#0 ..."` |
-| `requestId` | string | ID de correlación (solo backend) | `"req_1725716591456_x8k2p9"` |
+---
 
 ## Estructura del log
 
-### Frontend
+### Backend (pino)
 
 ```json
 {
-  "level": "ERROR",
-  "time": "2026-09-07T14:23:11.456Z",
-  "message": "[EC-VAULT-003] No se pudo leer la nota",
-  "component": "vault",
-  "code": "EC-VAULT-003",
-  "category": "VAULT",
-  "context": {
-    "path": "/vault/notas/abc.md",
-    "size": 1234
-  },
-  "hint": "Verifica permisos en Settings",
-  "error": "FileSystemException: Cannot open file",
-  "stack": "#0 _readNote (package:mnexus_app/services/vault_service.dart:42:7)\n..."
+  "level": 30,                    // 10=trace, 20=debug, 30=info, 40=warn, 50=error, 60=fatal
+  "time": 1789487863833,         // unix ms
+  "pid": 87123,
+  "hostname": "cloud-compute-5d4px",
+  "component": "auth",           // subsystem
+  "code": "EC-AUTH-001",         // optional, for errors
+  "message": "Missing Authorization header",
+  "context": {...},              // optional
+  "hint": "...",                 // optional, for errors
+  "stack": "AppError: ...",      // only errors
+  "durationMs": 2                // for op logs
 }
 ```
 
-### Backend
+### Frontend (console)
 
-```json
-{
-  "level": 50,
-  "time": "2026-09-07T14:23:11.456Z",
-  "msg": "[EC-LLM-005] Ollama API error",
-  "component": "llm",
-  "code": "EC-LLM-005",
-  "category": "LLM",
-  "message": "Ollama API error",
-  "cause": "fetch failed",
-  "context": {
-    "status": 500,
-    "durationMs": 1234,
-    "model": "llama3"
-  },
-  "hint": "Check Ollama is running and model is available",
-  "stack": "Error: fetch failed\n    at ...\n",
-  "durationMs": 1234,
-  "requestId": "req_1725716591456_x8k2p9"
-}
+```js
+console.debug("[sync_client] connected to ws://localhost:4100/ws/sync");
+console.warn("[ai_tutor] Ollama unavailable, using fallback");
+console.error("[file_attachments] failed to parse image:", e);
 ```
+
+Convención: `[<component>] <message>`.
+
+---
 
 ## Helpers disponibles
 
-### Frontend (Dart)
+### Backend (`utils/log.ts`)
 
-```dart
-import 'package:mnexus_app/services/logger.dart';
+```ts
+import { logger, logOp, logError, logLifecycle, logHttp } from "./utils/log.js";
 
-// Log genérico
-logger.info('app', 'started');
-logger.warn('vault', 'low disk space');
-logger.error('vault', 'failed', context: { 'path': path });
+// Child logger con contexto fijo
+const log = logger.child({ component: "my-feature" });
+log.info("starting");
 
-// Log de error estructurado (desde AppError)
-logger.logAppError(appError);
+// Operation log (debug)
+logOp("auth", "user registered", true, { deviceId, name });
 
-// Log de platform channel
-logger.logPlatform('calendar', 'getEvents', error: e);
-
-// Log de lifecycle
-logger.logLifecycle('vault', 'initialized', extra: { 'count': 100 });
-
-// Log de operación
-logger.logOp('vault', 'read', success: true, context: { 'path': path });
-```
-
-Ver `app/lib/services/logger.dart` para la API completa.
-
-### Backend (TypeScript)
-
-```typescript
-import { logger, logOp, logError, logLifecycle, logNetwork, logPlatform } from '../utils/log.js';
-
-// Log genérico
-logger.info({ component: 'auth' }, 'user registered');
-logger.warn({ component: 'vault' }, 'low disk space');
-logger.error({ component: 'vault', code: 'EC-VAULT-003' }, 'failed');
-
-// Log de error estructurado (con AppError)
-logError('llm', appError); // appError es un AppError
-
-// Log de operación
-logOp('vault', 'read', true, { path: '/vault/notas/abc.md' });
-
-// Log de red
-logNetwork('POST', 'https://api.openrouter.ai/v1/chat', {
-  statusCode: 200,
-  durationMs: 1234,
+// Error log
+logError("auth", {
+  code: "EC-AUTH-001",
+  category: "AUTH",
+  message: "Missing Authorization header",
+  context: { url, requestId },
+  hint: "Send 'Authorization: Bearer <token>'",
 });
 
-// Log de lifecycle
-logLifecycle('server', 'starting', { port: 3000 });
+// Lifecycle event (info)
+logLifecycle("server", "started", { port: 4100 });
 
-// Log de platform
-logPlatform('fcm', 'sendNotification', true);
+// HTTP request log (auto by fastify + pino)
 ```
 
-## Ver logs en desarrollo
+### Backend error helpers (`utils/errorCodes.ts`)
+
+```ts
+import { E } from "./utils/errorCodes.js";
+
+throw E.val("EC-VAL-042", "userId debe ser string", { context: {...}, hint: "..." });
+throw E.auth("EC-AUTH-001", "Missing Authorization header", { ... });
+throw E.llm("EC-LLM-001", "Ollama unavailable", { context: { url } });
+throw E.card("EC-CARD-005", "FSRS state invalid", { context: { cardId } });
+```
+
+Categorías: `net`, `auth`, `val`, `eval`, `internal`, `lifecycle`, `fs`, `db`, `cfg`, `card`, `ext`, `llm`, `ocr`, `aud`, `emb`, `sec`, `bk`, `up`, `prop`, `quiz`, `rel`, `confl`, `push`, `str`, `sync`, `rate`.
 
 ### Frontend
 
-```bash
-# Opción 1: flutter run con output detallado
-flutter run --verbose 2>&1 | grep -E "(component|code)"
-
-# Opción 2: dart:developer log (necesita DevTools)
-flutter run --start-paused
-# Abrir DevTools > Logging tab
-```
-
-### Backend
-
-```bash
-# Pretty printing (necesita pino-pretty)
-npm install -g pino-pretty
-npm run dev | pino-pretty
-
-# Raw JSON
-npm run dev
-
-# Filtrar por código
-npm run dev 2>&1 | grep "EC-LLM"
-
-# Filtrar por componente
-npm run dev 2>&1 | grep '"component":"auth"'
-
-# Filtrar solo errores
-npm run dev 2>&1 | grep '"level":50'
-```
-
-## Ver logs en Android (producción)
-
-### Con `adb logcat`
-
-```bash
-# Todos los logs de la app
-adb logcat | grep "mnexus"
-
-# Solo errores de la app
-adb logcat *:E | grep "mnexus"
-
-# Filtrar por código de error
-adb logcat | grep "EC-VAULT"
-
-# Filtrar por componente
-adb logcat | grep "component.*vault"
-
-# Con contexto (más verboso)
-adb logcat -v threadtime | grep "mnexus"
-```
-
-### Sin dispositivo (con APK)
-
-```bash
-# Desde el dispositivo con Termux
-adb shell
-logcat -d -s flutter | tail -100  # últimos 100 logs de Flutter
-```
-
-### Logs persistentes en archivo
-
-```dart
-// En logger.dart, opcionalmente escribe a un archivo
-final logFile = File('${(await getApplicationDocumentsDirectory()).path}/mnexus.log');
-await logFile.writeAsString('$logEntry\n', mode: FileMode.append);
-```
-
-## Ver logs del backend en producción
-
-### Docker
-
-```bash
-# Logs del contenedor
-docker logs -f mnexus-backend
-
-# Filtrar por código
-docker logs mnexus-backend 2>&1 | grep "EC-LLM"
-
-# Últimas N líneas
-docker logs --tail 100 mnexus-backend
-```
-
-### systemd
-
-```bash
-journalctl -u mnexus-backend -f
-journalctl -u mnexus-backend -n 100
-journalctl -u mnexus-backend --since "1 hour ago"
-```
-
-### Agregación con Loki / Elasticsearch
-
-Los logs son JSON estructurado, así que se pueden ingestar directamente:
-
-```yaml
-# docker-compose ejemplo con Loki
-services:
-  mnexus-backend:
-    # ... tu config
-  
-  loki:
-    image: grafana/loki:latest
-    # ...
-  
-  promtail:
-    image: grafana/promtail:latest
-    volumes:
-      - /var/log/mnexus:/var/log/mnexus
-```
-
-Consultas útiles en Grafana:
-
-```logql
-{app="mnexus"} | json | code=~"EC-LLM-.*"
-{app="mnexus"} | json | level="error" | category="LLM"
-{app="mnexus"} | json | requestId="req_1725716591456_x8k2p9"
-```
-
-## Correlación frontend ↔ backend
-
-Cuando el frontend hace una request al backend, se loguea:
-
-**Frontend (envía):**
-
-```json
-{
-  "level": "DEBUG",
-  "message": "→ POST /api/v1/llm/chat",
-  "component": "backend_client",
-  "context": { "url": "...", "bodyLen": 1234 }
-}
-```
-
-**Backend (recibe):**
-
-```json
-{
-  "level": 20,
-  "msg": "→ POST /api/v1/llm/chat",
-  "requestId": "req_1725716591456_x8k2p9"
-}
-```
-
-**Backend (responde):**
-
-```json
-{
-  "level": 30,
-  "msg": "← POST /api/v1/llm/chat 200 (1234ms)",
-  "requestId": "req_1725716591456_x8k2p9"
-}
-```
-
-El frontend puede leer el `requestId` de la respuesta de error del backend y mostrarlo al usuario para que pueda reportarlo. Ejemplo:
-
-```dart
-try {
-  final res = await backend.post('/api/v1/llm/chat', body: ...);
-} on AppError catch (e) {
-  // Mostrar: "Error EC-LLM-005 (requestId: req_1725716591456_x8k2p9)"
-  showError('${e.code} (requestId: ${e.context["requestId"]})');
-}
-```
-
-## Buenas prácticas
-
-### ✓ DO
-
-- **Incluir contexto útil**: `path`, `size`, `deviceId`, `requestId`, `durationMs`.
-- **Usar `safeCall` / `safeCallAsync`** en lugar de try-catch manuales.
-- **Llamar al constructor semántico correcto**: `E.llm()`, `AppError.vault()`, no `new AppError()` a mano.
-- **Añadir un `hint`** cuando sepas cómo resolver el error.
-- **Loguear operaciones exitosas con duración**: `logOp("vault", "read", true, { durationMs: 50 })`.
-- **Sanitizar antes de loguear**: nunca loguees tokens, passwords o PII sin redactar.
-
-### ✗ DON'T
-
-- **No usar `print()` directo** — usa `logger.info()` / `logger.debug()`.
-- **No loguees binarios**: paths, IDs, tamaños, pero no el contenido de archivos.
-- **No atrapar errores sin loguearlos**: si haces `try-catch`, deja que `safeCall` lo loguee.
-- **No inventar códigos**: añade a `ERROR_CODES.md` antes de usarlos.
-- **No loguees secretos**: el backend ya redacta `*.password`, `*.token`, `*.apiKey` automáticamente.
-
-## Debugging de problemas comunes
-
-### "El log no aparece en logcat"
-
-```bash
-# Verifica que el tag es correcto
-adb logcat -s flutter:V
-# o
-adb logcat -s "mnexus:V"
-```
-
-### "El log tiene campos undefined"
-
-Probablemente usaste `print` en vez de `logger.*`. Cambia:
-
-```dart
-print('vault load failed');  // ✗
-logger.error('vault', 'load failed', context: { 'path': path });  // ✓
-```
-
-### "El backend no loguea con formato bonito"
-
-```bash
-# Instala pino-pretty
-npm install --save-dev pino-pretty
-# Pipea la salida
-node --import tsx src/server.ts | pino-pretty
-```
-
-### "Quiero buscar un error específico en producción"
-
-```bash
-# Frontend (logcat)
-adb logcat | grep "EC-LLM-005"
-
-# Backend (journalctl)
-journalctl -u mnexus-backend | grep "EC-LLM-005"
-
-# Backend (Docker)
-docker logs mnexus-backend 2>&1 | grep "EC-LLM-005"
-```
-
-### "Quiero ver el requestId en el frontend"
-
-El backend incluye `requestId` en TODAS las respuestas de error. Asegúrate de que tu `BackendClient` lo extrae:
-
-```dart
-final res = await backend.post('/api/v1/llm/chat', body: body);
-if (res.statusCode >= 400) {
-  final body = jsonDecode(res.body);
-  throw AppError.fromResponse(body); // Incluye requestId en context
-}
-```
-
-### "Necesito desactivar un log verboso"
-
-Frontend:
-
-```dart
-// logger.dart
-import 'package:flutter/foundation.dart';
-final isVerbose = kDebugMode;
-if (isVerbose) logger.debug('...');
-```
-
-Backend:
-
-```bash
-# Bajar nivel
-LOG_LEVEL=warn npm run dev
+```js
+// Simple
+console.debug("[component] message", { key: "value" });
+
+// Custom event (for listeners)
+document.dispatchEvent(new CustomEvent("app:error", {
+  detail: { code: "EC-NET-001", message: "...", component: "api" }
+}));
 ```
 
 ---
 
-**Próximas versiones:**
+## Ver logs en desarrollo
 
-- [ ] v0.46: OpenTelemetry tracing (correlación automática frontend ↔ backend)
-- [ ] v0.47: UI de "Reportar bug" que copia logs al portapapeles
-- [ ] v0.48: Sampling adaptativo (logs menos verbosos en producción con tráfico alto)
+### Backend
+
+```bash
+cd backend
+LOG_LEVEL=debug npm run dev
+
+# Filter by component
+LOG_LEVEL=debug npm run dev | grep '"component":"auth"'
+
+# Pretty-print JSON
+LOG_LEVEL=info npm run dev | npx pino-pretty
+```
+
+### Frontend
+
+```bash
+# Browser DevTools console (F12)
+# Filters:
+#   - level:debug   (verbose)
+#   - "[sync]"      (by component)
+
+# Custom listener:
+document.addEventListener("app:error", (e) => {
+  console.warn("Caught app error:", e.detail);
+});
+```
+
+---
+
+## Ver logs en producción
+
+### Backend (Docker)
+
+```bash
+# Live tail
+docker logs -f mnexus-backend
+
+# With pino-pretty
+docker logs mnexus-backend | npx pino-pretty
+
+# Filter
+docker logs mnexus-backend 2>&1 | grep '"level":50' | npx pino-pretty
+```
+
+### Backend (systemd)
+
+```bash
+journalctl -u mnexus-backend -f
+journalctl -u mnexus-backend --since "1 hour ago"
+```
+
+---
+
+## Correlación frontend ↔ backend
+
+Cada request HTTP tiene un `X-Request-Id` header. Backend lo loguea en cada línea relacionada.
+
+Para correlacionar:
+1. Frontend captura el `X-Request-Id` de la response
+2. Logs backend tienen `requestId: "req-N"`
+3. Match por ese ID
+
+```js
+// Frontend (api.js)
+async function req(method, path, body) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method, headers: { "Content-Type": "application/json", "X-Request-Id": crypto.randomUUID() },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  console.debug("[api]", method, path, res.status, "rid=", res.headers.get("X-Request-Id"));
+  // ...
+}
+```
+
+---
+
+## Buenas prácticas
+
+1. **Incluir contexto útil** — `deviceId`, `cardId`, `subjectId`, `requestId`, `url`
+2. **Niveles correctos**:
+   - `debug`: detalles de operación (entrada/salida)
+   - `info`: eventos de lifecycle (start, stop, register)
+   - `warn`: situaciones recuperables (retry, fallback)
+   - `error`: errores que afectan al usuario
+3. **No loguear secretos** — `password`, `token`, `refreshToken`, `accessToken` nunca
+4. **Usar `hint` en errores** — guía accionable para el usuario
+5. **No concatenar mensajes** — usar campos estructurados
+6. **Latency budget** — loguear con `logOp` mide `durationMs` automáticamente
+
+---
+
+## Debugging de problemas comunes
+
+### Backend no responde
+
+```bash
+# Check health
+curl -fs http://localhost:4100/api/v1/health
+
+# Check logs for startup errors
+docker logs mnexus-backend 2>&1 | grep -E "level.:50|EC-"
+```
+
+### Frontend no detecta backend
+
+```js
+// DevTools console
+import("/src/services/dataSource.js").then(m => m.detectBackend()).then(console.log);
+// → false = backend offline (probablemente CORS o puerto)
+// → true = backend OK
+```
+
+### LLM no responde
+
+```bash
+docker logs mnexus-backend 2>&1 | grep "EC-LLM"
+# EC-LLM-001 = ollama unavailable
+# → Check OLLAMA_BASE_URL, ollama serve
+```
+
+### Auth fails
+
+```bash
+docker logs mnexus-backend 2>&1 | grep "EC-AUTH"
+# EC-AUTH-001 = Missing Authorization header
+# EC-AUTH-003 = JWT verification failed → check JWT_SECRET
+```
+
+---
+
+## Resumen de cambios v2.1.4
+
+- Backend logging: `pino` con `logOp` + `logError` + `logLifecycle` + `logHttp` (auto)
+- Frontend logging: `console.*` con convención `[component] message`
+- Error format: `{error, code, category, context, hint}` mapeado por custom `setErrorHandler`
+- Correlación: `X-Request-Id` header + `requestId` en cada log line
