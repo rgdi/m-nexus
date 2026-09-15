@@ -35,14 +35,22 @@ export function vKey(name) {
 /** Get a vault-scoped value from localStorage. */
 export function vGet(name, fallback = null) {
   try {
-    const v = localStorage.getItem(vKey(name));
-    return v === null ? fallback : v;
+    const raw = localStorage.getItem(vKey(name));
+    if (raw === null) return fallback;
+    // v2.2.0: parse JSON for object/array values; fall back to raw string.
+    try { return JSON.parse(raw); }
+    catch { return raw; }
   } catch { return fallback; }
 }
 
-/** Set a vault-scoped value in localStorage. */
+/** Set a vault-scoped value in localStorage.
+ *  v2.2.0: auto-JSON-stringify objects/arrays.
+ */
 export function vSet(name, value) {
-  try { localStorage.setItem(vKey(name), value); } catch {}
+  try {
+    const serialized = typeof value === "string" ? value : JSON.stringify(value);
+    localStorage.setItem(vKey(name), serialized);
+  } catch {}
 }
 
 /**

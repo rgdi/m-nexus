@@ -77,3 +77,4 @@ app/android/.gradle/
 *.db-shm
 *.db-wal
 *.db
+frontend/coverage/

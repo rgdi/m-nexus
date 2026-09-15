@@ -32,6 +32,12 @@
   --info:         #56c4e6;
   --accent:       #8c5cf6;
   --accent-soft:  rgba(140, 92, 246, .12);
+  /* v2.2.0 W9: accent with explicit opacity scale (replaces magic rgba(140,92,246,X)) */
+  --accent-08:    rgba(140, 92, 246, .08);
+  --accent-12:    rgba(140, 92, 246, .12);
+  --accent-15:    rgba(140, 92, 246, .15);
+  --accent-20:    rgba(140, 92, 246, .20);
+  --accent-25:    rgba(140, 92, 246, .25);
 
   /* ---------- Spacing (fluid: shrinks on phones) ---------- */
   --s-1: clamp(3px, 0.4vw, 4px);

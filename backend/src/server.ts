@@ -1,6 +1,6 @@
-// M-NEXUS Backend — minimal stable version (v0.62.8)
-// Workaround for SIGSEGV under Node 20.19.4 + tsx with full server.ts
-// Re-enable features gradually as the underlying issue is diagnosed.
+// M-NEXUS Backend (v2.2.0) — full server with all routes registered.
+// v0.62.8 workaround (SIGSEGV under Node 20.19.4 + tsx) is no longer needed;
+// we're on Node 22 + Fastify 5 + tsx 4.16, and tests pass with full routing.
 
 import Fastify from "fastify";
 import cors from "@fastify/cors";
@@ -33,6 +33,20 @@ import { ocrRoutes } from "./routes/ocr.js";
 import { authMiddleware } from "./middleware/auth.js";
 import { dashboardRoutes } from "./routes/dashboard.js";
 import { pdfRoutes } from "./routes/pdf.js";
+import { themesRoutes } from "./routes/themes.js";
+import { crdtRoutes } from "./routes/crdt.js";
+import { pushRoutes } from "./routes/push.js";
+import { autoBackupRoutes } from "./routes/autoBackup.js";
+import { fsrsQueueRoutes } from "./routes/fsrsQueue.js";
+import { keyExchangeRoutes } from "./routes/keyExchange.js";
+import { handwritingRoutes } from "./routes/handwriting.js";
+import { marketplaceRealRoutes } from "./routes/marketplaceReal.js";
+import { marketplaceSqliteRoutes } from "./routes/marketplaceSqlite.js";
+import { pdfAnnotationRoutes } from "./routes/pdfAnnotation.js";
+import { rollbackRoutes } from "./routes/rollback.js";
+import { stemmerRoutes } from "./routes/stemmer.js";
+import { clipRoutes } from "./routes/clip.js";
+import { secretsRoutes } from "./routes/secrets.js";
 
 export async function buildServer(): Promise<any> {
   const app = Fastify({
@@ -102,16 +116,16 @@ export async function buildServer(): Promise<any> {
   // v2.1.4: custom error handler — map AppError to structured JSON
   // (Fastify's default returns {statusCode, error: "Bad Request", message};
   // we want {error: <AppError.message>, code, category, hint})
-  app.setErrorHandler((err, _req, reply) => {
-    const statusCode = (err as any).statusCode ?? 500;
-    if ((err as any).code && (err as any).category) {
+  app.setErrorHandler((err: any, _req, reply) => {
+    const statusCode = err.statusCode ?? 500;
+    if (err.code && err.category) {
       // AppError path
       reply.status(statusCode).send({
         error: err.message,
-        code: (err as any).code,
-        category: (err as any).category,
-        context: (err as any).context,
-        hint: (err as any).hint,
+        code: err.code,
+        category: err.category,
+        context: err.context,
+        hint: err.hint,
       });
       return;
     }
@@ -135,6 +149,22 @@ export async function buildServer(): Promise<any> {
   await app.register(ocrRoutes);
   await app.register(dashboardRoutes);
   await app.register(pdfRoutes);
+  // v2.2.0 W1: re-enable orphan routes that were disabled since v0.62.8 SIGSEGV workaround.
+  // Node 22 + Fastify 5 don't have the original SIGSEGV, safe to register.
+  await app.register(themesRoutes);
+  await app.register(crdtRoutes);
+  await app.register(pushRoutes);
+  await app.register(autoBackupRoutes);
+  await app.register(fsrsQueueRoutes);
+  await app.register(keyExchangeRoutes);
+  await app.register(handwritingRoutes);
+  await app.register(marketplaceRealRoutes);
+  await app.register(marketplaceSqliteRoutes);
+  await app.register(pdfAnnotationRoutes);
+  await app.register(rollbackRoutes);
+  await app.register(stemmerRoutes);
+  await app.register(clipRoutes);
+  await app.register(secretsRoutes);
 
   // v0.62.8: /api/v1/ai/tutor is registered by aiRoutes (./routes/ai.ts).
   // Removed the inline handler to avoid duplicate-route registration error.
