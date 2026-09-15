@@ -12,6 +12,8 @@ import { device, startDeviceWatch } from "./services/device.js";
 import { i18n } from "./services/i18n.js";
 import { mountLangSwitcher } from "./widgets/lang_switcher.js";
 import { showSplash } from "./widgets/splash.js";
+import { mountCommandPalette, openCommandPalette } from "./widgets/command_palette.js";
+import { mountVaultSwitcher } from "./services/vault.js";
 import { icon as svgIcon } from "./widgets/icons.js";
 import { renderOverview } from "./screens/overview.js";
 import { renderCalendar } from "./screens/calendar.js";
@@ -106,6 +108,11 @@ async function bootstrap() {
   mountLangSwitcher();
   // v1.7.1: theme toggle (light/dark/auto)
   mountThemeToggle();
+  // v1.9.0: command palette (Ctrl+K)
+  mountCommandPalette();
+  setupCmdTrigger();
+  // v1.9.3: vault switcher
+  mountVaultSwitcher();
   setupHamburger();
   // Set initial lang attribute on html
   document.documentElement.lang = i18n.lang;
@@ -186,6 +193,17 @@ function setupHamburger() {
     const d = document.querySelector(".drawer");
     if (d && !d.contains(e.target) && !btn.contains(e.target)) d.remove();
   });
+}
+
+/** v1.9.0: command palette trigger button (search box top-center) */
+function setupCmdTrigger() {
+  if (document.getElementById("cmd-trigger")) return;
+  const btn = document.createElement("button");
+  btn.id = "cmd-trigger";
+  btn.className = "cmd-trigger";
+  btn.innerHTML = `<span>🔍</span><span>Search…</span><kbd>⌘K</kbd>`;
+  btn.addEventListener("click", () => openCommandPalette());
+  document.body.appendChild(btn);
 }
 
 function openDrawer() {

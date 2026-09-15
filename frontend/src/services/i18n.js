@@ -126,6 +126,8 @@ const STRINGS = {
   "notes.flashcardRequired":{ en: "Front and back are required", es: "Anverso y reverso son obligatorios", pt: "Frente e verso são obrigatórios" },
   "notes.flashcardSourceNote": { en: "From: {note}", es: "De: {note}", pt: "De: {note}" },
   "notes.noFlashcards":     { en: "No flashcards yet", es: "Aún no hay flashcards", pt: "Ainda sem flashcards" },
+  "notes.noNotesWithTag":   { en: "No notes with tag #{tag}", es: "No hay notas con la etiqueta #{tag}", pt: "Sem notas com a etiqueta #{tag}" },
+  "notes.tryOtherTag":       { en: "Try a different tag or clear the filter.", es: "Prueba otra etiqueta o limpia el filtro.", pt: "Tente outra etiqueta ou limpe o filtro." },
   "notes.study":            { en: "Study (FSRS)", es: "Estudiar (FSRS)", pt: "Estudar (FSRS)" },
   "notes.flashcardHint":    { en: "Use {{c1::front::back}} in the text or click + new", es: "Usa {{c1::pregunta::respuesta}} en el texto o pulsa + nueva", pt: "Use {{c1::frente::verso}} no texto ou clique + nova" },
   // v1.6.1 — AI submenu

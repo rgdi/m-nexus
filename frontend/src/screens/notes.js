@@ -10,6 +10,7 @@ import { openAudioRecorder } from "../widgets/audio_recorder.js";
 import { openStudySession } from "../widgets/study_session.js";
 import { downloadNoteAsPDF } from "../widgets/pdf_export.js";
 import { openClozeTest } from "../widgets/cloze_test.js";
+import { extractTags, renderTagsCloud, injectTagsInline, getActiveTag } from "../widgets/tags_cloud.js";
 import { icon as svgIcon } from "../widgets/icons.js";
 
 const state = {
@@ -71,6 +72,10 @@ export async function renderNotes(root) {
 
 async function renderNotesList(root) {
   const notes = await dataSource.notes.list();
+  const activeTag = getActiveTag();
+  // v1.9.1: expose notes for tags_cloud
+  window.__mnexusNoteList = async () => await dataSource.notes.list();
+  const filtered = activeTag ? notes.filter((n) => extractTags(n.body).includes(activeTag)) : notes;
   root.innerHTML = `
     <div class="screen">
       <header class="screen-header">
@@ -82,9 +87,16 @@ async function renderNotesList(root) {
         <input class="input with-icon" id="search" placeholder="${i18n.t("notes.search")}" />
         <button class="btn icon" aria-label="${i18n.t("common.filter")}">⛁</button>
       </div>
+      <div id="tags-cloud" class="tags-bar"></div>
       <div class="book-grid" id="grid"><div class="empty"><div class="em-title">${i18n.t("common.loading")}</div></div></div>
     </div>
   `;
+  // render tags cloud
+  await renderTagsCloud(root.querySelector("#tags-cloud"));
+  // wire tags:change listener for live updates
+  document.addEventListener("tags:change", async () => {
+    if (location.hash.startsWith("#/notes")) renderNotes(root);
+  });
   root.querySelector("#new").addEventListener("click", async () => {
     const n = await dataSource.notes.create({ title: i18n.t("notes.untitled"), body: "" });
     state.selectedId = n.id;
@@ -97,11 +109,14 @@ async function renderNotesList(root) {
       c.style.display = c.dataset.title.toLowerCase().includes(q) ? "" : "none";
     });
   });
-  if (notes.length === 0) {
-    root.querySelector("#grid").innerHTML = `<div class="empty"><div class="em-title">${i18n.t("notes.noNotes")}</div><div>${i18n.t("notes.createFirst")}</div></div>`;
+  if (filtered.length === 0) {
+    const emptyMsg = activeTag
+      ? `<div class="empty"><div class="em-title">${i18n.t("notes.noNotesWithTag", { tag: activeTag })}</div><div>${i18n.t("notes.tryOtherTag")}</div></div>`
+      : `<div class="empty"><div class="em-title">${i18n.t("notes.noNotes")}</div><div>${i18n.t("notes.createFirst")}</div></div>`;
+    root.querySelector("#grid").innerHTML = emptyMsg;
     return;
   }
-  root.querySelector("#grid").innerHTML = notes.map(n => `
+  root.querySelector("#grid").innerHTML = filtered.map(n => `
     <div class="book-card" data-id="${n.id}" data-title="${escapeHtml(n.title)}">
       <div class="cover">${escapeHtml((n.title || "?")[0])}</div>
       <div class="title">${escapeHtml(n.title)}</div>

@@ -418,6 +418,37 @@ async function run() {
     await sctx.close();
   }
 
+  // v1.9.0: command palette (Ctrl+K)
+  console.log('\n[v1.9.0] Command palette');
+  await navigate(page, '#/overview');
+  await page.waitForTimeout(500);
+  // Trigger via keyboard shortcut
+  await page.keyboard.down('Control');
+  await page.keyboard.press('k');
+  await page.keyboard.up('Control');
+  await page.waitForTimeout(800);
+  check('cmd palette visible', await page.locator('.cmd-palette').isVisible());
+  check('cmd palette has search', await page.locator('#cmd-input').isVisible());
+  await shoot(page, '20-cmd-palette-open-en', 'tablet');
+  // Type to search
+  await page.fill('#cmd-input', 'math');
+  await page.waitForTimeout(500);
+  check('cmd palette has results', (await page.locator('.cmd-palette .item').count()) > 0);
+  await shoot(page, '20b-cmd-palette-search-en', 'tablet');
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(300);
+
+  // v1.9.3: vault switcher
+  console.log('\n[v1.9.3] Vault switcher');
+  check('vault switcher visible', await page.locator('#vault-switcher').isVisible());
+  await shoot(page, '21-vault-switcher-en', 'tablet');
+  await page.click('#vault-switcher');
+  await page.waitForTimeout(400);
+  check('vault menu visible', (await page.locator('.vault-menu').count()) > 0);
+  await shoot(page, '21b-vault-menu-open-en', 'tablet');
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(300);
+
   // 19: Dark mode (needs new context with colorScheme:dark)
   console.log('\n[19] Dark mode (es, tablet)');
   await context.close();

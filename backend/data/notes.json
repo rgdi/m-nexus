@@ -1,6 +1,6 @@
 [
   {
-    "id": "note-6ee37385-74e1-4120-b4f6-adf1c89a52c5",
+    "id": "note-d6e04467-57f2-4f11-920e-66fb1f6587ce",
     "title": "Welcome to M-NEXUS",
     "body": "# Welcome\n\nEste es tu notebook. **Pulsa el lápiz para escribir**, el icono de imagen para insertar fotos, el código para snippets, etc.\n\nUsa ==subrayado==, !!resaltado!!, [[Getting started]] o {{c1::Capital de Francia::París}} para crear flashcards.",
     "subject": "math",
@@ -13,11 +13,11 @@
         "placeholders": []
       }
     ],
-    "createdAt": 1789470646982,
-    "updatedAt": 1789470646982
+    "createdAt": 1789475366800,
+    "updatedAt": 1789475366800
   },
   {
-    "id": "note-3cc06515-662f-45cd-bdef-d7bbac5516a1",
+    "id": "note-5538b10b-da2a-4627-a8e9-00e7962d2c2f",
     "title": "Getting started",
     "body": "# Erste Schritte\n\n- Schreib mit dem Stift\n- Speichere oft (auto-save alle 5s)\n- Nutze die AI-Taste für Übersetzung\n\nBeispiel: !!Hervorhebung!! oder ==unterstreichen==",
     "subject": "deu",
@@ -30,11 +30,11 @@
         "placeholders": []
       }
     ],
-    "createdAt": 1789470646988,
-    "updatedAt": 1789470646988
+    "createdAt": 1789475366806,
+    "updatedAt": 1789475366806
   },
   {
-    "id": "note-d42c99d9-1c92-45c2-9df9-cc27d25c9240",
+    "id": "note-332a91ac-fd9e-4249-8586-efb3fbb1b7bb",
     "title": "Flashcards demo",
     "body": "# Cell biology\n\nMitochondria: the powerhouse of the cell.\n\n- {{c1::Main energy molecule::ATP}}\n- {{c1::Photosynthesis location::Chloroplast}}\n- {{c1::Number of chromosomes in humans::46}}\n- {{c1::DNA stands for::Deoxyribonucleic Acid}}\n\nReferencia: @campbell/cap9 (mitochondria) y @campbell/cap10 (cloroplastos).",
     "subject": "bio",
@@ -48,7 +48,70 @@
         "placeholders": []
       }
     ],
-    "createdAt": 1789470646993,
-    "updatedAt": 1789470646993
+    "createdAt": 1789475366818,
+    "updatedAt": 1789475366818
+  },
+  {
+    "id": "note-3ab212f8-15b1-455a-a465-c423f821731f",
+    "title": "Math",
+    "body": "x",
+    "subject": "math",
+    "tags": [],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "createdAt": 1789475366887,
+    "updatedAt": 1789475366887
+  },
+  {
+    "id": "note-afb5fcbb-6b5f-4411-8760-462c2970e93d",
+    "title": "Don Quixote",
+    "body": "@cervantes/cap1 and @cervantes/cap3",
+    "subject": "lit",
+    "tags": [],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "createdAt": 1789475366938,
+    "updatedAt": 1789475366938
+  },
+  {
+    "id": "note-32605495-1145-4d5d-bce1-5434aada0230",
+    "title": "Algebra",
+    "body": "Suma: {{c1::2+2::4}}\nProducto: {{c1::3*5::15}}",
+    "subject": "math",
+    "tags": [
+      "algebra",
+      "basics"
+    ],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "createdAt": 1789475368385,
+    "updatedAt": 1789475368385
+  },
+  {
+    "id": "note-14719278-4efe-4635-a856-2fc453e037ce",
+    "title": "X",
+    "body": "{{c1::A::B}}",
+    "subject": "bio",
+    "tags": [],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "createdAt": 1789475368408,
+    "updatedAt": 1789475368408
   }
 ]

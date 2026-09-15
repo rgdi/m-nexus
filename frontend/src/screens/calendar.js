@@ -86,9 +86,10 @@ function renderDay(events) {
   return `
     <div class="calendar">
       <div class="cal-times">${rows}</div>
-      <div class="cal-events" style="position:relative">
+      <div class="cal-events" id="cal-events" style="position:relative">
         ${blocks}
         ${nowTop >= 0 ? `<div class="cal-now" style="top:${nowTop}px"></div>` : ""}
+        <div class="cal-drag-hint">Drag to create event</div>
       </div>
     </div>
   `;
@@ -147,6 +148,68 @@ function attachDayHandlers(root) {
   root.querySelectorAll(".ev").forEach((el, i) => {
     const ev = eventsCache[i];
     if (ev) el.dataset.id = ev.id;
+  });
+  // v1.9.2: drag-to-create event on day timeline
+  const events = root.querySelector("#cal-events");
+  if (events) attachDragCreate(events);
+}
+
+function attachDragCreate(eventsContainer) {
+  let dragging = false;
+  let startY = 0;
+  let previewEl = null;
+
+  eventsContainer.addEventListener("pointerdown", (e) => {
+    // ignore if click was on an existing event
+    if (e.target.closest(".cal-event")) return;
+    dragging = true;
+    startY = e.clientY;
+    previewEl = document.createElement("div");
+    previewEl.className = "cal-drag-preview";
+    previewEl.style.top = `${e.offsetY}px`;
+    previewEl.style.height = "40px";
+    eventsContainer.appendChild(previewEl);
+    eventsContainer.setPointerCapture(e.pointerId);
+  });
+  eventsContainer.addEventListener("pointermove", (e) => {
+    if (!dragging || !previewEl) return;
+    const dy = e.clientY - startY;
+    const startTop = e.offsetY - dy;
+    const h = Math.max(20, dy);
+    previewEl.style.top = `${Math.max(0, startTop)}px`;
+    previewEl.style.height = `${h}px`;
+  });
+  eventsContainer.addEventListener("pointerup", (e) => {
+    if (!dragging) return;
+    dragging = false;
+    const dy = e.clientY - startY;
+    const rect = eventsContainer.getBoundingClientRect();
+    const startTopRel = e.clientY - dy - rect.top;
+    const startTop = Math.max(0, startTopRel);
+    const height = Math.max(40, dy);
+    // Convert to time: 1px = 80/60 min, so 1px = 1.333 min
+    const startMinutes = 6 * 60 + (startTop / 80) * 60;
+    const durationMinutes = (height / 80) * 60;
+    const baseDate = new Date(state.date);
+    baseDate.setHours(0, 0, 0, 0);
+    const start = baseDate.getTime() + startMinutes * 60 * 1000;
+    const end = start + durationMinutes * 60 * 1000;
+    previewEl.remove();
+    previewEl = null;
+    // Open create modal pre-filled
+    openEventModalPre(start, end, () => renderCalendar(document.getElementById("app")));
+  });
+}
+
+function openEventModalPre(startMs, endMs, onSaved) {
+  openEventModal(null, onSaved, {
+    title: "",
+    prof: "",
+    room: "",
+    type: "",
+    subject: "default",
+    start: startMs,
+    end: endMs,
   });
 }
 
@@ -227,9 +290,9 @@ async function openEventDetail(id) {
   });
 }
 
-function openEventModal(id, onSaved) {
+function openEventModal(id, onSaved, prefill) {
   dataSource.events.get(id).then((event) => {
-    const e = event || {
+    const e = event || prefill || {
       title: "", prof: "", room: "", type: "",
       subject: "default",
       start: Date.now(), end: Date.now() + HOUR,

@@ -138,3 +138,28 @@
   color: var(--fg);
   box-shadow: var(--shadow-1);
 }
+
+/* ============================================================
+ * v1.9.2 — drag to create event
+ * ============================================================ */
+.cal-drag-hint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: rgba(0,0,0,0.18);
+  font-size: 16px;
+  font-weight: 500;
+  pointer-events: none;
+  user-select: none;
+}
+.cal-drag-preview {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  background: rgba(86,196,230,0.18);
+  border: 1.5px dashed #56c4e6;
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: 5;
+}
