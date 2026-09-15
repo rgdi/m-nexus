@@ -24,7 +24,8 @@ const STRINGS = {
   "dock.subjects":           { en: "Subjects", es: "Asignaturas",pt: "Disciplinas" },
   "dock.notes":              { en: "Notes",    es: "Notas",     pt: "Notas" },
   "dock.todos":              { en: "To-dos",   es: "Tareas",    pt: "Tarefas" },
-  "dock.tutor":              { en: "Tutor",    es: "Tutor",     pt: "Tutor" },
+  "dock.tutor":              { en: "AI",       es: "IA",        pt: "IA" },
+  "dock.settings":           { en: "Settings", es: "Ajustes",   pt: "Ajustes" },
 
   // ============================================================
   // Overview screen

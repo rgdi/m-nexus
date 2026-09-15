@@ -150,7 +150,7 @@ export function mountAITutor() {
   const fab = document.createElement("button");
   fab.id = "ai-tutor-fab";
   fab.className = "ai-tutor-fab";
-  fab.title = "AI Tutor";
+  fab.title = "AI";
   fab.textContent = "🤖";
   fab.style.cssText = `
     position: fixed; bottom: 20px; right: 20px;
@@ -181,6 +181,14 @@ function updateHeaderContext(panel) {
   ctx.innerHTML = `Subject: ${subj} · Note: ${note}`;
 }
 
+// v2.4.0: returns a short label like "Math · Heart anatomy"
+function contextLabel() {
+  const parts = [];
+  if (currentContext.subject) parts.push(escapeHtml(currentContext.subject));
+  if (currentContext.note?.title) parts.push(`"${escapeHtml(currentContext.note.title)}"`);
+  return parts.length ? parts.join(" · ") : "no context";
+}
+
 export function openAITutor() {
   if (document.querySelector(".ai-tutor")) return;
   const root = document.createElement("div");
@@ -190,8 +198,8 @@ export function openAITutor() {
     <div class="head">
       <span class="ico">🤖</span>
       <div>
-        <div style="font-weight:700">AI Tutor</div>
-        <div class="ctx">Loading context…</div>
+        <div style="font-weight:700">AI</div>
+        <div class="ctx">${contextLabel()}</div>
       </div>
       <button class="btn icon close" data-act="close">✕</button>
     </div>

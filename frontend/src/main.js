@@ -24,6 +24,7 @@ import { renderSubjects } from "./screens/subjects.js";
 import { renderNotes } from "./screens/notes.js";
 import { renderTodos } from "./screens/todos.js";
 import { renderAI } from "./screens/ai.js";
+import { renderSettings } from "./screens/settings.js";
 
 const ROUTES = {
   overview: renderOverview,
@@ -32,6 +33,7 @@ const ROUTES = {
   notes: renderNotes,
   todos: renderTodos,
   ai: renderAI,
+  settings: renderSettings,
 };
 
 const app = document.getElementById("app");
@@ -115,9 +117,13 @@ async function bootstrap() {
   // v1.2.0: arrancar watcher de dispositivo (DPR, orientation, theme, etc).
   startDeviceWatch();
   // v1.3.0: montar selector de idioma
+  // v2.4.0: ahora vive dentro de Settings; el botón flotante se oculta.
   mountLangSwitcher();
   // v1.7.1: theme toggle (light/dark/auto)
+  // v2.4.0: ahora vive dentro de Settings; el botón flotante se oculta.
   mountThemeToggle();
+  // v2.4.0: marcar que Settings está activo → CSS oculta los flotantes.
+  document.documentElement.classList.add("v2-4-settings");
   // v1.9.0: command palette (Ctrl+K)
   mountCommandPalette();
   setupCmdTrigger();

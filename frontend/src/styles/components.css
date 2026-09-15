@@ -857,3 +857,59 @@ body.hide-ui .dock, body.hide-ui .lang-switcher, body.hide-ui .top-toolbar { dis
     padding: var(--s-3) var(--s-4);
   }
 }
+
+/* ============================================================
+ * v2.4.0 — Settings screen replaces floating lang + theme buttons.
+ * ============================================================ */
+.v2-4-settings #lang-switcher,
+.v2-4-settings .lang-switcher,
+.v2-4-settings #theme-toggle,
+.v2-4-settings .theme-toggle,
+.v2-4-settings #vault-switcher,
+.v2-4-settings .vault-switcher,
+.v2-4-settings #cmd-trigger {
+  display: none !important;
+}
+
+/* Settings screen styles */
+.settings-section { margin: var(--s-6) 0; }
+.settings-section h2 {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  margin: 0 0 var(--s-2) 0;
+}
+.settings-section .muted {
+  font-size: var(--fs-sm);
+  color: var(--fg-muted);
+  margin: 0 0 var(--s-3) 0;
+}
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--s-2);
+}
+.settings-option {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-2);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: border-color 150ms var(--ease);
+  font-family: inherit;
+  font-size: var(--fs-md);
+  color: var(--fg);
+  text-align: left;
+}
+.settings-option:hover { border-color: var(--accent); }
+.settings-option.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  font-weight: 600;
+}
+.settings-option .flag { font-size: 20px; }
+.settings-option .ico { font-size: 18px; width: 24px; text-align: center; }
+.settings-option .name { flex: 1; }
+.settings-option .check { color: var(--accent); font-weight: 700; }
