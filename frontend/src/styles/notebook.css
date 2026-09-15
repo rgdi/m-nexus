@@ -321,3 +321,86 @@
 .fc-back { color: var(--fg-muted); font-size: var(--fs-sm); }
 .fc-meta { font-size: var(--fs-xs); color: var(--fg-muted); margin-top: 4px; }
 .fc-card .btn.small { padding: 4px 10px; font-size: var(--fs-xs); border-radius: 8px; }
+
+/* ============================================================
+ * v1.6.2 — mini audio player (jump-to-minute)
+ * v1.6.3 — book ref highlight
+ * ============================================================ */
+.mini-audio {
+  background: linear-gradient(135deg, rgba(86,196,230,0.12), rgba(140,92,246,0.12));
+  border: 1px solid rgba(140,92,246,0.3);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: var(--s-3);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.mini-audio .ma-head { display: flex; align-items: center; gap: 10px; }
+.mini-audio .ma-icon {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #56c4e6, #8c5cf6);
+  color: white;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 14px;
+}
+.mini-audio .ma-meta { flex: 1; display: flex; align-items: baseline; gap: 8px; }
+.mini-audio .ma-meta strong { font-size: var(--fs-md); }
+.mini-audio .ma-time {
+  font-family: var(--font-mono); font-weight: 700; font-size: 14px;
+  color: var(--accent);
+}
+.mini-audio .ma-ref {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: rgba(140,92,246,0.2);
+  color: #8c5cf6;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+.mini-audio .ma-track {
+  height: 6px;
+  background: var(--bg-sunken);
+  border-radius: 3px;
+  position: relative;
+  cursor: pointer;
+}
+.mini-audio .ma-progress {
+  height: 100%;
+  background: linear-gradient(90deg, #56c4e6, #8c5cf6);
+  border-radius: 3px;
+  width: 0;
+  transition: width 250ms linear;
+}
+.mini-audio .ma-marker {
+  position: absolute;
+  top: -3px;
+  width: 3px; height: 12px;
+  background: var(--accent);
+  transform: translateX(-50%);
+}
+.mini-audio .ma-actions { display: flex; gap: 6px; }
+.mini-audio .ma-actions .btn.icon { padding: 6px; }
+.mini-audio .ma-transcript summary {
+  cursor: pointer; font-size: 12px; color: var(--fg-muted);
+  user-select: none;
+}
+.mini-audio .ma-transcript pre {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--fg);
+  white-space: pre-wrap;
+  max-height: 100px; overflow-y: auto;
+}
+
+/* v1.6.3: highlight book ref seleccionado */
+.tl-bookref.hl {
+  background: rgba(140,92,246,0.3) !important;
+  border-bottom: 2px solid #8c5cf6 !important;
+  animation: hlPulse 2s ease-out 2;
+}
+@keyframes hlPulse {
+  0%, 100% { background: rgba(140,92,246,0.3); }
+  50% { background: rgba(140,92,246,0.6); }
+}

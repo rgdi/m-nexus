@@ -7,6 +7,7 @@ import { dataSource } from "../services/dataSource.js";
 import { i18n } from "../services/i18n.js";
 import { mountTopToolbar } from "../widgets/top_toolbar.js";
 import { openAudioRecorder } from "../widgets/audio_recorder.js";
+import { icon as svgIcon } from "../widgets/icons.js";
 
 const state = {
   selectedId: null,
@@ -22,8 +23,46 @@ const state = {
   ],
 };
 
+// v1.6.3: escuchar evento global para abrir nota por id (desde cross-verify)
+document.addEventListener("notes:open", (e) => {
+  const id = e.detail?.id;
+  if (id) {
+    state.selectedId = id;
+    state.page = 0;
+  }
+});
+
 export async function renderNotes(root) {
+  // v1.6.2: si el hash trae ?id=X, abrir esa nota directamente
+  // v1.6.3: usar también window.__mnexusNoteState (del cross-verify)
+  const shared = window.__mnexusNoteState ?? {};
+  const q = window.__mnexusHashQuery?.() ?? null;
+  if (q && q.id) {
+    state.selectedId = q.id;
+    state.page = 0;
+    shared.selectedId = q.id;
+    shared.page = 0;
+  } else if (shared.selectedId && !state.selectedId) {
+    state.selectedId = shared.selectedId;
+    state.page = shared.page ?? 0;
+  }
   if (!state.selectedId) return renderNotesList(root);
+  // v1.6.3: si la nota no está en localStorage, intentar cargarla del backend
+  const cached = await dataSource.notes.get(state.selectedId).catch(() => null);
+  if (!cached) {
+    try {
+      const r = await fetch(`http://localhost:4100/api/v1/notes/${state.selectedId}`);
+      if (r.ok) {
+        const note = await r.json();
+        // cachear en localStorage para próximas veces
+        const all = (await dataSource.notes.list().catch(() => [])) || [];
+        if (!all.find((n) => n.id === note.id)) {
+          all.push(note);
+          localStorage.setItem("notes", JSON.stringify(all));
+        }
+      }
+    } catch {}
+  }
   await renderNotebook(root, state.selectedId);
 }
 
@@ -81,39 +120,58 @@ async function renderNotebook(root, id) {
   root.innerHTML = `
     <div class="screen" style="max-width: 1100px; padding: var(--s-5) var(--s-6) var(--s-7)">
       <header class="screen-header">
-        <button class="btn icon" id="back">←</button>
+        <button class="btn icon" id="back">${svgIcon("back", 18)}</button>
         <h1 class="h-title" id="title" contenteditable="true" spellcheck="false">${escapeHtml(note.title)}</h1>
         <div class="spacer"></div>
         <div class="pages-nav">
-          <button class="icon-btn" id="prev">←</button>
+          <button class="icon-btn" id="prev">${svgIcon("back", 16)}</button>
           <span class="lbl">${i18n.t("notes.page", { current: state.page + 1, total: pages.length })}</span>
-          <button class="icon-btn" id="next">→</button>
-          <button class="icon-btn" id="add-page">+</button>
+          <button class="icon-btn" id="next" style="transform: scaleX(-1)">${svgIcon("back", 16)}</button>
+          <button class="icon-btn" id="add-page">${svgIcon("plus", 16)}</button>
         </div>
       </header>
 
       <div class="row gap-2" style="margin-bottom: var(--s-3)">
         <button class="btn primary" id="overview-btn">${i18n.t("notes.intelligentOverview")}</button>
-        <button class="btn primary" id="extract-cards-btn">${i18n.t("notes.extractFlashcards")}</button>
-        <button class="btn icon" id="search-btn" aria-label="${i18n.t("common.search")}">⌕</button>
+        <div class="ai-menu" id="ai-menu">
+          <button class="btn primary ai-toggle" id="ai-toggle" aria-expanded="false" aria-haspopup="menu">
+            ${svgIcon("sparkles", 16)} AI
+            <span class="caret">▾</span>
+          </button>
+          <div class="ai-menu-panel" id="ai-menu-panel" hidden>
+            <button class="ai-item" data-act="extract">
+              ${svgIcon("flashcard", 16)} ${i18n.t("notes.extractFlashcards")}
+            </button>
+            <button class="ai-item" data-act="summarize">
+              ${svgIcon("text", 16)} ${i18n.t("notes.ai.summarize")}
+            </button>
+            <button class="ai-item" data-act="define">
+              ${svgIcon("bulb", 16)} ${i18n.t("notes.ai.define")}
+            </button>
+            <button class="ai-item" data-act="quiz">
+              ${svgIcon("wand", 16)} ${i18n.t("notes.ai.quiz")}
+            </button>
+          </div>
+        </div>
+        <button class="btn icon" id="search-btn" aria-label="${i18n.t("common.search")}">${svgIcon("search", 18)}</button>
       </div>
 
       <div class="notebook" id="canvas-wrap" style="height: calc(100vh - 320px); min-height: 480px">
         <div class="notebook-toolbar">
-          <button class="tool-btn" data-tool="pen" title="${i18n.t("notes.tool.pen")}">✎</button>
-          <button class="tool-btn" data-tool="highlighter" title="${i18n.t("notes.tool.highlighter")}">▒</button>
-          <button class="tool-btn" data-tool="eraser" title="${i18n.t("notes.tool.eraser")}">⌫</button>
-          <button class="tool-btn" data-tool="select" title="${i18n.t("notes.tool.select")}">⤡</button>
-          <button class="tool-btn" data-tool="ruler" title="${i18n.t("notes.tool.ruler")}">▤</button>
+          <button class="tool-btn" data-tool="pen" title="${i18n.t("notes.tool.pen")}">${svgIcon("pen", 18)}</button>
+          <button class="tool-btn" data-tool="highlighter" title="${i18n.t("notes.tool.highlighter")}">${svgIcon("highlighter", 18)}</button>
+          <button class="tool-btn" data-tool="eraser" title="${i18n.t("notes.tool.eraser")}">${svgIcon("eraser", 18)}</button>
+          <button class="tool-btn" data-tool="select" title="${i18n.t("notes.tool.select")}">${svgIcon("select", 18)}</button>
+          <button class="tool-btn" data-tool="ruler" title="${i18n.t("notes.tool.ruler")}">${svgIcon("ruler", 18)}</button>
         </div>
 
         <div class="notebook-side">
-          <button class="tool-btn" data-act="voice" title="${i18n.t("notes.tool.voice")}">🎙</button>
-          <button class="tool-btn" data-act="code" title="${i18n.t("notes.tool.code")}">⌨</button>
-          <button class="tool-btn" data-act="image" title="${i18n.t("notes.tool.image")}">▢</button>
-          <button class="tool-btn" data-act="graph" title="${i18n.t("notes.tool.graph")}">⌬</button>
-          <button class="tool-btn" data-act="link" title="${i18n.t("notes.tool.link")}">⌘</button>
-          <button class="tool-btn" data-act="table" title="${i18n.t("notes.tool.table")}">▦</button>
+          <button class="tool-btn" data-act="voice" title="${i18n.t("notes.tool.voice")}">${svgIcon("voice", 18)}</button>
+          <button class="tool-btn" data-act="code" title="${i18n.t("notes.tool.code")}">${svgIcon("code", 18)}</button>
+          <button class="tool-btn" data-act="image" title="${i18n.t("notes.tool.image")}">${svgIcon("image", 18)}</button>
+          <button class="tool-btn" data-act="graph" title="${i18n.t("notes.tool.graph")}">${svgIcon("graph", 18)}</button>
+          <button class="tool-btn" data-act="link" title="${i18n.t("notes.tool.link")}">${svgIcon("link", 18)}</button>
+          <button class="tool-btn" data-act="table" title="${i18n.t("notes.tool.table")}">${svgIcon("table", 18)}</button>
         </div>
 
         <div class="pencil-drawer">
@@ -124,7 +182,7 @@ async function renderNotebook(root, id) {
           <button class="pencil trash" data-act="trash" title="Delete pencil">🗑</button>
         </div>
 
-        <button class="fab" id="new-card-btn" title="${i18n.t("notes.newFlashcard")}">🎴</button>
+        <button class="fab" id="new-card-btn" title="${i18n.t("notes.newFlashcard")}">${svgIcon("flashcard", 22, { color: "white", fill: "rgba(255,255,255,0.15)" })}</button>
 
         <canvas id="canvas"></canvas>
       </div>
@@ -174,8 +232,8 @@ async function renderNotebook(root, id) {
 
   root.querySelector("#overview-btn").addEventListener("click", () => openOverviewModal(note));
 
-  // v1.5.1: extraer flashcards inline ({{c1::front::back}})
-  root.querySelector("#extract-cards-btn").addEventListener("click", () => extractFlashcardsFromNote(id));
+  // v1.6.1: AI submenú
+  setupAIMenu(root, id, note);
 
   // v1.5.1: FAB abre panel de flashcards (locales primero, luego refresh backend)
   root.querySelector("#new-card-btn")?.addEventListener("click", async () => {
@@ -200,6 +258,118 @@ async function renderNotebook(root, id) {
   mountTopToolbar();
 
   setupCanvas(root, id, state.page, page.strokes, pages);
+
+  // v1.6.2: si la URL trae ?rec=X&t=N, monta mini-audio-player con seek
+  const q = window.__mnexusHashQuery?.();
+  if (q && q.rec && q.t !== undefined) {
+    mountMiniAudioPlayer(root, q.rec, parseInt(q.t, 10), q.ref || null, note);
+  } else if (q && q.ref) {
+    // v1.6.3: solo book ref highlight
+    highlightBookRef(root, q.ref);
+  }
+}
+
+/* ============================================================
+ * v1.6.1 — AI submenú
+ * ============================================================ */
+function setupAIMenu(root, noteId, note) {
+  const toggle = root.querySelector("#ai-toggle");
+  const panel = root.querySelector("#ai-menu-panel");
+  if (!toggle || !panel) return;
+  toggle.addEventListener("click", () => {
+    const open = panel.hidden;
+    panel.hidden = !open;
+    toggle.setAttribute("aria-expanded", String(open));
+    toggle.classList.toggle("open", open);
+  });
+  // close on outside click
+  setTimeout(() => {
+    const handler = (e) => {
+      if (!panel.contains(e.target) && !toggle.contains(e.target)) {
+        panel.hidden = true;
+        toggle.setAttribute("aria-expanded", "false");
+        toggle.classList.remove("open");
+      }
+    };
+    document.addEventListener("pointerdown", handler);
+  }, 100);
+  panel.querySelectorAll(".ai-item").forEach((b) => {
+    b.addEventListener("click", async () => {
+      panel.hidden = true;
+      toggle.setAttribute("aria-expanded", "false");
+      toggle.classList.remove("open");
+      const act = b.dataset.act;
+      if (act === "extract") await extractFlashcardsFromNote(noteId);
+      else if (act === "summarize") await aiSummarize(note);
+      else if (act === "define") openDefinitionPopupFromText(note);
+      else if (act === "quiz") await aiQuizFromNote(noteId);
+    });
+  });
+}
+
+async function aiSummarize(note) {
+  const text = (note.body || "").slice(0, 4000);
+  // v1.6.1: stub local — primeras 3 frases del body como resumen
+  const sents = text.split(/[\.\n]+/).map((s) => s.trim()).filter((s) => s.length > 10).slice(0, 3);
+  const summary = sents.join(". ") || "(empty)";
+  const scrim = document.createElement("div");
+  scrim.className = "scrim";
+  scrim.innerHTML = `<div class="sheet">
+    <div class="sheet-header"><h3>📝 ${i18n.t("notes.ai.summarize")}</h3>
+      <button class="btn icon" data-act="close">${svgIcon("close", 16)}</button></div>
+    <div style="margin-top: var(--s-4); line-height: 1.6">${escapeHtml(summary)}</div>
+    <div class="muted small" style="margin-top: var(--s-4)">${i18n.t("notes.ai.stubNote")}</div>
+    <div class="row gap-2" style="margin-top: var(--s-5)"><button class="btn primary" data-act="close">${i18n.t("common.close")}</button></div>
+  </div>`;
+  document.body.appendChild(scrim);
+  scrim.addEventListener("click", (e) => { if (e.target === scrim || e.target.dataset.act === "close") scrim.remove(); });
+}
+
+function openDefinitionPopupFromText(note) {
+  // re-uso de setupDefinitionPopup pero el modal se ve con palabras del body
+  const wrap = document.createElement("div");
+  wrap.className = "def-list scrim";
+  const words = (note.body || "").match(/[A-Za-zÀ-ÿ]{3,}/g) || [];
+  const unique = [...new Set(words)].slice(0, 12);
+  wrap.innerHTML = `<div class="sheet">
+    <div class="sheet-header"><h3>💡 ${i18n.t("notes.ai.define")}</h3>
+      <button class="btn icon" data-act="close">${svgIcon("close", 16)}</button></div>
+    <div class="muted small">${i18n.t("notes.ai.defineSubtitle")}</div>
+    <div class="def-words">${unique.map((w) => `<button class="def-word">${escapeHtml(w)}</button>`).join("")}</div>
+    <div class="row gap-2" style="margin-top: var(--s-5)"><button class="btn" data-act="close">${i18n.t("common.close")}</button></div>
+  </div>`;
+  document.body.appendChild(wrap);
+  wrap.addEventListener("click", (e) => { if (e.target === wrap || e.target.dataset.act === "close") wrap.remove(); });
+}
+
+async function aiQuizFromNote(noteId) {
+  // v1.6.1: genera 5 preguntas a partir de las flashcards existentes
+  const r = await fetch(`http://localhost:4100/api/v1/flashcards/filter?noteId=${noteId}`);
+  const all = r.ok ? await r.json() : { cards: [] };
+  const cards = all.cards || [];
+  if (cards.length === 0) {
+    alert(i18n.t("notes.ai.noFlashcardsYet"));
+    return;
+  }
+  const pick = cards.slice(0, 5);
+  // Show modal with sequential questions
+  let i = 0, correct = 0;
+  const askOne = () => {
+    if (i >= pick.length) {
+      alert(`${i18n.t("notes.ai.quizDone")}: ${correct}/${pick.length}`);
+      return;
+    }
+    const c = pick[i++];
+    const ans = prompt(`${i18n.t("notes.ai.quizQ")} ${i}/${pick.length}\n\n${c.front}`);
+    if (ans && ans.trim().toLowerCase() === c.back.toLowerCase()) {
+      correct++;
+      alert(`✓ ${i18n.t("notes.ai.quizCorrect")}`);
+    } else {
+      alert(`✗ ${i18n.t("notes.ai.quizIncorrect")}: ${c.back}`);
+    }
+    askOne();
+  };
+  askOne();
 }
 
 function handleInsertAction(act, root, noteId, pageIdx, pages) {
@@ -310,6 +480,108 @@ function showDefinition(wrap, word) {
     };
     document.addEventListener("pointerdown", handler);
   }, 100);
+}
+
+/* ============================================================
+ * v1.6.2 — mini-audio-player en el notebook (jump-to-minute estilo Apple Music)
+ * ============================================================ */
+async function mountMiniAudioPlayer(root, recId, startSec, bookRef, note) {
+  // obtener metadata de la grabación
+  const r = await fetch("http://localhost:4100/api/v1/recordings");
+  const all = r.ok ? (await r.json()).recordings || [] : [];
+  const rec = all.find((x) => x.id === recId);
+  if (!rec) return;
+  const dur = rec.durationSec || 60;
+  const wrap = root.querySelector("#canvas-wrap");
+  const player = document.createElement("div");
+  player.className = "mini-audio";
+  player.innerHTML = `
+    <div class="ma-head">
+      <span class="ma-icon">▶</span>
+      <div class="ma-meta">
+        <strong>${escapeHtml(rec.subjectName || rec.subject || "Recording")}</strong>
+        <span class="ma-time" id="ma-current">${formatMmss(startSec * 1000)}</span>
+        <span class="muted">/ ${formatMmss(dur * 1000)}</span>
+      </div>
+      ${bookRef ? `<span class="ma-ref">📖 @${escapeHtml(bookRef)}</span>` : ""}
+      <button class="icon-btn ma-close" data-act="close" aria-label="Close">${svgIcon("close", 16)}</button>
+    </div>
+    <div class="ma-track" id="ma-track">
+      <div class="ma-progress" id="ma-progress" style="left:${(startSec / dur) * 100}%"></div>
+      <div class="ma-marker" style="left:${(startSec / dur) * 100}%" title="Start ${formatMmss(startSec * 1000)}"></div>
+    </div>
+    <div class="ma-actions">
+      <button class="btn icon" id="ma-play">${svgIcon("play", 16)}</button>
+      <button class="btn icon" id="ma-skip5">${svgIcon("skip", 16)}</button>
+    </div>
+    ${rec.transcript ? `<details class="ma-transcript"><summary>Transcript</summary><pre>${escapeHtml(rec.transcript)}</pre></details>` : ""}
+  `;
+  wrap.insertBefore(player, wrap.firstChild);
+
+  // simulación de "currentTime" (no hay audio real, sólo UI de navegación)
+  let cur = startSec;
+  let timer = null;
+  const curEl = player.querySelector("#ma-current");
+  const progEl = player.querySelector("#ma-progress");
+
+  function tick() {
+    if (cur < dur) {
+      cur += 1;
+      curEl.textContent = formatMmss(cur * 1000);
+      progEl.style.width = `${(cur / dur) * 100}%`;
+    } else {
+      stop();
+    }
+  }
+  function play() {
+    if (timer) return;
+    timer = setInterval(tick, 1000);
+    player.querySelector("#ma-play").innerHTML = svgIcon("pause", 16);
+  }
+  function stop() {
+    clearInterval(timer);
+    timer = null;
+    player.querySelector("#ma-play").innerHTML = svgIcon("play", 16);
+  }
+  function close() {
+    stop();
+    player.remove();
+  }
+
+  player.querySelector("#ma-play").addEventListener("click", () => (timer ? stop() : play()));
+  player.querySelector("#ma-skip5").addEventListener("click", () => { cur = Math.min(dur, cur + 30); tick(); });
+  player.querySelector(".ma-close").addEventListener("click", close);
+  // click en track → seek
+  player.querySelector("#ma-track").addEventListener("click", (e) => {
+    const tr = player.querySelector("#ma-track");
+    const rect = tr.getBoundingClientRect();
+    const pct = (e.clientX - rect.left) / rect.width;
+    cur = Math.floor(dur * pct);
+    curEl.textContent = formatMmss(cur * 1000);
+    progEl.style.width = `${pct * 100}%`;
+  });
+
+  // highlight book ref si viene en query
+  if (bookRef) highlightBookRef(root, bookRef);
+}
+
+function formatMmss(ms) {
+  const s = Math.floor(ms / 1000);
+  return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+}
+
+/* ============================================================
+ * v1.6.3 — highlight book ref en el text-layer
+ * ============================================================ */
+function highlightBookRef(root, ref) {
+  const layer = root.querySelector(".text-layer");
+  if (!layer) return;
+  layer.querySelectorAll(".tl-bookref").forEach((el) => {
+    if (el.dataset.bookref === ref) {
+      el.classList.add("hl");
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  });
 }
 
 function setupCanvas(root, noteId, pageIdx, strokes, pages) {

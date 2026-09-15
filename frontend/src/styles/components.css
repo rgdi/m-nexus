@@ -429,3 +429,74 @@ body.no-bg .app.screen-notes { background: transparent; }
 }
 .top-toolbar .tool-group:hover { background: var(--bg-sunken); color: var(--fg); }
 body.hide-ui .dock, body.hide-ui .lang-switcher, body.hide-ui .top-toolbar { display: none; }
+
+/* ============================================================
+ * v1.6.1 — AI submenú colapsable
+ * ============================================================ */
+.ai-menu {
+  position: relative;
+  display: inline-block;
+}
+.ai-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ai-toggle.open { background: linear-gradient(135deg, #5a67d8, #8c5cf6); color: white; }
+.ai-toggle .caret {
+  font-size: 10px;
+  transition: transform 200ms var(--ease);
+}
+.ai-toggle.open .caret { transform: rotate(180deg); }
+.ai-menu-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 240px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-2);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 100;
+}
+.ai-menu-panel[hidden] { display: none; }
+.ai-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--fg);
+  border: none;
+  text-align: left;
+  font-size: var(--fs-md);
+  cursor: pointer;
+  transition: background 150ms;
+}
+.ai-item:hover { background: var(--bg-sunken); }
+.ai-item svg { flex-shrink: 0; }
+
+/* AI define modal — word grid */
+.def-words {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: var(--s-4);
+  max-height: 50vh;
+  overflow-y: auto;
+}
+.def-word {
+  padding: 6px 12px;
+  border-radius: 16px;
+  background: var(--bg-sunken);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-size: var(--fs-sm);
+}
+.def-word:hover { background: var(--accent); color: white; }

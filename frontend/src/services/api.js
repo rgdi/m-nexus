@@ -4,7 +4,7 @@
  * ============================================================ */
 
 const API_BASE = location.hostname === "localhost" || location.hostname.endsWith(".localhost")
-  ? `http://${location.hostname}:4100`
+  ? `http://${location.hostname}:4100/api/v1`
   : `${location.protocol}//${location.host}/api/v1`;
 
 /**

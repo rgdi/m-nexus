@@ -58,5 +58,17 @@
     "id": "evt-02b5b788-9157-418e-b19e-62f0b56039e6",
     "createdAt": 1789424693409,
     "updatedAt": 1789424693409
+  },
+  {
+    "title": "Math test",
+    "prof": "Mr. Meier",
+    "room": "301",
+    "type": "Homework",
+    "subject": "math",
+    "start": 1789463137978,
+    "end": 1789464937979,
+    "id": "evt-5ccaa56c-541e-48dd-b305-398454235973",
+    "createdAt": 1789463137989,
+    "updatedAt": 1789463137989
   }
 ]

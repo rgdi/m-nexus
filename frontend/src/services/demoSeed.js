@@ -88,7 +88,7 @@ export function seedDemo(store) {
   notes.create({
     title: "Flashcards demo",
     subject: "bio",
-    body: "# Cell biology\n\nMitochondria: the powerhouse of the cell.\n\n- {{c1::Main energy molecule::ATP}}\n- {{c1::Photosynthesis location::Chloroplast}}\n\nReferencia: @campbell/cap9",
+    body: "# Cell biology\n\nMitochondria: the powerhouse of the cell.\n\n- {{c1::Main energy molecule::ATP}}\n- {{c1::Photosynthesis location::Chloroplast}}\n\nReferencia: @campbell/cap9 (mitochondria) y @campbell/cap10 (cloroplastos).",
     tags: ["biology", "review"],
   });
 

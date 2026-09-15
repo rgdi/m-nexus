@@ -185,7 +185,7 @@ async function run() {
 
     // v1.5.1: notebook with text-layer rendered
     check('text layer visible', await page.locator('.text-layer').first().isVisible());
-    check('extract flashcards button', await page.locator('#extract-cards-btn').isVisible());
+    check('extract flashcards button', await page.locator('.ai-menu').isVisible());
     check('new card FAB', await page.locator('#new-card-btn').isVisible());
     await shoot(page, '12b-notes-textlayer-en', 'tablet');
 
@@ -212,6 +212,16 @@ async function run() {
     check('3D viewer visible', await page.locator('.three-d-viewer').isVisible());
     check('3D hotspot count >= 3', (await page.locator('.three-d-hotspot').count()) >= 3);
     await shoot(page, '12d-notes-3d-viewer-en', 'tablet');
+
+    // v1.6.1: AI submenú
+    await page.evaluate(() => document.querySelectorAll('.three-d-mount, .scrim').forEach((s) => s.remove()));
+    await page.waitForTimeout(200);
+    await page.click('#ai-toggle');
+    await page.waitForTimeout(400);
+    check('AI submenu open', await page.locator('#ai-menu-panel:not([hidden])').count() === 1);
+    check('AI items count >= 4', (await page.locator('.ai-item').count()) >= 4);
+    await shoot(page, '12e-notes-ai-menu-en', 'tablet');
+    await page.evaluate(() => document.querySelectorAll('.scrim').forEach((s) => s.remove()));
   }
 
   // 13: Todos

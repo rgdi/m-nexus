@@ -1,6 +1,6 @@
 [
   {
-    "id": "note-20123739-1ad7-4ba5-96f7-612fb533b6c3",
+    "id": "note-ed71fe1e-ca55-4f04-b82b-c970704b70c1",
     "title": "Welcome to M-NEXUS",
     "body": "# Welcome\n\nNotebook demo. Pulsa el lápiz para escribir.",
     "subject": "math",
@@ -13,11 +13,11 @@
         "placeholders": []
       }
     ],
-    "createdAt": 1789461435040,
-    "updatedAt": 1789461435040
+    "createdAt": 1789462577466,
+    "updatedAt": 1789462577466
   },
   {
-    "id": "note-63bfe4e7-57cc-42a6-ac1f-6b405ed0572f",
+    "id": "note-9004c168-e187-4a83-bdf0-cf92c2824c57",
     "title": "Getting started",
     "body": "# Erste Schritte\n\n- Stift\n- Auto-save",
     "subject": "deu",
@@ -30,11 +30,11 @@
         "placeholders": []
       }
     ],
-    "createdAt": 1789461435045,
-    "updatedAt": 1789461435045
+    "createdAt": 1789462577471,
+    "updatedAt": 1789462577471
   },
   {
-    "id": "note-ab5fdcfa-e739-4e69-9c56-b3502d999e9d",
+    "id": "note-fe2e875c-2d53-4874-ba8a-fb0a8951d2c2",
     "title": "Flashcards demo",
     "body": "# Cell biology\n\nMitochondria powerhouse.",
     "subject": "bio",
@@ -47,14 +47,14 @@
         "placeholders": []
       }
     ],
-    "createdAt": 1789461435050,
-    "updatedAt": 1789461435050
+    "createdAt": 1789462577476,
+    "updatedAt": 1789462577476
   },
   {
-    "id": "note-b6adb9f4-4875-4fdd-ad96-8ae70bbff2ef",
-    "title": "Math",
-    "body": "x",
-    "subject": "math",
+    "id": "note-67936f8b-39c0-4d54-bed3-c8f186f329c9",
+    "title": "Cell bio",
+    "body": "@campbell/cap9 mitochondria",
+    "subject": "bio",
     "tags": [],
     "pages": [
       {
@@ -62,7 +62,7 @@
         "placeholders": []
       }
     ],
-    "createdAt": 1789461435112,
-    "updatedAt": 1789461435112
+    "createdAt": 1789462680043,
+    "updatedAt": 1789462680043
   }
 ]

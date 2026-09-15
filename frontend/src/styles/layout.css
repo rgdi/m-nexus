@@ -82,6 +82,7 @@
   align-items: center;
   justify-content: center;
 }
+.dock-item .i svg { width: 18px; height: 18px; }
 .dock-item.active { background: var(--fg); color: var(--bg); }
 
 /* ============================================================

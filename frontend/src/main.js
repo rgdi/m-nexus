@@ -4,11 +4,13 @@
  * ============================================================ */
 
 import { api } from "./services/api.js";
+import { detectBackend } from "./services/dataSource.js";
 import { store } from "./services/store.js";
 import { device, startDeviceWatch } from "./services/device.js";
 import { i18n } from "./services/i18n.js";
 import { mountLangSwitcher } from "./widgets/lang_switcher.js";
 import { showSplash } from "./widgets/splash.js";
+import { icon as svgIcon } from "./widgets/icons.js";
 import { renderOverview } from "./screens/overview.js";
 import { renderCalendar } from "./screens/calendar.js";
 import { renderSubjects } from "./screens/subjects.js";
@@ -32,6 +34,18 @@ function parseHash() {
   const hash = location.hash || "#/overview";
   const name = hash.replace(/^#\//, "").split("/")[0] || "overview";
   return ROUTES[name] ? name : "overview";
+}
+
+/** v1.6.2: parsea query string del hash (#/notes?id=X&t=154) */
+function parseHashQuery() {
+  const hash = location.hash || "#/overview";
+  const q = hash.includes("?") ? hash.split("?")[1] : "";
+  const params = {};
+  q.split("&").forEach((kv) => {
+    const [k, v] = kv.split("=");
+    if (k) params[decodeURIComponent(k)] = decodeURIComponent(v || "");
+  });
+  return params;
 }
 
 function setActiveDock(route) {
@@ -77,6 +91,8 @@ window.addEventListener("hashchange", render);
 
 /* ===== Bootstrap ===== */
 async function bootstrap() {
+  // v1.6.3: detectar backend online para activar API
+  await detectBackend();
   // v1.4.0: splash screen con logo Education Service
   showSplash();
   // v1.2.0: arrancar watcher de dispositivo (DPR, orientation, theme, etc).
@@ -88,6 +104,8 @@ async function bootstrap() {
   document.documentElement.lang = i18n.lang;
   // v1.3.1: traducir todos los data-i18n al boot (dock, etc)
   applyI18nToDom();
+  // v1.6.0: inyectar SVG en [data-icon]
+  applyIconsToDom();
 
   // API: si no hay backend en línea, usa fallback offline (localStorage).
   store.bind(api);
@@ -108,11 +126,25 @@ async function bootstrap() {
   if (typeof window !== "undefined") {
     window.__device = device;
     window.__i18n = i18n;
+    window.__mnexusHashQuery = parseHashQuery;
+    window.__mnexusNoteState = window.__mnexusNoteState ?? { selectedId: null };
   }
+
+// v1.6.3: estado de notas (compartido entre cross-verify y notebook)
+document.addEventListener("notes:open", (e) => {
+  const id = e.detail?.id;
+  if (id) {
+    window.__mnexusNoteState.selectedId = id;
+    window.__mnexusNoteState.page = 0;
+    // re-render si la pantalla actual es notes
+    if (parseHash() === "notes") render();
+  }
+});
 
   // v1.3.0: re-render al cambiar idioma
   i18n.subscribe(() => {
     applyI18nToDom();
+    applyIconsToDom();
     render();
   });
 
@@ -124,6 +156,14 @@ function applyI18nToDom() {
   document.querySelectorAll("[data-i18n]").forEach((el) => {
     const key = el.dataset.i18n;
     el.textContent = i18n.t(key);
+  });
+}
+
+/** v1.6.0: inyecta SVG inline en todos los [data-icon]. */
+function applyIconsToDom() {
+  document.querySelectorAll("[data-icon]").forEach((el) => {
+    const name = el.dataset.icon;
+    el.innerHTML = svgIcon(name, 18);
   });
 }
 

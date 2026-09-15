@@ -83,4 +83,34 @@ describe("Cross-verify v1.5.6", () => {
     const get = await app.inject({ method: "GET", url: `/api/v1/recordings` });
     expect(get.json().recordings.find((r: any) => r.id === id)).toBeUndefined();
   });
+
+  it("v1.6.3: book-refs generan jumpUrl con timestamp", async () => {
+    const now = Date.now();
+    // Crear grabación
+    const rec = await app.inject({
+      method: "POST",
+      url: "/api/v1/recordings",
+      payload: { subject: "lit", subjectName: "Literature", durationSec: 600, createdAt: now },
+    });
+    expect(rec.statusCode).toBe(201);
+    // Crear nota con @book/ref 90 segundos después
+    const note = await app.inject({
+      method: "POST",
+      url: "/api/v1/notes",
+      payload: {
+        title: "Don Quixote",
+        subject: "lit",
+        body: "@cervantes/cap1 and @cervantes/cap3",
+        updatedAt: now + 90 * 1000,
+      },
+    });
+    expect(note.statusCode).toBe(201);
+    const cv = await app.inject({ method: "GET", url: "/api/v1/cross-verify?subject=lit" });
+    const body = cv.json();
+    const bookRefs = body.gaps.filter((g: any) => g.type === "book-ref");
+    expect(bookRefs.length).toBe(2);
+    expect(bookRefs[0].bookRef).toMatch(/^cervantes\/cap\d$/);
+    expect(bookRefs[0].jumpUrl).toMatch(/^#\/notes\/.+\?rec=.+&t=\d+&ref=cervantes%2Fcap\d$/);
+    expect(bookRefs[0].timestampFormatted).toMatch(/^0[01]:\d\d$/); // 0X:XX (90s = 01:30)
+  });
 });
