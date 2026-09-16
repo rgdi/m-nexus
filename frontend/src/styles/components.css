@@ -1086,17 +1086,18 @@ body.hide-ui .dock, body.hide-ui .lang-switcher, body.hide-ui .top-toolbar { dis
 }
 .notebook-workspace {
   flex: 1;
-  display: grid;
-  grid-template-columns: 1fr 320px;
+  display: flex;
   gap: 0;
   overflow: hidden;
+  position: relative;
 }
 .notebook-main {
   display: flex;
   flex-direction: column;
   padding: var(--s-3) var(--s-4);
   overflow-y: auto;
-  min-width: 0; /* allow grid to shrink */
+  min-width: 0; /* allow flex to shrink */
+  flex: 1 1 auto;
 }
 .notebook-main .notebook {
   flex: 1;
@@ -1105,11 +1106,73 @@ body.hide-ui .dock, body.hide-ui .lang-switcher, body.hide-ui .top-toolbar { dis
   max-height: 720px;
   position: relative;
 }
+/* v2.5.0: draggable splitter between main and side panel */
+.notebook-splitter {
+  width: 6px;
+  cursor: col-resize;
+  background: transparent;
+  position: relative;
+  flex-shrink: 0;
+  transition: background 150ms var(--ease);
+}
+.notebook-splitter::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: var(--border);
+  transition: background 150ms var(--ease);
+}
+.notebook-splitter:hover::before,
+.notebook-splitter.dragging::before {
+  background: var(--accent);
+}
+.notebook-splitter:hover {
+  background: var(--accent-12);
+}
+.notebook-splitter.dragging {
+  background: var(--accent-12);
+}
+/* v2.5.0: panel can be collapsed entirely */
 .notebook-side-panel {
   background: var(--bg-sunken);
   border-left: 1px solid var(--border);
   display: flex;
   flex-direction: column;
+  flex: 0 0 var(--side-w, 320px);
+  min-width: 240px;
+  max-width: 600px;
+  position: relative;
+}
+.notebook-side-panel.collapsed {
+  flex: 0 0 40px;
+  min-width: 40px;
+  max-width: 40px;
+  border-left: none;
+}
+.notebook-side-panel.collapsed .side-content,
+.notebook-side-panel.collapsed .side-tabs { display: none; }
+.side-collapse-btn {
+  position: absolute;
+  top: var(--s-3);
+  right: var(--s-3);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 11px;
+  color: var(--fg-muted);
+  cursor: pointer;
+  z-index: 2;
+}
+.side-collapse-btn:hover { background: var(--bg-elevated); color: var(--fg); }
+.notebook-side-panel.collapsed .side-collapse-btn {
+  top: 50%;
+  right: 50%;
+  transform: translate(50%, -50%) rotate(90deg);
+  white-space: nowrap;
 }
 .side-tabs {
   display: flex;

@@ -242,6 +242,9 @@ async function renderNotebook(root, id) {
   });
   switchSide("notes");
 
+  // v2.5.0: draggable splitter for side panel
+  setupSplitter(root);
+
   // v2.3.0: hide secondary FAB when AI tutor panel is open (avoid double FABs)
   const cardsFab = root.querySelector("#new-card-btn");
   if (cardsFab) {
@@ -1102,7 +1105,10 @@ function renderNotebookWideHTML(note, pages) {
           </div>
         </main>
 
+        <div class="notebook-splitter" id="notebook-splitter" title="${i18n.t("notes.resize") || "Drag to resize"}"></div>
+
         <aside class="notebook-side-panel" id="side-panel">
+          <button class="side-collapse-btn" id="side-collapse" aria-label="Toggle panel">${i18n.t("notes.collapse") || "Hide"}</button>
           <div class="side-tabs">
             <button class="side-tab active" data-side="notes">📝 ${i18n.t("notes.body") || "Note"}</button>
             <button class="side-tab" data-side="ai">✦ AI</button>
@@ -1237,4 +1243,109 @@ function wireAISide(root, note) {
     location.hash = "#/ai";
     window.dispatchEvent(new HashChangeEvent("hashchange"));
   });
+}
+
+/* ============================================================
+ * v2.5.0 — Draggable panel splitter (resizes side-panel width).
+ * Persists size in localStorage["mnexus.sidepanel.width"] = px.
+ * Persists collapsed state in ["mnexus.sidepanel.collapsed"] = "1".
+ * ============================================================ */
+function setupSplitter(root) {
+  const splitter = root.querySelector("#notebook-splitter");
+  const panel = root.querySelector("#side-panel");
+  const collapseBtn = root.querySelector("#side-collapse");
+  if (!splitter || !panel) return;
+
+  // Restore saved width
+  const savedWidth = parseInt(localStorage.getItem("mnexus.sidepanel.width") || "", 10);
+  if (savedWidth >= 240 && savedWidth <= 600) {
+    panel.style.flex = `0 0 ${savedWidth}px`;
+  }
+  // Restore collapsed
+  if (localStorage.getItem("mnexus.sidepanel.collapsed") === "1") {
+    panel.classList.add("collapsed");
+  }
+
+  let startX = 0;
+  let startWidth = 0;
+  let dragging = false;
+
+  const onMove = (e) => {
+    if (!dragging) return;
+    const dx = e.clientX - startX;
+    let newWidth = startWidth - dx; // dragging left → panel grows
+    newWidth = Math.max(240, Math.min(600, newWidth));
+    panel.style.flex = `0 0 ${newWidth}px`;
+    panel.classList.remove("collapsed");
+  };
+
+  const onUp = () => {
+    if (!dragging) return;
+    dragging = false;
+    splitter.classList.remove("dragging");
+    document.body.style.cursor = "";
+    document.body.style.userSelect = "";
+    const finalWidth = panel.getBoundingClientRect().width;
+    localStorage.setItem("mnexus.sidepanel.width", String(Math.round(finalWidth)));
+    localStorage.setItem("mnexus.sidepanel.collapsed", "0");
+    document.removeEventListener("mousemove", onMove);
+    document.removeEventListener("mouseup", onUp);
+  };
+
+  splitter.addEventListener("mousedown", (e) => {
+    dragging = true;
+    startX = e.clientX;
+    startWidth = panel.getBoundingClientRect().width;
+    splitter.classList.add("dragging");
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+    e.preventDefault();
+  });
+
+  // Touch support
+  splitter.addEventListener("touchstart", (e) => {
+    const touch = e.touches[0];
+    dragging = true;
+    startX = touch.clientX;
+    startWidth = panel.getBoundingClientRect().width;
+    splitter.classList.add("dragging");
+    const onTouchMove = (ev) => {
+      if (!dragging) return;
+      const t = ev.touches[0];
+      const dx = t.clientX - startX;
+      let newWidth = startWidth - dx;
+      newWidth = Math.max(240, Math.min(600, newWidth));
+      panel.style.flex = `0 0 ${newWidth}px`;
+      panel.classList.remove("collapsed");
+    };
+    const onTouchEnd = () => {
+      dragging = false;
+      splitter.classList.remove("dragging");
+      const finalWidth = panel.getBoundingClientRect().width;
+      localStorage.setItem("mnexus.sidepanel.width", String(Math.round(finalWidth)));
+      document.removeEventListener("touchmove", onTouchMove);
+      document.removeEventListener("touchend", onTouchEnd);
+    };
+    document.addEventListener("touchmove", onTouchMove, { passive: false });
+    document.addEventListener("touchend", onTouchEnd);
+  });
+
+  // Collapse button toggles
+  if (collapseBtn) {
+    collapseBtn.addEventListener("click", () => {
+      const wasCollapsed = panel.classList.toggle("collapsed");
+      localStorage.setItem("mnexus.sidepanel.collapsed", wasCollapsed ? "1" : "0");
+      if (wasCollapsed) {
+        collapseBtn.textContent = i18n.t("notes.expand") || "Show";
+      } else {
+        collapseBtn.textContent = i18n.t("notes.collapse") || "Hide";
+      }
+    });
+    // Sync button label
+    if (panel.classList.contains("collapsed")) {
+      collapseBtn.textContent = i18n.t("notes.expand") || "Show";
+    }
+  }
 }
