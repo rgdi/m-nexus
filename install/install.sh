@@ -403,3 +403,26 @@ port=$PORT
 EOF
 
 print_banner
+
+# ────────────────────────────────────────────────────────────────────
+# v2.6.0: Optional Cloudflare Tunnel
+# ────────────────────────────────────────────────────────────────────
+if ask_yes_no "Set up Cloudflare Tunnel? (requires domain on Cloudflare, gives free DDoS protection)"; then
+  bash "$SCRIPT_DIR/../scripts/cloudflared-setup.sh" || print_warn "Tunnel setup skipped — you can run it later with: bash scripts/cloudflared-setup.sh"
+fi
+
+# ────────────────────────────────────────────────────────────────────
+# Helpers used by optional steps
+# ────────────────────────────────────────────────────────────────────
+ask_yes_no() {
+  local prompt="$1"
+  local reply
+  while true; do
+    read -rp "$prompt [y/N]: " reply
+    case "${reply,,}" in
+      y|yes) return 0 ;;
+      n|no|"") return 1 ;;
+      *) echo "Please answer yes or no." ;;
+    esac
+  done
+}
