@@ -292,6 +292,88 @@ const STYLE = `
   .setup-btn { padding: 8px 14px; font-size: 13px; }
   .setup-grid { grid-template-columns: 1fr; }
 }
+
+/* v2.6.0: AI provider + admin slides */
+.setup-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: var(--s-4, 16px) 0;
+  max-width: 560px;
+  text-align: left;
+}
+.setup-radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--bg-elevated, rgba(0, 0, 0, 0.05));
+  border-radius: 8px;
+  cursor: pointer;
+}
+.setup-radio-group input[type="radio"] { margin: 0; }
+.wiz-ai-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 560px;
+  margin: var(--s-3, 12px) 0;
+}
+.wiz-ai-fields[hidden] { display: none; }
+.wiz-ai-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  text-align: left;
+}
+.wiz-ai-fields input {
+  padding: 8px 12px;
+  border: 1px solid var(--border, #2a2e38);
+  border-radius: 6px;
+  background: var(--bg, #0e1116);
+  color: var(--fg, #e8e9eb);
+  font: inherit;
+}
+.setup-test-result {
+  margin-top: var(--s-3, 12px);
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: var(--bg-elevated, rgba(0, 0, 0, 0.05));
+  font-size: 13px;
+}
+.setup-fieldset {
+  border: 1px solid var(--border, #2a2e38);
+  border-radius: 8px;
+  padding: var(--s-3, 12px) var(--s-4, 16px);
+  margin: var(--s-3, 12px) 0;
+  max-width: 560px;
+  text-align: left;
+}
+.setup-fieldset legend {
+  padding: 0 8px;
+  font-weight: 600;
+}
+.setup-fieldset label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 8px 0;
+  font-size: 13px;
+}
+.setup-fieldset input,
+.setup-fieldset select {
+  padding: 8px 12px;
+  border: 1px solid var(--border, #2a2e38);
+  border-radius: 6px;
+  background: var(--bg, #0e1116);
+  color: var(--fg, #e8e9eb);
+  font: inherit;
+}
+.setup-fieldset small {
+  color: var(--fg-muted, #9ca3af);
+  font-size: 11px;
+}
 `;
 
 const SLIDES = [
@@ -453,6 +535,207 @@ const SLIDES = [
         closeWizard();
         location.hash = "#/notes";
       });
+    },
+  },
+  // ──────────────────────────────────────────────────────────────────
+  // v2.6.0: AI provider + admin setup
+  // ──────────────────────────────────────────────────────────────────
+  // 7. AI provider
+  {
+    id: "ai-provider",
+    setup: (root) => {
+      const state = root._setupState;
+      if (!state.aiProvider) state.aiProvider = "mock";
+      const radios = root.querySelectorAll('input[name="wiz-ai-provider"]');
+      const updateFields = () => {
+        const sel = root.querySelector('input[name="wiz-ai-provider"]:checked')?.value || "mock";
+        root.querySelectorAll(".wiz-ai-fields").forEach((el) => {
+          el.hidden = el.dataset.for !== sel;
+        });
+      };
+      radios.forEach((r) => {
+        r.checked = r.value === state.aiProvider;
+        r.addEventListener("change", () => {
+          state.aiProvider = r.value;
+          updateFields();
+        });
+      });
+      updateFields();
+      const testBtn = root.querySelector("#wiz-test-ai");
+      if (testBtn) {
+        testBtn.addEventListener("click", async () => {
+          testBtn.disabled = true;
+          testBtn.textContent = "Probando...";
+          const result = root.querySelector("#wiz-test-result");
+          try {
+            const r = await fetch("/api/v1/admin/ai/test", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                ...(root._setupState.authToken ? { Authorization: `Bearer ${root._setupState.authToken}` } : {}),
+              },
+            });
+            const data = await r.json();
+            result.hidden = false;
+            result.textContent = data.ok ? `✅ ${data.message}` : `❌ ${data.message}`;
+            result.style.color = data.ok ? "var(--success, #10b981)" : "var(--danger, #ef4444)";
+          } catch (e) {
+            result.hidden = false;
+            result.textContent = `❌ ${e.message}`;
+          } finally {
+            testBtn.disabled = false;
+            testBtn.textContent = "🔌 Probar conexión";
+          }
+        });
+      }
+    },
+    render: () => `
+      <h2 class="setup-hero" style="font-size:clamp(28px,4vw,40px)">Proveedor de IA</h2>
+      <p class="setup-body">Selecciona cómo quieres que M-NEXUS genere respuestas (resúmenes, flashcards, tutor). Puedes cambiar esto después en Settings.</p>
+      <div class="setup-radio-group">
+        <label><input type="radio" name="wiz-ai-provider" value="mock" /> <strong>Skip</strong> — respuestas predefinidas, sin red</label>
+        <label><input type="radio" name="wiz-ai-provider" value="ollama" /> <strong>Ollama local</strong> — privacidad total, sin costes</label>
+        <label><input type="radio" name="wiz-ai-provider" value="openrouter" /> <strong>OpenRouter</strong> — un API key, muchos modelos</label>
+        <label><input type="radio" name="wiz-ai-provider" value="openai" /> <strong>OpenAI-compatible</strong> — LM Studio, vLLM, etc.</label>
+      </div>
+      <div class="wiz-ai-fields" data-for="ollama">
+        <label>URL base <input name="wiz-ai-baseUrl" value="http://localhost:11434" /></label>
+        <label>Modelo <input name="wiz-ai-model" value="llama3.1:8b" /></label>
+      </div>
+      <div class="wiz-ai-fields" data-for="openrouter" hidden>
+        <label>API Key <input name="wiz-ai-apiKey" type="password" placeholder="sk-or-v1-..." /></label>
+        <label>Modelo <input name="wiz-ai-model" value="meta-llama/llama-3.1-8b-instruct:free" /></label>
+      </div>
+      <div class="wiz-ai-fields" data-for="openai" hidden>
+        <label>URL base <input name="wiz-ai-baseUrl" placeholder="http://localhost:1234/v1" /></label>
+        <label>API Key <input name="wiz-ai-apiKey" type="password" placeholder="opcional" /></label>
+        <label>Modelo <input name="wiz-ai-model" value="local-model" /></label>
+      </div>
+      <button class="setup-btn setup-btn-ghost" id="wiz-test-ai">🔌 Probar conexión</button>
+      <div id="wiz-test-result" class="setup-test-result" hidden></div>
+    `,
+    onNext: async (root) => {
+      const state = root._setupState;
+      const provider = state.aiProvider || "mock";
+      const modelInput = root.querySelector('input[name="wiz-ai-model"]');
+      const baseUrlInput = root.querySelector('input[name="wiz-ai-baseUrl"]');
+      const apiKeyInput = root.querySelector('input[name="wiz-ai-apiKey"]');
+      const cfg = {
+        provider,
+        model: modelInput?.value || "mock-1",
+        baseUrl: baseUrlInput?.value || undefined,
+        apiKey: apiKeyInput?.value || undefined,
+      };
+      try {
+        await fetch("/api/v1/admin/ai", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(state.authToken ? { Authorization: `Bearer ${state.authToken}` } : {}),
+          },
+          body: JSON.stringify(cfg),
+        });
+      } catch { /* best effort */ }
+    },
+  },
+  // 8. Admin + Backup
+  {
+    id: "admin-backup",
+    render: () => `
+      <h2 class="setup-hero" style="font-size:clamp(28px,4vw,40px)">Admin y backups</h2>
+      <p class="setup-body">Crea el usuario admin (único) y configura la rotación de backups automáticos.</p>
+      <fieldset class="setup-fieldset">
+        <legend>👤 Usuario admin</legend>
+        <label>Usuario <input name="wiz-admin-username" value="admin" pattern="[a-z0-9_-]{3,32}" /></label>
+        <label>Contraseña (mín 12) <input name="wiz-admin-password" type="password" minlength="12" /></label>
+        <label>Repetir contraseña <input name="wiz-admin-password2" type="password" minlength="12" /></label>
+      </fieldset>
+      <fieldset class="setup-fieldset">
+        <legend>💾 Backups automáticos</legend>
+        <label>Frecuencia
+          <select name="wiz-backup-interval">
+            <option value="6">Cada 6 horas</option>
+            <option value="12">Cada 12 horas</option>
+            <option value="24" selected>Cada 24 horas</option>
+            <option value="0">Desactivado</option>
+          </select>
+        </label>
+        <label>Conservar últimos
+          <select name="wiz-backup-keep-daily">
+            <option value="7">7 backups</option>
+            <option value="30" selected>30 backups</option>
+            <option value="90">90 backups</option>
+          </select>
+        </label>
+        <label>Comando remoto opcional <input name="wiz-backup-remote" placeholder="rclone copy {} remote:bucket/backups" /></label>
+        <small>{} se reemplaza con la ruta del backup. Ej: rsync, rclone, cp a USB.</small>
+      </fieldset>
+    `,
+    onNext: async (root) => {
+      const state = root._setupState;
+      const username = root.querySelector('input[name="wiz-admin-username"]')?.value?.trim();
+      const pwd = root.querySelector('input[name="wiz-admin-password"]')?.value;
+      const pwd2 = root.querySelector('input[name="wiz-admin-password2"]')?.value;
+      const interval = root.querySelector('select[name="wiz-backup-interval"]')?.value || "24";
+      const keepDaily = root.querySelector('select[name="wiz-backup-keep-daily"]')?.value || "30";
+      const remote = root.querySelector('input[name="wiz-backup-remote"]')?.value || "";
+      // Validate passwords
+      if (!username || !pwd || pwd.length < 12) {
+        throw new Error("Password must be at least 12 chars");
+      }
+      if (pwd !== pwd2) {
+        throw new Error("Passwords don't match");
+      }
+      // Create admin via /auth/setup
+      try {
+        const r = await fetch("/api/v1/auth/setup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password: pwd }),
+        });
+        if (r.ok) {
+          const data = await r.json();
+          state.authToken = data.accessToken;
+          state.refreshToken = data.refreshToken;
+          // Save tokens
+          try {
+            sessionStorage.setItem("mnexus.auth.access", data.accessToken);
+            localStorage.setItem("mnexus.auth.refresh", data.refreshToken);
+          } catch { /* private mode */ }
+        } else if (r.status === 409) {
+          // Admin already exists — try login
+          const lr = await fetch("/api/v1/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password: pwd }),
+          });
+          if (lr.ok) {
+            const ld = await lr.json();
+            state.authToken = ld.accessToken;
+            state.refreshToken = ld.refreshToken;
+            try {
+              sessionStorage.setItem("mnexus.auth.access", ld.accessToken);
+              localStorage.setItem("mnexus.auth.refresh", ld.refreshToken);
+            } catch { /* private mode */ }
+          }
+        }
+      } catch { /* best effort */ }
+      // Save backup config
+      try {
+        await fetch("/api/v1/admin/backup/config", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(state.authToken ? { Authorization: `Bearer ${state.authToken}` } : {}),
+          },
+          body: JSON.stringify({
+            intervalHours: Number(interval),
+            keepDaily: Number(keepDaily),
+            keepMonthly: 12,
+            remoteCommand: remote || undefined,
+          }),
+        });
+      } catch { /* best effort */ }
     },
   },
 ];
