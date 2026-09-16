@@ -1,15 +1,16 @@
-// autoBackup.test.ts: tests de auto-backup (v0.60 P2.3)
+// autoBackup.test.ts: tests de auto-backup (v0.60 P2.3, v2.6.0)
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import Fastify, { type FastifyInstance } from "fastify";
 import { mkdtemp, writeFile, mkdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { getAutoBackupService } from "../src/services/autoBackupService.js";
+import { setBackupConfig } from "../src/services/backupConfig.js";
 
 let vaultDir: string;
 let outDir: string;
 
-describe("AutoBackupService (P2.3)", () => {
+describe("AutoBackupService (P2.3 + v2.6.0 smart rotation)", () => {
   beforeEach(async () => {
     vaultDir = await mkdtemp(join(tmpdir(), "vault-"));
     outDir = await mkdtemp(join(tmpdir(), "bkout-"));
@@ -19,6 +20,8 @@ describe("AutoBackupService (P2.3)", () => {
     await writeFile(join(vaultDir, "sub", "c.md"), "gamma");
     const svc = getAutoBackupService();
     (svc as any).__reset();
+    // v2.6.0: disable smart rotation in legacy test by setting keepDaily=0
+    await setBackupConfig({ intervalHours: 0, keepDaily: 0, keepMonthly: 0 });
     svc.configure({
       enabled: false, intervalMinutes: 30, maxBackups: 5,
       vaultPath: vaultDir, outputDir: outDir,

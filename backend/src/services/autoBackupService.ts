@@ -8,7 +8,7 @@ import { stat, readdir, mkdir, unlink, copyFile, rm } from "node:fs/promises";
 import { join, basename } from "node:path";
 import { createGzip } from "node:zlib";
 import { pipeline } from "node:stream/promises";
-import { logOp } from "../utils/log.js";
+import { logOp, logError } from "../utils/log.js";
 
 export interface BackupConfig {
   enabled: boolean;
@@ -140,8 +140,18 @@ class AutoBackupService {
         fileCount,
       };
       this.history.push(entry);
-      // Rotacion
-      await this.rotate();
+      // v2.6.0: smart rotation (keepDaily + keepMonthly) before simple maxBackups
+      await this.smartRotate();
+      // v2.6.0: remote push (best-effort, doesn't fail the backup)
+      const { getBackupConfig } = await import("./backupConfig.js");
+      const bcfg = getBackupConfig();
+      if (bcfg.remoteCommand) {
+        try {
+          await this.pushRemote(outPath, bcfg.remoteCommand);
+        } catch (e) {
+          logOp("backup", "remote push failed (non-fatal)", false, { err: (e as Error).message });
+        }
+      }
       logOp("backup", "created", true, { id, sizeBytes: st.size, fileCount });
       return entry;
     } catch (e) {
@@ -150,6 +160,56 @@ class AutoBackupService {
     } finally {
       this.running = false;
     }
+  }
+
+  /// v2.6.0: smart rotation — keep last N daily + 1 per month.
+  /// Falls back to simple maxBackups if backup-config.json has no keepDaily/keepMonthly.
+  private async smartRotate(): Promise<void> {
+    const { getBackupConfig } = await import("./backupConfig.js");
+    const bcfg = getBackupConfig();
+    if (!bcfg.keepDaily && !bcfg.keepMonthly) {
+      return this.rotate(); // legacy path
+    }
+    const sorted = [...this.history].sort((a, b) => b.createdAt - a.createdAt);
+    const keep = new Set<string>();
+    // Daily: newest N
+    for (const e of sorted.slice(0, bcfg.keepDaily ?? 30)) keep.add(e.id);
+    // Monthly: 1 per YYYY-MM (newest per month)
+    const byMonth = new Map<string, BackupEntry>();
+    for (const e of sorted) {
+      const d = new Date(e.createdAt);
+      const ym = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+      if (!byMonth.has(ym)) byMonth.set(ym, e);
+    }
+    const monthCount = bcfg.keepMonthly ?? 12;
+    for (const [, e] of [...byMonth.entries()].slice(0, monthCount)) keep.add(e.id);
+    // Delete the rest
+    const toDelete = this.history.filter(e => !keep.has(e.id));
+    for (const e of toDelete) {
+      try {
+        await unlink(join(this.config.outputDir, e.filename));
+        this.history = this.history.filter(x => x.id !== e.id);
+      } catch (_) {}
+    }
+    logOp("backup", "smart-rotated", true, { kept: keep.size, deleted: toDelete.length });
+  }
+
+  /// v2.6.0: push backup to remote via user-defined command. {} is replaced with the path.
+  private async pushRemote(backupPath: string, command: string): Promise<void> {
+    const { exec } = await import("node:child_process");
+    const cmd = command.replaceAll("{}", `"${backupPath}"`);
+    return new Promise<void>((resolve, reject) => {
+      const child = exec(cmd, { timeout: 5 * 60 * 1000 }, (err, stdout, stderr) => {
+        if (err) {
+          logError("backup", { code: "EC-BACKUP-200", category: "BACKUP", message: "remote push failed", context: { err: err.message, stderr: stderr?.toString() } });
+          reject(err);
+          return;
+        }
+        logOp("backup", "remote push ok", true, { stdout: stdout?.toString().slice(0, 200) });
+        resolve();
+      });
+      child.on("error", reject);
+    });
   }
 
   private shouldExclude(name: string): boolean {
