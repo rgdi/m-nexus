@@ -296,3 +296,13 @@ body:not(.dock-collapsed) .dock-expand { display: none; }
   .app { padding-top: calc(var(--safe-top) + 56px); }
   .screen { padding-top: var(--s-4); }
 }
+
+/* v2.6.0: hide dock + FAB on login */
+body.route-login #dock,
+body.route-login .fab-cards,
+body.route-login .ai-tutor-fab,
+body.route-login #topbar,
+body.route-login #app > .screen > nav,
+body.route-login .doc-toolbar {
+  display: none !important;
+}

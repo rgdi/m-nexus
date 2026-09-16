@@ -25,6 +25,8 @@ import { renderNotes } from "./screens/notes.js";
 import { renderTodos } from "./screens/todos.js";
 import { renderAI } from "./screens/ai.js";
 import { renderSettings } from "./screens/settings.js";
+import { renderLogin } from "./screens/login.js";
+import { auth } from "./services/auth.js";
 
 const ROUTES = {
   overview: renderOverview,
@@ -34,6 +36,7 @@ const ROUTES = {
   todos: renderTodos,
   ai: renderAI,
   settings: renderSettings,
+  login: renderLogin,
 };
 
 const app = document.getElementById("app");
@@ -69,12 +72,25 @@ function setActiveDock(route) {
 }
 
 async function render() {
+  // v2.6.0: gate routes behind auth. Login is always allowed.
+  if (!auth.isAuthed() && ROUTES[parseHash()] !== renderLogin) {
+    // If we don't have any token, force login. If we have refresh token,
+    // the first 401 from any API call will trigger refresh; until then
+    // the user can still see data (LAN bypass / public routes).
+    // For maximum safety on public deploys: force login if no refresh token.
+    if (!auth.hasRefreshToken()) {
+      location.hash = "#/login";
+      return;
+    }
+  }
   const route = parseHash();
   app.dataset.route = route;
   // v1.4.0: clase de pantalla para fondos diferenciados
   app.className = `app screen-${route}`;
   // v2.1.3: also reflect route on body so fixed-position UI (FAB) can react
   document.body.className = `route-${route}`;
+  // v2.6.0: hide dock + FAB on login screen
+  document.body.classList.toggle("route-login", route === "login");
   document.body.dataset.activeRoute = route;
   // v2.4.0: also expose to global so AI screen can detect current context
   window.__mnexusActiveRoute = route;

@@ -1291,3 +1291,101 @@ body.hide-ui .dock, body.hide-ui .lang-switcher, body.hide-ui .top-toolbar { dis
     display: none !important;
   }
 }
+
+/* ============================================================
+ * v2.6.0: Login screen
+ * ============================================================ */
+.login-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s-6, 2rem);
+  background: linear-gradient(135deg, var(--bg, #0e1116) 0%, var(--surface-2, #1a1d24) 100%);
+}
+.login-card {
+  background: var(--surface, #181b22);
+  border: 1px solid var(--border, #2a2e38);
+  border-radius: 16px;
+  padding: 2.5rem;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+.login-logo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, var(--accent, #6ea8fe), #a78bfa);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.login-title {
+  font-size: 1.25rem;
+  margin: 0.5rem 0 0.25rem;
+  color: var(--fg, #e8e9eb);
+}
+.login-subtitle {
+  font-size: 0.875rem;
+  color: var(--fg-muted, #9ca3af);
+  margin: 0 0 1.5rem;
+}
+.login-field {
+  display: block;
+  margin: 1rem 0;
+}
+.login-field span {
+  display: block;
+  font-size: 0.8125rem;
+  color: var(--fg-muted, #9ca3af);
+  margin-bottom: 0.375rem;
+  font-weight: 500;
+}
+.login-field input {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--border, #2a2e38);
+  border-radius: 10px;
+  background: var(--bg, #0e1116);
+  color: var(--fg, #e8e9eb);
+  font: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.login-field input:focus {
+  outline: none;
+  border-color: var(--accent, #6ea8fe);
+  box-shadow: 0 0 0 3px rgba(110, 168, 254, 0.18);
+}
+.login-submit {
+  width: 100%;
+  margin-top: 1.5rem;
+  padding: 0.75rem;
+  background: var(--accent, #6ea8fe);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.05s;
+}
+.login-submit:hover { opacity: 0.92; }
+.login-submit:active { transform: scale(0.99); }
+.login-submit:disabled { opacity: 0.6; cursor: wait; }
+.login-error {
+  margin-top: 1rem;
+  padding: 0.625rem 0.75rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  color: #f87171;
+  font-size: 0.8125rem;
+}
+.login-hint {
+  margin-top: 1.25rem;
+  font-size: 0.75rem;
+  color: var(--fg-muted, #6b7280);
+  text-align: center;
+}

@@ -7,6 +7,8 @@ import { i18n } from "../services/i18n.js";
 import { getVaults, getCurrentVault, setCurrentVault } from "../services/vault.js";
 import { getTheme, setTheme } from "../services/theme.js";
 import { escapeHtml } from "../services/safe.js";
+import { auth } from "../services/auth.js";
+import { api } from "../services/api.js";
 
 export function renderSettings(root) {
   const curLang = i18n.lang;
@@ -71,8 +73,17 @@ export function renderSettings(root) {
 
       <section class="settings-section">
         <h2>About</h2>
-        <p class="muted">M-NEXUS · v2.4.0</p>
+        <p class="muted">M-NEXUS · v2.6.0</p>
         <p class="muted">Education Service · Offline-first</p>
+      </section>
+
+      <section class="settings-section">
+        <h2>Session</h2>
+        <p class="muted">Cerrar sesión en este dispositivo</p>
+        <button class="settings-option" id="logout-btn">
+          <span class="ico">🚪</span>
+          <span class="name">Cerrar sesión</span>
+        </button>
       </section>
     </div>
   `;
@@ -98,6 +109,16 @@ export function renderSettings(root) {
       location.reload(); // vaults are isolated namespaces, fresh load is safest
     });
   });
+  const logoutBtn = root.querySelector("#logout-btn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", async () => {
+      if (!confirm("¿Cerrar sesión en este dispositivo?")) return;
+      try { await api.auth?.logout?.(); } catch { /* best effort */ }
+      auth.clearTokens();
+      location.hash = "#/login";
+      location.reload();
+    });
+  }
 }
 
 function backIcon() {

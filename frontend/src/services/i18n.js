@@ -296,3 +296,15 @@ class I18n {
 }
 
 export const i18n = new I18n();
+
+/* v2.6.0: login screen translations */
+STRINGS["login.title"] = { es: "Iniciar sesión", en: "Sign in", pt: "Entrar" };
+STRINGS["login.subtitle"] = { es: "Accede a tus notas, flashcards y backups", en: "Access your notes, flashcards and backups", pt: "Aceda às suas notas, flashcards e backups" };
+STRINGS["login.username"] = { es: "Usuario", en: "Username", pt: "Usuário" };
+STRINGS["login.password"] = { es: "Contraseña", en: "Password", pt: "Senha" };
+STRINGS["login.submit"] = { es: "Entrar", en: "Sign in", pt: "Entrar" };
+STRINGS["login.failed"] = { es: "Usuario o contraseña incorrectos", en: "Wrong username or password", pt: "Usuário ou senha incorretos" };
+STRINGS["login.tooMany"] = { es: "Demasiados intentos. Espera {n}s", en: "Too many attempts. Wait {n}s", pt: "Muitas tentativas. Aguarde {n}s" };
+STRINGS["login.locked"] = { es: "Cuenta bloqueada. Intenta en {n}s", en: "Account locked. Try in {n}s", pt: "Conta bloqueada. Tente em {n}s" };
+STRINGS["login.networkError"] = { es: "Error de red", en: "Network error", pt: "Erro de rede" };
+STRINGS["login.hint"] = { es: "Tu sesión dura 90 días en este dispositivo", en: "Your session lasts 90 days on this device", pt: "Sua sessão dura 90 dias neste dispositivo" };
