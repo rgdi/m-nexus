@@ -24,6 +24,7 @@ import { recordingsRoutes } from "./routes/recordings.js";
 import { crossVerifyRoutes } from "./routes/cross_verify.js";
 import { syncV2Routes, syncV2RestRoutes } from "./routes/sync_v2.js";
 import { authRoutes } from "./routes/auth.js";
+import { adminRoutes } from "./routes/admin.js";
 import { backupRoutes } from "./routes/backup.js";
 import { updateRoutes } from "./routes/update.js";
 import { wsRoutes } from "./routes/ws.js";
@@ -165,6 +166,9 @@ export async function buildServer(): Promise<any> {
   await app.register(stemmerRoutes);
   await app.register(clipRoutes);
   await app.register(secretsRoutes);
+
+  // v2.6.0: admin routes (AI config + backup trigger)
+  await app.register(adminRoutes, { prefix: "/api/v1" });
 
   // v0.62.8: /api/v1/ai/tutor is registered by aiRoutes (./routes/ai.ts).
   // Removed the inline handler to avoid duplicate-route registration error.

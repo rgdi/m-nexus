@@ -11,6 +11,8 @@ import { WormAuditLog, type WormEntry } from "../utils/wormAudit.js";
 
 export type AuditAction =
   | "register"
+  | "auth.login"
+  | "auth.setup"
   | "auth.refresh"
   | "auth.revoke"
   | "auth.failed"

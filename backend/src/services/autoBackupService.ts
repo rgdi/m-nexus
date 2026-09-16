@@ -80,7 +80,12 @@ class AutoBackupService {
   }
 
   /// v0.60 (P2.3): ejecuta un backup. Devuelve la entry.
+  /// v2.6.0: alias `runOnce` added for admin route clarity.
   async tick(): Promise<BackupEntry | null> {
+    return this.runOnce();
+  }
+
+  async runOnce(): Promise<BackupEntry | null> {
     if (this.running) return null;
     this.running = true;
     try {
@@ -210,4 +215,22 @@ let _instance: AutoBackupService | null = null;
 export function getAutoBackupService(): AutoBackupService {
   if (!_instance) _instance = new AutoBackupService();
   return _instance;
+}
+
+// ── v2.6.0: thin wrappers for admin route ────────────────────────────
+
+export async function runBackupNow(): Promise<{ ok: boolean; entry?: BackupEntry; error?: string }> {
+  const svc = getAutoBackupService();
+  const entry = await svc.runOnce();
+  if (!entry) return { ok: false, error: "Backup failed — check logs" };
+  return { ok: true, entry };
+}
+
+export function getBackupStatus() {
+  const svc = getAutoBackupService();
+  return {
+    history: svc.list().slice(0, 20), // most recent 20
+    totalBackups: svc.list().length,
+    running: false, // can't synchronously check; approximated
+  };
 }
