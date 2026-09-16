@@ -1,8 +1,8 @@
-# M-NEXUS — Education Service (v2.3.0)
+# M-NEXUS — Education Service (v2.6.0)
 
 > **Tablet-first** Education Service for medical students.
-> Notebook (stylus), calendar, subjects, to-do's, AI tutor, **spaced repetition (FSRS-4.5)**, **syllabus tracker**, **3D knowledge graph**.
-> Vanilla JS frontend + Fastify backend. Local-first.
+> Notebook (stylus), calendar, subjects, to-do's, AI tutor, **spaced repetition (FSRS-4.5)**, **syllabus tracker**, **3D knowledge graph**, **admin auth with 90-day sessions**, **auto-backup**, **Cloudflare Tunnel ready**.
+> Vanilla JS frontend + Fastify backend. Local-first or cloud-deployed.
 
 ---
 
@@ -129,6 +129,22 @@ m-nexus/
 ├── Dockerfile + docker-compose.yml    container build
 └── nginx.conf                         reverse proxy
 ```
+
+---
+
+## What's new in v2.6.0
+
+M-NEXUS is now production-ready for personal public deployment:
+
+- **Admin auth with 90-day sessions** — bcrypt + JWT (1h access) + refresh token (90d) + auto-refresh
+- **Defense in depth** — login throttle (5/15min/IP) + lockout (10 fails → 1h) + LAN bypass for testing
+- **Configurable AI provider** — Ollama (local/private), OpenRouter (pay-per-use), OpenAI-compatible (LM Studio, vLLM, Groq), or mock
+- **Smart backup rotation** — daily + monthly caps (30 daily + 12 monthly default) + optional `rclone`/`rsync` push to S3/B2/GDrive/USB
+- **Cloudflare Tunnel one-command setup** — free DDoS + bot filtering upstream + optional Access 2FA at the edge
+- **Install wizard expanded** to 8 slides (added AI provider + admin + backup config)
+- **1000+ automated tests** — 834 backend + 168 frontend vitest
+
+Read: [AUTH](docs/AUTH.md) · [BACKUP](docs/BACKUP.md) · [AI_PROVIDERS](docs/AI_PROVIDERS.md) · [CLOUDFLARE_TUNNEL](docs/CLOUDFLARE_TUNNEL.md) · [SECURITY](docs/SECURITY.md)
 
 ---
 

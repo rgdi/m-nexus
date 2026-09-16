@@ -4,7 +4,130 @@
 
 ---
 
-## v2.3.0 (2026-09-15) — UI decluttering + Notes folders
+## v2.6.0 (2026-09-16) — Public deploy ready: auth, backups, AI, tunnel
+
+Production-ready personal app: admin auth with 90-day sessions, smart backup rotation, swappable AI provider, optional Cloudflare Tunnel. Setup wizard expanded from 6 to 8 slides.
+
+### Auth
+
+- **New: admin user model** (`backend/src/services/users.ts`)
+  - bcrypt 12 rounds, min password 12 chars
+  - Account lockout after 10 failed attempts (1h)
+  - Single admin per instance (no public registration)
+- **New: login throttle** (`backend/src/services/rateLimit.ts`)
+  - 5 failed logins / 15min / IP → 429 with `Retry-After`
+  - In-memory Map + cleanup interval
+- **New endpoints** (in `backend/src/routes/auth.ts`):
+  - `POST /api/v1/auth/login` — username + password → tokens
+  - `POST /api/v1/auth/setup` — creates admin (only when none exists)
+  - `POST /api/v1/auth/refresh` — rotates refresh token
+  - `POST /api/v1/auth/logout` — stateless, client clears
+  - `GET  /api/v1/auth/me` — current user
+  - `GET  /api/v1/auth/status` — public, reports setup state + LAN bypass
+- **LAN bypass** (`LAN_AUTH_BYPASS=true`, default)
+  - Requests from private IPs (192.168.x, 10.x, 172.16-31.x, 127.x) skip JWT + throttle
+  - Set `LAN_AUTH_BYPASS=false` for production
+- **Token rotation**: refresh tokens rotate on every use, old one revoked server-side
+- **TTL bumped**: access 15min → 1h, refresh 30d → 90d
+- **`signAccessToken` extended** with `scope` param ("admin" vs legacy "device")
+- **Middleware** skips device check for `scope: "admin"`
+
+### Backup
+
+- **Smart rotation** (`backend/src/services/autoBackupService.ts`)
+  - Keep N most recent daily backups
+  - Keep 1 per month (up to 12)
+  - Falls back to legacy `maxBackups` when `keepDaily=0`
+- **Remote push** (opt-in via setup wizard slide 8)
+  - User-defined command, `{}` replaced with backup path
+  - 5min timeout, non-fatal (logs error)
+  - Examples: `rclone copy {} s3:bucket/`, `rsync -avz {} user@host:/path/`
+- **New service** `backend/src/services/backupConfig.ts`
+  - `intervalHours` (0=disabled, 6/12/24)
+  - `keepDaily`, `keepMonthly`, `remoteCommand`
+  - Stored at `data/backup-config.json` (0600 perms, gitignored)
+
+### AI provider
+
+- **New factory** `backend/src/services/aiProviders.ts`
+  - **Ollama** — local HTTP `/api/generate`
+  - **OpenRouter** — `https://openrouter.ai/api/v1/chat/completions` (Bearer)
+  - **OpenAI-compatible** — any endpoint (LM Studio, vLLM, Groq, Together)
+  - **Mock** — canned responses, no network
+- **`testConnection()`** for setup wizard
+- **API key masking** in GET (`apiKey: "***"` if set)
+- **Stored at** `data/ai-config.json` (0600 perms, gitignored)
+
+### Admin endpoints
+
+- **New** `backend/src/routes/admin.ts` (prefix `/api/v1`)
+  - `GET  /admin/ai` — config + available providers
+  - `POST /admin/ai` — save config
+  - `POST /admin/ai/test` — ping provider
+  - `GET  /admin/backup` — config + last 20 runs
+  - `POST /admin/backup/config` — update rotation
+  - `POST /admin/backup/run` — manual trigger
+  - All require admin JWT or LAN bypass
+
+### Frontend
+
+- **New** `frontend/src/services/auth.js`
+  - Access token → sessionStorage (1h TTL)
+  - Refresh token → localStorage (90d TTL, persistent across sessions)
+  - Safe storage ops (handles private mode + quota errors)
+- **`frontend/src/services/api.js` rewritten**:
+  - Auto-attaches `Authorization: Bearer`
+  - 401 → single refresh in-flight → retry once
+  - Final 401 → clear tokens + redirect to `/login`
+- **New** `frontend/src/screens/login.js`
+  - Username + password form with autocomplete
+  - 429/423/401 error states
+  - Hides dock/FABs on login route
+  - i18n (es/en/pt)
+- **`frontend/src/screens/settings.js`**: new "Session" section with logout
+- **`frontend/src/widgets/setup_wizard.js`**: slides 7 (AI) + 8 (admin + backup)
+- **`frontend/src/main.js`**: auth gate — redirects to `/login` if no refresh token
+- **`frontend/src/styles/components.css`**: login screen styles (gradient + dark theme)
+
+### Install
+
+- **New** `scripts/cloudflared-setup.sh` (~190 lines)
+  - Auto-detects OS + arch
+  - Installs `cloudflared` if missing
+  - Interactive login (opens browser for cert.pem)
+  - Creates named tunnel, writes `config.yml`, routes DNS, installs as service
+- **`install/install.sh`** adds optional prompt at end:
+  - "Set up Cloudflare Tunnel? (requires domain on Cloudflare, gives free DDoS protection)"
+  - New `ask_yes_no()` helper
+
+### Tests
+
+- **Backend**: +41 new tests (users 12, rateLimit 7, network 8, aiProviders 7, backupRotation 4, autoBackup unchanged)
+  - Total: **834 passing** (1 skipped)
+- **Frontend**: +15 new tests (auth 8, login 7)
+  - Total: **168 passing**
+- **Total automated: 1002**
+
+### Docs
+
+- **New**: `docs/AUTH.md` — admin model, JWT flow, brute force defense, LAN bypass, Cloudflare Access 2FA
+- **New**: `docs/BACKUP.md` — schedule, rotation, manual restore, remote push examples, WORM mode
+- **New**: `docs/AI_PROVIDERS.md` — provider comparison, Ollama install + models, OpenRouter, OpenAI-compatible
+- **New**: `docs/CLOUDFLARE_TUNNEL.md` — one-command setup, manual walkthrough, Access 2FA, troubleshooting
+- **New**: `docs/SECURITY.md` — threat model, pre/post-deploy checklists, security headers
+
+### Verification (fresh)
+
+- Backend vitest: **834 passed** (1 skipped) in ~47s
+- Frontend vitest: **168 passed** in ~18s
+- TypeScript: clean (`tsc --noEmit`)
+- Bundle build: works
+- Login flow: verified with Playwright (form submit → tokens stored → reload → still logged in)
+- API endpoints: all admin routes tested via curl with admin token
+
+---
+
+## v2.5.0 (2026-09-16) — Draggable panel splitter + frontend tests
 
 User feedback drove this release: too many buttons, AI overload, oversized
 subject cards, notes lacked folder structure. Two-step release: A (declutter)
