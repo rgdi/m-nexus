@@ -11,8 +11,8 @@ import { E, ErrorCategory } from "../utils/errorCodes.js";
 import { safeCall, safeCallAsync } from "../utils/safeCall.js";
 import { logOp } from "../utils/log.js";
 
-const ACCESS_TTL_SEC = 15 * 60;
-const REFRESH_TTL_SEC = 30 * 24 * 60 * 60;
+const ACCESS_TTL_SEC = 60 * 60; // 1 hour (v2.6.0)
+const REFRESH_TTL_SEC = 90 * 24 * 60 * 60; // 90 days (v2.6.0 — was 30)
 
 export interface AccessTokenPayload {
   sub: string;        // deviceId
@@ -38,18 +38,18 @@ export function generateTokenId(): string {
   return randomBytes(16).toString("hex");
 }
 
-export function signAccessToken(deviceId: string, name?: string): { token: string; jti: string; expiresAt: number } {
+export function signAccessToken(deviceId: string, name?: string, scope: string = "device"): { token: string; jti: string; expiresAt: number } {
   const r = safeCall<{ token: string; jti: string; expiresAt: number }>({
     component: "auth",
     code: "EC-AUTH-009",
     message: "signAccessToken failed",
-    context: { deviceId, hasName: !!name },
+    context: { deviceId, hasName: !!name, scope },
     op: () => {
       const jti = generateTokenId();
       const payload: Omit<AccessTokenPayload, "iat" | "exp"> = {
         sub: deviceId,
         name,
-        scope: "device",
+        scope,
         jti,
       };
       const token = jwt.sign(payload, config.jwtSecret, { algorithm: "HS256", expiresIn: ACCESS_TTL_SEC });

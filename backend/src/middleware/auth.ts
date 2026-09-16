@@ -9,6 +9,7 @@ import { isDeviceRegistered } from "../auth/devices.js";
 import { logLifecycle, logOp, logError } from "../utils/log.js";
 import { AppError, E, ErrorCategory } from "../utils/errorCodes.js";
 import { safeCallAsync } from "../utils/safeCall.js";
+import { isLanIp } from "../utils/network.js";
 
 declare module "fastify" {
   interface FastifyRequest {
@@ -65,9 +66,22 @@ export const authMiddleware: (req: FastifyRequest, reply: FastifyReply) => Promi
     "/ws/sync",
     // v2.3.0-B: folders CRUD — frontend usa sin Bearer (offline-first).
     "/api/v1/folders",
+    // v2.6.0: admin login/setup/status — must be public so you can actually log in.
+    "/api/v1/auth/login",
+    "/api/v1/auth/setup",
+    "/api/v1/auth/refresh",
+    "/api/v1/auth/logout",
+    "/api/v1/auth/status",
   ];
   const isPublic = PUBLIC_PATHS.some((p) => req.url === p || req.url.startsWith(p + "?") || req.url.startsWith(p + "/"));
   if (isPublic) return;
+
+  // v2.6.0: LAN bypass — skip auth for requests from local network.
+  if (process.env.LAN_AUTH_BYPASS === "true" && isLanIp(req.ip)) {
+    (req as any).auth = { sub: "lan-bypass", scope: "all", isLanBypass: true };
+    logOp("auth", "lan bypass applied", true, { ip: req.ip, url: req.url });
+    return;
+  }
 
   const authHeader = req.headers.authorization;
   if (!authHeader) {
@@ -101,6 +115,15 @@ export const authMiddleware: (req: FastifyRequest, reply: FastifyReply) => Promi
   // in some bundlers (tsx/esbuild). The payload is the verified JWT.
   (req as any).auth = payload;
   if (process.env.DEBUG_AUTH === "1") console.log("[auth] sub=", payload.sub, "scope=", payload.scope);
+
+  // v2.6.0: admin tokens (scope: "admin") skip device registration check.
+  // The old device flow (scope: "device") still requires register.
+  if (payload.scope === "admin") {
+    req.deviceId = payload.sub;
+    (req as any).deviceId = payload.sub;
+    logOp("auth", `admin auth ok for ${req.method} ${req.url}`, true, { userId: payload.sub });
+    return;
+  }
 
   // Check device registration
   const deviceCheck = await safeCallAsync({
