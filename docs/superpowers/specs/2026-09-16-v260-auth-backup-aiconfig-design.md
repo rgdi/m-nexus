@@ -101,6 +101,58 @@ export interface AIConfig {
 }
 ```
 
+### Token persistence (devices remember you)
+
+Goal: a user logs in once per device, then stays logged in for a long time. UX requirement from user.
+
+**Two-token model:**
+
+| Token | Lifetime | Storage | Purpose |
+|---|---|---|---|
+| `access_token` | 1 hour | in-memory + sessionStorage | Sent in `Authorization: Bearer` header |
+| `refresh_token` | 90 days | localStorage (`mnexus.auth.refresh`) | Used to mint new access_tokens silently |
+
+**Flow:**
+
+1. User logs in with username/password on device.
+2. Server returns `{accessToken, refreshToken, accessExpiresAt}`.
+3. Frontend stores `refreshToken` in `localStorage["mnexus.auth.refresh"]`.
+4. Frontend keeps `accessToken` in memory (module-level variable) + `sessionStorage["mnexus.auth.access"]` (survives page reload within session).
+5. On app boot:
+   - If `localStorage.refresh` exists → call `POST /api/v1/auth/refresh {refreshToken}` → get new `accessToken`.
+   - If refresh fails (expired/revoked) → clear localStorage, redirect to login.
+6. 401 from any API call → automatically call `/auth/refresh` once, retry original request.
+7. If refresh fails on 401 → clear storage, show "Session expired, please log in".
+
+**Refresh token rotation:**
+- Each `/auth/refresh` returns a NEW refresh token (old one invalidated). This prevents replay attacks if a refresh token is stolen.
+- Server keeps a `refreshTokenId → userId` map with last-used timestamp.
+- 90-day sliding window: if user uses the app at least once every 90 days, session never expires.
+
+**Revocation:**
+- `POST /api/v1/auth/logout` invalidates the current refresh token (server-side list).
+- Manual: `POST /api/v1/auth/revoke-all` invalidates ALL refresh tokens for the user (force re-login on all devices). Useful if device is lost.
+
+**"Trust this device" toggle (optional, simple):**
+- Just a checkbox on login form: "Remember this device for 90 days" (default: checked).
+- Functionally identical to no checkbox — refresh tokens already last 90 days. The checkbox is a UX hint to make users feel secure.
+
+**Multi-device support:**
+- Each login on a new device = a new refresh token.
+- User can have up to 10 active refresh tokens simultaneously (oldest auto-revoked on 11th login).
+- `GET /api/v1/auth/sessions` → list of active refresh tokens (IP, user-agent, last-used, created). User can revoke individual sessions.
+
+**Storage security:**
+- `localStorage` is accessible to any JS on the domain. Mitigations:
+  - XSS risk: app is single-user, no third-party JS scripts injected (no analytics, no ads).
+  - Refresh tokens are useless without server-side session, and server checks IP/UA on each refresh.
+  - On logout (manual or session expired), both tokens deleted immediately.
+- Future: can swap to HttpOnly cookies if CSP is added (out of scope for v2.6.0).
+
+**LAN bypass interaction:**
+- If `LAN_AUTH_BYPASS=true` AND request from LAN: auth is skipped entirely. No token needed. Refresh logic is also skipped.
+- If request comes from public IP: full auth flow applies, regardless of LAN bypass setting.
+
 ### Auth flow
 
 ```
@@ -136,6 +188,7 @@ export interface AIConfig {
 - All `POST/PATCH/DELETE /api/v1/*` except the public ones above
 - `GET /api/v1/admin/*`
 - `GET /api/v1/notes`, `/api/v1/flashcards`, `/api/v1/tasks`, `/api/v1/events` (read access requires JWT to prevent enumeration)
+- `POST /api/v1/auth/refresh`, `POST /api/v1/auth/logout`, `GET /api/v1/auth/sessions`, `POST /api/v1/auth/revoke-all` (session management)
 
 ### LAN bypass
 
