@@ -11,12 +11,15 @@ let tmpDir: string;
 beforeAll(async () => {
   tmpDir = mkdtempSync(join(tmpdir(), "evt-"));
   process.chdir(tmpDir);
+  process.env.LAN_AUTH_BYPASS = "true";
   app = Fastify();
   app.setErrorHandler((err, _req, reply) => {
     reply.status((err as any).statusCode ?? 500).send({ error: err.message, code: (err as any).code });
   });
   const { eventsRoutes } = await import("../src/routes/events.js");
+  const { adminRoutes } = await import("../src/routes/admin.js");
   await app.register(eventsRoutes, { prefix: "/api/v1" });
+  await app.register(adminRoutes, { prefix: "/api/v1" });
   await app.ready();
 });
 afterAll(async () => {
@@ -27,12 +30,16 @@ afterAll(async () => {
 
 describe("Events CRUD", () => {
   it("seed devuelve 5 eventos", async () => {
+    // v2.6.0: demo data is opt-in via /admin/demo/load
+    await app.inject({ method: "POST", url: "/api/v1/admin/demo/load" });
     const r = await app.inject({ method: "GET", url: "/api/v1/events" });
     expect(r.statusCode).toBe(200);
     expect(r.json().total).toBe(5);
   });
 
   it("GET con rango from/to filtra", async () => {
+    // v2.6.0: load demo first
+    await app.inject({ method: "POST", url: "/api/v1/admin/demo/load" });
     const now = Date.now();
     const r = await app.inject({
       method: "GET",

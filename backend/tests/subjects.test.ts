@@ -11,6 +11,7 @@ let tmpDir: string;
 beforeAll(async () => {
   tmpDir = mkdtempSync(join(tmpdir(), "subj-"));
   process.chdir(tmpDir);
+  process.env.LAN_AUTH_BYPASS = "true";
   // Reset cache require
   delete require.cache[require.resolve("../src/routes/subjects.ts")];
   app = Fastify();
@@ -18,7 +19,9 @@ beforeAll(async () => {
     reply.status((err as any).statusCode ?? 500).send({ error: err.message, code: (err as any).code });
   });
   const { subjectsRoutes } = await import("../src/routes/subjects.js");
+  const { adminRoutes } = await import("../src/routes/admin.js");
   await app.register(subjectsRoutes, { prefix: "/api/v1" });
+  await app.register(adminRoutes, { prefix: "/api/v1" });
   await app.ready();
 });
 afterAll(async () => {
@@ -29,6 +32,8 @@ afterAll(async () => {
 
 describe("Subjects CRUD", () => {
   it("seed devuelve 12 subjects", async () => {
+    // v2.6.0: demo data is opt-in
+    await app.inject({ method: "POST", url: "/api/v1/admin/demo/load" });
     const r = await app.inject({ method: "GET", url: "/api/v1/subjects" });
     expect(r.statusCode).toBe(200);
     expect(r.json().total).toBe(12);

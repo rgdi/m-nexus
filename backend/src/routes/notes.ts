@@ -42,7 +42,7 @@ export interface Note {
 
 const DATA_FILE = join(process.cwd(), "data", "notes.json");
 
-class NotesService {
+export class NotesService {
   private cache: Note[] | null = null;
 
   async all(): Promise<Note[]> {
@@ -177,9 +177,10 @@ class FoldersService {
 const foldersSvc = new FoldersService();
 
 const svc = new NotesService();
+export const notesServiceInstance = svc;
 
 export async function notesRoutes(app: FastifyInstance): Promise<void> {
-  await ensureSeeded(svc);
+  // v2.6.0: demo data is opt-in via /admin/demo/load.
 
   // Folders CRUD
   app.get("/folders", async () => ({ folders: await foldersSvc.all() }));

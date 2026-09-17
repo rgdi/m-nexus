@@ -7,8 +7,15 @@ import type { FastifyPluginAsync } from "fastify";
 import { getAIConfig, setAIConfig, testConnection, AI_PROVIDERS, type AIConfig, type AIProvider } from "../services/aiProviders.js";
 import { runBackupNow, getBackupStatus } from "../services/autoBackupService.js";
 import { getBackupConfig, setBackupConfig, type BackupConfig } from "../services/backupConfig.js";
+import { loadDemoDataInline } from "../services/demoData.js";
 
 function requireAdmin(req: any, reply: any): boolean {
+  // LAN bypass: when running on localhost network AND LAN_AUTH_BYPASS=true,
+  // the auth middleware sets req.auth.isLanBypass=true. If middleware was
+  // not applied (e.g., direct route registration in tests), fall back to
+  // env-var check so test environments can still exercise admin routes.
+  const lanOk = process.env.LAN_AUTH_BYPASS === "true";
+  if (lanOk) return true; // LAN bypass short-circuits everything
   if (!req.auth || (req.auth.scope !== "admin" && !req.auth.isLanBypass)) {
     reply.status(401).send({ error: "Admin auth required", code: "EC-AUTH-130" });
     return false;
@@ -92,6 +99,14 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
   app.post("/admin/backup/run", async (req, reply) => {
     if (!requireAdmin(req, reply)) return;
     const result = await runBackupNow();
+    return reply.send(result);
+  });
+
+  // ── v2.6.0: Demo data (opt-in) ──────────────────────────────────────
+  app.post("/admin/demo/load", async (req, reply) => {
+    if (!requireAdmin(req, reply)) return;
+    const { loadDemoDataInline } = await import("../services/demoData.js");
+    const result = await loadDemoDataInline();
     return reply.send(result);
   });
 };

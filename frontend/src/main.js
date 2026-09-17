@@ -169,11 +169,15 @@ async function bootstrap() {
     document.documentElement.dataset.backend = "online";
   } catch {
     document.documentElement.dataset.backend = "offline";
-    // Sembrar datos demo la primera vez (si no hay backend ni cache local)
-    if (!store.has("seed.v1") && store.keys().filter(k => k.startsWith("col.")).length === 0) {
+    // v2.6.0: demo data is opt-in only — no longer pollutes fresh installs.
+    // Enable with: localStorage.setItem("mnexus.demo.enabled", "1") then reload,
+    // or click "Cargar datos demo" on the Overview screen.
+    if (localStorage.getItem("mnexus.demo.enabled") === "1" && !store.has("seed.v1") && store.keys().filter(k => k.startsWith("col.")).length === 0) {
       const { seedDemo } = await import("./services/demoSeed.js");
       seedDemo(store);
       store.set("seed.v1", true);
+      // Auto-clear the flag so it doesn't seed again later.
+      localStorage.removeItem("mnexus.demo.enabled");
     }
   }
   // Exponer device + i18n para debug en consola

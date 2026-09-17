@@ -1,58 +1,6 @@
 [
   {
-    "id": "note-52c9791c-7b9e-4fce-a24d-8297def8d7d9",
-    "title": "Welcome to M-NEXUS",
-    "body": "# Welcome\n\nEste es tu notebook. **Pulsa el lápiz para escribir**, el icono de imagen para insertar fotos, el código para snippets, etc.\n\nUsa ==subrayado==, !!resaltado!!, [[Getting started]] o {{c1::Capital de Francia::París}} para crear flashcards.",
-    "subject": "math",
-    "tags": [
-      "welcome"
-    ],
-    "pages": [
-      {
-        "strokes": [],
-        "placeholders": []
-      }
-    ],
-    "createdAt": 1789489031993,
-    "updatedAt": 1789489031993
-  },
-  {
-    "id": "note-7ad30b80-13c6-4307-be73-dc46c31389d8",
-    "title": "Getting started",
-    "body": "# Erste Schritte\n\n- Schreib mit dem Stift\n- Speichere oft (auto-save alle 5s)\n- Nutze die AI-Taste für Übersetzung\n\nBeispiel: !!Hervorhebung!! oder ==unterstreichen==",
-    "subject": "deu",
-    "tags": [
-      "onboarding"
-    ],
-    "pages": [
-      {
-        "strokes": [],
-        "placeholders": []
-      }
-    ],
-    "createdAt": 1789489031999,
-    "updatedAt": 1789489031999
-  },
-  {
-    "id": "note-30798bc7-f09b-4a2a-82b7-f6ca7eabc27b",
-    "title": "Flashcards demo",
-    "body": "# Cell biology\n\nMitochondria: the powerhouse of the cell.\n\n- {{c1::Main energy molecule::ATP}}\n- {{c1::Photosynthesis location::Chloroplast}}\n- {{c1::Number of chromosomes in humans::46}}\n- {{c1::DNA stands for::Deoxyribonucleic Acid}}\n\nReferencia: @campbell/cap9 (mitochondria) y @campbell/cap10 (cloroplastos).",
-    "subject": "bio",
-    "tags": [
-      "biology",
-      "review"
-    ],
-    "pages": [
-      {
-        "strokes": [],
-        "placeholders": []
-      }
-    ],
-    "createdAt": 1789489032004,
-    "updatedAt": 1789489032004
-  },
-  {
-    "id": "note-9840e4e2-77b8-45f5-bf05-caab2b54753f",
+    "id": "note-15985170-1d5a-4830-9ecf-70e8fb7eb483",
     "title": "Math",
     "body": "x",
     "subject": "math",
@@ -63,11 +11,12 @@
         "placeholders": []
       }
     ],
-    "createdAt": 1789489032118,
-    "updatedAt": 1789489032118
+    "folderId": null,
+    "createdAt": 1789652333648,
+    "updatedAt": 1789652333648
   },
   {
-    "id": "note-d1474d10-3850-40ac-8cbb-b768235f103a",
+    "id": "note-9b25a8a6-c06e-46ec-926d-d2d2b959ec8d",
     "title": "Don Quixote",
     "body": "@cervantes/cap1 and @cervantes/cap3",
     "subject": "lit",
@@ -78,11 +27,12 @@
         "placeholders": []
       }
     ],
-    "createdAt": 1789489032168,
-    "updatedAt": 1789489032168
+    "folderId": null,
+    "createdAt": 1789652333700,
+    "updatedAt": 1789652333700
   },
   {
-    "id": "note-29e68e7f-a1c9-439c-acf8-20a4e46a8b8a",
+    "id": "note-44ebb472-2c98-4120-a4da-24c174355237",
     "title": "Algebra",
     "body": "Suma: {{c1::2+2::4}}\nProducto: {{c1::3*5::15}}",
     "subject": "math",
@@ -96,11 +46,12 @@
         "placeholders": []
       }
     ],
-    "createdAt": 1789489033749,
-    "updatedAt": 1789489033749
+    "folderId": null,
+    "createdAt": 1789652337410,
+    "updatedAt": 1789652337410
   },
   {
-    "id": "note-eb788dca-180f-45e9-abe8-a028ccd2b95c",
+    "id": "note-614bf57f-3c21-44c8-9a18-5ab9fd8167c5",
     "title": "X",
     "body": "{{c1::A::B}}",
     "subject": "bio",
@@ -111,97 +62,8 @@
         "placeholders": []
       }
     ],
-    "createdAt": 1789489033774,
-    "updatedAt": 1789489033774
-  },
-  {
-    "id": "note-48bb2273-be4b-4a25-8c7e-fc5d4295b29a",
-    "title": "UntiMi nota de prueba==subrayado==!!resaltado!![[wikilink]]{{c1::pregunta::respuesta}}@book/gen#3tled",
-    "body": "",
-    "subject": "",
-    "tags": [],
-    "pages": [
-      {
-        "strokes": [],
-        "placeholders": []
-      }
-    ],
-    "createdAt": 1789506148110,
-    "updatedAt": 1789506150359
-  },
-  {
-    "id": "note-403ed742-6803-486a-a077-890afcb50705",
-    "title": "Untitled",
-    "body": "",
-    "subject": "",
-    "tags": [],
-    "pages": [
-      {
-        "strokes": [],
-        "placeholders": []
-      }
-    ],
-    "createdAt": 1789506148111,
-    "updatedAt": 1789506148111
-  },
-  {
-    "id": "note-85faab06-ead5-4f5b-a10e-d5bd95eb6af2",
-    "title": "Untitled",
-    "body": "",
-    "subject": "",
-    "tags": [],
-    "pages": [
-      {
-        "strokes": [],
-        "placeholders": []
-      }
-    ],
-    "createdAt": 1789506355747,
-    "updatedAt": 1789506355747
-  },
-  {
-    "id": "note-2d39434d-f6d9-4689-a8ca-2d673a366fb2",
-    "title": "UntiMi nota de prueba==subrayado==!!resaltado!![[wikilink]]{{c1::pregunta::respuesta}}@book/gen#3tled",
-    "body": "",
-    "subject": "",
-    "tags": [],
-    "pages": [
-      {
-        "strokes": [],
-        "placeholders": []
-      }
-    ],
-    "createdAt": 1789506355748,
-    "updatedAt": 1789506357985
-  },
-  {
-    "id": "note-5e1ee687-5485-4105-8fe7-3e6a43b5cc79",
-    "title": "UntiMi nota de prueba==subrayado==!!resaltado!![[wikilink]]{{c1::pregunta::respuesta}}@book/gen#3tled",
-    "body": "",
-    "subject": "",
-    "tags": [],
-    "pages": [
-      {
-        "strokes": [],
-        "placeholders": []
-      }
-    ],
-    "createdAt": 1789506518428,
-    "updatedAt": 1789506520658
-  },
-  {
-    "id": "note-f1182514-6a64-4480-9f13-8c49dd6fb1e3",
-    "title": "Untitled",
-    "body": "",
-    "subject": "",
-    "tags": [],
-    "pages": [
-      {
-        "strokes": [],
-        "placeholders": []
-      }
-    ],
-    "createdAt": 1789506518429,
-    "updatedAt": 1789506518429
+    "folderId": null,
+    "createdAt": 1789652337432,
+    "updatedAt": 1789652337432
   }
 ]

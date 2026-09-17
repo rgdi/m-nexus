@@ -11,12 +11,15 @@ let tmpDir: string;
 beforeAll(async () => {
   tmpDir = mkdtempSync(join(tmpdir(), "notes-"));
   process.chdir(tmpDir);
+  process.env.LAN_AUTH_BYPASS = "true";
   app = Fastify();
   app.setErrorHandler((err, _req, reply) => {
     reply.status((err as any).statusCode ?? 500).send({ error: err.message, code: (err as any).code });
   });
   const { notesRoutes } = await import("../src/routes/notes.js");
+  const { adminRoutes } = await import("../src/routes/admin.js");
   await app.register(notesRoutes, { prefix: "/api/v1" });
+  await app.register(adminRoutes, { prefix: "/api/v1" });
   await app.ready();
 });
 afterAll(async () => {
@@ -27,6 +30,8 @@ afterAll(async () => {
 
 describe("Notes CRUD", () => {
   it("seed devuelve 3 notebooks", async () => {
+    // v2.6.0: demo data is opt-in
+    await app.inject({ method: "POST", url: "/api/v1/admin/demo/load" });
     const r = await app.inject({ method: "GET", url: "/api/v1/notes" });
     expect(r.statusCode).toBe(200);
     expect(r.json().total).toBe(3);

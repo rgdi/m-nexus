@@ -1,0 +1,2410 @@
+[
+  {
+    "route": "overview",
+    "vp": "desktop",
+    "items": [
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Math Mr. Meier · 9.2 M",
+        "classes": "subj-bubble",
+        "id": null,
+        "href": "#/subjects",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 520,
+          "y": 134,
+          "w": 192,
+          "h": 84
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Politics-economics Fr. Stolz · 7.5 P",
+        "classes": "subj-bubble",
+        "id": null,
+        "href": "#/subjects",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 728,
+          "y": 134,
+          "w": 192,
+          "h": 84
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Deutsch Dr. Seibert · 7.5 D",
+        "classes": "subj-bubble",
+        "id": null,
+        "href": "#/subjects",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 520,
+          "y": 234,
+          "w": 192,
+          "h": 65
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Physics Dr. Müller · 7.0 Ψ",
+        "classes": "subj-bubble",
+        "id": null,
+        "href": "#/subjects",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 728,
+          "y": 234,
+          "w": 192,
+          "h": 65
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Chemistry Dr. Müller · 7.2 C",
+        "classes": "subj-bubble",
+        "id": null,
+        "href": "#/subjects",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 520,
+          "y": 314,
+          "w": 192,
+          "h": 65
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Welcome to M-NEXUS # Welcome Este es tu notebook. **Pulsa",
+        "classes": "card interactive",
+        "id": null,
+        "href": "#/notes",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 936,
+          "y": 521,
+          "w": 192,
+          "h": 67
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Getting started # Erste Schritte - Schreib mit dem Stif",
+        "classes": "card interactive",
+        "id": null,
+        "href": "#/notes",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 1144,
+          "y": 521,
+          "w": 192,
+          "h": 67
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Flashcards demo # Cell biology Mitochondria: the powerh",
+        "classes": "card interactive",
+        "id": null,
+        "href": "#/notes",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 936,
+          "y": 603,
+          "w": 192,
+          "h": 67
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Math x",
+        "classes": "card interactive",
+        "id": null,
+        "href": "#/notes",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 1144,
+          "y": 603,
+          "w": 192,
+          "h": 67
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "📊 Cross-verify notes ↔ recordings",
+        "classes": "btn primary",
+        "id": "cv-btn",
+        "href": null,
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 936,
+          "y": 690,
+          "w": 272,
+          "h": 38
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "📋 Generate exam (FSRS-aware)",
+        "classes": "btn primary",
+        "id": "exam-btn",
+        "href": null,
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 936,
+          "y": 740,
+          "w": 251,
+          "h": 38
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "🕸 3D Graph",
+        "classes": "btn primary",
+        "id": "graph-btn",
+        "href": null,
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 1191,
+          "y": 740,
+          "w": 118,
+          "h": 38
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "+ Definir primer syllabus",
+        "classes": "btn primary",
+        "id": "syl-setup-btn",
+        "href": null,
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 1037,
+          "y": 947,
+          "w": 198,
+          "h": 38
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Overview",
+        "classes": "dock-item active",
+        "id": null,
+        "href": "#/overview",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 299,
+          "y": 827,
+          "w": 133,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Calendar",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/calendar",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 436,
+          "y": 827,
+          "w": 131,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Subjects",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/subjects",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 571,
+          "y": 827,
+          "w": 127,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Notes",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/notes",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 702,
+          "y": 827,
+          "w": 108,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "To-dos",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/todos",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 814,
+          "y": 827,
+          "w": 114,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "AI",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/ai",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 932,
+          "y": 827,
+          "w": 81,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Settings",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/settings",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 1017,
+          "y": 827,
+          "w": 124,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "🤖",
+        "classes": "ai-tutor-fab",
+        "id": "ai-tutor-fab",
+        "href": null,
+        "title": "AI",
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 1372,
+          "y": 832,
+          "w": 48,
+          "h": 48
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      }
+    ]
+  },
+  {
+    "route": "calendar",
+    "vp": "desktop",
+    "items": [
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "Day",
+        "classes": "seg active",
+        "id": null,
+        "href": null,
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 1072,
+          "y": 50,
+          "w": 54,
+          "h": 32
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/calendar"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "Week",
+        "classes": "seg ",
+        "id": null,
+        "href": null,
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 1126,
+          "y": 50,
+          "w": 64,
+          "h": 32
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/calendar"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "+ Create event",
+        "classes": "btn primary",
+        "id": "new-event",
+        "href": null,
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 1206,
+          "y": 47,
+          "w": 130,
+          "h": 38
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/calendar"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Overview",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/overview",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 299,
+          "y": 827,
+          "w": 133,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/calendar"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Calendar",
+        "classes": "dock-item active",
+        "id": null,
+        "href": "#/calendar",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 436,
+          "y": 827,
+          "w": 131,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/calendar"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Subjects",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/subjects",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 571,
+          "y": 827,
+          "w": 127,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/calendar"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Notes",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/notes",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 702,
+          "y": 827,
+          "w": 108,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/calendar"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "To-dos",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/todos",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 814,
+          "y": 827,
+          "w": 114,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/calendar"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "AI",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/ai",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 932,
+          "y": 827,
+          "w": 81,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/calendar"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Settings",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/settings",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 1017,
+          "y": 827,
+          "w": 124,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/calendar"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "🤖",
+        "classes": "ai-tutor-fab",
+        "id": "ai-tutor-fab",
+        "href": null,
+        "title": "AI",
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 1372,
+          "y": 832,
+          "w": 48,
+          "h": 48
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/calendar"
+      }
+    ]
+  },
+  {
+    "route": "subjects",
+    "vp": "desktop",
+    "items": [
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "←",
+        "classes": "btn icon",
+        "id": "back",
+        "href": null,
+        "title": null,
+        "aria": "Back",
+        "disabled": false,
+        "rect": {
+          "x": 104,
+          "y": 47,
+          "w": 32,
+          "h": 38
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/subjects"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "+ New subject",
+        "classes": "btn primary",
+        "id": "new",
+        "href": null,
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 1208,
+          "y": 47,
+          "w": 128,
+          "h": 38
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/subjects"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Overview",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/overview",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 299,
+          "y": 827,
+          "w": 133,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/subjects"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Calendar",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/calendar",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 436,
+          "y": 827,
+          "w": 131,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/subjects"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Subjects",
+        "classes": "dock-item active",
+        "id": null,
+        "href": "#/subjects",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 571,
+          "y": 827,
+          "w": 127,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/subjects"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Notes",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/notes",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 702,
+          "y": 827,
+          "w": 108,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/subjects"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "To-dos",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/todos",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 814,
+          "y": 827,
+          "w": 114,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/subjects"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "AI",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/ai",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 932,
+          "y": 827,
+          "w": 81,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/subjects"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Settings",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/settings",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 1017,
+          "y": 827,
+          "w": 124,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/subjects"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "🤖",
+        "classes": "ai-tutor-fab",
+        "id": "ai-tutor-fab",
+        "href": null,
+        "title": "AI",
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 1372,
+          "y": 832,
+          "w": 48,
+          "h": 48
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/subjects"
+      }
+    ]
+  },
+  {
+    "route": "notes",
+    "vp": "desktop",
+    "items": [
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "📁+",
+        "classes": "btn icon",
+        "id": "new-folder",
+        "href": null,
+        "title": "New folder",
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 12,
+          "y": 24,
+          "w": 32,
+          "h": 38
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/notes"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "+ + New note",
+        "classes": "btn primary small",
+        "id": "new-note",
+        "href": null,
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 52,
+          "y": 28,
+          "w": 108,
+          "h": 30
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/notes"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "+",
+        "classes": "add-to-folder",
+        "id": null,
+        "href": null,
+        "title": "+ nota",
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 217,
+          "y": 80,
+          "w": 22,
+          "h": 22
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/notes"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "+",
+        "classes": "add-to-folder",
+        "id": null,
+        "href": null,
+        "title": "+ nota",
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 217,
+          "y": 114,
+          "w": 22,
+          "h": 22
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/notes"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "+",
+        "classes": "add-to-folder",
+        "id": null,
+        "href": null,
+        "title": "+ nota",
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 217,
+          "y": 148,
+          "w": 22,
+          "h": 22
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/notes"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "+",
+        "classes": "add-to-folder",
+        "id": null,
+        "href": null,
+        "title": "+ nota",
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 217,
+          "y": 182,
+          "w": 22,
+          "h": 22
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/notes"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "+",
+        "classes": "add-to-folder",
+        "id": null,
+        "href": null,
+        "title": "+ nota",
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 217,
+          "y": 216,
+          "w": 22,
+          "h": 22
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/notes"
+      },
+      {
+        "tag": "input",
+        "type": "text",
+        "text": "Search notebooks",
+        "classes": "input",
+        "id": "search",
+        "href": null,
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 1176,
+          "y": 44,
+          "w": 240,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "text",
+        "route": "#/notes"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Overview",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/overview",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 299,
+          "y": 827,
+          "w": 133,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/notes"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Calendar",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/calendar",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 436,
+          "y": 827,
+          "w": 131,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/notes"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Subjects",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/subjects",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 571,
+          "y": 827,
+          "w": 127,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/notes"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Notes",
+        "classes": "dock-item active",
+        "id": null,
+        "href": "#/notes",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 702,
+          "y": 827,
+          "w": 108,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/notes"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "To-dos",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/todos",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 814,
+          "y": 827,
+          "w": 114,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/notes"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "AI",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/ai",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 932,
+          "y": 827,
+          "w": 81,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/notes"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Settings",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/settings",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 1017,
+          "y": 827,
+          "w": 124,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/notes"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "🤖",
+        "classes": "ai-tutor-fab",
+        "id": "ai-tutor-fab",
+        "href": null,
+        "title": "AI",
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 1372,
+          "y": 832,
+          "w": 48,
+          "h": 48
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/notes"
+      }
+    ]
+  },
+  {
+    "route": "todos",
+    "vp": "desktop",
+    "items": [
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "+ New task",
+        "classes": "btn primary",
+        "id": "new",
+        "href": null,
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 1229,
+          "y": 47,
+          "w": 107,
+          "h": 38
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/todos"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "Toggle",
+        "classes": "todo-check",
+        "id": null,
+        "href": null,
+        "title": null,
+        "aria": "Toggle",
+        "disabled": false,
+        "rect": {
+          "x": 121,
+          "y": 244,
+          "w": 44,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/todos"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "Toggle",
+        "classes": "todo-check",
+        "id": null,
+        "href": null,
+        "title": null,
+        "aria": "Toggle",
+        "disabled": false,
+        "rect": {
+          "x": 121,
+          "y": 334,
+          "w": 44,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/todos"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "Toggle",
+        "classes": "todo-check",
+        "id": null,
+        "href": null,
+        "title": null,
+        "aria": "Toggle",
+        "disabled": false,
+        "rect": {
+          "x": 121,
+          "y": 425,
+          "w": 44,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/todos"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "Toggle",
+        "classes": "todo-check",
+        "id": null,
+        "href": null,
+        "title": null,
+        "aria": "Toggle",
+        "disabled": false,
+        "rect": {
+          "x": 121,
+          "y": 515,
+          "w": 44,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/todos"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "✓",
+        "classes": "todo-check",
+        "id": null,
+        "href": null,
+        "title": null,
+        "aria": "Toggle",
+        "disabled": false,
+        "rect": {
+          "x": 121,
+          "y": 595,
+          "w": 44,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/todos"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "✓",
+        "classes": "todo-check",
+        "id": null,
+        "href": null,
+        "title": null,
+        "aria": "Toggle",
+        "disabled": false,
+        "rect": {
+          "x": 121,
+          "y": 666,
+          "w": 44,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/todos"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Overview",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/overview",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 299,
+          "y": 827,
+          "w": 133,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/todos"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Calendar",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/calendar",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 436,
+          "y": 827,
+          "w": 131,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/todos"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Subjects",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/subjects",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 571,
+          "y": 827,
+          "w": 127,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/todos"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Notes",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/notes",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 702,
+          "y": 827,
+          "w": 108,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/todos"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "To-dos",
+        "classes": "dock-item active",
+        "id": null,
+        "href": "#/todos",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 814,
+          "y": 827,
+          "w": 114,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/todos"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "AI",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/ai",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 932,
+          "y": 827,
+          "w": 81,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/todos"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Settings",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/settings",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 1017,
+          "y": 827,
+          "w": 124,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/todos"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "🤖",
+        "classes": "ai-tutor-fab",
+        "id": "ai-tutor-fab",
+        "href": null,
+        "title": "AI",
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 1372,
+          "y": 832,
+          "w": 48,
+          "h": 48
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/todos"
+      }
+    ]
+  },
+  {
+    "route": "ai",
+    "vp": "desktop",
+    "items": [
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "💡 Explain concept",
+        "classes": "ai-action-card",
+        "id": null,
+        "href": null,
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 304,
+          "y": 188,
+          "w": 832,
+          "h": 70
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/ai"
+      },
+      {
+        "tag": "input",
+        "type": "text",
+        "text": "Ask a question… (Enter to send)",
+        "classes": "input",
+        "id": "input",
+        "href": null,
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 317,
+          "y": 711,
+          "w": 730,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "text",
+        "route": "#/ai"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "Send",
+        "classes": "btn primary",
+        "id": null,
+        "href": null,
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 1055,
+          "y": 711,
+          "w": 68,
+          "h": 38
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/ai"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Overview",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/overview",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 299,
+          "y": 827,
+          "w": 133,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/ai"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Calendar",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/calendar",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 436,
+          "y": 827,
+          "w": 131,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/ai"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Subjects",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/subjects",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 571,
+          "y": 827,
+          "w": 127,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/ai"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Notes",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/notes",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 702,
+          "y": 827,
+          "w": 108,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/ai"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "To-dos",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/todos",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 814,
+          "y": 827,
+          "w": 114,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/ai"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "AI",
+        "classes": "dock-item active",
+        "id": null,
+        "href": "#/ai",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 932,
+          "y": 827,
+          "w": 81,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/ai"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Settings",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/settings",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 1017,
+          "y": 827,
+          "w": 124,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/ai"
+      }
+    ]
+  },
+  {
+    "route": "settings",
+    "vp": "desktop",
+    "items": [
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "button",
+        "classes": "btn icon",
+        "id": "back",
+        "href": null,
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 384,
+          "y": 46,
+          "w": 32,
+          "h": 38
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/settings"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "🇬🇧 English ✓",
+        "classes": "settings-option active",
+        "id": null,
+        "href": null,
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 384,
+          "y": 172,
+          "w": 219,
+          "h": 50
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/settings"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "🇪🇸 Español",
+        "classes": "settings-option ",
+        "id": null,
+        "href": null,
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 611,
+          "y": 172,
+          "w": 219,
+          "h": 50
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/settings"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "🇵🇹 Português",
+        "classes": "settings-option ",
+        "id": null,
+        "href": null,
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 837,
+          "y": 172,
+          "w": 219,
+          "h": 50
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/settings"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "◐ Auto · system ✓",
+        "classes": "settings-option active",
+        "id": null,
+        "href": null,
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 384,
+          "y": 308,
+          "w": 219,
+          "h": 48
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/settings"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "☀ Light",
+        "classes": "settings-option ",
+        "id": null,
+        "href": null,
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 611,
+          "y": 308,
+          "w": 219,
+          "h": 48
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/settings"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "☽ Dark",
+        "classes": "settings-option ",
+        "id": null,
+        "href": null,
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 837,
+          "y": 308,
+          "w": 219,
+          "h": 48
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/settings"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "🏠 default ✓",
+        "classes": "settings-option active",
+        "id": null,
+        "href": null,
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 384,
+          "y": 442,
+          "w": 162,
+          "h": 48
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/settings"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "🎓 school",
+        "classes": "settings-option ",
+        "id": null,
+        "href": null,
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 554,
+          "y": 442,
+          "w": 162,
+          "h": 48
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/settings"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "👤 personal",
+        "classes": "settings-option ",
+        "id": null,
+        "href": null,
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 724,
+          "y": 442,
+          "w": 162,
+          "h": 48
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/settings"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "💼 work",
+        "classes": "settings-option ",
+        "id": null,
+        "href": null,
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 894,
+          "y": 442,
+          "w": 162,
+          "h": 48
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/settings"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "🚪 Cerrar sesión",
+        "classes": "settings-option",
+        "id": "logout-btn",
+        "href": null,
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 384,
+          "y": 683,
+          "w": 166,
+          "h": 48
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/settings"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Overview",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/overview",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 299,
+          "y": 827,
+          "w": 133,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/settings"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Calendar",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/calendar",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 436,
+          "y": 827,
+          "w": 131,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/settings"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Subjects",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/subjects",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 571,
+          "y": 827,
+          "w": 127,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/settings"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Notes",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/notes",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 702,
+          "y": 827,
+          "w": 108,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/settings"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "To-dos",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/todos",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 814,
+          "y": 827,
+          "w": 114,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/settings"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "AI",
+        "classes": "dock-item",
+        "id": null,
+        "href": "#/ai",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 932,
+          "y": 827,
+          "w": 81,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/settings"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Settings",
+        "classes": "dock-item active",
+        "id": null,
+        "href": "#/settings",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 1017,
+          "y": 827,
+          "w": 124,
+          "h": 44
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/settings"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "🤖",
+        "classes": "ai-tutor-fab",
+        "id": "ai-tutor-fab",
+        "href": null,
+        "title": "AI",
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 1372,
+          "y": 832,
+          "w": 48,
+          "h": 48
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/settings"
+      }
+    ]
+  },
+  {
+    "route": "overview",
+    "vp": "mobile",
+    "items": [
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Math Mr. Meier · 9.2 M",
+        "classes": "subj-bubble",
+        "id": null,
+        "href": "#/subjects",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 18,
+          "y": 299,
+          "w": 354,
+          "h": 56
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Politics-economics Fr. Stolz · 7.5 P",
+        "classes": "subj-bubble",
+        "id": null,
+        "href": "#/subjects",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 18,
+          "y": 367,
+          "w": 354,
+          "h": 56
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Deutsch Dr. Seibert · 7.5 D",
+        "classes": "subj-bubble",
+        "id": null,
+        "href": "#/subjects",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 18,
+          "y": 435,
+          "w": 354,
+          "h": 56
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Physics Dr. Müller · 7.0 Ψ",
+        "classes": "subj-bubble",
+        "id": null,
+        "href": "#/subjects",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 18,
+          "y": 503,
+          "w": 354,
+          "h": 56
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Chemistry Dr. Müller · 7.2 C",
+        "classes": "subj-bubble",
+        "id": null,
+        "href": "#/subjects",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 18,
+          "y": 571,
+          "w": 354,
+          "h": 56
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Welcome to M-NEXUS # Welcome Este es tu notebook. **Pulsa",
+        "classes": "card interactive",
+        "id": null,
+        "href": "#/notes",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 18,
+          "y": 984,
+          "w": 354,
+          "h": 57
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Getting started # Erste Schritte - Schreib mit dem Stif",
+        "classes": "card interactive",
+        "id": null,
+        "href": "#/notes",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 18,
+          "y": 1053,
+          "w": 354,
+          "h": 57
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Flashcards demo # Cell biology Mitochondria: the powerh",
+        "classes": "card interactive",
+        "id": null,
+        "href": "#/notes",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 18,
+          "y": 1122,
+          "w": 354,
+          "h": 57
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      },
+      {
+        "tag": "a",
+        "type": null,
+        "text": "Math x",
+        "classes": "card interactive",
+        "id": null,
+        "href": "#/notes",
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 18,
+          "y": 1191,
+          "w": 354,
+          "h": 57
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "📊 Cross-verify notes ↔ recordings",
+        "classes": "btn primary",
+        "id": "cv-btn",
+        "href": null,
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 18,
+          "y": 1264,
+          "w": 230,
+          "h": 38
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "📋 Generate exam (FSRS-aware)",
+        "classes": "btn primary",
+        "id": "exam-btn",
+        "href": null,
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 18,
+          "y": 1312,
+          "w": 212,
+          "h": 38
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "🕸 3D Graph",
+        "classes": "btn primary",
+        "id": "graph-btn",
+        "href": null,
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 234,
+          "y": 1312,
+          "w": 98,
+          "h": 38
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "+ Definir primer syllabus",
+        "classes": "btn primary",
+        "id": "syl-setup-btn",
+        "href": null,
+        "title": null,
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 112,
+          "y": 1497,
+          "w": 166,
+          "h": 38
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "≡",
+        "classes": "hamburger",
+        "id": "hamburger",
+        "href": null,
+        "title": null,
+        "aria": "Menu",
+        "disabled": false,
+        "rect": {
+          "x": 12,
+          "y": 12,
+          "w": 40,
+          "h": 40
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "text": "🤖",
+        "classes": "ai-tutor-fab",
+        "id": "ai-tutor-fab",
+        "href": null,
+        "title": "AI",
+        "aria": null,
+        "disabled": false,
+        "rect": {
+          "x": 322,
+          "y": 776,
+          "w": 48,
+          "h": 48
+        },
+        "opacity": "1",
+        "cursor": "pointer",
+        "route": "#/overview"
+      }
+    ]
+  }
+]

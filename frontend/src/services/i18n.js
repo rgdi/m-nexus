@@ -308,3 +308,7 @@ STRINGS["login.tooMany"] = { es: "Demasiados intentos. Espera {n}s", en: "Too ma
 STRINGS["login.locked"] = { es: "Cuenta bloqueada. Intenta en {n}s", en: "Account locked. Try in {n}s", pt: "Conta bloqueada. Tente em {n}s" };
 STRINGS["login.networkError"] = { es: "Error de red", en: "Network error", pt: "Erro de rede" };
 STRINGS["login.hint"] = { es: "Tu sesión dura 90 días en este dispositivo", en: "Your session lasts 90 days on this device", pt: "Sua sessão dura 90 dias neste dispositivo" };
+
+/* v2.6.0: empty-state hints for new users */
+STRINGS["overview.empty"] = { es: "Aún no tienes datos. ¿Quieres probar con datos de ejemplo?", en: "No data yet. Want to try with sample data?", pt: "Ainda não tem dados. Quer experimentar com dados de exemplo?" };
+STRINGS["overview.loadDemo"] = { es: "🎁 Cargar datos demo", en: "🎁 Load sample data", pt: "🎁 Carregar dados demo" };

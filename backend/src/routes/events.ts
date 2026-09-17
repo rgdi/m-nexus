@@ -23,7 +23,7 @@ export interface CalendarEvent {
 
 const DATA_FILE = join(process.cwd(), "data", "events.json");
 
-class EventsService {
+export class EventsService {
   private cache: CalendarEvent[] | null = null;
 
   async all(): Promise<CalendarEvent[]> {
@@ -81,9 +81,10 @@ class EventsService {
 }
 
 const svc = new EventsService();
+export const eventsServiceInstance = svc;
 
 export async function eventsRoutes(app: FastifyInstance): Promise<void> {
-  await ensureSeeded(svc);
+  // v2.6.0: demo data is opt-in via /admin/demo/load.
 
   app.get<{ Querystring: { from?: string; to?: string } }>("/events", async (req) => {
     const from = req.query.from ? parseInt(req.query.from, 10) : 0;

@@ -1,62 +1,68 @@
 [
   {
+    "title": "Submit politics-econ essay",
     "text": "Submit politics-econ essay",
-    "done": false,
+    "subject": "pol",
     "due": 1789516740000,
     "priority": 2,
-    "subject": "pol",
-    "id": "task-80c7f966-bd0d-4377-9f00-75f3c15a1a92",
-    "createdAt": 1789424693422,
-    "updatedAt": 1789424693422
+    "done": false,
+    "id": "task-80e47329-7c06-4911-a890-d9fbf6943393",
+    "createdAt": 1789651888652,
+    "updatedAt": 1789651888652
   },
   {
+    "title": "Read chapter 7 — Biology",
     "text": "Read chapter 7 — Biology",
-    "done": false,
+    "subject": "bio",
     "due": 1789585140000,
     "priority": 1,
-    "subject": "bio",
-    "id": "task-08594abf-ab03-4639-9759-2a18b82aacc3",
-    "createdAt": 1789424693427,
-    "updatedAt": 1789424693427
-  },
-  {
-    "text": "Practice integrals (set 3)",
     "done": false,
-    "due": 1789426740000,
-    "priority": 0,
-    "subject": "math",
-    "id": "task-8fdeee8f-3b09-435e-a34e-84ccfa877211",
-    "createdAt": 1789424693431,
-    "updatedAt": 1789424693431
+    "id": "task-97320be8-3106-489c-9559-4b96f33c6eb8",
+    "createdAt": 1789651888657,
+    "updatedAt": 1789651888657
   },
   {
+    "title": "Chemistry lab report",
     "text": "Chemistry lab report",
-    "done": false,
+    "subject": "che",
     "due": 1789775940000,
+    "priority": 2,
+    "done": false,
+    "id": "task-833160bf-5564-491d-b266-694276ed5456",
+    "createdAt": 1789651888662,
+    "updatedAt": 1789651888662
+  },
+  {
+    "title": "Practice integrals (set 3)",
+    "text": "Practice integrals (set 3)",
+    "subject": "math",
+    "due": 1789426740000,
     "priority": 1,
-    "subject": "che",
-    "id": "task-ff480282-3759-480a-b8a9-d115b38b44a2",
-    "createdAt": 1789424693436,
-    "updatedAt": 1789424693436
+    "done": false,
+    "id": "task-b734b24f-c914-4a4d-9f0a-d4d289376e4d",
+    "createdAt": 1789651888667,
+    "updatedAt": 1789651888667
   },
   {
+    "title": "Buy lab coat",
     "text": "Buy lab coat",
-    "done": true,
-    "due": null,
-    "priority": 0,
     "subject": "che",
-    "id": "task-9bffba1f-a48a-4bf9-ad99-9daba955034c",
-    "createdAt": 1789424693440,
-    "updatedAt": 1789424693440
+    "due": 1789207200000,
+    "priority": 0,
+    "done": true,
+    "id": "task-7507a846-2edd-4477-be00-9ce4e4e305d1",
+    "createdAt": 1789651888674,
+    "updatedAt": 1789651888674
   },
   {
+    "title": "Email professor about Referat",
     "text": "Email professor about Referat",
-    "done": true,
-    "due": null,
-    "priority": 0,
     "subject": "deu",
-    "id": "task-228b835f-db60-4ebd-bb0a-ea3d2529e3c0",
-    "createdAt": 1789424693445,
-    "updatedAt": 1789424693445
+    "due": 1789482600000,
+    "priority": 1,
+    "done": true,
+    "id": "task-a7c7f31b-4407-4ebb-a479-8df5f25a648d",
+    "createdAt": 1789651888680,
+    "updatedAt": 1789651888680
   }
 ]

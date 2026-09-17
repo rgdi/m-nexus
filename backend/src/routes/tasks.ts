@@ -21,7 +21,7 @@ export interface Task {
 
 const DATA_FILE = join(process.cwd(), "data", "tasks.json");
 
-class TasksService {
+export class TasksService {
   private cache: Task[] | null = null;
 
   async all(): Promise<Task[]> {
@@ -75,9 +75,10 @@ class TasksService {
 }
 
 const svc = new TasksService();
+export const tasksServiceInstance = svc;
 
 export async function tasksRoutes(app: FastifyInstance): Promise<void> {
-  await ensureSeeded(svc);
+  // v2.6.0: demo data is opt-in via /admin/demo/load.
 
   app.get("/tasks", async () => {
     const list = await svc.all();

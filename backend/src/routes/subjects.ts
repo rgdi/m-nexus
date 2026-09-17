@@ -26,7 +26,7 @@ export interface Subject {
 
 const DATA_FILE = join(process.cwd(), "data", "subjects.json");
 
-class SubjectsService {
+export class SubjectsService {
   private cache: Subject[] | null = null;
 
   async all(): Promise<Subject[]> {
@@ -81,10 +81,11 @@ class SubjectsService {
 }
 
 const svc = new SubjectsService();
+export const subjectsServiceInstance = svc;
 
 export async function subjectsRoutes(app: FastifyInstance): Promise<void> {
-  // Seed con los subjects del design (misma que el frontend usa offline)
-  await ensureSeeded(svc);
+  // v2.6.0: demo data is opt-in. Auto-seed removed to prevent pollution.
+  // Load via POST /api/v1/admin/demo/load or "Cargar datos demo" button in UI.
 
   app.get("/subjects", async () => {
     const list = await svc.all();

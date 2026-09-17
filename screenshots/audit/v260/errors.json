@@ -1,0 +1,32 @@
+[
+  {
+    "route": "calendar",
+    "vp": "mobile",
+    "msg": "page.waitForTimeout: Target page, context or browser has been closed"
+  },
+  {
+    "route": "subjects",
+    "vp": "mobile",
+    "msg": "page.setViewportSize: Target page, context or browser has been closed"
+  },
+  {
+    "route": "notes",
+    "vp": "mobile",
+    "msg": "page.setViewportSize: Target page, context or browser has been closed"
+  },
+  {
+    "route": "todos",
+    "vp": "mobile",
+    "msg": "page.setViewportSize: Target page, context or browser has been closed"
+  },
+  {
+    "route": "ai",
+    "vp": "mobile",
+    "msg": "page.setViewportSize: Target page, context or browser has been closed"
+  },
+  {
+    "route": "settings",
+    "vp": "mobile",
+    "msg": "page.setViewportSize: Target page, context or browser has been closed"
+  }
+]

@@ -38,6 +38,10 @@ export async function renderOverview(root) {
   const subjects = await dataSource.subjects.list();
   const tasksAll = await dataSource.tasks.list();
   const openTasks = tasksAll.filter(t => !t.done);
+  const notes = await dataSource.notes.list();
+
+  // v2.6.0: detect empty state (used to show "Load demo" button)
+  const state = { empty: subjects.length === 0 && notes.length === 0 && events.length === 0 && tasksAll.length === 0 };
 
   const nextDeadline = events
     .filter(e => e.start > Date.now() && e.start - Date.now() < 48 * HOUR)
@@ -59,7 +63,6 @@ export async function renderOverview(root) {
   `).join("");
 
   const todayLabel = new Date().toLocaleDateString(undefined, { month: "short", day: "numeric" });
-  const notes = await dataSource.notes.list();
   const gradedSubjects = subjects.filter(s => s.grade);
 
   root.innerHTML = `
@@ -127,7 +130,23 @@ export async function renderOverview(root) {
         </div>
       </div>
     </div>
+
+    ${state.empty ? `
+      <div class="empty-state-demo">
+        <p>${i18n.t("overview.empty") || "No data yet."}</p>
+        <button class="btn ghost" id="load-demo-btn">${i18n.t("overview.loadDemo") || "🎁 Cargar datos demo"}</button>
+      </div>
+    ` : ""}
   `;
+
+  // v2.6.0: load demo button (opt-in)
+  const loadDemoBtn = root.querySelector("#load-demo-btn");
+  if (loadDemoBtn) {
+    loadDemoBtn.addEventListener("click", () => {
+      localStorage.setItem("mnexus.demo.enabled", "1");
+      location.reload();
+    });
+  }
 
   // v1.5.6: cross-verify panel
   const cvBtn = root.querySelector("#cv-btn");
