@@ -5,6 +5,7 @@
 
 import { dataSource } from "../services/dataSource.js";
 import { i18n } from "../services/i18n.js";
+import { makeModal } from "../widgets/modal.js";
 
 const HOUR = 3600 * 1000;
 const PAD = (n) => String(n).padStart(2, "0");
@@ -232,13 +233,11 @@ async function openEventDetail(id) {
     return subMatch && timeMatch;
   });
 
-  const scrim = document.createElement("div");
-  scrim.className = "scrim";
-  scrim.innerHTML = `
+  const html = `
     <div class="sheet" style="max-width: 640px">
       <div class="sheet-header">
         <h3>${escapeHtml(ev.title)}</h3>
-        <button class="btn icon" data-act="close">✕</button>
+        <button class="btn icon" data-close>✕</button>
       </div>
       <div class="ev-detail" style="border-left: 4px solid ${COLOR_FOR[ev.subject] || COLOR_FOR.default}; padding-left: var(--s-4); margin-bottom: var(--s-4)">
         <div class="muted small">${i18n.t("calendar.detail.when")}</div>
@@ -262,14 +261,12 @@ async function openEventDetail(id) {
       <div class="row gap-2" style="margin-top: var(--s-5)">
         <button class="btn primary" data-act="edit">${i18n.t("common.edit")}</button>
         <button class="btn danger" data-act="del">${i18n.t("common.delete")}</button>
-        <button class="btn" data-act="close" style="margin-left:auto">${i18n.t("common.close")}</button>
+        <button class="btn" data-close style="margin-left:auto">${i18n.t("common.close")}</button>
       </div>
     </div>
   `;
+  const { scrim, close } = makeModal(html);
   document.body.appendChild(scrim);
-  const close = () => scrim.remove();
-  scrim.querySelector('[data-act="close"]').addEventListener("click", close);
-  scrim.addEventListener("click", (e) => { if (e.target === scrim) close(); });
   scrim.querySelector('[data-act="edit"]').addEventListener("click", () => {
     close();
     openEventModal(id, () => renderCalendar(document.getElementById("app")));
@@ -298,13 +295,11 @@ function openEventModal(id, onSaved, prefill) {
       start: Date.now(), end: Date.now() + HOUR,
     };
 
-    const scrim = document.createElement("div");
-    scrim.className = "scrim sheet-bottom";
-    scrim.innerHTML = `
+    const html = `
       <div class="sheet bottom">
         <div class="sheet-header">
           <h3>${id ? i18n.t("calendar.edit") : i18n.t("calendar.new")}</h3>
-          <button class="btn icon" data-act="close">✕</button>
+          <button class="btn icon" data-close>✕</button>
         </div>
         <div class="col gap-3">
           <input class="input" id="ev-title" placeholder="${i18n.t("calendar.title")}" value="${escapeHtml(e.title)}" />
@@ -332,11 +327,8 @@ function openEventModal(id, onSaved, prefill) {
         </div>
       </div>
     `;
+    const { scrim, close } = makeModal(html, { className: "scrim sheet-bottom" });
     document.body.appendChild(scrim);
-
-    const close = () => scrim.remove();
-    scrim.querySelector('[data-act="close"]').addEventListener("click", close);
-    scrim.addEventListener("click", (e) => { if (e.target === scrim) close(); });
 
     scrim.querySelector('[data-act="save"]').addEventListener("click", async () => {
       const title = scrim.querySelector("#ev-title").value.trim();

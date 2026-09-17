@@ -5,6 +5,7 @@
 
 import { dataSource } from "../services/dataSource.js";
 import { i18n } from "../services/i18n.js";
+import { makeModal } from "../widgets/modal.js";
 
 const PAD = (n) => String(n).padStart(2, "0");
 const fmtDateTime = (ms) => {
@@ -86,13 +87,11 @@ function openTaskModal(id, onSaved) {
   dataSource.tasks.get(id).then((t) => {
     const task = t || { text: "", due: null, priority: 0, subject: "" };
 
-    const scrim = document.createElement("div");
-    scrim.className = "scrim sheet-bottom";
-    scrim.innerHTML = `
+    const html = `
       <div class="sheet bottom">
         <div class="sheet-header">
           <h3>${id ? i18n.t("todos.edit") : i18n.t("todos.new")}</h3>
-          <button class="btn icon" data-act="close">✕</button>
+          <button class="btn icon" data-close>✕</button>
         </div>
         <div class="col gap-3">
           <input class="input" id="t-text" placeholder="${i18n.t("todos.placeholder")}" value="${escapeHtml(task.text)}" />
@@ -112,10 +111,8 @@ function openTaskModal(id, onSaved) {
         </div>
       </div>
     `;
+    const { scrim, close } = makeModal(html, { className: "scrim sheet-bottom" });
     document.body.appendChild(scrim);
-    const close = () => scrim.remove();
-    scrim.querySelector('[data-act="close"]').addEventListener("click", close);
-    scrim.addEventListener("click", (e) => { if (e.target === scrim) close(); });
     scrim.querySelector('[data-act="save"]').addEventListener("click", async () => {
       const text = scrim.querySelector("#t-text").value.trim();
       if (!text) return;

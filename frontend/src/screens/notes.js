@@ -5,6 +5,7 @@
 
 import { dataSource } from "../services/dataSource.js";
 import { i18n } from "../services/i18n.js";
+import { makeModal } from "../widgets/modal.js";
 import { mountTopToolbar } from "../widgets/top_toolbar.js";
 import { openAudioRecorder } from "../widgets/audio_recorder.js";
 import { openStudySession } from "../widgets/study_session.js";
@@ -417,17 +418,17 @@ async function aiSummarize(note) {
   // v1.6.1: stub local — primeras 3 frases del body como resumen
   const sents = text.split(/[\.\n]+/).map((s) => s.trim()).filter((s) => s.length > 10).slice(0, 3);
   const summary = sents.join(". ") || "(empty)";
-  const scrim = document.createElement("div");
-  scrim.className = "scrim";
-  scrim.innerHTML = `<div class="sheet">
+  const html = `<div class="sheet">
     <div class="sheet-header"><h3>📝 ${i18n.t("notes.ai.summarize")}</h3>
-      <button class="btn icon" data-act="close">${svgIcon("close", 16)}</button></div>
+      <button class="btn icon" data-close>${svgIcon("close", 16)}</button></div>
     <div style="margin-top: var(--s-4); line-height: 1.6">${escapeHtml(summary)}</div>
     <div class="muted small" style="margin-top: var(--s-4)">${i18n.t("notes.ai.stubNote")}</div>
-    <div class="row gap-2" style="margin-top: var(--s-5)"><button class="btn primary" data-act="close">${i18n.t("common.close")}</button></div>
+    <div class="row gap-2" style="margin-top: var(--s-5)"><button class="btn primary" data-close>${i18n.t("common.close")}</button></div>
   </div>`;
+  const { scrim, close } = makeModal(html);
   document.body.appendChild(scrim);
-  scrim.addEventListener("click", (e) => { if (e.target === scrim || e.target.dataset.act === "close") scrim.remove(); });
+  // keep `close` referenced so tree-shaker doesn't remove it
+  void close;
 }
 
 function openDefinitionPopupFromText(note) {
@@ -807,26 +808,24 @@ function setupCanvas(root, noteId, pageIdx, strokes, pages) {
 }
 
 function openOverviewModal(note) {
-  const scrim = document.createElement("div");
-  scrim.className = "scrim";
   const body = (note.body || "").slice(0, 800);
-  scrim.innerHTML = `
+  const html = `
     <div class="sheet">
       <div class="sheet-header">
         <h3>${i18n.t("notes.overviewTitle")}</h3>
-        <button class="btn icon" data-act="close">✕</button>
+        <button class="btn icon" data-close>✕</button>
       </div>
       <div class="muted small">${i18n.t("notes.overviewSubtitle", { n: note.pages?.length ?? 1 })}</div>
       <div style="margin-top: var(--s-4); white-space: pre-wrap; font-size: var(--fs-md); line-height: 1.6">
 ${escapeHtml(body) || i18n.t("notes.overviewEmpty")}
       </div>
       <div class="row gap-2" style="margin-top: var(--s-5)">
-        <button class="btn primary" data-act="close">${i18n.t("common.close")}</button>
+        <button class="btn primary" data-close>${i18n.t("common.close")}</button>
       </div>
     </div>
   `;
+  const { scrim, close } = makeModal(html);
   document.body.appendChild(scrim);
-  const close = () => scrim.remove();
   scrim.addEventListener("click", (e) => { if (e.target === scrim || e.target.dataset.act === "close") close(); });
 }
 

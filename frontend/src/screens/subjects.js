@@ -5,6 +5,7 @@
 
 import { dataSource } from "../services/dataSource.js";
 import { i18n } from "../services/i18n.js";
+import { makeModal } from "../widgets/modal.js";
 
 const state = { selectedId: null };
 
@@ -165,13 +166,11 @@ function openSubjectModal(id, onSaved) {
   dataSource.subjects.get(id).then((s) => {
     const subj = s || { name: "", icon: "", color: "var(--subj-blue)", grade: 7 };
     const colors = ["var(--subj-red)", "var(--subj-yellow)", "var(--subj-blue)", "var(--subj-purple)", "var(--subj-green)", "var(--subj-pink)", "var(--subj-orange)", "var(--subj-teal)"];
-    const scrim = document.createElement("div");
-    scrim.className = "scrim";
-    scrim.innerHTML = `
+    const html = `
       <div class="sheet">
         <div class="sheet-header">
           <h3>${id ? i18n.t("subjects.edit") : i18n.t("subjects.new")}</h3>
-          <button class="btn icon" data-act="close">✕</button>
+          <button class="btn icon" data-close aria-label="${i18n.t("common.close")}">✕</button>
         </div>
         <div class="col gap-3">
           <input class="input" id="s-name" placeholder="${i18n.t("subjects.new")}" value="${escapeHtml(subj.name)}" />
@@ -187,6 +186,7 @@ function openSubjectModal(id, onSaved) {
         </div>
       </div>
     `;
+    const { scrim, close } = makeModal(html);
     document.body.appendChild(scrim);
     let chosenColor = subj.color;
     scrim.querySelectorAll('[data-c]').forEach((b) => b.addEventListener("click", () => {
@@ -194,9 +194,6 @@ function openSubjectModal(id, onSaved) {
       scrim.querySelectorAll('[data-c]').forEach(x => x.style.border = "2px solid transparent");
       b.style.border = "2px solid var(--fg)";
     }));
-    const close = () => scrim.remove();
-    scrim.querySelector('[data-act="close"]').addEventListener("click", close);
-    scrim.addEventListener("click", (e) => { if (e.target === scrim) close(); });
     scrim.querySelector('[data-act="save"]').addEventListener("click", async () => {
       const name = scrim.querySelector("#s-name").value.trim();
       if (!name) return;
