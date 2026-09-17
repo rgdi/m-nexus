@@ -426,15 +426,17 @@
   background: linear-gradient(135deg, #f0f7fc 0%, #e8f1f8 100%);
 }
 .app.screen-notes {
-  background: #f6f8aa;
+  background: var(--bg);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .app.screen-overview { background: linear-gradient(135deg, #0a1a26 0%, #152838 100%); }
-  :root:not([data-theme="light"]) .app.screen-notes { background: #1a2010; }
+  :root:not([data-theme="light"]) .app.screen-notes { background: var(--bg); }
 }
 [data-theme="dark"] .app.screen-overview { background: linear-gradient(135deg, #0a1a26 0%, #152838 100%); }
-[data-theme="dark"] .app.screen-notes { background: #1a2010; }
+[data-theme="dark"] .app.screen-notes { background: var(--bg); }
 body.no-bg .app.screen-notes { background: transparent; }
+/* v2.6.0 audit: removed yellow canary background that distracted from
+   note content. Now uses --bg token for consistency with other screens. */
 
 /* ---------- Top toolbar (v1.4.0) ---------- */
 .top-toolbar {

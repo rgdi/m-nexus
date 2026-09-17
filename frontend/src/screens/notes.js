@@ -86,8 +86,8 @@ async function renderNotesList(root) {
     <div class="screen notes-with-sidebar">
       <aside class="notes-tree" id="notes-tree">
         <div class="tree-actions">
-          <button class="btn icon" id="new-folder" title="${i18n.t("notes.newFolder")}">📁+</button>
-          <button class="btn primary small" id="new-note">+ ${i18n.t("notes.new")}</button>
+          <button class="btn icon" id="new-folder" title="${i18n.t("notes.newFolder")}" aria-label="${i18n.t("notes.newFolder")}">📁+</button>
+          <button class="btn primary small" id="new-note">${i18n.t("notes.new")}</button>
         </div>
         <div id="tree-root"></div>
       </aside>
