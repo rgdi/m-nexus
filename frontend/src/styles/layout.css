@@ -306,3 +306,15 @@ body.route-login #app > .screen > nav,
 body.route-login .doc-toolbar {
   display: none !important;
 }
+
+/* v2.6.0 audit: hide AI tutor FAB on Settings and Overview.
+   The Settings screen manages AI config directly. Overview has no
+   actionable AI context. The FAB is only useful in Notes (with a
+   selected note) and AI screens. */
+body.route-settings .ai-tutor-fab,
+body.route-overview .ai-tutor-fab,
+body.route-calendar .ai-tutor-fab,
+body.route-subjects .ai-tutor-fab,
+body.route-todos .ai-tutor-fab {
+  display: none !important;
+}
