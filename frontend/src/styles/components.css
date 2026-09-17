@@ -1455,3 +1455,46 @@ body.hide-ui .dock, body.hide-ui .lang-switcher, body.hide-ui .top-toolbar { dis
   .subj-row { padding: var(--s-2) var(--s-3); }
   .subj-row .corner { width: 32px; height: 32px; }
 }
+
+/* v2.6.0: settings form layout */
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3, 12px);
+  margin-top: var(--s-3, 12px);
+}
+.settings-form .form-row {
+  display: flex;
+  gap: var(--s-3, 12px);
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+.settings-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 180px;
+  font-size: var(--fs-sm, 13px);
+  color: var(--fg-muted, #9ca3af);
+}
+.settings-form .input {
+  padding: 8px 12px;
+  border: 1px solid var(--border, #2a2e38);
+  border-radius: 8px;
+  background: var(--bg, #0e1116);
+  color: var(--fg, #e8e9eb);
+  font: inherit;
+}
+.settings-form small {
+  width: 100%;
+  color: var(--fg-muted, #6b7280);
+  font-size: 11px;
+  margin-top: 2px;
+}
+.settings-form button { flex: 0 0 auto; }
+.settings-status {
+  margin-left: var(--s-2, 8px);
+  font-size: var(--fs-sm, 13px);
+  color: var(--fg-muted, #9ca3af);
+}

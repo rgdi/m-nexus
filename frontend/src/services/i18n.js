@@ -312,3 +312,13 @@ STRINGS["login.hint"] = { es: "Tu sesión dura 90 días en este dispositivo", en
 /* v2.6.0: empty-state hints for new users */
 STRINGS["overview.empty"] = { es: "Aún no tienes datos. ¿Quieres probar con datos de ejemplo?", en: "No data yet. Want to try with sample data?", pt: "Ainda não tem dados. Quer experimentar com dados de exemplo?" };
 STRINGS["overview.loadDemo"] = { es: "🎁 Cargar datos demo", en: "🎁 Load sample data", pt: "🎁 Carregar dados demo" };
+
+/* v2.6.0: settings screen AI + Backup management */
+STRINGS["settings.test"] = { es: "Probar", en: "Test", pt: "Testar" };
+STRINGS["settings.runNow"] = { es: "Ejecutar ahora", en: "Run now", pt: "Executar agora" };
+STRINGS["settings.saving"] = { es: "Guardando…", en: "Saving…", pt: "Guardando…" };
+STRINGS["settings.saved"] = { es: "Guardado", en: "Saved", pt: "Guardado" };
+STRINGS["settings.testing"] = { es: "Probando…", en: "Testing…", pt: "Testando…" };
+STRINGS["settings.running"] = { es: " Ejecutando…", en: " Running…", pt: " Executando…" };
+STRINGS["settings.aiWorks"] = { es: "IA funciona", en: "AI works", pt: "IA funciona" };
+STRINGS["settings.backupDone"] = { es: "Backup completado", en: "Backup done", pt: "Backup concluído" };
