@@ -27,7 +27,7 @@ async function renderSubjectList(root) {
         <div class="spacer"></div>
         <button class="btn primary" id="new">${i18n.t("subjects.new")}</button>
       </header>
-      <div class="grid grid-auto-3" id="list">
+      <div class="grid grid-subj-rows" id="list">
         <div class="empty"><div class="em-title">${i18n.t("common.loading")}</div></div>
       </div>
     </div>
@@ -41,17 +41,21 @@ async function renderSubjectList(root) {
   }
 
   root.querySelector("#list").innerHTML = subjects.map(s => `
-    <div class="subj-bubble" data-id="${s.id}" style="background:${s.color}">
-      <div>
-        <div class="corner"><div style="background:rgba(255,255,255,.18);border-radius:10px;width:48px;height:48px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800">${escapeHtml(s.icon || (s.name?.[0] ?? "?"))}</div></div>
+    <div class="subj-row" data-id="${s.id}">
+      <div class="color-stripe" style="background:${s.color}"></div>
+      <div class="info">
         <div class="name">${escapeHtml(s.name)}</div>
-        <div class="perf">${s.performance ? `+${s.performance}%` : ""} performance</div>
+        <div class="meta">
+          ${s.prof ? `<span>${escapeHtml(s.prof)}</span>` : ""}
+          ${s.grade ? `<span class="grade">${(s.grade ?? 0).toFixed(2)}</span>` : ""}
+          ${s.performance ? `<span class="perf">+${s.performance}%</span>` : ""}
+        </div>
       </div>
-      <span style="position:absolute;top:8px;left:8px;background:rgba(255,255,255,.92);color:var(--fg);border-radius:var(--r-pill);padding:2px 10px;font-size:var(--fs-xs);font-weight:700">${(s.grade ?? 0).toFixed(2)}</span>
+      <div class="corner" style="background:${s.color}">${escapeHtml(s.icon || (s.name?.[0] ?? "?"))}</div>
     </div>
   `).join("");
 
-  root.querySelectorAll(".subj-bubble").forEach((el) => {
+  root.querySelectorAll(".subj-row").forEach((el) => {
     el.addEventListener("click", () => { state.selectedId = el.dataset.id; renderSubjects(root); });
   });
 }

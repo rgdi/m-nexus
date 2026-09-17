@@ -1389,3 +1389,67 @@ body.hide-ui .dock, body.hide-ui .lang-switcher, body.hide-ui .top-toolbar { dis
   color: var(--fg-muted, #6b7280);
   text-align: center;
 }
+
+/* v2.6.0 audit: compact horizontal subject rows (replaces 240px squares) */
+.grid-subj-rows {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--s-2);
+}
+.subj-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-3);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  min-height: 64px;
+  position: relative;
+}
+.subj-row:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-2, 0 4px 12px rgba(0,0,0,.08));
+}
+.subj-row .color-stripe {
+  width: 4px;
+  align-self: stretch;
+  border-radius: 4px;
+}
+.subj-row .info {
+  flex: 1;
+  min-width: 0;
+}
+.subj-row .name {
+  font-size: var(--fs-md, 14px);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--fg);
+  margin-bottom: 2px;
+}
+.subj-row .meta {
+  display: flex;
+  gap: var(--s-3);
+  font-size: var(--fs-sm, 12px);
+  color: var(--text-muted, #6b7280);
+}
+.subj-row .meta .grade { font-weight: 600; color: var(--fg); }
+.subj-row .meta .perf { color: var(--success, #10b981); font-weight: 600; }
+.subj-row .corner {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: var(--fs-md, 14px);
+  flex-shrink: 0;
+}
+@media (max-width: 640px) {
+  .subj-row { padding: var(--s-2) var(--s-3); }
+  .subj-row .corner { width: 32px; height: 32px; }
+}
