@@ -175,13 +175,29 @@ export async function renderOverview(root) {
     });
   }
 
-  // v2.1.5: 3D graph
+  // v2.1.5: 3D graph (was graph_3d.js, removed in v2.3.0-A; now uses three_d_viewer)
   const graphBtn = root.querySelector("#graph-btn");
   if (graphBtn) {
     graphBtn.addEventListener("click", async () => {
-      const { openGraph3D } = await import("../widgets/graph_3d.js");
+      const { open3DViewer } = await import("../widgets/three_d_viewer.js");
       const noteList = await dataSource.notes.list();
-      openGraph3D(noteList);
+      // Build hotspots from note list (each note becomes a hotspot on a 3D bone)
+      const hotspots = noteList.slice(0, 12).map((n, i) => ({
+        id: n.id,
+        title: n.title,
+        position: [(i % 4 - 1.5) * 0.6, Math.floor(i / 4) * 0.7 - 0.5, 0],
+        note: n.body?.slice(0, 80) || "",
+      }));
+      const viewer = document.createElement("div");
+      viewer.id = "graph-3d-viewer";
+      viewer.style.cssText = "position:fixed;inset:0;z-index:9999;background:#0a0d12";
+      document.body.appendChild(viewer);
+      try {
+        await open3DViewer(viewer, hotspots, "bone");
+      } catch (e) {
+        viewer.remove();
+        console.error("[3D graph]", e);
+      }
     });
   }
 
