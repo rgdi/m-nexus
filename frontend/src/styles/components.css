@@ -1583,3 +1583,18 @@ body.hide-ui .dock, body.hide-ui .lang-switcher, body.hide-ui .top-toolbar { dis
 .sim-urg-high { border-left: 3px solid var(--warn, #f59e0b); }
 .sim-urg-normal { border-left: 3px solid var(--accent); }
 .sim-urg-low { border-left: 3px solid var(--border); }
+
+/* v2.9.0: occlusion screen */
+.occlusion-screen { max-width: 880px; margin: 0 auto; padding: var(--s-5); }
+.occlusion-upload { padding: var(--s-4); margin-bottom: var(--s-3); }
+.occlusion-source { display: flex; gap: var(--s-4); margin: var(--s-3) 0; }
+.occlusion-source-option { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.occ-row { display: flex; justify-content: space-between; align-items: center; padding: var(--s-3); background: var(--bg-sunken); border-radius: 8px; margin-bottom: var(--s-2); }
+.occ-row-info { display: flex; gap: var(--s-3); align-items: center; }
+.occ-row-actions { display: flex; gap: var(--s-2); }
+
+/* v2.9.0: FSRS sim card states */
+.sim-states { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s-2); }
+.sim-state { background: var(--bg-sunken); padding: var(--s-2); border-radius: 8px; text-align: center; }
+.sim-state .lbl { font-size: var(--fs-xs); color: var(--fg-muted); }
+.sim-state .val { display: block; font-size: 20px; font-weight: 700; }

@@ -167,8 +167,8 @@ describe("examScheduler.planStudy", () => {
 });
 
 describe("generationApprovals queue", () => {
-  it("addCandidate stores pending entries", () => {
-    const c = addCandidate({
+  it("addCandidate stores pending entries", async () => {
+    const c = await addCandidate({
       topicId: "t",
       kind: "flashcard",
       payload: {},
@@ -178,34 +178,34 @@ describe("generationApprovals queue", () => {
     });
     expect(c.id).toBeTruthy();
     expect(c.status).toBe("pending");
-    expect(listCandidates("t", "pending").length).toBeGreaterThan(0);
+    expect((await listCandidates("t", "pending")).length).toBeGreaterThan(0);
   });
 
-  it("decide moves status to approved", () => {
-    const c = addCandidate({
+  it("decide moves status to approved", async () => {
+    const c = await addCandidate({
       topicId: "t", kind: "flashcard", payload: {}, preview: "f", answer: "b", confidence: 0.5,
     });
-    const updated = decide(c.id, "approved");
+    const updated = await decide(c.id, "approved");
     expect(updated?.status).toBe("approved");
     expect(updated?.decidedAt).toBeGreaterThan(0);
   });
 
-  it("decide returns null for unknown id", () => {
-    expect(decide("nope", "approved")).toBeNull();
+  it("decide returns null for unknown id", async () => {
+    expect(await decide("nope", "approved")).toBeNull();
   });
 
-  it("clearDecided removes non-pending", () => {
+  it("clearDecided removes non-pending", async () => {
     const c1 = addCandidate({ topicId: "t", kind: "flashcard", payload: {}, preview: "a", answer: "a", confidence: 0.5 });
-    decide(c1.id, "approved");
-    clearDecided();
-    const pending = listCandidates("t", "pending");
+    await decide(c1.id, "approved");
+    await clearDecided();
+    const pending = await listCandidates("t", "pending");
     expect(pending.find((x) => x.id === c1.id)).toBeUndefined();
   });
 
-  it("filters by topicId", () => {
+  it("filters by topicId", async () => {
     addCandidate({ topicId: "topicA", kind: "cloze", payload: {}, preview: "x", answer: "y", confidence: 0.5 });
     addCandidate({ topicId: "topicB", kind: "cloze", payload: {}, preview: "x", answer: "y", confidence: 0.5 });
-    const aOnly = listCandidates("topicA");
+    const aOnly = await listCandidates("topicA");
     expect(aOnly.every((c) => c.topicId === "topicA")).toBe(true);
   });
 });

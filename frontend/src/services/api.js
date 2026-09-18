@@ -205,6 +205,7 @@ export const api = {
     decideCandidate: (id, status, reason) =>
       req("POST", "/study/generation/decide", { id, status, reason }),
     addCandidate: (body) => req("POST", "/study/generation/add", body),
+    simulateFsrs: (config) => req("POST", "/study/fsrs/simulate", { config }),
   },
 
   // ----- v2.8.0: image occlusion -----

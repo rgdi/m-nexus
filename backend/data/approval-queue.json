@@ -1,0 +1,50 @@
+[
+  {
+    "topicId": "anatomy",
+    "sourceNoteId": "note-humerus-test-1789752362211",
+    "kind": "cloze",
+    "payload": {
+      "front": "troquiter",
+      "back": "tubérculo mayor",
+      "subject": "anatomy"
+    },
+    "preview": "troquiter",
+    "answer": "tubérculo mayor",
+    "confidence": 0.95,
+    "id": "cand-1789752372691-aowem5",
+    "createdAt": 1789752372691,
+    "status": "pending"
+  },
+  {
+    "topicId": "anatomy",
+    "sourceNoteId": "note-humerus-test-1789752362211",
+    "kind": "cloze",
+    "payload": {
+      "front": "troquín",
+      "back": "tubérculo menor",
+      "subject": "anatomy"
+    },
+    "preview": "troquín",
+    "answer": "tubérculo menor",
+    "confidence": 0.95,
+    "id": "cand-1789752372691-2xvb8j",
+    "createdAt": 1789752372691,
+    "status": "pending"
+  },
+  {
+    "topicId": "anatomy",
+    "sourceNoteId": "note-humerus-test-1789752362211",
+    "kind": "cloze",
+    "payload": {
+      "front": "corredera bicipital",
+      "back": "surco intertubercular",
+      "subject": "anatomy"
+    },
+    "preview": "corredera bicipital",
+    "answer": "surco intertubercular",
+    "confidence": 0.95,
+    "id": "cand-1789752372691-ni1uao",
+    "createdAt": 1789752372691,
+    "status": "pending"
+  }
+]

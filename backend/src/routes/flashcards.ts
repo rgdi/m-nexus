@@ -205,4 +205,37 @@ export async function flashcardsRoutes(app: FastifyInstance): Promise<void> {
     logOp("flashcards", "extract", true, { noteId: note.id, created: out.created.length, skipped: out.skipped });
     return out;
   });
+
+  // v2.9.0: extraer clozes Y ENQUEUAR para aprobación humana.
+  // No crea flashcards directamente; el usuario debe aprobar en /approvals.
+  app.post<{ Params: { id: string } }>("/notes/:id/extract-as-candidates", async (req) => {
+    const { addCandidate } = await import("../services/generationApprovals.js");
+    const notesPath = join(process.cwd(), "data", "notes.json");
+    let note: any = null;
+    try {
+      const list = JSON.parse(await fs.readFile(notesPath, "utf-8"));
+      note = list.find((n: any) => n.id === req.params.id);
+    } catch {}
+    if (!note) throw E.val("EC-FC-004", "Note no encontrada", { context: { id: req.params.id }, statusCode: 404 });
+
+    const re = /\{\{c1::([^}]+?)\}\}/g;
+    const matches = [...(note.body || "").matchAll(re)];
+    let queued = 0;
+    for (const m of matches) {
+      const inner = m[1];
+      const [front, back] = inner.split("::").map((s) => s.trim());
+      if (!front || !back) continue;
+      await addCandidate({
+        topicId: note.subject || "general",
+        sourceNoteId: note.id,
+        kind: "cloze",
+        payload: { front, back, subject: note.subject || "" },
+        preview: front,
+        answer: back,
+        confidence: 0.95, // high because extracted deterministically
+      });
+      queued++;
+    }
+    return { queued, skipped: matches.length - queued };
+  });
 }

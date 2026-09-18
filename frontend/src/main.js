@@ -31,6 +31,8 @@ import { renderLogin } from "./screens/login.js";
 import { renderDiagnostic } from "./screens/diagnostic.js";
 import { renderApprovals } from "./screens/approvals.js";
 import { renderSimulator } from "./screens/simulator.js";
+import { renderFsrsSim } from "./screens/fsrs_sim.js";
+import { renderOcclusionScreen } from "./screens/occlusion_screen.js";
 import { auth } from "./services/auth.js";
 
 const ROUTES = {
@@ -45,6 +47,8 @@ const ROUTES = {
   diagnostic: renderDiagnostic,
   approvals: renderApprovals,
   simulator: renderSimulator,
+  "fsrs-sim": renderFsrsSim,
+  occlusion: renderOcclusionScreen,
 };
 
 const app = document.getElementById("app");
