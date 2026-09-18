@@ -347,3 +347,81 @@ body.route-subjects .ai-tutor-fab,
 body.route-todos .ai-tutor-fab {
   display: none !important;
 }
+
+/* ============================================================
+ * v2.7.0: swipe navigation progress indicator (mobile only)
+ * ============================================================ */
+.swipe-progress {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  pointer-events: none;
+  z-index: 90;
+  opacity: 0;
+  transition: opacity 200ms;
+}
+.swipe-progress.visible { opacity: 1; }
+.swipe-progress[data-side="left"] { left: 0; }
+.swipe-progress[data-side="right"] { right: 0; }
+.swipe-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  border-radius: 0 4px 4px 0;
+  transition: width 80ms linear;
+}
+.swipe-progress[data-side="right"] .swipe-progress-bar {
+  border-radius: 4px 0 0 4px;
+}
+
+/* ============================================================
+ * v2.7.0: offline pill (top-right of dock)
+ * ============================================================ */
+.offline-pill {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 80;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  font-size: var(--fs-xs);
+  color: var(--fg-muted);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  cursor: pointer;
+  user-select: none;
+  transition: background 200ms;
+}
+.offline-pill:hover { background: var(--bg-sunken); }
+.offline-pill .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--fg-muted);
+}
+.offline-pill[data-state="online"] .dot {
+  background: var(--good, #22c55e);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
+}
+.offline-pill[data-state="offline"] .dot {
+  background: var(--bad, #ef4444);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18);
+  animation: pill-pulse 1.6s ease-in-out infinite;
+}
+.offline-pill[data-state="offline"] {
+  color: var(--bad, #ef4444);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+.offline-pill.recheck { opacity: 0.6; }
+@keyframes pill-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18); }
+  50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+}
+
+/* hide pill on login screen */
+body.route-login .offline-pill { display: none; }

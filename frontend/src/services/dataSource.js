@@ -12,11 +12,17 @@ import { store, collection } from "./store.js";
 let backendOnline = false;
 
 export async function detectBackend() {
+  const prev = backendOnline;
   try {
     await api.health();
     backendOnline = true;
   } catch {
     backendOnline = false;
+  }
+  if (prev !== backendOnline) {
+    // Emit to listeners (offline pill, etc.)
+    document.dispatchEvent(new CustomEvent("backend-status", { detail: { online: backendOnline } }));
+    document.documentElement.dataset.backend = backendOnline ? "online" : "offline";
   }
   return backendOnline;
 }

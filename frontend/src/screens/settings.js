@@ -10,6 +10,7 @@ import { getTheme, setTheme } from "../services/theme.js";
 import { escapeHtml } from "../services/safe.js";
 import { auth } from "../services/auth.js";
 import { api } from "../services/api.js";
+import { exportVaultJSON, exportNoteMarkdown } from "../widgets/export.js";
 
 const AI_PROVIDERS = [
   { value: "mock", label: "Skip (mock — no real AI)" },
@@ -96,6 +97,24 @@ export async function renderSettings(root) {
             </button>
           `).join("")}
         </div>
+      </section>
+
+      <section class="settings-section">
+        <h2>Export</h2>
+        <p class="muted">Descarga tu vault para respaldo o migración</p>
+        <div class="settings-grid" style="grid-template-columns: 1fr 1fr;">
+          <button class="settings-option" id="export-vault">
+            <span class="ico">💾</span>
+            <span class="name">Full vault (JSON)</span>
+            <span class="muted small">All notes, subjects, tasks, events</span>
+          </button>
+          <button class="settings-option" id="export-current-note">
+            <span class="ico">📝</span>
+            <span class="name">Current note (Markdown)</span>
+            <span class="muted small">Open a note first</span>
+          </button>
+        </div>
+        <div id="export-status" class="muted small" style="margin-top:8px"></div>
       </section>
 
       <section class="settings-section">
@@ -280,6 +299,42 @@ export async function renderSettings(root) {
       status.textContent = "✗ " + (err.message || "error");
     }
   });
+
+  // v2.7.0: Export vault / current note
+  const exportVaultBtn = root.querySelector("#export-vault");
+  const exportNoteBtn = root.querySelector("#export-current-note");
+  const exportStatus = root.querySelector("#export-status");
+  if (exportVaultBtn) {
+    exportVaultBtn.addEventListener("click", async () => {
+      exportStatus.textContent = i18n.t("settings.exporting") || "Exporting…";
+      try {
+        const v = await exportVaultJSON();
+        const counts = `${v.notes.length} notes, ${v.subjects.length} subjects, ${v.tasks.length} tasks, ${v.events.length} events`;
+        exportStatus.textContent = (i18n.t("settings.exported") || "Exported") + ` (${counts})`;
+      } catch (e) {
+        exportStatus.textContent = (i18n.t("settings.exportError") || "Export failed") + ": " + e.message;
+      }
+    });
+  }
+  if (exportNoteBtn) {
+    exportNoteBtn.addEventListener("click", async () => {
+      // Try to find a currently-open note id from sessionStorage hash
+      const hash = location.hash;
+      const m = hash.match(/[?&]id=([^&]+)/);
+      const noteId = m ? decodeURIComponent(m[1]) : null;
+      if (!noteId) {
+        exportStatus.textContent = i18n.t("settings.openNoteFirst") || "Open a note first";
+        return;
+      }
+      exportStatus.textContent = i18n.t("settings.exporting") || "Exporting…";
+      try {
+        await exportNoteMarkdown(noteId);
+        exportStatus.textContent = i18n.t("settings.exported") || "Exported";
+      } catch (e) {
+        exportStatus.textContent = (i18n.t("settings.exportError") || "Export failed") + ": " + e.message;
+      }
+    });
+  }
 
   // Logout
   const logoutBtn = root.querySelector("#logout-btn");

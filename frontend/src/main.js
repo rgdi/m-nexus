@@ -14,6 +14,8 @@ import { mountLangSwitcher } from "./widgets/lang_switcher.js";
 import { showSplash } from "./widgets/splash.js";
 import { openSetupWizard, isSetupCompleted, resetSetup } from "./widgets/setup_wizard.js";
 import { mountCommandPalette, openCommandPalette } from "./widgets/command_palette.js";
+import { mountSwipeNav } from "./widgets/swipe_nav.js";
+import { mountOfflinePill } from "./widgets/offline_pill.js";
 import { mountVaultSwitcher } from "./services/vault.js";
 import { mountAITutor } from "./widgets/ai_tutor.js";
 import { connectSync } from "./services/sync_client.js";
@@ -148,6 +150,10 @@ async function bootstrap() {
   // v1.9.0: command palette (Ctrl+K)
   mountCommandPalette();
   setupCmdTrigger();
+  // v2.7.0: mobile swipe navigation
+  mountSwipeNav();
+  // v2.7.0: offline status pill
+  mountOfflinePill();
   // v1.9.3: vault switcher
   mountVaultSwitcher();
   // v2.0.2: AI tutor FAB
