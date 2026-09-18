@@ -129,6 +129,88 @@
   .icon-btn:hover { background: var(--border); color: var(--fg); }
 }
 
+/* ============================================================
+ * v2.6.0: consolidated bottom toolbar (replaces 3 floating toolbars).
+ * All canvas + insert + undo/redo + meta actions live here in one row.
+ * ============================================================ */
+.notebook-toolbar-bottom {
+  position: absolute;
+  bottom: var(--s-3);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, .94);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  box-shadow: var(--shadow-2);
+  z-index: 10;
+  max-width: calc(100% - 16px);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+.notebook-toolbar-bottom::-webkit-scrollbar { display: none; }
+[data-theme="dark"] .notebook-toolbar-bottom { background: rgba(26, 29, 36, .94); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .notebook-toolbar-bottom { background: rgba(26, 29, 36, .94); }
+}
+.notebook-toolbar-bottom .tool-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  color: var(--fg-muted);
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.notebook-toolbar-bottom .tool-btn:hover {
+  background: var(--bg-sunken);
+  color: var(--fg);
+}
+.notebook-toolbar-bottom .tool-btn.active {
+  background: var(--accent, #6ea8fe);
+  color: white;
+}
+.notebook-toolbar-bottom .tool-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+
+/* v2.6.0: hide floating duplicates (consolidated into bottom toolbar) */
+.notebook-toolbar,
+.notebook-side {
+  display: none !important;
+}
+
+/* v2.6.0: also hide FAB cards (replaced by toolbar button) */
+.fab-cards {
+  display: none !important;
+}
+
+/* v2.6.0: pencil-drawer stays at bottom-left but repositioned to avoid
+   overlapping with the bottom toolbar */
+.pencil-drawer {
+  bottom: calc(var(--s-3) + 48px + var(--s-2)); /* toolbar height + margin */
+}
+/* v2.6.0: hide the page-level top toolbar widget (droplet, undo, hide).
+   We replaced those with bottom-toolbar buttons. */
+#top-toolbar {
+  display: none !important;
+}
+
 .def-popup {
   position: absolute;
   background: var(--bg-elevated);

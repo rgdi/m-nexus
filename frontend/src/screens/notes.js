@@ -6,7 +6,9 @@
 import { dataSource } from "../services/dataSource.js";
 import { i18n } from "../services/i18n.js";
 import { makeModal } from "../widgets/modal.js";
-import { mountTopToolbar } from "../widgets/top_toolbar.js";
+// v2.6.0: top_toolbar.js no longer used — replaced by bottom toolbar
+// (see .notebook-toolbar-bottom). The droplet (background toggle), undo/redo,
+// and hide buttons are now in the consolidated bottom panel.
 import { openAudioRecorder } from "../widgets/audio_recorder.js";
 import { openStudySession } from "../widgets/study_session.js";
 import { downloadNoteAsPDF } from "../widgets/pdf_export.js";
@@ -298,6 +300,20 @@ async function renderNotebook(root, id) {
 
   root.querySelector("#overview-btn").addEventListener("click", () => openOverviewModal(note));
 
+  // v2.6.0: open AI side panel from bottom toolbar
+  root.querySelector("#open-ai-side")?.addEventListener("click", () => {
+    const panel = root.querySelector("#side-panel");
+    const aiTab = root.querySelector('.side-tab[data-side="ai"]');
+    if (panel) panel.classList.remove("collapsed");
+    if (aiTab) aiTab.click();
+  });
+
+  // v2.6.0: search button — focus search box in side panel
+  root.querySelector("#search-btn")?.addEventListener("click", () => {
+    const searchBox = root.querySelector(".search-box, input[type=search]");
+    if (searchBox) { searchBox.focus(); }
+  });
+
   // v1.7.3: export PDF
   root.querySelector("#export-pdf").addEventListener("click", () => downloadNoteAsPDF(note));
 
@@ -356,8 +372,8 @@ async function renderNotebook(root, id) {
   root._note = note;
   setupDefinitionPopup(root);
 
-  // v1.4.0: top toolbar (undo/redo/bg/hide) — solo en notebook
-  mountTopToolbar();
+  // v2.6.0: top toolbar removed — tools consolidated into bottom toolbar
+  // (.notebook-toolbar-bottom). Was: mountTopToolbar() from top_toolbar.js
 
   setupCanvas(root, id, state.page, page.strokes, pages);
 
@@ -481,6 +497,10 @@ async function aiQuizFromNote(noteId) {
 function handleInsertAction(act, root, noteId, pageIdx, pages) {
   const page = pages[pageIdx] || pages[0];
   if (act === "trash") return;
+  if (act === "undo" || act === "redo") {
+    document.dispatchEvent(new CustomEvent(`canvas:${act}`));
+    return;
+  }
   if (act === "voice") {
     // v1.5.4: recorder con auto-asignación de asignatura
     openAudioRecorder(root);
@@ -1074,33 +1094,34 @@ function renderNotebookWideHTML(note, pages) {
 
       <div class="notebook-workspace">
         <main class="notebook-main" id="notebook-main">
-          <div class="row gap-2" style="margin-bottom: var(--s-3); flex-wrap: wrap">
-            <button class="btn primary" id="overview-btn">${i18n.t("notes.intelligentOverview")}</button>
-            <button class="btn icon" id="search-btn" aria-label="${i18n.t("common.search")}">${svgIcon("search", 18)}</button>
-            <button class="btn icon" id="export-pdf" title="PDF">${svgIcon("text", 18)}</button>
-            <button class="btn icon" id="open-ai-side" title="${i18n.t("ai.open") || "AI"}">✦</button>
-          </div>
-
           <div class="notebook" id="canvas-wrap">
-            <div class="notebook-toolbar">
-              <button class="tool-btn" data-tool="pen" title="${i18n.t("notes.tool.pen")}">${svgIcon("pen", 18)}</button>
-              <button class="tool-btn" data-tool="highlighter" title="${i18n.t("notes.tool.highlighter")}">${svgIcon("highlighter", 18)}</button>
-              <button class="tool-btn" data-tool="eraser" title="${i18n.t("notes.tool.eraser")}">${svgIcon("eraser", 18)}</button>
-              <button class="tool-btn" data-tool="select" title="${i18n.t("notes.tool.select")}">${svgIcon("select", 18)}</button>
-            </div>
-            <div class="notebook-side">
-              <button class="tool-btn" data-act="voice" title="${i18n.t("notes.tool.voice")}">${svgIcon("voice", 18)}</button>
-              <button class="tool-btn" data-act="image" title="${i18n.t("notes.tool.image")}">${svgIcon("image", 18)}</button>
-              <button class="tool-btn" data-act="link" title="${i18n.t("notes.tool.link")}">${svgIcon("link", 18)}</button>
-              <button class="tool-btn" data-act="table" title="${i18n.t("notes.tool.table")}">${svgIcon("table", 18)}</button>
-            </div>
             <div class="pencil-drawer">
               <button class="pencil add" id="add-pencil">+</button>
               ${state.pencils.map(p => `<button class="pencil" data-pencil="${p.id}" style="background:${p.color}"></button>`).join("")}
               <button class="pencil trash" data-act="trash" title="Delete pencil">🗑</button>
             </div>
-            <button class="fab fab-cards" id="new-card-btn" title="${i18n.t("notes.newFlashcard")}">${svgIcon("flashcard", 22, { color: "white", fill: "rgba(255,255,255,0.15)" })}</button>
             <canvas id="canvas"></canvas>
+            <!-- v2.6.0: single consolidated bottom toolbar (replaces 3 floating toolbars) -->
+            <div class="notebook-toolbar-bottom">
+              <button class="tool-btn" data-act="undo" title="${i18n.t("notes.tool.undo")}" aria-label="${i18n.t("notes.tool.undo")}">${svgIcon("undo", 18)}</button>
+              <button class="tool-btn" data-act="redo" title="${i18n.t("notes.tool.redo")}" aria-label="${i18n.t("notes.tool.redo")}">${svgIcon("redo", 18)}</button>
+              <span class="tool-sep"></span>
+              <button class="tool-btn" data-tool="pen" title="${i18n.t("notes.tool.pen")}" aria-label="${i18n.t("notes.tool.pen")}">${svgIcon("pen", 18)}</button>
+              <button class="tool-btn" data-tool="highlighter" title="${i18n.t("notes.tool.highlighter")}" aria-label="${i18n.t("notes.tool.highlighter")}">${svgIcon("highlighter", 18)}</button>
+              <button class="tool-btn" data-tool="eraser" title="${i18n.t("notes.tool.eraser")}" aria-label="${i18n.t("notes.tool.eraser")}">${svgIcon("eraser", 18)}</button>
+              <button class="tool-btn" data-tool="select" title="${i18n.t("notes.tool.select")}" aria-label="${i18n.t("notes.tool.select")}">${svgIcon("select", 18)}</button>
+              <span class="tool-sep"></span>
+              <button class="tool-btn" data-act="voice" title="${i18n.t("notes.tool.voice")}" aria-label="${i18n.t("notes.tool.voice")}">${svgIcon("voice", 18)}</button>
+              <button class="tool-btn" data-act="image" title="${i18n.t("notes.tool.image")}" aria-label="${i18n.t("notes.tool.image")}">${svgIcon("image", 18)}</button>
+              <button class="tool-btn" data-act="link" title="${i18n.t("notes.tool.link")}" aria-label="${i18n.t("notes.tool.link")}">${svgIcon("link", 18)}</button>
+              <button class="tool-btn" data-act="table" title="${i18n.t("notes.tool.table")}" aria-label="${i18n.t("notes.tool.table")}">${svgIcon("table", 18)}</button>
+              <span class="tool-sep"></span>
+              <button class="tool-btn" id="overview-btn" title="${i18n.t("notes.intelligentOverview")}" aria-label="${i18n.t("notes.intelligentOverview")}">${svgIcon("eye", 18)}</button>
+              <button class="tool-btn" id="search-btn" title="${i18n.t("common.search")}" aria-label="${i18n.t("common.search")}">${svgIcon("search", 18)}</button>
+              <button class="tool-btn" id="open-ai-side" title="${i18n.t("ai.open") || "AI"}" aria-label="${i18n.t("ai.open") || "AI"}">✦</button>
+              <button class="tool-btn" id="new-card-btn" title="${i18n.t("notes.newFlashcard")}" aria-label="${i18n.t("notes.newFlashcard")}">${svgIcon("flashcard", 18)}</button>
+              <button class="tool-btn" id="export-pdf" title="PDF" aria-label="PDF">${svgIcon("text", 18)}</button>
+            </div>
           </div>
         </main>
 

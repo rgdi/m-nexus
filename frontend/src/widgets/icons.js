@@ -34,6 +34,9 @@ const PATHS = {
   flashcard:'<rect x="2" y="6" width="20" height="14" rx="2"/><path d="M2 10h20M7 14h6"/>',
   // Header buttons
   back:     '<path d="M19 12H5M12 19l-7-7 7-7"/>',
+  undo:     '<path d="M3 7v6h6M3 13a9 9 0 1 0 3-7l-3 3"/>',
+  redo:     '<path d="M21 7v6h-6M21 13a9 9 0 1 1-3-7l3 3"/>',
+  eye:      '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/>',
   search:   '<circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/>',
   plus:     '<path d="M12 5v14M5 12h14"/>',
   filter:   '<path d="M3 6h18M6 12h12M10 18h4"/>',

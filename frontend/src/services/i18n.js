@@ -110,6 +110,8 @@ const STRINGS = {
   "notes.tool.graph":       { en: "Graph", es: "Gráfico", pt: "Gráfico" },
   "notes.tool.link":        { en: "Link", es: "Enlace", pt: "Link" },
   "notes.tool.table":       { en: "Table", es: "Tabla", pt: "Tabela" },
+"notes.tool.undo":        { en: "Undo", es: "Deshacer", pt: "Desfazer" },
+  "notes.tool.redo":        { en: "Redo", es: "Rehacer", pt: "Refazer" },
   "notes.overviewTitle":    { en: "Intelligent overview", es: "Resumen inteligente", pt: "Visão inteligente" },
   "notes.overviewSubtitle": { en: "Generated from {n} page(s) of handwriting and text.", es: "Generado de {n} página(s) de escritura y texto.", pt: "Gerado de {n} página(s) de manuscrito e texto." },
   "notes.overviewEmpty":    { en: "No content yet. Start writing!", es: "Sin contenido. ¡Empieza a escribir!", pt: "Sem conteúdo. Comece a escrever!" },
