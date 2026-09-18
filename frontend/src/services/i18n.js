@@ -324,3 +324,21 @@ STRINGS["settings.testing"] = { es: "Probando…", en: "Testing…", pt: "Testan
 STRINGS["settings.running"] = { es: " Ejecutando…", en: " Running…", pt: " Executando…" };
 STRINGS["settings.aiWorks"] = { es: "IA funciona", en: "AI works", pt: "IA funciona" };
 STRINGS["settings.backupDone"] = { es: "Backup completado", en: "Backup done", pt: "Backup concluído" };
+
+/* v2.6.0: side panel new tabs */
+STRINGS["notes.cards"] = { es: "Tarjetas", en: "Cards", pt: "Cartões" };
+STRINGS["notes.media"] = { es: "Adjuntos", en: "Media", pt: "Mídia" };
+STRINGS["notes.list"] = { es: "Todas", en: "All", pt: "Todas" };
+STRINGS["notes.cardsOf"] = { es: "Tarjetas de «{title}»", en: "Cards of «{title}»", pt: "Cartões de «{title}»" };
+STRINGS["notes.attachmentsOf"] = { es: "Adjuntos de «{title}»", en: "Attachments of «{title}»", pt: "Anexos de «{title}»" };
+STRINGS["notes.noCards"] = { es: "Sin tarjetas para esta nota.", en: "No cards yet for this note.", pt: "Sem cartões para esta nota." };
+STRINGS["notes.noAttachments"] = { es: "Sin adjuntos. Usa la barra de adjuntos.", en: "No attachments. Use the attach bar.", pt: "Sem anexos." };
+STRINGS["notes.cardsError"] = { es: "Error cargando tarjetas.", en: "Error loading cards.", pt: "Erro carregando cartões." };
+STRINGS["notes.mediaError"] = { es: "Error cargando adjuntos.", en: "Error loading attachments.", pt: "Erro carregando anexos." };
+STRINGS["notes.otherNotes"] = { es: "Otras notas", en: "Other notes", pt: "Outras notas" };
+STRINGS["notes.noOtherWithAttachments"] = { es: "Ninguna otra nota tiene adjuntos.", en: "No other notes have attachments yet.", pt: "Nenhuma outra nota tem anexos." };
+STRINGS["notes.allNotes"] = { es: "Todas las notas", en: "All notes", pt: "Todas as notas" };
+STRINGS["notes.newCard"] = { es: "Nueva tarjeta", en: "New card", pt: "Novo cartão" };
+STRINGS["notes.cardFront"] = { es: "Anverso (pregunta)", en: "Front (question)", pt: "Frente (pergunta)" };
+STRINGS["notes.cardBack"] = { es: "Reverso (respuesta)", en: "Back (answer)", pt: "Verso (resposta)" };
+STRINGS["common.noResults"] = { es: "Sin resultados.", en: "No results found.", pt: "Sem resultados." };

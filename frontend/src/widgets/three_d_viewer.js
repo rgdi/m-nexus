@@ -61,25 +61,37 @@ const HOTSPOT_STYLE = `
   background: linear-gradient(180deg, transparent, white, transparent);
   pointer-events: none;
 }
-.three-d-controls {
+/* v2.6.0: bottom hint + close button (no more rotL/rotR/reset — drag does it) */
+.three-d-hint {
   position: absolute;
   bottom: 12px;
-  right: 12px;
-  display: flex;
-  gap: 6px;
-  pointer-events: auto;
-}
-.three-d-controls button {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.15);
-  border: none;
-  color: white;
-  font-size: 16px;
+  left: 12px;
+  padding: 6px 12px;
+  background: rgba(15,17,21,0.75);
+  color: rgba(255,255,255,0.7);
+  font-size: 12px;
+  border-radius: 8px;
+  pointer-events: none;
   backdrop-filter: blur(8px);
 }
-.three-d-controls button:hover { background: rgba(255,255,255,0.3); }
+.three-d-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(15,17,21,0.85);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.15);
+  font-size: 18px;
+  cursor: pointer;
+  z-index: 10;
+  backdrop-filter: blur(8px);
+  transition: background 150ms;
+}
+.three-d-close:hover { background: rgba(40,44,52,0.95); }
+.three-d-controls { display: none !important; } /* v2.6.0: removed — drag does the rotation */
 .three-d-no-three {
   width: 100%;
   height: 100%;
@@ -111,11 +123,8 @@ export async function open3DViewer(root, hotspots, modelType = "bone") {
   container.innerHTML = `
     <canvas class="three-d-canvas"></canvas>
     <div class="three-d-overlay"></div>
-    <div class="three-d-controls">
-      <button data-act="rotL" title="Rotate left">↺</button>
-      <button data-act="rotR" title="Rotate right">↻</button>
-      <button data-act="reset" title="Reset">⟲</button>
-    </div>
+    <div class="three-d-hint">Drag to rotate · Long-press to add label</div>
+    <button class="three-d-close" data-act="close" title="Close">✕</button>
   `;
   root.appendChild(container);
 
@@ -172,21 +181,89 @@ export async function open3DViewer(root, hotspots, modelType = "bone") {
   let rotY = 0;
   let rotX = 0;
   let drag = null;
+  let longPressTimer = null;
+  let longPressTriggered = false;
+  const LONG_PRESS_MS = 500;
 
+  // v2.6.0: touch/mouse interactions — drag to rotate, long-press to add label
   canvas.addEventListener("pointerdown", (e) => {
+    longPressTriggered = false;
+    longPressTimer = setTimeout(() => {
+      longPressTriggered = true;
+      addLabelAt(e.clientX, e.clientY);
+    }, LONG_PRESS_MS);
     drag = { x: e.clientX, y: e.clientY, ry: rotY, rx: rotX };
     canvas.setPointerCapture(e.pointerId);
   });
   canvas.addEventListener("pointermove", (e) => {
     if (!drag) return;
-    rotY = drag.ry + (e.clientX - drag.x) * 0.01;
-    rotX = drag.rx - (e.clientY - drag.y) * 0.01;
+    // If moved more than 8px, cancel long-press (it's a drag, not a tap)
+    const dx = e.clientX - drag.x;
+    const dy = e.clientY - drag.y;
+    if (Math.hypot(dx, dy) > 8) {
+      clearTimeout(longPressTimer);
+      rotY = drag.ry + dx * 0.01;
+      rotX = Math.max(-1.2, Math.min(1.2, drag.rx - dy * 0.01));
+    }
   });
-  canvas.addEventListener("pointerup", () => (drag = null));
+  canvas.addEventListener("pointerup", (e) => {
+    clearTimeout(longPressTimer);
+    if (!longPressTriggered && drag) {
+      // Treat as click — nothing happens unless they long-pressed
+    }
+    drag = null;
+  });
+  canvas.addEventListener("pointercancel", () => {
+    clearTimeout(longPressTimer);
+    drag = null;
+  });
 
-  container.querySelector('[data-act="rotL"]').addEventListener("click", () => (rotY -= 0.4));
-  container.querySelector('[data-act="rotR"]').addEventListener("click", () => (rotY += 0.4));
-  container.querySelector('[data-act="reset"]').addEventListener("click", () => { rotY = 0; rotX = 0; });
+  // Close button
+  container.querySelector('[data-act="close"]').addEventListener("click", () => {
+    container.remove();
+  });
+
+  // v2.6.0: add hotspot by tapping on the model.
+  // Uses raycaster against the model, then converts world point to local coords.
+  // If the tap misses the model (background), we use the screen ray against a plane
+  // through the model center (fallback so labels can still be placed).
+  const raycaster = new THREE.Raycaster();
+  const localPoint = new THREE.Vector3();
+
+  function screenToModel(x, y) {
+    const r = rect();
+    const ndcX = ((x - r.left) / r.width) * 2 - 1;
+    const ndcY = -((y - r.top) / r.height) * 2 + 1;
+    raycaster.setFromCamera(new THREE.Vector2(ndcX, ndcY), camera);
+
+    // First try: hit the actual model
+    const hits = raycaster.intersectObject(model, false);
+    if (hits.length > 0) {
+      const world = hits[0].point.clone();
+      model.worldToLocal(world);
+      return world;
+    }
+    // Fallback: intersect with a plane perpendicular to camera at the model center
+    const plane = new THREE.Plane(camera.getWorldDirection(new THREE.Vector3()).negate(), 0);
+    const out = new THREE.Vector3();
+    if (raycaster.ray.intersectPlane(plane, out)) {
+      model.worldToLocal(out);
+      return out;
+    }
+    return null;
+  }
+
+  function addLabelAt(clientX, clientY) {
+    const local = screenToModel(clientX, clientY);
+    if (!local) return;
+    const label = prompt("Label name:", "") || "";
+    if (!label.trim()) return;
+    hotspots.push({
+      id: "h-" + Date.now(),
+      x: local.x, y: local.y, z: local.z,
+      label: label.trim(),
+    });
+  }
 
   // Render loop con proyección de hotspots (v1.5.3 técnica core)
   const tmpVec = new THREE.Vector3();
@@ -230,6 +307,15 @@ export async function open3DViewer(root, hotspots, modelType = "bone") {
     camera.updateProjectionMatrix();
   });
   ro.observe(container);
+
+  // Esc to close
+  const escHandler = (e) => {
+    if (e.key === "Escape") {
+      container.remove();
+      document.removeEventListener("keydown", escHandler);
+    }
+  };
+  document.addEventListener("keydown", escHandler);
 }
 
 function loadThree() {

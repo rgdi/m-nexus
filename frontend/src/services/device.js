@@ -92,8 +92,19 @@ export function setTheme(theme) {
 /** Sync body classes when device changes. */
 export function startDeviceWatch() {
   if (typeof document === "undefined") return;
+  // v2.6.0: preserve non-device classes (route-*, dock-collapsed, ai-chat-open, etc).
+  // Only remove/toggle the device-specific ones.
+  const DEVICE_CLASSES = ["dpr-", "tier-", "orient-", "touch", "mouse", "can-hover", "no-hover", "reduced-motion", "online", "offline"];
   const apply = () => {
-    document.body.className = device.bodyClasses();
+    const fresh = device.bodyClasses().split(" ");
+    // Remove all device-* classes
+    Array.from(document.body.classList).forEach((c) => {
+      if (DEVICE_CLASSES.some((d) => c === d || c.startsWith(d))) {
+        document.body.classList.remove(c);
+      }
+    });
+    // Add the current device classes
+    fresh.forEach((c) => { if (c) document.body.classList.add(c); });
   };
   apply();
   return device.subscribe(apply);

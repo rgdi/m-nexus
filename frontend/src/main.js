@@ -87,10 +87,12 @@ async function render() {
   app.dataset.route = route;
   // v1.4.0: clase de pantalla para fondos diferenciados
   app.className = `app screen-${route}`;
-  // v2.1.3: also reflect route on body so fixed-position UI (FAB) can react
-  document.body.className = `route-${route}`;
-  // v2.6.0: hide dock + FAB on login screen
-  document.body.classList.toggle("route-login", route === "login");
+  // v2.1.3 + v2.6.0: reflect route on body. Use individual class toggles so we
+  // don't wipe dock-collapsed / ai-chat-open / etc when changing route.
+  document.body.classList.forEach((c) => {
+    if (c.startsWith("route-")) document.body.classList.remove(c);
+  });
+  document.body.classList.add(`route-${route}`);
   document.body.dataset.activeRoute = route;
   // v2.4.0: also expose to global so AI screen can detect current context
   window.__mnexusActiveRoute = route;
@@ -315,9 +317,12 @@ function setupDockCollapse() {
     localStorage.setItem("mnexus.dock.collapsed", "0");
   });
 
-  // Keyboard shortcut: Cmd/Ctrl + B (like browsers)
+  // v2.6.0: keyboard shortcut to TOGGLE (was Ctrl+B only → collapse)
   document.addEventListener("keydown", (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === "b" && !e.shiftKey) {
+    if ((e.metaKey || e.ctrlKey) && e.key === "b" && !e.shiftKey && !e.altKey) {
+      // Skip when typing in input/textarea
+      const tag = (e.target?.tagName || "").toLowerCase();
+      if (tag === "input" || tag === "textarea" || e.target?.isContentEditable) return;
       e.preventDefault();
       const collapsed = document.body.classList.toggle("dock-collapsed");
       localStorage.setItem("mnexus.dock.collapsed", collapsed ? "1" : "0");

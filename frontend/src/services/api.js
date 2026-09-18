@@ -154,6 +154,7 @@ export const api = {
     due: () => req("GET", "/flashcards/due").catch(() => []),
     review: (id, rating) => req("POST", `/flashcards/${id}/review`, { rating }),
     create: (body) => req("POST", "/flashcards", body),
+    filter: (noteId) => req("GET", `/flashcards/filter?noteId=${encodeURIComponent(noteId)}`),
   },
 
   // ----- AI Tutor -----

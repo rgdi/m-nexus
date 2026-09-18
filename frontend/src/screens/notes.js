@@ -5,6 +5,7 @@
 
 import { dataSource } from "../services/dataSource.js";
 import { i18n } from "../services/i18n.js";
+import { api } from "../services/api.js";
 import { makeModal } from "../widgets/modal.js";
 // v2.6.0: top_toolbar.js no longer used — replaced by bottom toolbar
 // (see .notebook-toolbar-bottom). The droplet (background toggle), undo/redo,
@@ -229,12 +230,21 @@ async function renderNotebook(root, id) {
   }
 
   // === Wide layout (canvas + AI side panel) ===
-  // Side panel tabs: Notes | AI
+  // v2.6.0: 5 side tabs — Notes | Cards | Media (3D/images) | All notes list | AI
   const sideContent = root.querySelector("#side-content");
-  const switchSide = (tab) => {
+  const switchSide = async (tab) => {
     root.querySelectorAll(".side-tab").forEach(t => t.classList.toggle("active", t.dataset.side === tab));
     if (tab === "notes") {
       sideContent.innerHTML = renderNotesSideHTML(note);
+    } else if (tab === "cards") {
+      sideContent.innerHTML = renderCardsSideHTML(note);
+      wireCardsSide(sideContent, note);
+    } else if (tab === "media") {
+      sideContent.innerHTML = renderMediaSideHTML(note);
+      wireMediaSide(sideContent, note);
+    } else if (tab === "list") {
+      sideContent.innerHTML = renderNotesListSideHTML(note);
+      wireNotesListSide(sideContent, note, id);
     } else if (tab === "ai") {
       sideContent.innerHTML = renderAISideHTML(note);
       wireAISide(sideContent, note);
@@ -1131,6 +1141,9 @@ function renderNotebookWideHTML(note, pages) {
           <button class="side-collapse-btn" id="side-collapse" aria-label="Toggle panel">${i18n.t("notes.collapse") || "Hide"}</button>
           <div class="side-tabs">
             <button class="side-tab active" data-side="notes">📝 ${i18n.t("notes.body") || "Note"}</button>
+            <button class="side-tab" data-side="cards">🎴 ${i18n.t("notes.cards") || "Cards"}</button>
+            <button class="side-tab" data-side="media">📎 ${i18n.t("notes.media") || "Media"}</button>
+            <button class="side-tab" data-side="list">📚 ${i18n.t("notes.list") || "All"}</button>
             <button class="side-tab" data-side="ai">✦ AI</button>
           </div>
           <div class="side-content" id="side-content"></div>
@@ -1197,6 +1210,263 @@ function renderNotesSideHTML(note) {
       <pre class="side-note-body">${escapeHtml(note.body || "(empty)")}</pre>
     </div>
   `;
+}
+
+/**
+ * renderCardsSideHTML — flashcards tied to this note.
+ * Shows existing cards + "Add card" form (front/back).
+ * Exported for tests (v2.6.0).
+ */
+export function renderCardsSideHTML(note, preloaded) {
+  const cards = preloaded?.cards;
+  let listInner;
+  if (preloaded && Array.isArray(cards)) {
+    if (cards.length === 0) {
+      listInner = `<div class="muted small">${i18n.t("notes.noCards") || "No cards yet for this note."}</div>`;
+    } else {
+      listInner = cards.map(c => `
+        <div class="card-row">
+          <div class="card-row-text">
+            <div class="card-row-front">${escapeHtml(c.front || c.text || "")}</div>
+            <div class="card-row-back">${escapeHtml(c.back || "")}</div>
+          </div>
+          <span class="card-row-state" data-state="${escapeHtml(c.state || "new")}">${escapeHtml(c.state || "new")}</span>
+        </div>
+      `).join("");
+    }
+  } else {
+    listInner = `<div class="muted small">${i18n.t("common.loading") || "Loading…"}</div>`;
+  }
+  return `
+    <div class="side-cards-panel">
+      <div class="muted small" style="margin-bottom: var(--s-2)">${i18n.t("notes.cardsOf", { title: escapeHtml(note.title) })}</div>
+      <div id="cards-list" class="cards-list">${listInner}</div>
+      <details class="card-add-form">
+        <summary>+ ${i18n.t("notes.newCard") || "New card"}</summary>
+        <div class="card-form-body">
+          <input class="input small" id="card-front" placeholder="${i18n.t("notes.cardFront") || "Front (question)"}" />
+          <textarea class="input small" id="card-back" rows="2" placeholder="${i18n.t("notes.cardBack") || "Back (answer)"}"></textarea>
+          <button class="btn primary small" id="card-save">${i18n.t("common.save")}</button>
+        </div>
+      </details>
+    </div>
+  `;
+}
+
+async function wireCardsSide(root, note) {
+  const list = root.querySelector("#cards-list");
+  try {
+    const data = await api.flashcards.filter(note.id);
+    const cards = data.cards || data.flashcards || [];
+    if (cards.length === 0) {
+      list.innerHTML = `<div class="muted small">${i18n.t("notes.noCards") || "No cards yet for this note."}</div>`;
+    } else {
+      list.innerHTML = cards.map(c => `
+        <div class="card-row">
+          <div class="card-row-text">
+            <div class="card-row-front">${escapeHtml(c.front || c.text || "")}</div>
+            <div class="card-row-back">${escapeHtml(c.back || "")}</div>
+          </div>
+          <span class="card-row-state" data-state="${c.state || "new"}">${escapeHtml(c.state || "new")}</span>
+        </div>
+      `).join("");
+    }
+  } catch (e) {
+    list.innerHTML = `<div class="muted small">${i18n.t("notes.cardsError") || "Error loading cards."}</div>`;
+  }
+  // Save handler
+  const saveBtn = root.querySelector("#card-save");
+  if (saveBtn) {
+    saveBtn.addEventListener("click", async () => {
+      const front = root.querySelector("#card-front").value.trim();
+      const back = root.querySelector("#card-back").value.trim();
+      if (!front) return;
+      saveBtn.disabled = true;
+      try {
+        await api.flashcards.create({ front, back, sourceNoteId: note.id, subject: note.subject || "" });
+        root.querySelector("#card-front").value = "";
+        root.querySelector("#card-back").value = "";
+        await wireCardsSide(root, note); // refresh list
+      } catch (e) {
+        alert("Error: " + (e.message || "could not save card"));
+      } finally {
+        saveBtn.disabled = false;
+      }
+    });
+  }
+}
+
+/**
+ * renderMediaSideHTML — attachments (images/PDFs/3D models) of this note + other notes.
+ * Lets the user quickly preview or switch context to another note's media.
+ * Exported for tests (v2.6.0).
+ */
+export function renderMediaSideHTML(note, preloaded) {
+  const atts = preloaded?.attachments;
+  const others = preloaded?.otherNotes || [];
+  let attsInner;
+  if (Array.isArray(atts)) {
+    if (atts.length === 0) {
+      attsInner = `<div class="muted small">${i18n.t("notes.noAttachments") || "No attachments."} ${i18n.t("notes.useAttachBar") || "Use the attach bar."}</div>`;
+    } else {
+      attsInner = atts.map(a => `
+        <div class="media-card" data-name="${escapeHtml(a.name)}" data-type="${escapeHtml(a.type)}">
+          <div class="media-card-thumb">${a.type === "pdf" ? "📄" : a.type === "image" ? "🖼️" : "📎"}</div>
+          <div class="media-card-title">${escapeHtml(a.name)}</div>
+        </div>
+      `).join("");
+    }
+  } else {
+    attsInner = `<div class="muted small">${i18n.t("common.loading") || "Loading…"}</div>`;
+  }
+  const othersInner = others.length === 0
+    ? `<div class="muted small">${i18n.t("notes.noOtherWithAttachments") || "No other notes have attachments yet."}</div>`
+    : others.map(o => `
+        <a class="media-other-note" href="#/notes?id=${escapeHtml(o.id)}">
+          <span>📝</span>
+          <span>${escapeHtml(o.title || "Untitled")}</span>
+          <span class="notes-list-subject">${escapeHtml(o.subject || "")}</span>
+        </a>
+      `).join("");
+  return `
+    <div class="side-media-panel">
+      <div class="muted small" style="margin-bottom: var(--s-2)">${i18n.t("notes.attachmentsOf", { title: escapeHtml(note.title) })}</div>
+      <div id="media-list" class="media-grid">${attsInner}</div>
+      <div class="muted small" style="margin-top: var(--s-4); margin-bottom: var(--s-2)">${i18n.t("notes.otherNotes") || "Other notes"}</div>
+      <div id="media-other">${othersInner}</div>
+    </div>
+  `;
+}
+
+async function wireMediaSide(root, note) {
+  const list = root.querySelector("#media-list");
+  try {
+    const raw = localStorage.getItem("mnexus.attachments.v1");
+    const map = raw ? JSON.parse(raw) : {};
+    const attachments = map[note.id] || [];
+    if (attachments.length === 0) {
+      list.innerHTML = `<div class="muted small">${i18n.t("notes.noAttachments") || "No attachments. Use the Attach bar to add images, PDFs, or 3D models."}</div>`;
+    } else {
+      list.innerHTML = attachments.map(a => {
+        const icon = a.kind === "image" ? "🖼" : a.kind === "pdf" ? "📄" : a.kind === "glb" ? "🧊" : "📎";
+        return `<div class="media-card" data-att-id="${a.id}" data-kind="${a.kind}">
+          <div class="media-card-thumb">${icon}</div>
+          <div class="media-card-title">${escapeHtml(a.title || a.kind)}</div>
+        </div>`;
+      }).join("");
+      // Click to open attachment viewer
+      list.querySelectorAll(".media-card").forEach((el) => {
+        el.addEventListener("click", () => {
+          const attId = el.dataset.attId;
+          const att = attachments.find(a => a.id === attId);
+          if (att) openAttachmentInPanel(att, root);
+        });
+      });
+    }
+  } catch (e) {
+    list.innerHTML = `<div class="muted small">${i18n.t("notes.mediaError") || "Error loading attachments."}</div>`;
+  }
+  // List other notes with attachments (so user can switch context)
+  const other = root.querySelector("#media-other");
+  try {
+    const allNotes = await dataSource.notes.list();
+    const otherWithAtt = allNotes.filter(n => {
+      if (n.id === note.id) return false;
+      const att = (JSON.parse(localStorage.getItem("mnexus.attachments.v1") || "{}"))[n.id] || [];
+      return att.length > 0;
+    });
+    if (otherWithAtt.length === 0) {
+      other.innerHTML = `<div class="muted small">${i18n.t("notes.noOtherWithAttachments") || "No other notes have attachments yet."}</div>`;
+    } else {
+      other.innerHTML = otherWithAtt.slice(0, 5).map(n => `
+        <a class="media-other-note" href="#/notes?id=${encodeURIComponent(n.id)}">
+          <span class="media-other-icon">📎</span>
+          <span class="media-other-title">${escapeHtml(n.title || "Untitled")}</span>
+        </a>
+      `).join("");
+    }
+  } catch {}
+}
+
+function openAttachmentInPanel(att, root) {
+  const list = root.querySelector("#media-list");
+  if (!list) return;
+  const viewer = document.createElement("div");
+  viewer.className = "media-viewer";
+  if (att.kind === "image") {
+    viewer.innerHTML = `<img src="${att.dataUrl}" alt="${escapeHtml(att.title || "")}" />`;
+  } else if (att.kind === "pdf") {
+    viewer.innerHTML = `<iframe src="${att.dataUrl}" title="${escapeHtml(att.title || "")}"></iframe>`;
+  } else {
+    viewer.innerHTML = `<div class="muted">Preview not available for ${att.kind}</div>`;
+  }
+  const closeBtn = document.createElement("button");
+  closeBtn.className = "media-viewer-close";
+  closeBtn.textContent = "✕";
+  closeBtn.addEventListener("click", () => viewer.remove());
+  viewer.appendChild(closeBtn);
+  // Replace the list with the viewer temporarily
+  list.replaceWith(viewer);
+  // Restore button
+  const back = document.createElement("button");
+  back.className = "btn ghost small";
+  back.textContent = "← Back to list";
+  back.addEventListener("click", () => wireMediaSide(root, currentNote));
+  viewer.appendChild(back);
+}
+
+/**
+ * renderNotesListSideHTML — list of all notes. Click to switch context.
+ * Exported for tests (v2.6.0).
+ */
+export function renderNotesListSideHTML(note, preloaded) {
+  const all = preloaded?.notes;
+  let resultsInner;
+  if (Array.isArray(all)) {
+    if (all.length === 0) {
+      resultsInner = `<div class="muted small">${i18n.t("common.noResults") || "No notes found."}</div>`;
+    } else {
+      resultsInner = all.slice(0, 30).map(n => `
+        <a class="notes-list-item ${n.id === (preloaded?.currentId || note.id) ? "active" : ""}" href="#/notes?id=${encodeURIComponent(n.id)}">
+          <span>${escapeHtml(n.title || "Untitled")}</span>
+          <span class="notes-list-subject">${escapeHtml(n.subject || "")}</span>
+        </a>
+      `).join("");
+    }
+  } else {
+    resultsInner = `<div class="muted small">${i18n.t("common.loading") || "Loading…"}</div>`;
+  }
+  return `
+    <div class="side-notes-list-panel">
+      <div class="muted small" style="margin-bottom: var(--s-2)">${i18n.t("notes.allNotes") || "All notes"}</div>
+      <input class="input small" id="notes-list-search" placeholder="${i18n.t("common.search")}" />
+      <div id="notes-list-results" class="notes-list-results">${resultsInner}</div>
+    </div>
+  `;
+}
+
+async function wireNotesListSide(root, currentNote, currentId) {
+  const results = root.querySelector("#notes-list-results");
+  const search = root.querySelector("#notes-list-search");
+  const renderList = async (filter = "") => {
+    const all = await dataSource.notes.list();
+    const f = filter.toLowerCase().trim();
+    const filtered = f ? all.filter(n => (n.title || "").toLowerCase().includes(f)) : all;
+    if (filtered.length === 0) {
+      results.innerHTML = `<div class="muted small">${i18n.t("common.noResults") || "No notes found."}</div>`;
+      return;
+    }
+    results.innerHTML = filtered.slice(0, 30).map(n => `
+      <a class="notes-list-item ${n.id === currentId ? "active" : ""}" href="#/notes?id=${encodeURIComponent(n.id)}">
+        <span class="notes-list-title">${escapeHtml(n.title || "Untitled")}</span>
+        ${n.subject ? `<span class="notes-list-subject">${escapeHtml(n.subject)}</span>` : ""}
+      </a>
+    `).join("");
+  };
+  renderList();
+  if (search) {
+    search.addEventListener("input", () => renderList(search.value));
+  }
 }
 
 function renderAISideHTML(note) {

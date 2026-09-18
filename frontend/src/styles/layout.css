@@ -77,14 +77,21 @@
   transition: transform var(--dur) var(--ease), opacity var(--dur) var(--ease);
 }
 
-/* v2.4.0: dock collapsed state (hidden, replaced by dock-expand button) */
+/* v2.4.0 + v2.6.0: dock collapsed state (hidden, replaced by dock-expand button).
+   Uses opacity + visibility for smooth transition while keeping layout space. */
 body.dock-collapsed .dock {
-  transform: translateX(-50%) translateY(calc(100% + 24px));
-  opacity: 0;
-  pointer-events: none;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  transform: translateX(-50%) translateY(20px) !important;
+  pointer-events: none !important;
+  transition: opacity 0.2s var(--ease), transform 0.2s var(--ease), visibility 0s 0.2s;
+}
+.dock {
+  transition: opacity 0.2s var(--ease), transform 0.2s var(--ease);
 }
 
-/* v2.4.0: hamburger button to re-expand the dock */
+/* v2.4.0 + v2.6.0: hamburger button to re-expand the dock.
+   Shown when collapsed, hidden by default. */
 .dock-expand {
   position: fixed;
   bottom: calc(var(--safe-bottom) + 12px);
@@ -96,7 +103,7 @@ body.dock-collapsed .dock {
   border: 1px solid var(--border);
   color: var(--fg);
   cursor: pointer;
-  display: inline-flex;
+  display: none;
   align-items: center;
   justify-content: center;
   z-index: 100;
@@ -104,7 +111,7 @@ body.dock-collapsed .dock {
   transition: background 150ms var(--ease);
 }
 .dock-expand:hover { background: var(--bg-sunken); }
-body:not(.dock-collapsed) .dock-expand { display: none; }
+body.dock-collapsed .dock-expand { display: inline-flex; }
 
 .dock-item {
   display: flex;
@@ -173,7 +180,7 @@ body:not(.dock-collapsed) .dock-expand { display: none; }
   .hamburger { display: none; }
 }
 
-/* v1.5.x: hamburger (mobile only) */
+/* v1.5.x: hamburger (mobile only, optional drawer trigger) */
 .hamburger {
   display: none;
   position: fixed;
@@ -188,9 +195,31 @@ body:not(.dock-collapsed) .dock-expand { display: none; }
   z-index: 95;
   box-shadow: var(--shadow-1);
 }
+/* v2.6.0: dock is now ALWAYS visible — adapts to viewport by hiding labels on small screens */
 @media (max-width: 720px) {
   .hamburger { display: inline-flex; align-items: center; justify-content: center; }
-  .dock { display: none !important; }
+  .dock {
+    /* Icon-only dock on mobile */
+    padding: 4px;
+    gap: 2px;
+    bottom: calc(var(--safe-bottom) + 6px);
+    /* Reduce min-width so it fits on tiny screens (360px wide) */
+    min-width: auto;
+    max-width: calc(100vw - 24px);
+  }
+  .dock-item {
+    padding: 8px 6px;
+    gap: 0;
+  }
+  .dock-item .lbl { display: none; } /* hide labels */
+  .dock-item .i svg { width: 20px; height: 20px; }
+}
+
+/* Extra-compact dock on phones narrower than 380px */
+@media (max-width: 380px) {
+  .dock { gap: 0; padding: 3px; bottom: calc(var(--safe-bottom) + 4px); }
+  .dock-item { padding: 7px 4px; }
+  .dock-item .i svg { width: 18px; height: 18px; }
 }
 /* v1.8.2: tighter top-bar spacing on small screens */
 @media (max-width: 480px) {
