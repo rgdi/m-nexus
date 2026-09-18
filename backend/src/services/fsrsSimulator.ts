@@ -42,6 +42,8 @@ export interface SimConfig {
   maxNewPerDay?: number;
   /** Simulated retention rate for unguided days (0-1) */
   defaultRetention?: number;
+  /** v2.10.0: optional seed for deterministic simulation (mulberry32 PRNG). */
+  seed?: number;
 }
 
 export interface SimDayResult {
@@ -68,6 +70,24 @@ export function simulate(config: SimConfig): SimResult {
         enable_short_term: true,
       }))
     : fsrs();
+
+  // v2.10.0: deterministic mode — seeded RNG for reproducible results.
+  // When seed is provided, Math.random is replaced by a mulberry32 PRNG.
+  // Default (seed=undefined) keeps non-deterministic behavior for casual use.
+  const seed = config.seed;
+  let rng: () => number;
+  if (typeof seed === "number") {
+    let s = seed >>> 0;
+    rng = () => {
+      s |= 0;
+      s = (s + 0x6D2B79F5) | 0;
+      let t = Math.imul(s ^ (s >>> 15), 1 | s);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  } else {
+    rng = Math.random;
+  }
 
   const startDate = new Date();
   const maxDaily = config.maxDailyReviews ?? 50;
@@ -111,7 +131,7 @@ export function simulate(config: SimConfig): SimResult {
         const idx = d * maxNew + i;
         if (states[idx].state === 0 && !states[idx].last_review) {
           // First review: pass = state 1 (Learning→Review), fail = state 3 (Relearning)
-          const grade = Math.random() < defaultRetention ? Rating.Good : Rating.Again;
+          const grade = rng() < defaultRetention ? Rating.Good : Rating.Again;
           const result = f.next(states[idx], dayDate, grade);
           states[idx] = result.card;
           newCount++;
@@ -136,7 +156,7 @@ export function simulate(config: SimConfig): SimResult {
       if (forcedReviews[cardId] !== undefined) {
         grade = forcedReviews[cardId];
       } else {
-        grade = Math.random() < defaultRetention ? Rating.Good : Rating.Again;
+        grade = rng() < defaultRetention ? Rating.Good : Rating.Again;
       }
       const result = f.next(states[idx], dayDate, grade);
       states[idx] = result.card;

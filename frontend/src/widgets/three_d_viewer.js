@@ -171,7 +171,43 @@ export async function open3DViewer(rootOrOpts, hotspotsArg, modelType = "bone") 
 
   // Modelo: primitiva (sin assets externos)
   let model;
-  if (modelType === "cube") {
+  // v2.10.0: support GLB/GLTF loading via modelUrl.
+  // Falls back to procedural geometry if no URL provided.
+  if (modelType && typeof modelType === "object" && modelType.url) {
+    try {
+      const { GLTFLoader } = await import(
+        "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/loaders/GLTFLoader.js"
+      ).catch(() => ({}));
+      if (GLTFLoader && GLTFLoader.GLTFLoader) {
+        const loader = new GLTFLoader.GLTFLoader();
+        const gltf = await new Promise((resolve, reject) => {
+          loader.load(
+            modelType.url,
+            (g) => resolve(g),
+            undefined,
+            (e) => reject(e),
+          );
+        });
+        model = gltf.scene;
+        // Auto-center & scale
+        const box = new THREE.Box3().setFromObject(model);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z) || 1;
+        const scale = 2.5 / maxDim;
+        model.scale.setScalar(scale);
+        model.position.sub(center.multiplyScalar(scale));
+      } else {
+        throw new Error("GLTFLoader not available");
+      }
+    } catch (e) {
+      console.warn("[3d] GLB load failed, falling back to procedural:", e?.message || e);
+      model = new THREE.Mesh(
+        new THREE.BoxGeometry(2, 2, 2),
+        new THREE.MeshPhongMaterial({ color: 0xef4444, shininess: 80 }),
+      );
+    }
+  } else if (modelType === "cube") {
     model = new THREE.Mesh(
       new THREE.BoxGeometry(2, 2, 2),
       new THREE.MeshPhongMaterial({ color: 0x8c5cf6, shininess: 80 }),
@@ -181,6 +217,35 @@ export async function open3DViewer(rootOrOpts, hotspotsArg, modelType = "bone") 
       new THREE.SphereGeometry(1.5, 64, 64),
       new THREE.MeshPhongMaterial({ color: 0x56c4e6, shininess: 100 }),
     );
+  } else if (typeof modelType === "string" && modelType.endsWith(".glb")) {
+    // Legacy: modelType passed as URL string
+    try {
+      const { GLTFLoader } = await import(
+        "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/loaders/GLTFLoader.js"
+      ).catch(() => ({}));
+      if (GLTFLoader && GLTFLoader.GLTFLoader) {
+        const loader = new GLTFLoader.GLTFLoader();
+        const gltf = await new Promise((resolve, reject) => {
+          loader.load(modelType, resolve, undefined, reject);
+        });
+        model = gltf.scene;
+        const box = new THREE.Box3().setFromObject(model);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z) || 1;
+        const scale = 2.5 / maxDim;
+        model.scale.setScalar(scale);
+        model.position.sub(center.multiplyScalar(scale));
+      } else {
+        throw new Error("GLTFLoader not available");
+      }
+    } catch (e) {
+      console.warn("[3d] GLB load failed, falling back:", e?.message || e);
+      model = new THREE.Mesh(
+        new THREE.BoxGeometry(2, 2, 2),
+        new THREE.MeshPhongMaterial({ color: 0xef4444, shininess: 80 }),
+      );
+    }
   } else {
     // "bone" — cilindro estilizado
     model = new THREE.Mesh(

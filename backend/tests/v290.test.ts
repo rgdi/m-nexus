@@ -173,25 +173,25 @@ describe("fsrsSimulator.simulate (v2.9.0)", () => {
 });
 
 describe("imageOcclusion CRUD (regression)", () => {
-  it("create + add mask + remove", () => {
-    const c = occlusion.createOcclusionCard({ imageUrl: "/x.png", topicId: "v290-test1" });
+  it("create + add mask + remove", async () => {
+    const c = await await occlusion.createOcclusionCard({ imageUrl: "/x.png", topicId: "v290-test1" });
     expect(c.masks.length).toBe(0);
-    const u1 = occlusion.addOcclusionMask(c.id, { x: 0.1, y: 0.2, width: 0.3, height: 0.4, label: "A" });
+    const u1 = await occlusion.addOcclusionMask(c.id, { x: 0.1, y: 0.2, width: 0.3, height: 0.4, label: "A" });
     expect(u1!.masks.length).toBe(1);
-    const u2 = occlusion.addOcclusionMask(c.id, { x: 0.5, y: 0.5, width: 0.2, height: 0.2, label: "B" });
+    const u2 = await occlusion.addOcclusionMask(c.id, { x: 0.5, y: 0.5, width: 0.2, height: 0.2, label: "B" });
     expect(u2!.masks.length).toBe(2);
     expect(u2!.masks[1].label).toBe("B");
-    const ok = occlusion.removeOcclusionMask(c.id, 0);
+    const ok = await occlusion.removeOcclusionMask(c.id, 0);
     expect(ok).toBe(true);
-    const after = occlusion.getOcclusionCard(c.id);
+    const after = await occlusion.getOcclusionCard(c.id);
     expect(after!.masks.length).toBe(1);
     expect(after!.masks[0].label).toBe("B");
   });
 
-  it("listOcclusionCards filters by topic", () => {
-    occlusion.createOcclusionCard({ imageUrl: "/a.png", topicId: "v290-anatomy" });
-    occlusion.createOcclusionCard({ imageUrl: "/b.png", topicId: "v290-physiology" });
-    const a = occlusion.listOcclusionCards("v290-anatomy");
+  it("listOcclusionCards filters by topic", async () => {
+    await occlusion.createOcclusionCard({ imageUrl: "/a.png", topicId: "v290-anatomy" });
+    await occlusion.createOcclusionCard({ imageUrl: "/b.png", topicId: "v290-physiology" });
+    const a = await occlusion.listOcclusionCards("v290-anatomy");
     expect(a.every((c) => c.topicId === "v290-anatomy")).toBe(true);
   });
 });

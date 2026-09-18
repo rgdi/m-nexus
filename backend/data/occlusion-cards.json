@@ -1,0 +1,27 @@
+[
+  {
+    "id": "occ-1789768520804-1",
+    "topicId": "anatomy",
+    "imageUrl": "/humerus.png",
+    "imageBase64": null,
+    "masks": [
+      {
+        "id": 0,
+        "x": 0.1,
+        "y": 0.2,
+        "width": 0.3,
+        "height": 0.1,
+        "label": "Troquiter"
+      },
+      {
+        "id": 1,
+        "x": 0.4,
+        "y": 0.5,
+        "width": 0.2,
+        "height": 0.2,
+        "label": "Epicóndilo medial"
+      }
+    ],
+    "createdAt": 1789768520804
+  }
+]

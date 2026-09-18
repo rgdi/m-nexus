@@ -1,35 +1,41 @@
 [
   {
-    "topicId": "humerus",
+    "topicId": "anatomy",
+    "kind": "cloze",
+    "payload": {
+      "front": "troquiter",
+      "back": "tubérculo mayor",
+      "subject": "anatomy"
+    },
+    "preview": "troquiter",
+    "answer": "tubérculo mayor",
+    "confidence": 0.95,
+    "id": "cand-1789768509999-oyxm40",
+    "createdAt": 1789768509999,
+    "status": "approved",
+    "decidedAt": 1789768510018
+  },
+  {
+    "topicId": "anatomy",
     "kind": "cloze",
     "payload": {},
-    "preview": "Troquiter inserta supraespinoso",
-    "answer": "supraespinoso",
-    "confidence": 0.92,
-    "id": "cand-1789764856529-5t7irj",
-    "createdAt": 1789764856529,
+    "preview": "Fémur: cabeza se articula con...",
+    "answer": "acetábulo",
+    "confidence": 0.94,
+    "id": "cand-1789768558393-4fps7b",
+    "createdAt": 1789768558393,
     "status": "pending"
   },
   {
-    "topicId": "humerus",
+    "topicId": "anatomy",
     "kind": "flashcard",
     "payload": {},
-    "preview": "¿Qué hueso se articula con la glenoidea?",
-    "answer": "Cabeza humeral",
-    "confidence": 0.88,
-    "id": "cand-1789764856532-qy0pz5",
-    "createdAt": 1789764856532,
-    "status": "pending"
-  },
-  {
-    "topicId": "humerus",
-    "kind": "occlusion",
-    "payload": {},
-    "preview": "3 masked regions on humerus diagram",
-    "answer": "Troquiter · Troquín · Corredera",
-    "confidence": 0.81,
-    "id": "cand-1789764856535-wgdfj5",
-    "createdAt": 1789764856535,
-    "status": "pending"
+    "preview": "¿Qué nervio pasa por el surco del nervio radial?",
+    "answer": "Nervio radial",
+    "confidence": 0.89,
+    "id": "cand-1789768558397-ix2imy",
+    "createdAt": 1789768558397,
+    "status": "approved",
+    "decidedAt": 1789768561079
   }
 ]

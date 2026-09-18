@@ -27,7 +27,7 @@ export const occlusionRoutes: FastifyPluginAsync = async (app) => {
       reply.code(400);
       throw E.MISSING_FIELD("topicId required");
     }
-    const card = createOcclusionCard({
+    const card = await createOcclusionCard({
       imageUrl: body.imageUrl,
       imageBase64: body.imageBase64,
       topicId: body.topicId,
@@ -39,12 +39,12 @@ export const occlusionRoutes: FastifyPluginAsync = async (app) => {
 
   app.get("/occlusion/cards", async (req) => {
     const topicId = (req.query as any)?.topicId;
-    const cards = listOcclusionCards(topicId);
+    const cards = await listOcclusionCards(topicId);
     return { cards };
   });
 
   app.get<{ Params: { id: string } }>("/occlusion/card/:id", async (req, reply) => {
-    const card = getOcclusionCard(req.params.id);
+    const card = await getOcclusionCard(req.params.id);
     if (!card) {
       reply.code(404);
       throw E.NOT_FOUND("Card not found");
@@ -54,7 +54,7 @@ export const occlusionRoutes: FastifyPluginAsync = async (app) => {
 
   app.post<{ Params: { id: string } }>("/occlusion/card/:id/mask", async (req, reply) => {
     const body = (req.body as any) || {};
-    const updated = addOcclusionMask(req.params.id, {
+    const updated = await addOcclusionMask(req.params.id, {
       x: body.x,
       y: body.y,
       width: body.width,
@@ -69,7 +69,7 @@ export const occlusionRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.delete<{ Params: { id: string; maskId: string } }>("/occlusion/card/:id/mask/:maskId", async (req, reply) => {
-    const ok = removeOcclusionMask(req.params.id, Number(req.params.maskId));
+    const ok = await removeOcclusionMask(req.params.id, Number(req.params.maskId));
     return { ok };
   });
 };

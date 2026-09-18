@@ -84,16 +84,78 @@ export const studyPlannerRoutes: FastifyPluginAsync = async (app) => {
   });
 
   // AI candidates: approve or reject
-  app.post("/study/generation/decide", async (req) => {
+  app.post("/study/generation/decide", async (req, reply) => {
     const body = (req.body as any) || {};
     if (!body.id || !body.status) {
-      return { ok: false, error: "id and status required" };
+      return reply.code(400).send({ ok: false, error: "id and status required" });
     }
     const updated = await decide(body.id, body.status, body.reason);
     if (!updated) {
-      return { ok: false, error: "candidate not found" };
+      return reply.code(404).send({ ok: false, error: "candidate not found" });
     }
-    return { ok: true, candidate: updated };
+    // v2.10.0: when status === "approved" and kind is "cloze" or "flashcard",
+    // auto-create the flashcard via the flashcards service so the 1-click
+    // approval is enough — no manual second step.
+    let createdFlashcard = null;
+    if (updated.status === "approved" && (updated.kind === "cloze" || updated.kind === "flashcard")) {
+      try {
+        const svc = await import("./flashcards.js").catch(() => null as any);
+        if (svc && typeof svc.flashcardsRoutes === "function") {
+          // Use the flashcard service's all() + create() helpers if exposed.
+          // Otherwise fall back to direct file write below.
+          const { createFlashcard } = await import("../services/flashcards.js").catch(() => ({} as any));
+          if (typeof createFlashcard === "function") {
+            const payload = (updated.payload || {}) as any;
+            const card = await createFlashcard({
+              front: updated.preview || payload.front,
+              back: updated.answer || payload.back,
+              subject: payload.subject || updated.topicId,
+              tags: payload.tags || [updated.kind],
+              sourceNoteId: updated.sourceNoteId,
+              sourceExcerpt: (updated.preview || "").slice(0, 80),
+            });
+            createdFlashcard = card;
+          }
+        }
+      } catch (e) {
+        console.warn("[decide] flashcard create failed:", e);
+      }
+      // Fallback: write directly to data/flashcards.json (mirrors svc.create behavior).
+      if (!createdFlashcard) {
+        try {
+          const fs = await import("node:fs/promises");
+          const path = await import("node:path");
+          const fp = path.resolve(process.cwd(), "data", "flashcards.json");
+          const raw = await fs.readFile(fp, "utf-8").catch(() => "[]");
+          const list = JSON.parse(raw);
+          const id = "fc-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+          const payload = (updated.payload || {}) as any;
+          const card = {
+            id,
+            front: updated.preview || payload.front,
+            back: updated.answer || payload.back,
+            subject: payload.subject || updated.topicId,
+            tags: payload.tags || [updated.kind],
+            sourceNoteId: updated.sourceNoteId,
+            sourceExcerpt: (updated.preview || "").slice(0, 80),
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+            state: "new",
+            stability: 1,
+            difficulty: 5,
+            due: Date.now(),
+            reps: 0,
+            lapses: 0,
+          };
+          list.push(card);
+          await fs.writeFile(fp, JSON.stringify(list, null, 2));
+          createdFlashcard = card;
+        } catch (e) {
+          console.warn("[decide] flashcard fallback failed:", e);
+        }
+      }
+    }
+    return { ok: true, candidate: updated, flashcard: createdFlashcard };
   });
 
   // AI candidates: add a new one (used by AI integration or test)

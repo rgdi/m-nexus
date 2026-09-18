@@ -211,21 +211,67 @@ export class ImageOcclusionService {
   }
 }
 
-// v2.8.0: in-memory CRUD (single-user local app, no DB needed for now)
-const _cards = new Map<string, any>();
+// v2.10.0: file-backed Map (mirrors generationApprovals.ts pattern).
+// Persists to data/occlusion-cards.json. Survives server restarts.
+import fs from "node:fs/promises";
+import path from "node:path";
+
+const DATA_DIR = path.resolve(process.cwd(), "data");
+const FILE_PATH = path.join(DATA_DIR, "occlusion-cards.json");
+
+let _cards: Map<string, any> | null = null;
 let _nextId = 1;
+let writeTimer: NodeJS.Timeout | null = null;
+
+async function load(): Promise<Map<string, any>> {
+  if (_cards) return _cards;
+  _cards = new Map();
+  try {
+    const raw = await fs.readFile(FILE_PATH, "utf-8");
+    const arr = JSON.parse(raw) as any[];
+    for (const c of arr) {
+      _cards.set(c.id, c);
+      // Keep _nextId past any existing counter
+      const m = /occ-\d+-(\w+)/.exec(c.id);
+      if (m) _nextId = Math.max(_nextId, parseInt(m[1], 36) + 1);
+    }
+  } catch (e: any) {
+    if (e.code !== "ENOENT") console.warn("[occlusion] load failed:", e.message);
+    await save();
+  }
+  return _cards;
+}
+
+async function save(): Promise<void> {
+  try {
+    await fs.mkdir(DATA_DIR, { recursive: true });
+    const arr = Array.from((_cards ?? new Map()).values());
+    await fs.writeFile(FILE_PATH, JSON.stringify(arr, null, 2), "utf-8");
+  } catch (e: any) {
+    console.warn("[occlusion] save failed:", e.message);
+  }
+}
+
+function scheduleSave() {
+  if (writeTimer) return;
+  writeTimer = setTimeout(() => {
+    writeTimer = null;
+    save().catch(() => {});
+  }, 200);
+}
 
 function genId() {
   return "occ-" + Date.now() + "-" + (_nextId++).toString(36);
 }
 
-export function createOcclusionCard(input: {
+export async function createOcclusionCard(input: {
   imageUrl?: string;
   imageBase64?: string;
   topicId: string;
   sourceNoteId?: string;
   masks?: Array<{ x: number; y: number; width: number; height: number; label: string }>;
 }) {
+  const map = await load();
   const id = genId();
   const card = {
     id,
@@ -236,32 +282,39 @@ export function createOcclusionCard(input: {
     masks: (input.masks || []).map((m, i) => ({ id: i, ...m })),
     createdAt: Date.now(),
   };
-  _cards.set(id, card);
+  map.set(id, card);
+  scheduleSave();
   return card;
 }
 
-export function getOcclusionCard(id: string) {
-  return _cards.get(id) || null;
+export async function getOcclusionCard(id: string) {
+  const map = await load();
+  return map.get(id) || null;
 }
 
-export function addOcclusionMask(id: string, mask: { x: number; y: number; width: number; height: number; label: string }) {
-  const card = _cards.get(id);
+export async function addOcclusionMask(id: string, mask: { x: number; y: number; width: number; height: number; label: string }) {
+  const map = await load();
+  const card = map.get(id);
   if (!card) return null;
   const nextId = card.masks.length === 0 ? 0 : Math.max(...card.masks.map((m: any) => m.id)) + 1;
   card.masks.push({ id: nextId, ...mask });
+  scheduleSave();
   return card;
 }
 
-export function removeOcclusionMask(id: string, maskId: number) {
-  const card = _cards.get(id);
+export async function removeOcclusionMask(id: string, maskId: number) {
+  const map = await load();
+  const card = map.get(id);
   if (!card) return false;
   const before = card.masks.length;
   card.masks = card.masks.filter((m: any) => m.id !== maskId);
+  scheduleSave();
   return card.masks.length < before;
 }
 
-export function listOcclusionCards(topicId?: string) {
-  let out = Array.from(_cards.values());
+export async function listOcclusionCards(topicId?: string) {
+  const map = await load();
+  let out = Array.from(map.values());
   if (topicId) out = out.filter((c) => c.topicId === topicId);
   return out;
 }

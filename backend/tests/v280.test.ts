@@ -211,51 +211,51 @@ describe("generationApprovals queue", () => {
 });
 
 describe("imageOcclusion CRUD", () => {
-  it("createOcclusionCard with empty masks", () => {
-    const c = createOcclusionCard({ imageUrl: "/x.png", topicId: "t1" });
+  it("createOcclusionCard with empty masks", async () => {
+    const c = await createOcclusionCard({ imageUrl: "/x.png", topicId: "t1" });
     expect(c.id).toBeTruthy();
     expect(c.masks).toEqual([]);
   });
 
-  it("addOcclusionMask appends to card", () => {
-    const c = createOcclusionCard({ imageUrl: "/x.png", topicId: "t1" });
-    const updated = addOcclusionMask(c.id, { x: 10, y: 20, width: 100, height: 50, label: "Riñón" });
+  it("addOcclusionMask appends to card", async () => {
+    const c = await createOcclusionCard({ imageUrl: "/x.png", topicId: "t1" });
+    const updated = await addOcclusionMask(c.id, { x: 10, y: 20, width: 100, height: 50, label: "Riñón" });
     expect(updated).toBeTruthy();
     expect(updated!.masks.length).toBe(1);
     expect(updated!.masks[0].label).toBe("Riñón");
     expect(updated!.masks[0].id).toBe(0);
   });
 
-  it("addOcclusionMask assigns incremental ids", () => {
-    const c = createOcclusionCard({ imageUrl: "/x.png", topicId: "t1" });
-    addOcclusionMask(c.id, { x: 0, y: 0, width: 10, height: 10, label: "a" });
-    const after = addOcclusionMask(c.id, { x: 0, y: 0, width: 10, height: 10, label: "b" });
+  it("addOcclusionMask assigns incremental ids", async () => {
+    const c = await createOcclusionCard({ imageUrl: "/x.png", topicId: "t1" });
+    await addOcclusionMask(c.id, { x: 0, y: 0, width: 10, height: 10, label: "a" });
+    const after = await addOcclusionMask(c.id, { x: 0, y: 0, width: 10, height: 10, label: "b" });
     expect(after!.masks[1].id).toBe(1);
   });
 
-  it("addOcclusionMask returns null for unknown card", () => {
-    expect(addOcclusionMask("missing", { x: 0, y: 0, width: 1, height: 1, label: "x" })).toBeNull();
+  it("addOcclusionMask returns null for unknown card", async () => {
+    expect(await addOcclusionMask("missing", { x: 0, y: 0, width: 1, height: 1, label: "x" })).toBeNull();
   });
 
-  it("removeOcclusionMask filters by id", () => {
-    const c = createOcclusionCard({ imageUrl: "/x.png", topicId: "t1" });
-    addOcclusionMask(c.id, { x: 0, y: 0, width: 10, height: 10, label: "a" });
-    addOcclusionMask(c.id, { x: 0, y: 0, width: 10, height: 10, label: "b" });
-    const ok = removeOcclusionMask(c.id, 0);
+  it("removeOcclusionMask filters by id", async () => {
+    const c = await createOcclusionCard({ imageUrl: "/x.png", topicId: "t1" });
+    await addOcclusionMask(c.id, { x: 0, y: 0, width: 10, height: 10, label: "a" });
+    await addOcclusionMask(c.id, { x: 0, y: 0, width: 10, height: 10, label: "b" });
+    const ok = await removeOcclusionMask(c.id, 0);
     expect(ok).toBe(true);
-    const card = getOcclusionCard(c.id);
+    const card = await getOcclusionCard(c.id);
     expect(card!.masks.length).toBe(1);
     expect(card!.masks[0].label).toBe("b");
   });
 
-  it("removeOcclusionMask returns false for missing card", () => {
-    expect(removeOcclusionMask("missing", 0)).toBe(false);
+  it("removeOcclusionMask returns false for missing card", async () => {
+    expect(await removeOcclusionMask("missing", 0)).toBe(false);
   });
 
-  it("listOcclusionCards filters by topic", () => {
-    createOcclusionCard({ imageUrl: "/x.png", topicId: "anatomy" });
-    createOcclusionCard({ imageUrl: "/y.png", topicId: "physiology" });
-    const anatomy = listOcclusionCards("anatomy");
+  it("listOcclusionCards filters by topic", async () => {
+    await createOcclusionCard({ imageUrl: "/x.png", topicId: "anatomy" });
+    await createOcclusionCard({ imageUrl: "/y.png", topicId: "physiology" });
+    const anatomy = await listOcclusionCards("anatomy");
     expect(anatomy.every((c) => c.topicId === "anatomy")).toBe(true);
   });
 });

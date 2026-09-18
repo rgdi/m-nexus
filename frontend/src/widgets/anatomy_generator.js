@@ -99,15 +99,21 @@ export function generateBoneModel(boneKey) {
  */
 export function openBoneViewer(boneKey, options = {}) {
   const bone = generateBoneModel(boneKey);
+  // v2.10.0: try real .glb from /public/models/ first. Falls back to procedural cylinder.
+  // modelType can be either:
+  //  - string: "cube" | "sphere" | "bone" | ".glb URL"
+  //  - object: { url: ".glb URL" } for explicit GLB loading
+  const modelSpec = options.modelSpec || {
+    url: `/models/${boneKey}.glb`,
+  };
   open3DViewer({
     label: bone.name,
     hotspots: bone.hotspots,
     color: bone.color,
+    modelType: modelSpec,
     onHotspotClick: (h) => {
-      // If we have a noteId, navigate; otherwise show info modal
       if (h.noteAnchor) {
         const [topic, anchor] = h.noteAnchor.split("#");
-        // Attempt to find a note whose title or anchor matches, else show create
         location.hash = `#/notes?topic=${encodeURIComponent(topic)}&anchor=${encodeURIComponent(anchor)}`;
       }
     },

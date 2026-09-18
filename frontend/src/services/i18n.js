@@ -410,3 +410,4 @@ STRINGS["fsrs.results"] = { es: "Resultados", en: "Results", pt: "Resultados" };
 STRINGS["fsrs.retentionCurve"] = { es: "Curva de retención", en: "Retention curve", pt: "Curva de retenção" };
 STRINGS["fsrs.dailyLoad"] = { es: "Carga diaria", en: "Daily load", pt: "Carga diária" };
 STRINGS["fsrs.cardStates"] = { es: "Distribución de estados de cartas", en: "Card states distribution", pt: "Distribuição de estados" };
+STRINGS["fsrs.seed"] = { es: "Semilla (opcional, determinista)", en: "Seed (optional, deterministic)", pt: "Seed (opcional, determinístico)" };

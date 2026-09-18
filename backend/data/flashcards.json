@@ -1,1 +1,38 @@
-[]
+[
+  {
+    "id": "fc-1789768510026-cdnhdp",
+    "front": "troquiter",
+    "back": "tubérculo mayor",
+    "subject": "anatomy",
+    "tags": [
+      "cloze"
+    ],
+    "sourceExcerpt": "troquiter",
+    "createdAt": 1789768510026,
+    "updatedAt": 1789768510026,
+    "state": "new",
+    "stability": 1,
+    "difficulty": 5,
+    "due": 1789768510026,
+    "reps": 0,
+    "lapses": 0
+  },
+  {
+    "id": "fc-1789768561099-293yv9",
+    "front": "¿Qué nervio pasa por el surco del nervio radial?",
+    "back": "Nervio radial",
+    "subject": "anatomy",
+    "tags": [
+      "flashcard"
+    ],
+    "sourceExcerpt": "¿Qué nervio pasa por el surco del nervio radial?",
+    "createdAt": 1789768561099,
+    "updatedAt": 1789768561099,
+    "state": "new",
+    "stability": 1,
+    "difficulty": 5,
+    "due": 1789768561099,
+    "reps": 0,
+    "lapses": 0
+  }
+]

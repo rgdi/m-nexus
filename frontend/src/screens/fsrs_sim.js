@@ -44,6 +44,10 @@ export async function renderFsrsSim(root) {
           <label>${i18n.t("fsrs.initialDiff") || "Initial difficulty (1-10)"}</label>
           <input class="input" id="diff" type="number" value="5" min="1" max="10" />
         </div>
+        <div class="sim-row">
+          <label>${i18n.t("fsrs.seed") || "Seed (optional, deterministic)"}</label>
+          <input class="input" id="seed" type="number" placeholder="e.g. 42" min="0" />
+        </div>
         <button class="btn primary" id="run">${i18n.t("fsrs.run") || "Run simulation →"}</button>
       </div>
 
@@ -58,6 +62,8 @@ export async function renderFsrsSim(root) {
     const maxR = Number(root.querySelector("#maxR").value);
     const ret = Number(root.querySelector("#ret").value) / 100;
     const diff = Number(root.querySelector("#diff").value);
+    const seedRaw = root.querySelector("#seed").value.trim();
+    const seed = seedRaw ? Number(seedRaw) : undefined;
     const out = root.querySelector("#sim-out");
     out.innerHTML = `<div class="card"><p class="muted">${i18n.t("common.loading") || "Running…"}</p></div>`;
 
@@ -72,6 +78,7 @@ export async function renderFsrsSim(root) {
         maxDailyReviews: maxR,
         maxNewPerDay: 10,
         defaultRetention: ret,
+        seed,
         diagnostic: {
           fsrsProfile: {
             initialStability: 1,
