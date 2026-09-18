@@ -12,9 +12,15 @@
 
 const HOTSPOT_STYLE = `
 .three-d-viewer {
-  position: relative;
-  width: 100%;
-  height: 360px;
+  position: fixed !important;
+  top: 10vh !important;
+  left: 10vw !important;
+  width: 80vw !important;
+  height: 70vh;
+  max-width: 1200px;
+  z-index: 220 !important;
+  border: 2px solid #555;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
   background: linear-gradient(135deg, #1a2030, #0d1117);
   border-radius: 12px;
   overflow: hidden;
@@ -110,7 +116,19 @@ const HOTSPOT_STYLE = `
  * @param hotspots Array<{ id, x, y, z, label }>
  * @param modelType 'cube' | 'sphere' | 'bone' (sin assets externos)
  */
-export async function open3DViewer(root, hotspots, modelType = "bone") {
+export async function open3DViewer(rootOrOpts, hotspotsArg, modelType = "bone") {
+  // Support both signatures: (root, hotspots) and (opts) for backwards compat
+  let root, hotspots, onHotspotClick;
+  if (rootOrOpts && rootOrOpts.nodeType === 1) {
+    root = rootOrOpts;
+    hotspots = hotspotsArg || [];
+  } else {
+    const opts = rootOrOpts || {};
+    root = opts.root || document.body;
+    hotspots = opts.hotspots || [];
+    onHotspotClick = opts.onHotspotClick;
+    modelType = opts.modelType || modelType;
+  }
   if (!document.getElementById("three-d-viewer-styles")) {
     const style = document.createElement("style");
     style.id = "three-d-viewer-styles";
@@ -338,10 +356,15 @@ export async function open3DViewer(root, hotspots, modelType = "bone") {
         <div class="callout">${escapeHtml(h.label || h.id || "")}</div>
       `;
       pin.title = h.label || "";
-      // v2.7.1: click on hotspot → context menu (edit/delete)
+      // v2.7.1: click on hotspot → context menu (edit/delete).
+      // v2.9.x: if caller passed onHotspotClick, invoke that instead.
       pin.addEventListener("click", (e) => {
         e.stopPropagation();
-        showHotspotMenu(pin, h);
+        if (typeof onHotspotClick === "function") {
+          onHotspotClick(h);
+        } else {
+          showHotspotMenu(pin, h);
+        }
       });
       overlay.appendChild(pin);
     }

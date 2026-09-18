@@ -1,50 +1,35 @@
 [
   {
-    "topicId": "anatomy",
-    "sourceNoteId": "note-humerus-test-1789752362211",
+    "topicId": "humerus",
     "kind": "cloze",
-    "payload": {
-      "front": "troquiter",
-      "back": "tubérculo mayor",
-      "subject": "anatomy"
-    },
-    "preview": "troquiter",
-    "answer": "tubérculo mayor",
-    "confidence": 0.95,
-    "id": "cand-1789752372691-aowem5",
-    "createdAt": 1789752372691,
+    "payload": {},
+    "preview": "Troquiter inserta supraespinoso",
+    "answer": "supraespinoso",
+    "confidence": 0.92,
+    "id": "cand-1789764856529-5t7irj",
+    "createdAt": 1789764856529,
     "status": "pending"
   },
   {
-    "topicId": "anatomy",
-    "sourceNoteId": "note-humerus-test-1789752362211",
-    "kind": "cloze",
-    "payload": {
-      "front": "troquín",
-      "back": "tubérculo menor",
-      "subject": "anatomy"
-    },
-    "preview": "troquín",
-    "answer": "tubérculo menor",
-    "confidence": 0.95,
-    "id": "cand-1789752372691-2xvb8j",
-    "createdAt": 1789752372691,
+    "topicId": "humerus",
+    "kind": "flashcard",
+    "payload": {},
+    "preview": "¿Qué hueso se articula con la glenoidea?",
+    "answer": "Cabeza humeral",
+    "confidence": 0.88,
+    "id": "cand-1789764856532-qy0pz5",
+    "createdAt": 1789764856532,
     "status": "pending"
   },
   {
-    "topicId": "anatomy",
-    "sourceNoteId": "note-humerus-test-1789752362211",
-    "kind": "cloze",
-    "payload": {
-      "front": "corredera bicipital",
-      "back": "surco intertubercular",
-      "subject": "anatomy"
-    },
-    "preview": "corredera bicipital",
-    "answer": "surco intertubercular",
-    "confidence": 0.95,
-    "id": "cand-1789752372691-ni1uao",
-    "createdAt": 1789752372691,
+    "topicId": "humerus",
+    "kind": "occlusion",
+    "payload": {},
+    "preview": "3 masked regions on humerus diagram",
+    "answer": "Troquiter · Troquín · Corredera",
+    "confidence": 0.81,
+    "id": "cand-1789764856535-wgdfj5",
+    "createdAt": 1789764856535,
     "status": "pending"
   }
 ]
