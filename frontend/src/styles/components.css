@@ -1498,3 +1498,30 @@ body.hide-ui .dock, body.hide-ui .lang-switcher, body.hide-ui .top-toolbar { dis
   font-size: var(--fs-sm, 13px);
   color: var(--fg-muted, #9ca3af);
 }
+
+/* v2.7.1: 3D hotspot context menu */
+.three-d-menu {
+  position: absolute;
+  z-index: 10;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 140px;
+}
+.three-d-menu button {
+  background: transparent;
+  border: none;
+  padding: 6px 10px;
+  text-align: left;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: var(--fs-sm);
+  color: var(--fg);
+}
+.three-d-menu button:hover { background: var(--bg-sunken); }
+.three-d-menu button[data-act="del"]:hover { background: rgba(239,68,68,0.1); color: var(--bad); }

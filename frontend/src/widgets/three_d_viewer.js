@@ -265,6 +265,49 @@ export async function open3DViewer(root, hotspots, modelType = "bone") {
     });
   }
 
+  // v2.7.1: context menu for existing hotspots (edit label / delete)
+  let menuEl = null;
+  function closeMenu() {
+    if (menuEl) { menuEl.remove(); menuEl = null; }
+  }
+  function showHotspotMenu(pinEl, h) {
+    closeMenu();
+    menuEl = document.createElement("div");
+    menuEl.className = "three-d-menu";
+    menuEl.innerHTML = `
+      <button data-act="edit">✏️ Edit label</button>
+      <button data-act="del">🗑️ Delete</button>
+    `;
+    const r = pinEl.getBoundingClientRect();
+    const cr = container.getBoundingClientRect();
+    menuEl.style.left = `${r.left - cr.left}px`;
+    menuEl.style.top = `${r.bottom - cr.top + 6}px`;
+    menuEl.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-act]");
+      if (!btn) return;
+      e.stopPropagation();
+      const act = btn.dataset.act;
+      if (act === "edit") {
+        const next = prompt("Label name:", h.label || "");
+        if (next !== null && next.trim()) h.label = next.trim();
+      } else if (act === "del") {
+        hotspots = hotspots.filter((x) => x.id !== h.id);
+      }
+      closeMenu();
+    });
+    container.appendChild(menuEl);
+    // Close on outside click
+    setTimeout(() => {
+      const onDoc = (ev) => {
+        if (menuEl && !menuEl.contains(ev.target)) {
+          closeMenu();
+          document.removeEventListener("click", onDoc, true);
+        }
+      };
+      document.addEventListener("click", onDoc, true);
+    }, 0);
+  }
+
   // Render loop con proyección de hotspots (v1.5.3 técnica core)
   const tmpVec = new THREE.Vector3();
   function animate() {
@@ -288,12 +331,18 @@ export async function open3DViewer(root, hotspots, modelType = "bone") {
       pin.style.left = `${x}px`;
       pin.style.top = `${y}px`;
       pin.style.opacity = visible ? "1" : "0.3";
+      pin.dataset.id = h.id;
       pin.innerHTML = `
         <div class="pin"></div>
         <div class="line" style="height: 30px"></div>
         <div class="callout">${escapeHtml(h.label || h.id || "")}</div>
       `;
       pin.title = h.label || "";
+      // v2.7.1: click on hotspot → context menu (edit/delete)
+      pin.addEventListener("click", (e) => {
+        e.stopPropagation();
+        showHotspotMenu(pin, h);
+      });
       overlay.appendChild(pin);
     }
   }

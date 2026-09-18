@@ -102,7 +102,8 @@ export async function renderAI(root) {
     ? `"${escapeHtml(ctx.note.title)}"`
     : ctx.subject
     ? escapeHtml(ctx.subject)
-    : "no context";
+    : null;
+  const noContext = !ctxLabel;
 
   root.innerHTML = `
     <div class="screen ai-screen">
@@ -114,7 +115,8 @@ export async function renderAI(root) {
       <div class="card ai-context-card">
         <div class="ctx-line">
           <span class="ctx-label">${i18n.t("ai.lookingAt") || "Looking at"}:</span>
-          <span class="ctx-value">${ctxLabel}</span>
+          <span class="ctx-value">${ctxLabel || `<span class="muted">${i18n.t("ai.noContext") || "Open a note to get contextual answers"}</span>`}</span>
+          ${noContext ? `<button class="btn small" id="open-notes">${i18n.t("ai.openNote") || "Open a note"}</button>` : ""}
         </div>
       </div>
 
@@ -144,6 +146,14 @@ export async function renderAI(root) {
       if (action?.run) action.run();
     });
   });
+
+  // v2.7.1: "Open a note" CTA when no context
+  const openNotesBtn = root.querySelector("#open-notes");
+  if (openNotesBtn) {
+    openNotesBtn.addEventListener("click", () => {
+      location.hash = "#/notes";
+    });
+  }
 
   const messages = root.querySelector("#messages");
   const form = root.querySelector("#form");

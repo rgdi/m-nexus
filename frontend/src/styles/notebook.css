@@ -647,3 +647,39 @@
 .side-tabs { display: flex; flex-wrap: wrap; gap: 2px; padding: 4px; border-bottom: 1px solid var(--border); }
 .side-tab { font-size: var(--fs-xs); padding: 6px 10px; border-radius: 6px; background: transparent; border: none; color: var(--fg-muted); cursor: pointer; }
 .side-tab.active { background: var(--bg-sunken); color: var(--fg); }
+
+/* ============================================================
+ * v2.7.1: mobile canvas tools drawer (bottom sheet < 720px)
+ * ============================================================ */
+@media (max-width: 720px) {
+  /* The bottom toolbar becomes a draggable handle + drawer */
+  .notebook-toolbar-bottom {
+    height: 38px !important;
+    padding: 4px 8px !important;
+    overflow-x: auto !important;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    flex-wrap: nowrap !important;
+    gap: 2px !important;
+  }
+  .notebook-toolbar-bottom::-webkit-scrollbar { display: none; }
+  .notebook-toolbar-bottom .tool-btn {
+    flex: 0 0 auto !important;
+    width: 36px !important;
+    height: 30px !important;
+    padding: 4px !important;
+  }
+  .notebook-toolbar-bottom .tool-sep {
+    flex: 0 0 4px !important;
+    width: 1px !important;
+    height: 18px !important;
+  }
+}
+
+/* Even smaller phones — make toolbar scrollable horizontally */
+@media (max-width: 380px) {
+  .notebook-toolbar-bottom {
+    height: 36px !important;
+    padding: 3px 6px !important;
+  }
+}

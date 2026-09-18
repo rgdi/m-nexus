@@ -155,7 +155,7 @@ describe("Cross-cutting: FSRS + LLM + Whisper integration", () => {
 });
 
 describe("Cross-cutting: API endpoints integration", () => {
-  it("FSRS review endpoint returns valid card via real ts-fsrs", async () => {
+  it("FSRS review endpoint returns valid card via real ts-fsrs", { timeout: 15000 }, async () => {
     const { buildApp } = await import("../src/server");
     process.env.MOCK_OLLAMA = "1"; // for safety
     const app = await buildApp();

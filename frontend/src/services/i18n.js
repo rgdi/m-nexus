@@ -348,3 +348,5 @@ STRINGS["settings.exportError"] = { es: "Error al exportar", en: "Export failed"
 STRINGS["settings.openNoteFirst"] = { es: "Abre una nota primero", en: "Open a note first", pt: "Abra uma nota primeiro" };
 STRINGS["common.offline"] = { es: "Sin conexión", en: "Offline", pt: "Offline" };
 STRINGS["common.online"] = { es: "En línea", en: "Online", pt: "Online" };
+STRINGS["ai.noContext"] = { es: "Abre una nota para obtener respuestas contextuales", en: "Open a note to get contextual answers", pt: "Abra uma nota para respostas contextuais" };
+STRINGS["ai.openNote"] = { es: "Abrir una nota", en: "Open a note", pt: "Abrir uma nota" };

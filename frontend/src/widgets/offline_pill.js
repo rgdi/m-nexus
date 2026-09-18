@@ -13,6 +13,13 @@ const t = (key, fallback) => {
   try { return i18n.t(key) || fallback; } catch { return fallback; }
 };
 
+function safeIsOnline() {
+  try { return isOnline(); } catch { return false; }
+}
+function safeDetect() {
+  try { return detectBackend(); } catch { return Promise.resolve(false); }
+}
+
 const RECHECK_MS = 30_000;
 let mounted = false;
 let pillEl = null;
@@ -22,11 +29,11 @@ export function mountOfflinePill() {
   if (mounted) return;
   mounted = true;
   ensurePill();
-  updatePill(isOnline());
+  updatePill(safeIsOnline());
   document.addEventListener("backend-status", (e) => updatePill(!!e.detail?.online));
   // Periodic recheck so transient outages heal
   if (timer) clearInterval(timer);
-  timer = setInterval(() => detectBackend().catch(() => {}), RECHECK_MS);
+  timer = setInterval(() => safeDetect().catch(() => {}), RECHECK_MS);
 }
 
 function ensurePill() {
