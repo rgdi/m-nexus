@@ -210,3 +210,58 @@ export class ImageOcclusionService {
     return errors;
   }
 }
+
+// v2.8.0: in-memory CRUD (single-user local app, no DB needed for now)
+const _cards = new Map<string, any>();
+let _nextId = 1;
+
+function genId() {
+  return "occ-" + Date.now() + "-" + (_nextId++).toString(36);
+}
+
+export function createOcclusionCard(input: {
+  imageUrl?: string;
+  imageBase64?: string;
+  topicId: string;
+  sourceNoteId?: string;
+  masks?: Array<{ x: number; y: number; width: number; height: number; label: string }>;
+}) {
+  const id = genId();
+  const card = {
+    id,
+    topicId: input.topicId,
+    sourceNoteId: input.sourceNoteId,
+    imageUrl: input.imageUrl || null,
+    imageBase64: input.imageBase64 || null,
+    masks: (input.masks || []).map((m, i) => ({ id: i, ...m })),
+    createdAt: Date.now(),
+  };
+  _cards.set(id, card);
+  return card;
+}
+
+export function getOcclusionCard(id: string) {
+  return _cards.get(id) || null;
+}
+
+export function addOcclusionMask(id: string, mask: { x: number; y: number; width: number; height: number; label: string }) {
+  const card = _cards.get(id);
+  if (!card) return null;
+  const nextId = card.masks.length === 0 ? 0 : Math.max(...card.masks.map((m: any) => m.id)) + 1;
+  card.masks.push({ id: nextId, ...mask });
+  return card;
+}
+
+export function removeOcclusionMask(id: string, maskId: number) {
+  const card = _cards.get(id);
+  if (!card) return false;
+  const before = card.masks.length;
+  card.masks = card.masks.filter((m: any) => m.id !== maskId);
+  return card.masks.length < before;
+}
+
+export function listOcclusionCards(topicId?: string) {
+  let out = Array.from(_cards.values());
+  if (topicId) out = out.filter((c) => c.topicId === topicId);
+  return out;
+}

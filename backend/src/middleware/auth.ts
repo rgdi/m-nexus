@@ -68,6 +68,9 @@ export const authMiddleware: (req: FastifyRequest, reply: FastifyReply) => Promi
     "/api/v1/folders",
     // v2.6.0: flashcards CRUD — used by side panel Cards tab.
     "/api/v1/flashcards",
+    // v2.8.0: study planner + image occlusion (used offline-first by side panel + scheduler)
+    "/api/v1/study",
+    "/api/v1/occlusion",
     // v2.6.0: admin login/setup/status — must be public so you can actually log in.
     "/api/v1/auth/login",
     "/api/v1/auth/setup",

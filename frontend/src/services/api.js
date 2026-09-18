@@ -191,4 +191,29 @@ export const api = {
     setBackup: (cfg) => req("POST", "/admin/backup/config", cfg),
     runBackup: () => req("POST", "/admin/backup/run", {}),
   },
+
+  // ----- v2.8.0: study planner -----
+  study: {
+    generateDiagnostic: (topicId, syllabus, maxQuestions = 10) =>
+      req("POST", "/study/diagnostic/generate", { topicId, syllabus, maxQuestions }),
+    runDiagnostic: (topicId, questions, answers) =>
+      req("POST", "/study/diagnostic/run", { topicId, questions, answers }),
+    planStudy: (exams, diagnostics, config) =>
+      req("POST", "/study/scheduler/plan", { exams, diagnostics, config }),
+    pendingCandidates: (topicId) =>
+      req("GET", `/study/generation/pending${topicId ? `?topicId=${encodeURIComponent(topicId)}` : ""}`),
+    decideCandidate: (id, status, reason) =>
+      req("POST", "/study/generation/decide", { id, status, reason }),
+    addCandidate: (body) => req("POST", "/study/generation/add", body),
+  },
+
+  // ----- v2.8.0: image occlusion -----
+  occlusion: {
+    createCard: (body) => req("POST", "/occlusion/card", body),
+    listCards: (topicId) =>
+      req("GET", `/occlusion/cards${topicId ? `?topicId=${encodeURIComponent(topicId)}` : ""}`),
+    getCard: (id) => req("GET", `/occlusion/card/${id}`),
+    addMask: (id, mask) => req("POST", `/occlusion/card/${id}/mask`, mask),
+    removeMask: (id, maskId) => req("DELETE", `/occlusion/card/${id}/mask/${maskId}`),
+  },
 };

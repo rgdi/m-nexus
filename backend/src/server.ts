@@ -25,6 +25,8 @@ import { crossVerifyRoutes } from "./routes/cross_verify.js";
 import { syncV2Routes, syncV2RestRoutes } from "./routes/sync_v2.js";
 import { authRoutes } from "./routes/auth.js";
 import { adminRoutes } from "./routes/admin.js";
+import { studyPlannerRoutes } from "./routes/studyPlanner.js";
+import { occlusionRoutes } from "./routes/occlusion.js";
 import { backupRoutes } from "./routes/backup.js";
 import { updateRoutes } from "./routes/update.js";
 import { wsRoutes } from "./routes/ws.js";
@@ -169,6 +171,10 @@ export async function buildServer(): Promise<any> {
 
   // v2.6.0: admin routes (AI config + backup trigger)
   await app.register(adminRoutes, { prefix: "/api/v1" });
+
+  // v2.8.0: study planner + image occlusion
+  await app.register(studyPlannerRoutes, { prefix: "/api/v1" });
+  await app.register(occlusionRoutes, { prefix: "/api/v1" });
 
   // v0.62.8: /api/v1/ai/tutor is registered by aiRoutes (./routes/ai.ts).
   // Removed the inline handler to avoid duplicate-route registration error.

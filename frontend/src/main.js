@@ -28,6 +28,9 @@ import { renderTodos } from "./screens/todos.js";
 import { renderAI } from "./screens/ai.js";
 import { renderSettings } from "./screens/settings.js";
 import { renderLogin } from "./screens/login.js";
+import { renderDiagnostic } from "./screens/diagnostic.js";
+import { renderApprovals } from "./screens/approvals.js";
+import { renderSimulator } from "./screens/simulator.js";
 import { auth } from "./services/auth.js";
 
 const ROUTES = {
@@ -39,6 +42,9 @@ const ROUTES = {
   ai: renderAI,
   settings: renderSettings,
   login: renderLogin,
+  diagnostic: renderDiagnostic,
+  approvals: renderApprovals,
+  simulator: renderSimulator,
 };
 
 const app = document.getElementById("app");
