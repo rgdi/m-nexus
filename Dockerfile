@@ -46,15 +46,15 @@ RUN mkdir -p /data && chown mnexus:mnexus /data
 WORKDIR /app/backend
 
 ENV NODE_ENV=production
-ENV PORT=3000
+ENV PORT=4100
 ENV HOST=0.0.0.0
 ENV DATA_DIR=/data
 
-EXPOSE 3000
+EXPOSE 4100
 
 USER mnexus
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD wget -qO- http://localhost:3000/health || exit 1
+  CMD wget -qO- http://localhost:4100/api/v1/health || exit 1
 
 CMD ["node", "dist/server.js"]
