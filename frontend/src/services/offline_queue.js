@@ -120,6 +120,61 @@ function p(req) {
 }
 
 /**
+ * v2.21.0: Auto-drain the queue when the browser fires the `online` event.
+ *
+ * Returns a Promise that resolves when the wire-up is done. Safe to call
+ * multiple times — only one listener is attached. Drains are serialized:
+ * if a drain is already running, new online events are ignored.
+ *
+ * Falls back to a setTimeout-driven poll when navigator.onLine doesn't
+ * update fast enough (common on flaky mobile networks).
+ */
+export function autoDrainOnOnline(deviceId, apiBase, authToken) {
+  if (typeof window === "undefined") return Promise.resolve();
+  if (autoDrainOnOnline._wired) return Promise.resolve();
+  autoDrainOnOnline._wired = true;
+  autoDrainOnOnline._ctx = { deviceId, apiBase, authToken };
+
+  let draining = false;
+  const tryDrain = async () => {
+    if (draining) return;
+    if (typeof navigator !== "undefined" && !navigator.onLine) return;
+    draining = true;
+    try {
+      const count = await size();
+      if (count === 0) return;
+      const r = await replay(deviceId, apiBase, authToken);
+      console.log("[offline_queue] auto-drain:", r);
+    } catch (e) {
+      console.warn("[offline_queue] auto-drain failed:", e);
+    } finally {
+      draining = false;
+    }
+  };
+
+  window.addEventListener("online", tryDrain);
+  // Also try once at wire-up in case network restored before listener attached.
+  setTimeout(tryDrain, 1500);
+
+  // Poll every 30s as a safety net (handles flaky mobile where 'online'
+  // event sometimes doesn't fire). Cheap because we early-return when
+  // the queue is empty.
+  autoDrainOnOnline._interval = setInterval(tryDrain, 30000);
+
+  return Promise.resolve();
+}
+
+/** Cancel the auto-drain polling + event listener. Mostly for tests. */
+export function stopAutoDrainOnOnline() {
+  if (typeof window === "undefined" || !autoDrainOnOnline._wired) return;
+  window.removeEventListener("online", autoDrainOnOnline._handler);
+  if (autoDrainOnOnline._interval) clearInterval(autoDrainOnOnline._interval);
+  autoDrainOnOnline._wired = false;
+  autoDrainOnOnline._interval = null;
+  autoDrainOnOnline._ctx = null;
+}
+
+/**
  * Replay all queued entries against the backend. Returns a summary.
  *   - onApplied: called with each successfully applied entry id
  *   - onFailed:  called with (id, error) for permanent failures

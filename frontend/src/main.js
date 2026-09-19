@@ -176,6 +176,16 @@ async function bootstrap() {
   // v2.19.0: Android-specific device registration + permissions + offline queue.
   // No-op on web (the module exports a guard that returns early).
   import("./services/device_id.js").then((m) => m.registerDevice()).catch(() => {});
+  // v2.21.0: auto-drain offline queue when navigator.onLine fires true.
+  // Wires after registerDevice so we have a deviceId + apiBase + auth.
+  Promise.all([
+    import("./services/device_id.js"),
+    import("./services/api_base.js"),
+    import("./services/auth.js"),
+    import("./services/offline_queue.js"),
+  ]).then(([dev, base, auth, queue]) => {
+    queue.autoDrainOnOnline(dev.getDeviceId(), base.detectApiBase(), auth.auth.getAccessToken() || undefined);
+  }).catch(() => {});
   import("./widgets/android_settings.js").then((m) => m.installAndroidSettings({
     onChange: () => { /* trigger sync queue drain */ }
   })).catch(() => {});

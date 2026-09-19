@@ -1,4 +1,4 @@
-# M-NEXUS — Education Service (v2.20.0)
+# M-NEXUS — Education Service (v2.21.0)
 
 > **Tablet-first** Education Service for medical students.
 > Notebook (stylus + pressure), calendar, subjects, to-dos, AI tutor, **spaced repetition (FSRS-4.5)**, **syllabus tracker**, **3D knowledge graph + 3D anatomy (cell biology)**, **admin auth with 90-day sessions**, **auto-backup**, **Cloudflare Tunnel ready**, **Yjs CRDT sync**, **conflict merge UI**, **user-uploaded .glb models**, **pressure-curve settings**, **offline handwriting OCR**.

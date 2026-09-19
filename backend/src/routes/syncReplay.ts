@@ -13,6 +13,7 @@ import { getDevice } from "../auth/devices.js";
 import { E } from "../utils/errorCodes.js";
 import { logOp } from "../utils/log.js";
 import { applyMessageToStore } from "./sync_v2.js";
+import { recordReplay, getSyncMetrics } from "../services/syncMetrics.js";
 
 export interface ReplayEntry {
   id: string;                  // client-generated UUID
@@ -99,6 +100,14 @@ export async function syncReplayRoutes(app: FastifyInstance): Promise<void> {
         rejected,
       });
 
+      // v2.21.0: record metrics for the admin dashboard.
+      recordReplay(body.deviceId, {
+        total: sorted.length,
+        applied,
+        superseded,
+        rejected,
+      });
+
       return {
         ok: true,
         total: sorted.length,
@@ -109,4 +118,23 @@ export async function syncReplayRoutes(app: FastifyInstance): Promise<void> {
       };
     },
   );
+
+  // v2.21.0: admin dashboard endpoint.
+  app.get("/sync/metrics", async () => {
+    const m = getSyncMetrics();
+    return {
+      ok: true,
+      metrics: {
+        totalReplays: m.totalReplays,
+        totalEntriesProcessed: m.totalEntriesProcessed,
+        totalApplied: m.totalApplied,
+        totalSuperseded: m.totalSuperseded,
+        totalRejected: m.totalRejected,
+        totalDroppedAfterRetries: m.totalDroppedAfterRetries,
+        lastReplayAt: m.lastReplayAt,
+        lastReplayDeviceId: m.lastReplayDeviceId,
+        perDevice: Object.fromEntries(m.perDevice),
+      },
+    };
+  });
 }

@@ -82,3 +82,118 @@ export async function isIgnoringBatteryOptimizations() {
     return { ignoring: true, supported: false };
   }
 }
+
+/**
+ * v2.21.0: open any external URL (http/https/mailto/tel/geo/etc.) in the
+ * system's preferred handler. On web this opens the URL in a new tab.
+ *
+ * Schemes are whitelisted in the native plugin (http, https, mailto, tel,
+ * sms, geo, market, intent). File:// / content:// / custom schemes are
+ * rejected to avoid the JS layer accidentally opening dangerous URIs.
+ *
+ * Returns { opened: boolean } on success, throws on validation error.
+ */
+export async function openExternalUrl(url) {
+  if (!url || typeof url !== "string") throw new Error("url must be a non-empty string");
+  const cap = await getCapacitor();
+  if (!cap) {
+    // Web fallback: open in new tab.
+    try {
+      window.open(url, "_blank", "noopener,noreferrer");
+      return { opened: true };
+    } catch (e) {
+      return { opened: false, error: String(e && e.message || e) };
+    }
+  }
+  try {
+    const NativeIntents = cap.Plugins.NativeIntents;
+    if (!NativeIntents) {
+      // Plugin missing → fallback to window.open for safety
+      window.open(url, "_blank", "noopener,noreferrer");
+      return { opened: true };
+    }
+    const r = await NativeIntents.openExternalUrl({ url });
+    return { opened: !!(r && r.opened), error: r && r.error };
+  } catch (e) {
+    throw new Error("openExternalUrl rejected: " + String(e && e.message || e));
+  }
+}
+
+/**
+ * v2.21.0: open the native share sheet (Android: ACTION_SEND chooser;
+ * web: navigator.share if available, else clipboard fallback).
+ *
+ * Args: { text: string, title?: string, dialogTitle?: string }
+ *   - text: required, the body to share
+ *   - title: optional, used as email subject / twitter title
+ *   - dialogTitle: optional, header text for the share sheet
+ *
+ * On web with no navigator.share support, falls back to copying the text
+ * to the clipboard so the user can paste manually.
+ */
+export async function shareText(opts) {
+  if (!opts || typeof opts.text !== "string" || !opts.text) {
+    throw new Error("text is required");
+  }
+  const cap = await getCapacitor();
+  if (!cap) {
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({
+          title: opts.title,
+          text: opts.text,
+        });
+        return { shared: true };
+      } catch (e) {
+        // User cancelled or share failed — fall through to clipboard.
+      }
+    }
+    // Clipboard fallback.
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(opts.text);
+        return { shared: true, fallback: "clipboard" };
+      } catch {
+        return { shared: false, fallback: "clipboard" };
+      }
+    }
+    return { shared: false, fallback: "none" };
+  }
+  try {
+    const NativeIntents = cap.Plugins.NativeIntents;
+    if (!NativeIntents) {
+      // No native plugin — try web share API as fallback.
+      if (typeof navigator !== "undefined" && navigator.share) {
+        await navigator.share({ title: opts.title, text: opts.text });
+        return { shared: true };
+      }
+      return { shared: false };
+    }
+    const r = await NativeIntents.shareText({
+      text: opts.text,
+      title: opts.title || "",
+      dialogTitle: opts.dialogTitle || "Share",
+    });
+    return { shared: !!(r && r.shared) };
+  } catch (e) {
+    throw new Error("shareText rejected: " + String(e && e.message || e));
+  }
+}
+
+/**
+ * v2.21.0: check whether the system has any handler for a URL.
+ * On web: returns true (window.open always works).
+ */
+export async function canOpenUrl(url) {
+  if (!url || typeof url !== "string") return false;
+  const cap = await getCapacitor();
+  if (!cap) return true;
+  try {
+    const NativeIntents = cap.Plugins.NativeIntents;
+    if (!NativeIntents) return true;
+    const r = await NativeIntents.canOpenUrl({ url });
+    return !!(r && r.canOpen);
+  } catch {
+    return false;
+  }
+}
