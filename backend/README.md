@@ -1,4 +1,4 @@
-# M-NEXUS Backend
+# M-NEXUS Backend (v2.17.0)
 
 Backend Node.js (Fastify + TypeScript) que da servicios a:
 - **Web app** (vanilla JS frontend served desde `frontend/`)

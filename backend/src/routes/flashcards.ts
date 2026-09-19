@@ -223,7 +223,7 @@ export async function flashcardsRoutes(app: FastifyInstance): Promise<void> {
     let queued = 0;
     for (const m of matches) {
       const inner = m[1];
-      const [front, back] = inner.split("::").map((s) => s.trim());
+      const [front, back] = inner.split("::").map((s: string) => s.trim());
       if (!front || !back) continue;
       await addCandidate({
         topicId: note.subject || "general",

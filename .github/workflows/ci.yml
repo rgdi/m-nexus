@@ -29,13 +29,10 @@ jobs:
           cache-dependency-path: backend/package-lock.json
       - name: Install dependencies
         run: cd backend && npm ci --no-audit --no-fund
-      - name: Typecheck (warnings only — see roadmap)
-        # v2.16.0: TypeScript has 32 pre-existing implicit-any errors that pre-date
-        # the v2.x rewrite. These do NOT affect runtime (vitest passes 930/930) but
-        # they ARE technical debt. Tracked for v2.17 cleanup.
-        # We run tsc --noEmit and surface as a warning; do NOT fail CI on it.
-        continue-on-error: true
-        run: cd backend && npx tsc --noEmit || echo "::warning::tsc has pre-existing type errors — see roadmap v2.17"
+      - name: Typecheck
+        # v2.17.0: we hit 0 type errors. tsc is now blocking — any regression
+        # in type safety fails the build.
+        run: cd backend && npx tsc --noEmit
       - name: Run vitest (930 tests)
         # v2.16.0: exclude syncE2E — requires real backend + 2 WS clients which is
         # complex to orchestrate in CI. Run separately in a follow-up job.

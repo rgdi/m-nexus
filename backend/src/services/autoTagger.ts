@@ -39,10 +39,10 @@ const TOPIC_KEYWORDS = [
 ];
 
 /** Extract candidate tags from text (case-insensitive, accent-insensitive). */
-export function extractTags(text, maxTags = 5) {
+export function extractTags(text: string, maxTags = 5): string[] {
   if (!text) return [];
   const norm = text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  const found = new Set();
+  const found = new Set<string>();
   for (const term of ANATOMY_ES) {
     const n = term.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     if (norm.includes(n)) found.add(term);
@@ -56,12 +56,12 @@ export function extractTags(text, maxTags = 5) {
   }
   // Cap and prefer longer/more specific tags
   const arr = Array.from(found);
-  arr.sort((a, b) => b.length - a.length);
+  arr.sort((a: string, b: string) => b.length - a.length);
   return arr.slice(0, maxTags);
 }
 
 /** Extract tags for a flashcard from front+back content. */
-export function tagsForFlashcard(front, back, existingTags = []) {
+export function tagsForFlashcard(front: string, back: string, existingTags: string[] = []): string[] {
   const combined = [front, back].filter(Boolean).join(" ");
   const extracted = extractTags(combined, 5);
   // Merge with existing (avoid duplicates), existing first

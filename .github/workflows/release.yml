@@ -86,10 +86,7 @@ jobs:
           key: ${{ runner.os }}-npm-backend-${{ hashFiles('backend/package-lock.json') }}
           restore-keys: ${{ runner.os }}-npm-backend-
       - run: cd backend && npm ci --no-audit --no-fund
-      # v2.16.0: tsc has 32 pre-existing implicit-any errors. Build emits JS
-      # anyway (TypeScript downgrades type errors to warnings in default mode)
-      # so we tolerate the typecheck noise here as well as in ci.yml.
-      - run: cd backend && npx tsc || echo "::warning::tsc had type errors — proceeding with JS emit"
+      - run: cd backend && npx tsc
       - name: Package backend ZIP
         run: |
           set -e

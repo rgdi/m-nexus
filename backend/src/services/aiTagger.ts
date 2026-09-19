@@ -23,15 +23,15 @@ Output JSON array only, no explanation. Examples:
 ["fármaco", "cardiovascular"]
 Return [] if no good tag fits.`;
 
-function parseTagsFromLLM(raw) {
+function parseTagsFromLLM(raw: string): string[] {
   try {
     // Find JSON array in the response (LLM may add prose)
     const match = raw.match(/\[[\s\S]*?\]/);
     if (!match) return [];
-    const arr = JSON.parse(match[0]);
+    const arr: unknown = JSON.parse(match[0]);
     if (!Array.isArray(arr)) return [];
     return arr
-      .filter((t) => typeof t === "string" && t.length > 0 && t.length < 40)
+      .filter((t): t is string => typeof t === "string" && t.length > 0 && t.length < 40)
       .slice(0, 5)
       .map((t) => t.toLowerCase().trim());
   } catch {
@@ -44,11 +44,11 @@ function parseTagsFromLLM(raw) {
  * Returns a merged array: existing → heuristic → LLM (deduped, capped at 6).
  */
 export async function aiTagsForFlashcard(
-  front,
-  back,
-  existingTags = [],
+  front: string,
+  back: string,
+  existingTags: string[] = [],
   opts: { llmTimeoutMs?: number; maxLlmTags?: number } = {},
-) {
+): Promise<string[]> {
   const llmTimeoutMs = opts.llmTimeoutMs ?? 4000;
   const maxLlmTags = opts.maxLlmTags ?? 3;
 
@@ -63,7 +63,7 @@ export async function aiTagsForFlashcard(
   // 3. Try LLM for richer tags via configured provider (v2.15.0).
   //    Replaces direct LLMService with generateCompletion() so any provider
   //    set in data/ai-config.json (Ollama / OpenRouter / OpenAI) is used.
-  let llmTags = [];
+  let llmTags: string[] = [];
   try {
     const cfg = await getAIConfig();
     if (cfg.provider !== "mock") {
@@ -85,9 +85,9 @@ export async function aiTagsForFlashcard(
   return mergeTags(existingTags, heuristic, llmTags, 6);
 }
 
-function mergeTags(existing, heuristic, llm, cap) {
-  const seen = new Set();
-  const out = [];
+function mergeTags(existing: string[], heuristic: string[], llm: string[], cap: number): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
   for (const list of [existing, heuristic, llm]) {
     for (const t of list) {
       const norm = String(t).toLowerCase().trim();

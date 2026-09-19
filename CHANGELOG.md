@@ -2,7 +2,79 @@
 
 > Historial completo de versiones. Stack actual: **TypeScript backend (Fastify) + Vanilla JS+CSS frontend**. Sin Flutter. Sin colaboración (rejected).
 >
-> **Totales actuales**: 1185 tests automatizados (930 backend + 255 frontend), bundle 1.2 MB / 71 archivos.
+> **Totales actuales**: 1185 tests automatizados (930 backend + 255 frontend), bundle 1.2 MB / 71 archivos, **0 errores TypeScript** (`tsc --noEmit` clean).
+
+---
+
+## v2.17.0 (2026-09-19) — Type-cleanup: 0 errores TypeScript, CI estricto
+
+Esta release **elimina los 32 errores TypeScript pre-existentes** que arrastraba el backend desde la rewrite v2.x. `tsc --noEmit` ahora pasa limpio. El CI deja de tolerar typecheck con `continue-on-error` y vuelve a ser estricto: cualquier regresión de tipos rompe el build.
+
+### Archivos arreglados
+
+**`backend/src/middleware/cloudflareAccess.ts`** (10 errores → 0)
+- Tipos explícitos para `cache: Map<string, CacheEntry>`, `cachedCertPem: string | null`, `verifyInstance: Verify | null`
+- Interfaz `CacheEntry` con `verifiedAt`, `email`, `expiresAt`, `payload`
+- Parámetros `jwt: string`, `req: FastifyRequest`, `reply: FastifyReply`
+- `logError()` ahora recibe el objeto `ErrorLog` completo (`code`, `category`, `message`, `cause`) en vez de `{ message, err }` (que no encajaba con la interfaz)
+- **Bug fix real**: la verificación de firma JWT ahora firma `${header}.${payload}` (el input que se firma) y verifica la firma con `parts[2]` decodificada como `base64url`. Antes llamaba `verifyInstance.verify(cert, Buffer.from(parts[2]), null)` que pasaba el signature como string y nunca llamaba `.update()` con el input firmado, así que la verificación estaba rota.
+
+**`backend/src/services/aiTagger.ts`** (7 errores → 0)
+- `parseTagsFromLLM(raw: string): string[]`
+- `aiTagsForFlashcard(front: string, back: string, ...): Promise<string[]>`
+- `mergeTags(existing: string[], heuristic: string[], llm: string[], cap: number): string[]`
+- Type guard `t is string` en `.filter()`
+
+**`backend/src/services/autoTagger.ts`** (5 errores → 0)
+- `extractTags(text: string, maxTags = 5): string[]`
+- `tagsForFlashcard(front: string, back: string, existingTags: string[] = []): string[]`
+- Sort comparator `(a: string, b: string) => b.length - a.length`
+
+**`backend/src/routes/occlusion.ts`** (4 errores → 0)
+- Reemplazado `E.MISSING_FIELD(...)` y `E.NOT_FOUND(...)` (que no existían en el factory) por `E.val("EC-OC-NNN", message, { statusCode })`
+- Códigos: `EC-OC-001` (missing image), `EC-OC-002` (missing topicId), `EC-OC-003` (card not found)
+
+**`backend/src/routes/flashcards.ts`** (1 error → 0)
+- `(s: string) => s.trim()` en `.map()`
+
+**`backend/src/routes/studyPlanner.ts`** (5 errores → 0)
+- Tipos explícitos: `autoTags: string[]`, `createdFlashcard: Record<string, unknown> | null`, `list: Record<string, unknown>[]`
+- **Bug fix real**: el código intentaba `import("../services/flashcards.js")` que no existe (solo `routes/flashcards.ts`). Eliminado el bloque de import dinámico y el fallback que intentaba llamar `createFlashcard()` desde un archivo que no existe. Ahora escribe directo a `data/flashcards.json` que es lo único que funcionaba de todas formas.
+
+### CI
+
+- `.github/workflows/ci.yml`: `tsc --noEmit` ahora bloquea el build. Quitado el `continue-on-error: true` y el `::warning::`.
+- `.github/workflows/release.yml`: quitado el `|| echo warning` que toleraba el typecheck. El `npm run build` ahora falla honestamente si los tipos se rompen.
+
+### Verificación
+
+```
+$ cd backend && npx tsc --noEmit
+# (0 errors)
+
+$ cd backend && ./node_modules/.bin/vitest run --exclude="**/syncE2E.test.ts"
+ Test Files  77 passed (77)
+      Tests  930 passed | 1 skipped (931)
+
+$ cd frontend && ./node_modules/.bin/vitest run
+ Test Files  21 passed (21)
+      Tests  255 passed (255)
+```
+
+### Métricas
+
+| Suite | Count | Delta |
+|---|---|---|
+| Backend vitest | 930 | (sin cambio) |
+| Frontend vitest | 255 | (sin cambio) |
+| **Total** | **1185** | — |
+| **TS errors** | **0** | **−32** |
+| Bundle size | 1217 KB | (sin cambio) |
+
+### Git
+
+- (commit `8b6aa7e` previo: fix CI)
+- Próximo commit: este (tipos)
 
 ---
 

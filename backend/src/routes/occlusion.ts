@@ -21,11 +21,11 @@ export const occlusionRoutes: FastifyPluginAsync = async (app) => {
     const body = (req.body as any) || {};
     if (!body.imageUrl && !body.imageBase64) {
       reply.code(400);
-      throw E.MISSING_FIELD("imageUrl or imageBase64 required");
+      throw E.val("EC-OC-001", "imageUrl or imageBase64 required");
     }
     if (!body.topicId) {
       reply.code(400);
-      throw E.MISSING_FIELD("topicId required");
+      throw E.val("EC-OC-002", "topicId required");
     }
     const card = await createOcclusionCard({
       imageUrl: body.imageUrl,
@@ -47,7 +47,7 @@ export const occlusionRoutes: FastifyPluginAsync = async (app) => {
     const card = await getOcclusionCard(req.params.id);
     if (!card) {
       reply.code(404);
-      throw E.NOT_FOUND("Card not found");
+      throw E.val("EC-OC-003", "Card not found", { statusCode: 404 });
     }
     return { card };
   });
@@ -63,7 +63,7 @@ export const occlusionRoutes: FastifyPluginAsync = async (app) => {
     });
     if (!updated) {
       reply.code(404);
-      throw E.NOT_FOUND("Card not found");
+      throw E.val("EC-OC-003", "Card not found", { statusCode: 404 });
     }
     return { ok: true, card: updated };
   });
