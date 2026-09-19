@@ -97,28 +97,27 @@ describe("renderSimulator", () => {
   });
 });
 
-describe("anatomy_generator.generateBoneModel", () => {
-  it("returns humerus with 14 hotspots", async () => {
-    const { generateBoneModel, AVAILABLE_BONES } = await import("../src/widgets/anatomy_generator.js");
-    expect(AVAILABLE_BONES).toContain("humerus");
-    const bone = generateBoneModel("humerus");
-    expect(bone.name).toBe("Húmero");
-    expect(bone.hotspots.length).toBeGreaterThanOrEqual(10);
-    // Each hotspot has label, pos, noteAnchor
-    const first = bone.hotspots[0];
+describe("anatomy_generator.generateModel (v2.15.0: cell biology)", () => {
+  it("returns animal_cell with organelles", async () => {
+    const { generateModel, AVAILABLE_BONES } = await import("../src/widgets/anatomy_generator.js");
+    expect(AVAILABLE_BONES).toContain("animal_cell");
+    const m = generateModel("animal_cell");
+    expect(m.name).toBe("Célula animal");
+    expect(m.hotspots.length).toBeGreaterThanOrEqual(8);
+    const first = m.hotspots[0];
     expect(first.label).toBeTruthy();
-    expect(first.noteAnchor).toMatch(/humero#/);
+    expect(first.noteAnchor).toMatch(/celula-animal#/);
   });
 
-  it("returns femur with anatomical hotspots", async () => {
-    const { generateBoneModel } = await import("../src/widgets/anatomy_generator.js");
-    const bone = generateBoneModel("femur");
-    expect(bone.hotspots.length).toBeGreaterThan(0);
-    expect(bone.hotspots.some((h) => h.label.toLowerCase().includes("trocánter") || h.label.toLowerCase().includes("cóndilo"))).toBe(true);
+  it("returns bacterium hotspots with ribosomes + plasmid", async () => {
+    const { generateModel } = await import("../src/widgets/anatomy_generator.js");
+    const m = generateModel("bacterium");
+    expect(m.hotspots.length).toBeGreaterThan(0);
+    expect(m.hotspots.some((h) => h.label.toLowerCase().includes("ribosoma") || h.label.toLowerCase().includes("plásmido"))).toBe(true);
   });
 
-  it("throws on unknown bone", async () => {
-    const { generateBoneModel } = await import("../src/widgets/anatomy_generator.js");
-    expect(() => generateBoneModel("rib")).toThrow();
+  it("throws on unknown model", async () => {
+    const { generateModel } = await import("../src/widgets/anatomy_generator.js");
+    expect(() => generateModel("rib")).toThrow();
   });
 });

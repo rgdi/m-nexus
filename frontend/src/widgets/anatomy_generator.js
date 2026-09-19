@@ -1,83 +1,66 @@
-// anatomy_generator.js — programmatic 3D anatomy model generator (v2.8.0).
+// anatomy_generator.js — Cell biology 3D model generator (v2.15.0).
 //
-// Generates a simple humerus/femur-style bone from primitives, with
-// anatomically-accurate surface landmarks (tubercles, condyles, etc.) as
-// hotspots that link to notes.
+// Generates 3 procedural cellular models with organelle hotspots:
+// - animal_cell.glb: membrana + núcleo + mitocondrias + RE + Golgi
+// - plant_cell.glb:  pared celular + núcleo + vacuola + cloroplastos
+// - bacterium.glb:   cápsula + nucleoide + ribosomas + plásmido
 //
-// Real Anki-style anatomy learning: hotspots carry a label and a `noteId`
-// pointer. Click → opens the linked note in the side panel.
+// Each hotspot links to a note anchor for study-mode navigation.
+// Real .glb files live in /public/models/ and are loaded by the 3D viewer.
 
 import { open3DViewer } from "./three_d_viewer.js";
 
-const ANATOMY_DATA = {
-  humerus: {
-    name: "Húmero",
-    color: 0xf5e6d3,
-    /** Approximate bone shape: a cylinder body + sphere heads + small bumps for landmarks */
+const CELL_DATA = {
+  animal_cell: {
+    name: "Célula animal",
+    color: 0xd9e8f5, // pale blue (membrane)
     hotspots: [
-      { id: "head", label: "Cabeza humeral", pos: [0, 1.4, 0], noteAnchor: "humero#cabeza" },
-      { id: "anatomical-neck", label: "Cuello anatómico", pos: [0, 1.25, 0], noteAnchor: "humero#cuello-anatomico" },
-      { id: "greater-tubercle", label: "Troquiter (tubérculo mayor)", pos: [0.4, 1.1, 0], noteAnchor: "humero#troquiter" },
-      { id: "lesser-tubercle", label: "Troquín (tubérculo menor)", pos: [-0.3, 1.05, 0], noteAnchor: "humero#troquin" },
-      { id: "intertubercular-groove", label: "Surco intertubercular (corredera bicipital)", pos: [0.05, 0.95, 0.15], noteAnchor: "humero#corredera-bicipital" },
-      { id: "surgical-neck", label: "Cuello quirúrgico", pos: [0, 0.6, 0], noteAnchor: "humero#cuello-quirurgico" },
-      { id: "deltoid-tuberosity", label: "Tuberosidad deltoidea (V deltoidea)", pos: [0.18, 0.0, 0], noteAnchor: "humero#v-deltoidea" },
-      { id: "radial-groove", label: "Surco del nervio radial", pos: [-0.25, -0.4, 0], noteAnchor: "humero#surco-radial" },
-      { id: "lateral-epicondyle", label: "Epicóndilo lateral", pos: [0.4, -1.2, 0], noteAnchor: "humero#epicondilo-lateral" },
-      { id: "medial-epicondyle", label: "Epicóndilo medial", pos: [-0.35, -1.25, 0], noteAnchor: "humero#epicondilo-medial" },
-      { id: "trochlea", label: "Tróclea humeral", pos: [-0.1, -1.5, 0], noteAnchor: "humero#troclea" },
-      { id: "capitulum", label: "Cóndilo (capitulum)", pos: [0.2, -1.5, 0], noteAnchor: "humero#capitulum" },
-      { id: "olecranon-fossa", label: "Fosa olecraneana", pos: [0, -1.05, -0.25], noteAnchor: "humero#fosa-olecraneana" },
-      { id: "coronoid-fossa", label: "Fosa coronoidea", pos: [0, -1.4, -0.2], noteAnchor: "humero#fosa-coronoidea" },
+      { id: "membrane",         label: "Membrana plasmática",     pos: [0.95, 0,    0],    noteAnchor: "celula-animal#membrana" },
+      { id: "nucleus",          label: "Núcleo",                  pos: [0.25, 0.15, 0.1],  noteAnchor: "celula-animal#nucleo" },
+      { id: "nucleolus",        label: "Nucléolo",                pos: [0.30, 0.20, 0.15], noteAnchor: "celula-animal#nucleolo" },
+      { id: "mito-1",           label: "Mitocondria 1",           pos: [-0.5, 0.35, 0.25], noteAnchor: "celula-animal#mitocondria" },
+      { id: "mito-2",           label: "Mitocondria 2",           pos: [0.45, -0.45, 0.35],noteAnchor: "celula-animal#mitocondria" },
+      { id: "mito-3",           label: "Mitocondria 3",           pos: [0.35, 0.55, -0.35],noteAnchor: "celula-animal#mitocondria" },
+      { id: "er",               label: "Retículo endoplásmico",   pos: [0, -0.35, 0],     noteAnchor: "celula-animal#re" },
+      { id: "golgi",            label: "Aparato de Golgi",        pos: [-0.45, 0.55, 0.45],noteAnchor: "celula-animal#golgi" },
+      { id: "cytoplasm",        label: "Citoplasma",              pos: [0, 0, 0.7],       noteAnchor: "celula-animal#citoplasma" },
     ],
   },
-  femur: {
-    name: "Fémur",
-    color: 0xf5e6d3,
+  plant_cell: {
+    name: "Célula vegetal",
+    color: 0xa6dca0, // green
     hotspots: [
-      { id: "femoral-head", label: "Cabeza femoral", pos: [0, 1.8, 0], noteAnchor: "femur#cabeza" },
-      { id: "femoral-neck", label: "Cuello femoral", pos: [0.2, 1.5, 0], noteAnchor: "femur#cuello" },
-      { id: "greater-trochanter", label: "Trocánter mayor", pos: [0.5, 1.4, 0], noteAnchor: "femur#trocanter-mayor" },
-      { id: "lesser-trochanter", label: "Trocánter menor", pos: [-0.3, 1.1, 0.1], noteAnchor: "femur#trocanter-menor" },
-      { id: "intertrochanteric-line", label: "Línea intertrocantérica", pos: [0.1, 1.25, 0.15], noteAnchor: "femur#linea-intertrocanterica" },
-      { id: "intertrochanteric-crest", label: "Cresta intertrocantérica", pos: [0.2, 1.25, -0.15], noteAnchor: "femur#cresta-intertrocanterica" },
-      { id: "gluteal-tuberosity", label: "Tuberosidad glútea", pos: [0.25, 0.8, -0.15], noteAnchor: "femur#tuberosidad-glutea" },
-      { id: "linea-aspera", label: "Línea áspera", pos: [-0.1, 0.0, -0.15], noteAnchor: "femur#linea-aspera" },
-      { id: "medial-condyle", label: "Cóndilo medial", pos: [-0.25, -1.7, 0], noteAnchor: "femur#condilo-medial" },
-      { id: "lateral-condyle", label: "Cóndilo lateral", pos: [0.25, -1.7, 0], noteAnchor: "femur#condilo-lateral" },
-      { id: "intercondylar-fossa", label: "Fosa intercondílea", pos: [0, -1.6, -0.15], noteAnchor: "femur#fosa-intercondilea" },
-      { id: "patellar-surface", label: "Carilla rotuliana", pos: [0, -1.75, 0.25], noteAnchor: "femur#carilla-rotuliana" },
+      { id: "cell-wall",        label: "Pared celular",            pos: [0.95, 0, 0],       noteAnchor: "celula-vegetal#pared" },
+      { id: "membrane",         label: "Membrana plasmática",     pos: [0.9, 0.2, 0],      noteAnchor: "celula-vegetal#membrana" },
+      { id: "nucleus",          label: "Núcleo",                  pos: [0.35, 0.35, 0.1],  noteAnchor: "celula-vegetal#nucleo" },
+      { id: "vacuole",          label: "Vacuola central",         pos: [-0.25, -0.25, 0.15],noteAnchor: "celula-vegetal#vacuola" },
+      { id: "chloroplast-1",    label: "Cloroplasto 1",          pos: [0.55, 0.55, 0.55], noteAnchor: "celula-vegetal#cloroplasto" },
+      { id: "chloroplast-2",    label: "Cloroplasto 2",          pos: [-0.65, 0.45, 0.5], noteAnchor: "celula-vegetal#cloroplasto" },
+      { id: "chloroplast-3",    label: "Cloroplasto 3",          pos: [0.45, -0.65, 0.5], noteAnchor: "celula-vegetal#cloroplasto" },
+      { id: "golgi",            label: "Aparato de Golgi",        pos: [0.6, -0.5, -0.4],  noteAnchor: "celula-vegetal#golgi" },
     ],
   },
-  scapula: {
-    name: "Escápula",
-    color: 0xf5e6d3,
+  bacterium: {
+    name: "Bacteria (bacilo)",
+    color: 0xf2d9b6, // beige
     hotspots: [
-      { id: "glenoid", label: "Cavidad glenoidea", pos: [0, -0.2, 0.3], noteAnchor: "escapula#cavidad-glenoidea" },
-      { id: "coracoid", label: "Apófisis coracoides", pos: [0.4, 0.0, 0.2], noteAnchor: "escapula#coracoides" },
-      { id: "acromion", label: "Acromion", pos: [0.5, 0.6, 0], noteAnchor: "escapula#acromion" },
-      { id: "spine", label: "Espina de la escápula", pos: [0.4, 0.4, 0], noteAnchor: "escapula#espina" },
-      { id: "supraspinous-fossa", label: "Fosa supraespinosa", pos: [0.3, 0.7, -0.05], noteAnchor: "escapula#fosa-supraespinosa" },
-      { id: "infraspinous-fossa", label: "Fosa infraespinosa", pos: [0.3, -0.1, -0.05], noteAnchor: "escapula#fosa-infraespinosa" },
-      { id: "subscapular-fossa", label: "Fosa subescapular", pos: [-0.2, 0.1, 0.1], noteAnchor: "escapula#fosa-subescapular" },
-      { id: "medial-border", label: "Borde medial (vertebral)", pos: [-0.6, 0.3, 0], noteAnchor: "escapula#borde-medial" },
-      { id: "lateral-border", label: "Borde lateral (axilar)", pos: [0.55, 0.1, 0], noteAnchor: "escapula#borde-lateral" },
-      { id: "superior-border", label: "Borde superior", pos: [0.0, 0.85, 0], noteAnchor: "escapula#borde-superior" },
-      { id: "inferior-angle", label: "Ángulo inferior", pos: [-0.4, -0.8, 0], noteAnchor: "escapula#angulo-inferior" },
+      { id: "capsule",          label: "Cápsula bacteriana",      pos: [0, 0.7, 0],       noteAnchor: "bacteria#capsula" },
+      { id: "cell-wall",        label: "Pared celular (peptidoglucano)", pos: [0, 0.65, 0.2], noteAnchor: "bacteria#pared" },
+      { id: "membrane",         label: "Membrana plasmática",     pos: [0, 0.55, 0.3],    noteAnchor: "bacteria#membrana" },
+      { id: "nucleoid",         label: "Nucleoide",               pos: [0, 0.15, 0.1],    noteAnchor: "bacteria#nucleoide" },
+      { id: "ribosome-1",       label: "Ribosoma 1",             pos: [0.35, -0.25, 0.35],noteAnchor: "bacteria#ribosoma" },
+      { id: "ribosome-2",       label: "Ribosoma 2",             pos: [-0.35, 0.35, 0.35],noteAnchor: "bacteria#ribosoma" },
+      { id: "ribosome-3",       label: "Ribosoma 3",             pos: [0.35, 0.35, -0.35],noteAnchor: "bacteria#ribosoma" },
+      { id: "ribosome-4",       label: "Ribosoma 4",             pos: [-0.35, -0.35, -0.35],noteAnchor: "bacteria#ribosoma" },
+      { id: "ribosome-5",       label: "Ribosoma 5",             pos: [0, 0.05, 0.4],    noteAnchor: "bacteria#ribosoma" },
+      { id: "plasmid",          label: "Plásmido",                pos: [0.35, -0.45, 0.05],noteAnchor: "bacteria#plasmido" },
     ],
   },
 };
 
-/**
- * Generate a procedural geometry for a bone model.
- * Returns: { vertices, faces } suitable for THREE.BufferGeometry,
- * plus `hotspots` ready for open3DViewer.
- */
-export function generateBoneModel(boneKey) {
-  const data = ANATOMY_DATA[boneKey];
-  if (!data) throw new Error("Unknown bone: " + boneKey);
-  // Cylinder body + spherical heads — built by open3DViewer with a custom
-  // geometry if provided. For now we use the existing cube + hotspots approach.
+export function generateModel(key) {
+  const data = CELL_DATA[key];
+  if (!data) throw new Error("Unknown model: " + key);
   const hotspots = data.hotspots.map((h) => ({
     id: h.id,
     label: h.label,
@@ -86,30 +69,21 @@ export function generateBoneModel(boneKey) {
   }));
   return {
     name: data.name,
-    boneKey,
+    modelKey: key,
     hotspots,
     color: data.color,
-    /** The actual mesh geometry is built inside open3DViewer */
   };
 }
 
-/**
- * Open the bone viewer — wraps open3DViewer with the procedural geometry.
- * Wires hotspot clicks to navigate to the linked note.
- */
-export function openBoneViewer(boneKey, options = {}) {
-  const bone = generateBoneModel(boneKey);
-  // v2.10.0: try real .glb from /public/models/ first. Falls back to procedural cylinder.
-  // modelType can be either:
-  //  - string: "cube" | "sphere" | "bone" | ".glb URL"
-  //  - object: { url: ".glb URL" } for explicit GLB loading
+export function openModelViewer(modelKey, options = {}) {
+  const model = generateModel(modelKey);
   const modelSpec = options.modelSpec || {
-    url: `/models/${boneKey}.glb`,
+    url: `/models/${modelKey}.glb`,
   };
   open3DViewer({
-    label: bone.name,
-    hotspots: bone.hotspots,
-    color: bone.color,
+    label: model.name,
+    hotspots: model.hotspots,
+    color: model.color,
     modelType: modelSpec,
     onHotspotClick: (h) => {
       if (h.noteAnchor) {
@@ -120,4 +94,6 @@ export function openBoneViewer(boneKey, options = {}) {
   });
 }
 
-export const AVAILABLE_BONES = Object.keys(ANATOMY_DATA);
+// Backward-compatible alias (some old callers used openBoneViewer)
+export const openBoneViewer = openModelViewer;
+export const AVAILABLE_BONES = Object.keys(CELL_DATA);

@@ -791,15 +791,18 @@ function setupCanvas(root, noteId, pageIdx, strokes, pages) {
   function getPos(e) {
     const rect = canvas.getBoundingClientRect();
     // v2.13.0: pressure + tilt + pointerType for stylus-aware drawing.
-    // Mouse events report pressure=0.5 (Safari) or 1.0 default. Pen events
-    // report 0..1 with tilt. Touch reports 0 or 1.
+// v2.15.0: now also tracks tiltY for combined tilt vector magnitude.
+// Mouse events report pressure=0.5 (Safari) or 1.0 default. Pen events
+// report 0..1 with tilt. Touch reports 0 or 1.
     const p = e.pressure !== undefined ? e.pressure : 0.5;
-    const tilt = e.tiltX !== undefined ? e.tiltX : 0;
+    const tiltX = e.tiltX !== undefined ? e.tiltX : 0;
+    const tiltY = e.tiltY !== undefined ? e.tiltY : 0;
     return {
       x: e.clientX - rect.left,
       y: e.clientY - rect.top,
       p,
-      tilt,
+      tiltX,
+      tiltY,
       pt: e.pointerType || "mouse",
     };
   }
@@ -827,13 +830,16 @@ function setupCanvas(root, noteId, pageIdx, strokes, pages) {
     const baseSize = currentStroke.size;
     const p = (next.pt === "pen" && next.p > 0) ? next.p : 1.0;
     const segmentSize = Math.max(0.5, baseSize * (0.5 + p));
-    // v2.14.0: tilt-based opacity. Pen tilt 0..90° → alpha 1..0.5.
-    // When stylus is tilted, strokes appear lighter (like real ink shading).
-    // Only applies for pen input; mouse/touch keep alpha 1.
+    // v2.14.0 + v2.15.0: tilt-based opacity. Pen tilt 0..90° (X or Y) → alpha 1..0.4.
+    // v2.15.0 now combines tiltX and tiltY using vector magnitude so diagonal
+    // tilt reduces alpha proportionally. Mouse/touch keep alpha 1.
     let segAlpha = currentStroke.alpha;
-    if (next.pt === "pen" && next.tilt !== undefined) {
-      const tiltNorm = Math.min(1, Math.abs(next.tilt) / 90);
-      segAlpha = currentStroke.alpha * (1 - tiltNorm * 0.5);
+    if (next.pt === "pen" && (next.tiltX !== undefined || next.tiltY !== undefined)) {
+      const tx = Math.abs(next.tiltX || 0);
+      const ty = Math.abs(next.tiltY || 0);
+      // Vector magnitude normalized to 0..1 (treating 90° diagonal as ~1)
+      const tiltMag = Math.min(1, Math.sqrt(tx * tx + ty * ty) / 90);
+      segAlpha = currentStroke.alpha * (1 - tiltMag * 0.6);
     }
     currentStroke.points.push(next);
     redraw();
@@ -870,6 +876,47 @@ function setupCanvas(root, noteId, pageIdx, strokes, pages) {
   canvas.addEventListener("pointerup", onUp);
   canvas.addEventListener("pointercancel", onUp);
   canvas.addEventListener("pointerleave", onUp);
+
+  // v2.15.0: hover preview for stylus. When pen hovers over the canvas
+  // (pointerType === "pen", no button pressed), draw a small circle at
+  // the pen tip showing the current brush size. Mouse/touch don't get
+  // hover (no PointerEvent with no buttons on desktop).
+  function onHover(e) {
+    if (e.pointerType !== "pen") return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const brush = currentStroke || { size: 4, color: "#1d4ed8" };
+    const radius = Math.max(2, brush.size / 2);
+    redraw();
+    ctx.save();
+    ctx.globalAlpha = 0.4;
+    ctx.strokeStyle = brush.color;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x - radius - 4, y);
+    ctx.lineTo(x - radius + 1, y);
+    ctx.moveTo(x + radius - 1, y);
+    ctx.lineTo(x + radius + 4, y);
+    ctx.moveTo(x, y - radius - 4);
+    ctx.lineTo(x, y - radius + 1);
+    ctx.moveTo(x, y + radius - 1);
+    ctx.lineTo(x, y + radius + 4);
+    ctx.stroke();
+    ctx.restore();
+  }
+  let hoverRaf = null;
+  function onHoverScheduled(e) {
+    if (hoverRaf) return;
+    hoverRaf = requestAnimationFrame(() => {
+      hoverRaf = null;
+      onHover(e);
+    });
+  }
+  canvas.addEventListener("pointermove", onHoverScheduled);
 
   // v2.13.0: palm rejection — install capture-phase listener that ignores
   // palm contacts (wide touch area on touchscreen).

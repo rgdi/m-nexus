@@ -11,18 +11,7 @@
 // API key, network error).
 
 import { extractTags as extractHeuristic } from "./autoTagger.js";
-import { LLMService, type ChatRequest } from "./llm.js";
-
-let _llm: LLMService | null = null;
-function getLLM(): LLMService | null {
-  if (_llm) return _llm;
-  try {
-    _llm = new LLMService();
-    return _llm;
-  } catch {
-    return null;
-  }
-}
+import { getAIConfig, generateCompletion } from "./aiProviders.js";
 
 const SYSTEM_PROMPT = `You are a medical study assistant. Given a flashcard's question (front) and answer (back), suggest 2-5 concise tags from this list ONLY:
 - Anatomy structures (e.g. "trocánter", "fémur", "acetábulo")
@@ -71,30 +60,26 @@ export async function aiTagsForFlashcard(
     return mergeTags(existingTags, heuristic, [], 6);
   }
 
-  // 3. Try LLM for richer tags
+  // 3. Try LLM for richer tags via configured provider (v2.15.0).
+  //    Replaces direct LLMService with generateCompletion() so any provider
+  //    set in data/ai-config.json (Ollama / OpenRouter / OpenAI) is used.
   let llmTags = [];
-  const llm = getLLM();
-  // Skip LLM in test/mock environments (MOCK_OLLAMA=1)
-  const isMocked = process.env.MOCK_OLLAMA === "1" || process.env.MOCK_OPENROUTER === "1" || process.env.MOCK_LLM === "1";
-  if (llm && !isMocked) {
-    try {
+  try {
+    const cfg = await getAIConfig();
+    if (cfg.provider !== "mock") {
       const userPrompt = `Front: "${front}"\nBack: "${back}"\nTags:`;
-      const req: ChatRequest = {
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: userPrompt },
-        ],
-        max_tokens: 200,
-        temperature: 0.2,
-      };
+      const fullPrompt = `${SYSTEM_PROMPT}\n\n${userPrompt}`;
       const resp = await Promise.race([
-        llm.chat(req),
-        new Promise((_, rej) => setTimeout(() => rej(new Error("llm-timeout")), llmTimeoutMs)),
+        generateCompletion(fullPrompt, {
+          temperature: 0.2,
+          maxTokens: 200,
+        }),
+        new Promise<string>((_, rej) => setTimeout(() => rej(new Error("llm-timeout")), llmTimeoutMs)),
       ]);
-      llmTags = parseTagsFromLLM(resp?.content || "").slice(0, maxLlmTags);
-    } catch (e) {
-      // LLM unavailable / timeout — fall through with heuristic only
+      llmTags = parseTagsFromLLM(resp || "").slice(0, maxLlmTags);
     }
+  } catch (e) {
+    // LLM unavailable / timeout / mock / no provider — fall through
   }
 
   return mergeTags(existingTags, heuristic, llmTags, 6);

@@ -80,31 +80,15 @@ describe("showOcrToast (v2.14.0)", () => {
   });
 });
 
-describe("GLB model files (v2.14.0)", () => {
-  it("humerus.glb has valid GLB header", async () => {
-    const fs = await import("node:fs/promises");
-    const buf = await fs.readFile("/workspace/m-nexus/backend/public/models/humerus.glb");
-    const magic = buf.subarray(0, 4).toString();
-    const version = buf.readUInt32LE(4);
-    expect(magic).toBe("glTF");
-    expect(version).toBe(2);
-  });
-
-  it("femur.glb has valid GLB header", async () => {
-    const fs = await import("node:fs/promises");
-    const buf = await fs.readFile("/workspace/m-nexus/backend/public/models/femur.glb");
-    const magic = buf.subarray(0, 4).toString();
-    const version = buf.readUInt32LE(4);
-    expect(magic).toBe("glTF");
-    expect(version).toBe(2);
-  });
-
-  it("scapula.glb has valid GLB header", async () => {
-    const fs = await import("node:fs/promises");
-    const buf = await fs.readFile("/workspace/m-nexus/backend/public/models/scapula.glb");
-    const magic = buf.subarray(0, 4).toString();
-    const version = buf.readUInt32LE(4);
-    expect(magic).toBe("glTF");
-    expect(version).toBe(2);
-  });
+describe("GLB model files (v2.14.0 + v2.15.0 cell models)", () => {
+  for (const model of ["animal_cell.glb", "plant_cell.glb", "bacterium.glb"]) {
+    it(`${model} has valid GLB header`, async () => {
+      const fs = await import("node:fs/promises");
+      const buf = await fs.readFile(`/workspace/m-nexus/backend/public/models/${model}`);
+      const magic = buf.subarray(0, 4).toString();
+      const version = buf.readUInt32LE(4);
+      expect(magic).toBe("glTF");
+      expect(version).toBe(2);
+    });
+  }
 });
