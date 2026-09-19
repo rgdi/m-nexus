@@ -98,6 +98,16 @@ export const studyPlannerRoutes: FastifyPluginAsync = async (app) => {
     // approval is enough — no manual second step.
     let createdFlashcard = null;
     if (updated.status === "approved" && (updated.kind === "cloze" || updated.kind === "flashcard")) {
+      // v2.11.0: AI auto-tagging — extract relevant terms from front+back content.
+      let autoTags = [];
+      try {
+        const { tagsForFlashcard } = await import("../services/autoTagger.js");
+        autoTags = tagsForFlashcard(
+          updated.preview || (updated.payload as any)?.front,
+          updated.answer || (updated.payload as any)?.back,
+          [updated.kind],
+        );
+      } catch (e) { /* no-op if helper unavailable */ }
       try {
         const svc = await import("./flashcards.js").catch(() => null as any);
         if (svc && typeof svc.flashcardsRoutes === "function") {
@@ -110,7 +120,7 @@ export const studyPlannerRoutes: FastifyPluginAsync = async (app) => {
               front: updated.preview || payload.front,
               back: updated.answer || payload.back,
               subject: payload.subject || updated.topicId,
-              tags: payload.tags || [updated.kind],
+              tags: payload.tags && payload.tags.length ? payload.tags : (autoTags.length ? autoTags : [updated.kind]),
               sourceNoteId: updated.sourceNoteId,
               sourceExcerpt: (updated.preview || "").slice(0, 80),
             });
@@ -135,7 +145,7 @@ export const studyPlannerRoutes: FastifyPluginAsync = async (app) => {
             front: updated.preview || payload.front,
             back: updated.answer || payload.back,
             subject: payload.subject || updated.topicId,
-            tags: payload.tags || [updated.kind],
+            tags: payload.tags && payload.tags.length ? payload.tags : (autoTags.length ? autoTags : [updated.kind]),
             sourceNoteId: updated.sourceNoteId,
             sourceExcerpt: (updated.preview || "").slice(0, 80),
             createdAt: Date.now(),

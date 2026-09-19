@@ -683,3 +683,81 @@
     padding: 3px 6px !important;
   }
 }
+
+/* v2.11.0: splitter first-use hint */
+.notebook-splitter.hint-pulse {
+  animation: splitter-hint 1.2s ease-in-out 3;
+  background: linear-gradient(180deg, var(--accent), var(--accent-soft, var(--accent)));
+}
+.notebook-splitter.hint-pulse::after {
+  content: "←  →";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 11px;
+  white-space: nowrap;
+  animation: hint-fade 1.2s ease-in-out 3;
+}
+@keyframes splitter-hint {
+  0%, 100% { background: var(--border); }
+  50% { background: var(--accent); }
+}
+@keyframes hint-fade {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+/* v2.11.0: mobile canvas drawer (left side, slide-in) */
+@media (max-width: 720px) {
+  .notebook-toolbar-bottom {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 90;
+    border-top: 1px solid var(--border);
+    background: var(--bg-elevated) !important;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.06);
+  }
+  /* Mobile drawer toggle button (pencil icon) */
+  .notebook-toolbar-toggle {
+    display: flex !important;
+    position: fixed;
+    bottom: 60px;
+    right: 16px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    border: none;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+    z-index: 89;
+    cursor: pointer;
+  }
+  .notebook-toolbar-toggle.hidden { display: none !important; }
+}
+@media (min-width: 721px) {
+  .notebook-toolbar-toggle { display: none !important; }
+}
+
+/* v2.11.0: toolbar hidden state on mobile */
+@media (max-width: 720px) {
+  .notebook-toolbar-bottom.collapsed-by-toggle {
+    transform: translateY(calc(100% + 20px));
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 250ms ease, opacity 200ms;
+  }
+  .notebook-toolbar-bottom:not(.collapsed-by-toggle) {
+    transform: translateY(0);
+    opacity: 1;
+    transition: transform 250ms ease, opacity 200ms;
+  }
+}

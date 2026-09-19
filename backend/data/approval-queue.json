@@ -3,39 +3,15 @@
     "topicId": "anatomy",
     "kind": "cloze",
     "payload": {
-      "front": "troquiter",
-      "back": "tubérculo mayor",
-      "subject": "anatomy"
+      "front": "¿Qué inserta el troquiter?",
+      "back": "supraespinoso, infraespinoso y redondo menor"
     },
-    "preview": "troquiter",
-    "answer": "tubérculo mayor",
-    "confidence": 0.95,
-    "id": "cand-1789768509999-oyxm40",
-    "createdAt": 1789768509999,
-    "status": "approved",
-    "decidedAt": 1789768510018
-  },
-  {
-    "topicId": "anatomy",
-    "kind": "cloze",
-    "payload": {},
-    "preview": "Fémur: cabeza se articula con...",
-    "answer": "acetábulo",
+    "preview": "¿Qué inserta el troquiter?",
+    "answer": "supraespinoso, infraespinoso y redondo menor",
     "confidence": 0.94,
-    "id": "cand-1789768558393-4fps7b",
-    "createdAt": 1789768558393,
-    "status": "pending"
-  },
-  {
-    "topicId": "anatomy",
-    "kind": "flashcard",
-    "payload": {},
-    "preview": "¿Qué nervio pasa por el surco del nervio radial?",
-    "answer": "Nervio radial",
-    "confidence": 0.89,
-    "id": "cand-1789768558397-ix2imy",
-    "createdAt": 1789768558397,
+    "id": "cand-1789776639389-9xtwrr",
+    "createdAt": 1789776639389,
     "status": "approved",
-    "decidedAt": 1789768561079
+    "decidedAt": 1789776639410
   }
 ]

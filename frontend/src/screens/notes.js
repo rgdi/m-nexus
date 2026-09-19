@@ -257,6 +257,7 @@ async function renderNotebook(root, id) {
 
   // v2.5.0: draggable splitter for side panel
   setupSplitter(root);
+  setupToolbarToggle(root);
 
   // v2.3.0: hide secondary FAB when AI tutor panel is open (avoid double FABs)
   const cardsFab = root.querySelector("#new-card-btn");
@@ -1134,6 +1135,7 @@ function renderNotebookWideHTML(note, pages) {
             </div>
           </div>
         </main>
+        <button class="notebook-toolbar-toggle" id="toolbar-toggle" aria-label="Toggle tools">✏️</button>
 
         <div class="notebook-splitter" id="notebook-splitter" title="${i18n.t("notes.resize") || "Drag to resize"}"></div>
 
@@ -1174,6 +1176,14 @@ function renderNotebookNarrowHTML(note) {
           <button class="btn" id="export-pdf">📄 PDF</button>
         </div>
       </div>
+      <div class="notebook-toolbar-bottom" id="notebook-toolbar-bottom">
+        <button class="tool-btn" id="open-ai-side" title="${i18n.t("ai.open") || "AI"}" aria-label="AI">✦</button>
+        <button class="tool-btn" id="export-pdf-mobile" title="PDF" aria-label="PDF">${svgIcon("text", 18)}</button>
+        <button class="tool-btn" id="new-card-btn-mobile" title="${i18n.t("notes.newFlashcard")}" aria-label="${i18n.t("notes.newFlashcard")}">${svgIcon("flashcard", 18)}</button>
+        <button class="tool-btn" id="search-btn-mobile" title="${i18n.t("common.search")}" aria-label="${i18n.t("common.search")}">${svgIcon("search", 18)}</button>
+        <button class="tool-btn" id="overview-btn-mobile" title="${i18n.t("notes.intelligentOverview")}" aria-label="${i18n.t("notes.intelligentOverview")}">${svgIcon("eye", 18)}</button>
+      </div>
+      <button class="notebook-toolbar-toggle" id="toolbar-toggle" aria-label="Toggle tools">✏️</button>
     </div>
   `;
 }
@@ -1198,6 +1208,27 @@ function wireNarrow(root, id, note) {
     window.dispatchEvent(new HashChangeEvent("hashchange"));
   });
   root.querySelector("#export-pdf").addEventListener("click", () => downloadNoteAsPDF(note));
+
+  // v2.11.0: mobile toolbar buttons (mirror the wide layout actions)
+  const mirror = (srcId, fn) => {
+    const el = root.querySelector(srcId);
+    if (el) el.addEventListener("click", fn);
+  };
+  mirror("#open-ai-side", () => root.querySelector("#open-ai")?.click());
+  mirror("#export-pdf-mobile", () => root.querySelector("#export-pdf")?.click());
+  mirror("#new-card-btn-mobile", () => {
+    // Trigger the existing flashcard slash flow (or open side panel)
+    location.hash = "#/notes?topic=" + encodeURIComponent(note.subject || "general");
+  });
+  mirror("#search-btn-mobile", () => {
+    const ta = root.querySelector("#body");
+    if (ta) { ta.focus(); ta.select(); }
+  });
+  mirror("#overview-btn-mobile", () => {
+    setAIScreenContext({ note, subject: note.subject });
+    location.hash = "#/ai";
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+  });
 }
 
 /* ============================================================
@@ -1540,6 +1571,37 @@ function wireAISide(root, note) {
  * Persists size in localStorage["mnexus.sidepanel.width"] = px.
  * Persists collapsed state in ["mnexus.sidepanel.collapsed"] = "1".
  * ============================================================ */
+/**
+ * v2.11.0: mobile toolbar toggle — show/hide the bottom toolbar with a
+ * single FAB. Saves space on small screens.
+ */
+function setupToolbarToggle(root) {
+  const btn = root.querySelector("#toolbar-toggle");
+  const toolbar = root.querySelector(".notebook-toolbar-bottom");
+  if (!btn || !toolbar) return;
+  // Only enable on mobile
+  if (window.innerWidth >= 720) {
+    toolbar.classList.remove("collapsed-by-toggle");
+    btn.classList.add("hidden");
+    return;
+  }
+  const saved = localStorage.getItem("mnexus.toolbar.visible") !== "0";
+  if (!saved) toolbar.classList.add("collapsed-by-toggle");
+  const update = () => {
+    const visible = !toolbar.classList.contains("collapsed-by-toggle");
+    btn.classList.toggle("hidden", visible);
+    btn.textContent = visible ? "✏️" : "✕";
+    btn.title = visible ? "Hide tools" : "Show tools";
+  };
+  update();
+  btn.addEventListener("click", () => {
+    toolbar.classList.toggle("collapsed-by-toggle");
+    const visible = !toolbar.classList.contains("collapsed-by-toggle");
+    localStorage.setItem("mnexus.toolbar.visible", visible ? "1" : "0");
+    update();
+  });
+}
+
 function setupSplitter(root) {
   const splitter = root.querySelector("#notebook-splitter");
   const panel = root.querySelector("#side-panel");
@@ -1554,6 +1616,16 @@ function setupSplitter(root) {
   // Restore collapsed
   if (localStorage.getItem("mnexus.sidepanel.collapsed") === "1") {
     panel.classList.add("collapsed");
+  }
+
+  // v2.11.0: first-use hint — pulse the splitter briefly so user notices it
+  const hintShown = localStorage.getItem("mnexus.sidepanel.hint-shown") === "1";
+  if (!hintShown) {
+    splitter.classList.add("hint-pulse");
+    setTimeout(() => {
+      splitter.classList.remove("hint-pulse");
+      localStorage.setItem("mnexus.sidepanel.hint-shown", "1");
+    }, 4000);
   }
 
   let startX = 0;

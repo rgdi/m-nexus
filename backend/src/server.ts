@@ -34,6 +34,7 @@ import { audioRoutes } from "./routes/audio.js";
 import { llmRoutes } from "./routes/llm.js";
 import { ocrRoutes } from "./routes/ocr.js";
 import { authMiddleware } from "./middleware/auth.js";
+import { cloudflareAccessMiddleware, isCloudflareAccessEnabled } from "./middleware/cloudflareAccess.js";
 import { dashboardRoutes } from "./routes/dashboard.js";
 import { pdfRoutes } from "./routes/pdf.js";
 import { themesRoutes } from "./routes/themes.js";
@@ -115,6 +116,12 @@ export async function buildServer(): Promise<any> {
 
   // v2.1.4: register auth middleware globally so all routes get checked
   app.addHook("preHandler", authMiddleware);
+  // v2.11.0: Cloudflare Access middleware — if header present, verify JWT
+  // (with 5-min in-memory cache). No-op when header absent (local dev).
+  if (isCloudflareAccessEnabled()) {
+    app.addHook("preHandler", cloudflareAccessMiddleware);
+    console.log("[cf-access] middleware enabled — verifying Cf-Access-Jwt-Assertion headers");
+  }
 
   // v2.1.4: custom error handler — map AppError to structured JSON
   // (Fastify's default returns {statusCode, error: "Bad Request", message};
