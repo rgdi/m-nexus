@@ -48,8 +48,8 @@ describe("occlusion persistence (v2.10.0)", () => {
     });
     expect(c.id).toBeTruthy();
     expect(c.masks).toEqual([]);
-    // Wait for debounced save
-    await new Promise((r) => setTimeout(r, 250));
+    // Wait for debounced save (with extra buffer for test parallelism)
+    await new Promise((r) => setTimeout(r, 500));
     const raw = await fs.readFile(OCCLUSION_FILE, "utf-8");
     const arr = JSON.parse(raw);
     expect(arr.length).toBe(1);

@@ -790,7 +790,18 @@ function setupCanvas(root, noteId, pageIdx, strokes, pages) {
 
   function getPos(e) {
     const rect = canvas.getBoundingClientRect();
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top, p: e.pressure || 0.5, tilt: e.tiltX || 0 };
+    // v2.13.0: pressure + tilt + pointerType for stylus-aware drawing.
+    // Mouse events report pressure=0.5 (Safari) or 1.0 default. Pen events
+    // report 0..1 with tilt. Touch reports 0 or 1.
+    const p = e.pressure !== undefined ? e.pressure : 0.5;
+    const tilt = e.tiltX !== undefined ? e.tiltX : 0;
+    return {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+      p,
+      tilt,
+      pt: e.pointerType || "mouse",
+    };
   }
 
   function onDown(e) {
@@ -808,16 +819,23 @@ function setupCanvas(root, noteId, pageIdx, strokes, pages) {
   }
   function onMove(e) {
     if (!drawing) return;
-    currentStroke.points.push(getPos(e));
+    const last = currentStroke.points[currentStroke.points.length - 1];
+    const next = getPos(e);
+    // v2.13.0: pressure-sensitive line width.
+    // Pen: pressure 0..1 → size × (0.5..1.5). Mouse: default pressure 0.5 → size × 1.
+    // Touch: usually 1 (no pressure) → size × 1, but we treat it as full width.
+    const baseSize = currentStroke.size;
+    const p = (next.pt === "pen" && next.p > 0) ? next.p : 1.0;
+    const segmentSize = Math.max(0.5, baseSize * (0.5 + p));
+    currentStroke.points.push(next);
     redraw();
     ctx.beginPath();
     ctx.lineCap = "round"; ctx.lineJoin = "round";
     ctx.globalAlpha = currentStroke.alpha;
     ctx.strokeStyle = currentStroke.color;
-    ctx.lineWidth = currentStroke.size;
-    const pts = currentStroke.points;
-    ctx.moveTo(pts[pts.length - 2].x, pts[pts.length - 2].y);
-    ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
+    ctx.lineWidth = segmentSize;
+    ctx.moveTo(last.x, last.y);
+    ctx.lineTo(next.x, next.y);
     ctx.stroke();
     ctx.globalAlpha = 1;
   }
@@ -828,6 +846,13 @@ function setupCanvas(root, noteId, pageIdx, strokes, pages) {
       strokes.push(currentStroke);
       // v1.1.0: append al backend incremental
       dataSource.notes_appendStroke(noteId, pageIdx, currentStroke);
+      // v2.13.0: offline handwriting OCR — debounced per-stroke, sends the
+      // completed stroke to /api/v1/handwriting/recognize and appends the
+      // recognized text to the note body. Throttled to avoid spamming the
+      // backend while the user is actively drawing.
+      if (currentStroke.points.length > 8) {
+        scheduleOCR(currentStroke);
+      }
     }
     currentStroke = null;
   }
@@ -838,9 +863,81 @@ function setupCanvas(root, noteId, pageIdx, strokes, pages) {
   canvas.addEventListener("pointercancel", onUp);
   canvas.addEventListener("pointerleave", onUp);
 
+  // v2.13.0: palm rejection — install capture-phase listener that ignores
+  // palm contacts (wide touch area on touchscreen).
+  installPalmRejection(canvas);
+
+  // v2.13.0: OCR scheduling — debounced so we don't spam the backend while
+  // the user is drawing. After 800ms of inactivity, send all strokes since
+  // the last OCR run and append recognized text.
+  let ocrTimer = null;
+  let ocrPending = [];
+  function scheduleOCR(stroke) {
+    ocrPending.push(stroke);
+    if (ocrTimer) clearTimeout(ocrTimer);
+    ocrTimer = setTimeout(runOCR, 800);
+  }
+  async function runOCR() {
+    const batch = ocrPending.splice(0);
+    if (batch.length === 0) return;
+    // Flatten strokes for backend (x,y,t)
+    const flat = [];
+    for (const s of batch) {
+      for (const p of s.points) {
+        flat.push({ x: p.x, y: p.y, t: Date.now() + (s.t || 0) });
+      }
+    }
+    if (flat.length < 5) return;
+    try {
+      const r = await fetch("http://localhost:4100/api/v1/handwriting/recognize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ strokes: flat }),
+      });
+      if (!r.ok) return;
+      const data = await r.json();
+      const text = (data?.text || "").trim();
+      if (!text || text.length < 2) return;
+      // Append to note body (debounced save)
+      const note = root._note || (await dataSource.notes.get(noteId));
+      const current = note.body || "";
+      const next = (current ? current + " " : "") + text;
+      await dataSource.notes.update(noteId, { body: next });
+      root._note = { ...note, body: next };
+      setAIScreenContext({ note: { ...note, body: next }, subject: note.subject });
+    } catch (e) {
+      // OCR unavailable (offline, no backend) — silently skip
+    }
+  }
+
   const ro = new ResizeObserver(fit);
   ro.observe(wrap);
   fit();
+}
+
+/**
+ * v2.13.0: install palm-rejection capture-phase listeners.
+ * Returns the cleanup function for testing.
+ */
+function installPalmRejection(canvas) {
+  // Lazy-load to avoid bundling on desktop-only clients
+  return import("../widgets/palmRejection.js").then(({ isPalmContact }) => {
+    const types = ["pointerdown", "pointermove", "pointerup", "pointercancel"];
+    const handler = (e) => {
+      if (isPalmContact(e)) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      }
+    };
+    for (const t of types) {
+      canvas.addEventListener(t, handler, { capture: true });
+    }
+    return () => {
+      for (const t of types) {
+        canvas.removeEventListener(t, handler, { capture: true });
+      }
+    };
+  });
 }
 
 function openOverviewModal(note) {
