@@ -6,6 +6,7 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import websocket from "@fastify/websocket";
 import staticPlugin from "@fastify/static";
+import multipartPlugin from "@fastify/multipart";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { config } from "./config.js";
@@ -15,6 +16,7 @@ import { metricsRoutes } from "./routes/metrics.js";
 import { flashcardsRoutes } from "./routes/flashcards.js";
 import { aiV2Routes } from "./routes/ai_v2.js";
 import { aiRoutes } from "./routes/ai.js";
+import { glbModelsRoutes } from "./routes/glbModels.js";
 import { syncRoutes } from "./routes/sync.js";
 import { subjectsRoutes } from "./routes/subjects.js";
 import { notesRoutes } from "./routes/notes.js";
@@ -84,6 +86,12 @@ export async function buildServer(): Promise<any> {
   // WebSocket (stable under Node 20 + tsx)
   await app.register(websocket);
 
+  // v2.16.0: multipart for .glb model upload (user's own anatomy models).
+  await app.register(multipartPlugin, {
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB cap
+    attachFieldsToBody: false,
+  });
+
   // Static (use absolute path so __dirname resolves correctly under tsx)
   await app.register(staticPlugin, {
     root: join(process.cwd(), "public"),
@@ -106,6 +114,8 @@ export async function buildServer(): Promise<any> {
   await app.register(tasksRoutes, { prefix: "/api/v1" });
   // v1.5.1: flashcards CRUD + extracción automática desde notas
   await app.register(flashcardsRoutes, { prefix: "/api/v1" });
+  // v2.16.0: user-uploaded .glb anatomical models
+  await glbModelsRoutes(app);
   // v1.5.4: audio recordings
   await app.register(recordingsRoutes, { prefix: "/api/v1" });
   // v1.5.6: cross-verify (notas vs grabaciones)

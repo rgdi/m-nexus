@@ -59,6 +59,8 @@ export const authMiddleware: (req: FastifyRequest, reply: FastifyReply) => Promi
     "/api/v1/upload/init",
     "/api/v1/upload/chunk",
     "/api/v1/upload/complete",
+    // v2.16.0: user-uploaded .glb models (import anatomical assets).
+    "/api/v1/models",
     "/api/v1/update",
     "/api/v1/rollback",
     // v2.2.0: WS sync es relay-only (no data plane). Auth opcional via WS_AUTH_REQUIRED=1.

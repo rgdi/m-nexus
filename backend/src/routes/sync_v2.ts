@@ -229,6 +229,20 @@ export async function syncV2RestRoutes(app: FastifyInstance): Promise<void> {
     return { history: HISTORY.slice(-50) };
   });
 
+  // v2.16.0: per-resource history (last N messages for a single type:id).
+  // Used by the conflict merge UI to compute field-level diffs.
+  app.get<{ Params: { type: string; id: string }; Querystring: { limit?: string } }>(
+    "/sync/history/:type/:id",
+    async (req) => {
+      const limit = Math.min(50, Math.max(1, parseInt(req.query.limit || "10", 10)));
+      const key = `${req.params.type}:${req.params.id}`;
+      const filtered = HISTORY.filter(
+        (m) => `${m.type}:${m.resourceId}` === key,
+      ).slice(-limit);
+      return { history: filtered };
+    },
+  );
+
   // v2.15.0: current resource state (CRDT-merged view) for a given resource.
   app.get<{ Params: { type: string; id: string } }>("/sync/state/:type/:id", async (req) => {
     const key = resourceKey(req.params.type, req.params.id);

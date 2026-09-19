@@ -6,6 +6,7 @@
 import { dataSource } from "../services/dataSource.js";
 import { i18n } from "../services/i18n.js";
 import { api } from "../services/api.js";
+import { applyPressureCurve, tiltAlpha, getPressureConfig } from "../services/stylus.js";
 import { makeModal } from "../widgets/modal.js";
 // v2.6.0: top_toolbar.js no longer used — replaced by bottom toolbar
 // (see .notebook-toolbar-bottom). The droplet (background toggle), undo/redo,
@@ -824,22 +825,21 @@ function setupCanvas(root, noteId, pageIdx, strokes, pages) {
     if (!drawing) return;
     const last = currentStroke.points[currentStroke.points.length - 1];
     const next = getPos(e);
-    // v2.13.0: pressure-sensitive line width.
-    // Pen: pressure 0..1 → size × (0.5..1.5). Mouse: default pressure 0.5 → size × 1.
-    // Touch: usually 1 (no pressure) → size × 1, but we treat it as full width.
+    // v2.16.0: pressure curve from user config (Settings → Stylus).
+    // Defaults to "linear" if not set. Applies only to pen events; touch/mouse
+    // get multiplier=1.0 (their pressure is binary anyway).
+    const cfg = getPressureConfig();
     const baseSize = currentStroke.size;
-    const p = (next.pt === "pen" && next.p > 0) ? next.p : 1.0;
-    const segmentSize = Math.max(0.5, baseSize * (0.5 + p));
-    // v2.14.0 + v2.15.0: tilt-based opacity. Pen tilt 0..90° (X or Y) → alpha 1..0.4.
-    // v2.15.0 now combines tiltX and tiltY using vector magnitude so diagonal
-    // tilt reduces alpha proportionally. Mouse/touch keep alpha 1.
+    const rawP = (next.pt === "pen" && next.p > 0) ? next.p : 1.0;
+    const pressureMult = applyPressureCurve(rawP, cfg.curve, { minPressure: cfg.minPressure });
+    const segmentSize = Math.max(0.5, baseSize * (0.5 + pressureMult));
+    // v2.16.0: tilt response uses user-configured factor (tiltResponse 0..1).
     let segAlpha = currentStroke.alpha;
     if (next.pt === "pen" && (next.tiltX !== undefined || next.tiltY !== undefined)) {
       const tx = Math.abs(next.tiltX || 0);
       const ty = Math.abs(next.tiltY || 0);
-      // Vector magnitude normalized to 0..1 (treating 90° diagonal as ~1)
-      const tiltMag = Math.min(1, Math.sqrt(tx * tx + ty * ty) / 90);
-      segAlpha = currentStroke.alpha * (1 - tiltMag * 0.6);
+      const tiltDeg = Math.sqrt(tx * tx + ty * ty);
+      segAlpha = currentStroke.alpha * tiltAlpha(tiltDeg, cfg.tiltResponse);
     }
     currentStroke.points.push(next);
     redraw();

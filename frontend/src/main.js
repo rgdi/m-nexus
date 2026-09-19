@@ -170,6 +170,9 @@ async function bootstrap() {
   mountAITutor();
   // v2.0.6: E2E sync via WebSocket
   connectSync();
+  // v2.16.0: Conflict merge UI — listens for field-level merges from sync.
+  // Lazy-loaded so first paint isn't blocked.
+  import("./widgets/conflict_merge_panel.js").then((m) => m.installConflictMergePanel()).catch(() => {});
   setupHamburger();
   setupDockCollapse();
   // Set initial lang attribute on html

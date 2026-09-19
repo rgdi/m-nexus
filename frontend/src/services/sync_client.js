@@ -52,6 +52,19 @@ export function connectSync() {
       if (msg.origin === getClientId()) return;
       applyRemoteChange(msg);
       fireIncoming(msg);
+      // v2.16.0: server emits __mergedFields on field-level merges (CRDT).
+      // Surface them as a dedicated event for the conflict UI widget.
+      if (msg.data && Array.isArray(msg.data.__mergedFields) && msg.data.__mergedFields.length) {
+        fireMerged({
+          type: msg.type,
+          resourceId: msg.resourceId,
+          op: msg.op,
+          origin: msg.origin,
+          mergedFields: msg.data.__mergedFields,
+          mergedData: { ...msg.data },
+          ts: msg.ts,
+        });
+      }
     } catch {}
   };
   ws.onclose = () => {
@@ -83,6 +96,21 @@ function applyRemoteChange(msg) {
 function fireIncoming(msg) {
   for (const l of listeners) l(msg);
   document.dispatchEvent(new CustomEvent("sync:incoming", { detail: msg }));
+}
+
+const mergedListeners = new Set();
+function fireMerged(detail) {
+  for (const l of mergedListeners) l(detail);
+  document.dispatchEvent(new CustomEvent("sync:merged", { detail }));
+}
+
+export function onMerge(fn) {
+  mergedListeners.add(fn);
+  // Also listen for direct DOM events (so widgets can be tested in isolation).
+  if (typeof document !== "undefined") {
+    document.addEventListener("sync:merged", (ev) => fn(ev.detail));
+  }
+  return () => mergedListeners.delete(fn);
 }
 
 function scheduleReconnect() {

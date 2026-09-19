@@ -2,6 +2,7 @@
  * screens/settings.js — central preferences (no floating UI).
  * v2.4.0 — replaces top-right lang switcher + theme toggle.
  * v2.6.0 — exposes AI Provider + Backup configuration.
+ * v2.16.0 — adds Stylus & pressure section (curve, minP, tilt, hover preview).
  * ============================================================ */
 
 import { i18n } from "../services/i18n.js";
@@ -11,6 +12,12 @@ import { escapeHtml } from "../services/safe.js";
 import { auth } from "../services/auth.js";
 import { api } from "../services/api.js";
 import { exportVaultJSON, exportNoteMarkdown } from "../widgets/export.js";
+import {
+  getPressureConfig,
+  setPressureConfig,
+  applyPressureCurve,
+  STYLUS_PRESETS,
+} from "../services/stylus.js";
 
 const AI_PROVIDERS = [
   { value: "mock", label: "Skip (mock — no real AI)" },
@@ -30,6 +37,14 @@ export async function renderSettings(root) {
   ];
   const vaults = getVaults();
   const curVault = getCurrentVault();
+
+  // v2.16.0: load stylus config (pressure curve, sensitivity, tilt, hover).
+  const stylusCfg = getPressureConfig();
+  const pressureCurve = stylusCfg.curve;
+  const minPressure = stylusCfg.minPressure;
+  const tiltResponse = stylusCfg.tiltResponse;
+  const showHover = stylusCfg.showHover;
+  let stylusSaveStatus = "";
 
   // Load AI + Backup config from server (graceful fail if not admin / offline)
   let aiConfig = { provider: "mock", model: "mock-1", enabledAt: 0 };
@@ -187,6 +202,49 @@ export async function renderSettings(root) {
       </section>
 
       <section class="settings-section">
+        <h2>Stylus &amp; pressure</h2>
+        <p class="muted">Calibrate how your stylus responds in the notes canvas</p>
+        <form id="stylus-form" class="settings-form">
+          <div class="form-row">
+            <label class="pressure-curve-label">
+              Pressure curve
+              <select name="st-curve" class="input">
+                <option value="linear"      ${pressureCurve === "linear" ? "selected" : ""}>Linear (raw input)</option>
+                <option value="soft"        ${pressureCurve === "soft" ? "selected" : ""}>Soft (more responsive at low pressure)</option>
+                <option value="firm"        ${pressureCurve === "firm" ? "selected" : ""}>Firm (less responsive at low pressure)</option>
+                <option value="exponential" ${pressureCurve === "exponential" ? "selected" : ""}>Exponential (heavier feel)</option>
+              </select>
+            </label>
+            <label class="pressure-curve-label">
+              Min pressure (sensitivity floor)
+              <input name="st-minP" type="range" min="0" max="0.5" step="0.01" value="${minPressure}" />
+              <span class="pressure-curve-value" data-show="st-minP">${minPressure.toFixed(2)}</span>
+            </label>
+          </div>
+          <div class="form-row">
+            <label class="pressure-curve-label">
+              Tilt response
+              <input name="st-tilt" type="range" min="0" max="1" step="0.05" value="${tiltResponse}" />
+              <span class="pressure-curve-value" data-show="st-tilt">${tiltResponse.toFixed(2)}</span>
+            </label>
+            <label class="pressure-curve-label">
+              Show hover preview
+              <input name="st-hover" type="checkbox" ${showHover ? "checked" : ""} />
+            </label>
+          </div>
+          <div class="form-row">
+            <button type="submit" class="btn primary">${i18n.t("common.save")}</button>
+            <button type="button" class="btn" id="st-test-btn">Test in canvas</button>
+            <span id="st-status" class="settings-status">${escapeHtml(stylusSaveStatus)}</span>
+          </div>
+          <div class="pressure-curve-preview">
+            <canvas id="st-curve-canvas" width="320" height="120"></canvas>
+            <small class="muted">Visualizes how raw pressure (x) maps to stroke width (y). Hover the test canvas to preview.</small>
+          </div>
+        </form>
+      </section>
+
+      <section class="settings-section">
         <h2>About</h2>
         <p class="muted">M-NEXUS · v2.6.0</p>
         <p class="muted">Education Service · Offline-first</p>
@@ -336,6 +394,67 @@ export async function renderSettings(root) {
     });
   }
 
+  // v2.16.0: Stylus form submit (pressure curve, sensitivity, tilt, hover).
+  const stylusForm = root.querySelector("#stylus-form");
+  const curveCanvas = root.querySelector("#st-curve-canvas");
+  if (curveCanvas) {
+    drawPressureCurvePreview(curveCanvas, pressureCurve);
+  }
+  if (stylusForm) {
+    // Live-update the value chips next to range inputs.
+    stylusForm.querySelectorAll('input[type="range"]').forEach((el) => {
+      el.addEventListener("input", () => {
+        const chip = root.querySelector(`[data-show="${el.name}"]`);
+        if (chip) chip.textContent = parseFloat(el.value).toFixed(2);
+        // Live-update the curve preview when curve changes.
+        const curveSel = stylusForm.querySelector('select[name="st-curve"]');
+        if (curveCanvas && curveSel && el.name === "st-curve") {
+          // No-op: range is not the curve selector. Curve is in <select>.
+        }
+        const minP = parseFloat(stylusForm.querySelector('input[name="st-minP"]').value);
+        const tilt = parseFloat(stylusForm.querySelector('input[name="st-tilt"]').value);
+        drawPressureCurvePreview(curveCanvas, curveSel?.value || pressureCurve, minP, tilt);
+      });
+    });
+    const curveSel = stylusForm.querySelector('select[name="st-curve"]');
+    if (curveSel) {
+      curveSel.addEventListener("change", () => {
+        const minP = parseFloat(stylusForm.querySelector('input[name="st-minP"]').value);
+        const tilt = parseFloat(stylusForm.querySelector('input[name="st-tilt"]').value);
+        drawPressureCurvePreview(curveCanvas, curveSel.value, minP, tilt);
+      });
+    }
+
+    stylusForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const fd = new FormData(stylusForm);
+      const status = root.querySelector("#st-status");
+      try {
+        setPressureConfig({
+          curve: fd.get("st-curve") || "linear",
+          minPressure: parseFloat(fd.get("st-minP")) || 0,
+          tiltResponse: parseFloat(fd.get("st-tilt")) || 0.6,
+          showHover: fd.get("st-hover") === "on",
+        });
+        status.textContent = "✓ " + i18n.t("settings.saved");
+      } catch (err) {
+        status.textContent = "✗ " + (err?.message || "error");
+      }
+    });
+
+    // Test button: draw a sample curve using current settings.
+    const testBtn = root.querySelector("#st-test-btn");
+    if (testBtn) {
+      testBtn.addEventListener("click", () => {
+        const fd = new FormData(stylusForm);
+        const curve = fd.get("st-curve") || "linear";
+        const minP = parseFloat(fd.get("st-minP")) || 0;
+        const tilt = parseFloat(fd.get("st-tilt")) || 0.6;
+        drawPressureCurvePreview(curveCanvas, curve, minP, tilt, true);
+      });
+    }
+  }
+
   // Logout
   const logoutBtn = root.querySelector("#logout-btn");
   if (logoutBtn) {
@@ -346,6 +465,53 @@ export async function renderSettings(root) {
       location.hash = "#/login";
       location.reload();
     });
+  }
+}
+
+/**
+ * Draws the pressure curve preview: maps raw pressure (x) to stroke width (y).
+ * 4 curves: linear, soft, firm, exponential.
+ */
+function drawPressureCurvePreview(canvas, curveName, minP = 0, tilt = 0.6, test = false) {
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width;
+  const h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  // Grid
+  ctx.strokeStyle = "rgba(0,0,0,0.08)";
+  ctx.lineWidth = 1;
+  for (let i = 1; i < 4; i++) {
+    const x = (i / 4) * w;
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, h);
+    ctx.stroke();
+    const y = (i / 4) * h;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(w, y);
+    ctx.stroke();
+  }
+  // Curve
+  ctx.strokeStyle = "#3b82f6";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let px = 0; px <= w; px++) {
+    const p = px / w;
+    const mapped = applyPressureCurve(p, curveName, { minPressure: minP });
+    const y = h - mapped * h * 0.95 - 2;
+    if (px === 0) ctx.moveTo(px, y);
+    else ctx.lineTo(px, y);
+  }
+  ctx.stroke();
+  // Labels
+  ctx.fillStyle = "rgba(0,0,0,0.6)";
+  ctx.font = "10px -apple-system, sans-serif";
+  ctx.fillText("Pressure →", 6, 12);
+  ctx.fillText(curveName, w - 60, h - 6);
+  if (test) {
+    ctx.fillStyle = "#ef4444";
+    ctx.fillText("✓ preview updated", 6, h - 6);
   }
 }
 
