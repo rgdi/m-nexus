@@ -1,6 +1,503 @@
 # CHANGELOG — M-NEXUS
 
-> Historial completo de versiones. Stack actual: **TypeScript backend (Fastify + SQLite) + Vanilla JS+CSS frontend**. Sin Flutter.
+> Historial completo de versiones. Stack actual: **TypeScript backend (Fastify) + Vanilla JS+CSS frontend**. Sin Flutter. Sin colaboración (rejected).
+>
+> **Totales actuales**: 1185 tests automatizados (930 backend + 255 frontend), bundle 1.2 MB / 71 archivos.
+
+---
+
+## v2.16.0 (2026-09-19) — Conflict merge UI + Yjs official + GLB upload + Pressure curves
+
+Última release. Cuatro features grandes aterrizaron en producción simultáneamente.
+
+### Conflict merge UI
+
+Cuando dos dispositivos editan el mismo recurso (nota, flashcard, etc.) concurrentemente, el server CRDT resuelve con field-level LWW y estampa `__mergedFields` en el broadcast. El cliente lo detecta y dispara un panel lateral con diff por campo.
+
+**Nuevo: `frontend/src/widgets/conflict_merge_panel.js`** (5384 bytes)
+- Lazy-install desde `main.js` después de `connectSync()`
+- Hasta 5 cards stacked, mobile adaptations (panel a bottom + full-width en <720px)
+- Cada card:
+  - Type badge (note/flashcard/...) + resource ID truncado con tooltip
+  - Origin client + relative time (`just now`, `Xs ago`, `Xm ago`, `Xh ago`)
+  - Per-field diff: prev value en rojo (`#fee2e2` bg, `#991b1b` text), arrow `↓`, new value en verde (`#dcfce7` bg, `#166534` text)
+  - Badge amarillo `← merged` con tooltip explicativo
+  - Dismiss ✕ individual + Clear all global
+  - Auto-fade 30s después del merge
+- Fetches `/api/v1/sync/history/:type/:id` para reconstruir prev value (fallback a `(new field)` si no hay histórico)
+
+**Modificado: `frontend/src/services/sync_client.js`**
+- Detecta `msg.data.__mergedFields` en `ws.onmessage` y dispara `sync:merged` DOM event + `onMerge(fn)` callback
+- `onMerge()` también escucha DOM event (testable sin WS real)
+
+**Modificado: `backend/src/routes/sync_v2.ts`**
+- `applyMessageToStore()` ahora retorna `conflicts[]` y el broadcast lleva `data.__mergedFields`
+- Nuevo endpoint: `GET /api/v1/sync/history/:type/:id?limit=N` → últimos N mensajes filtrados por recurso
+
+### Yjs official client
+
+Cliente Yjs nativo (sin `y-websocket`) que habla el mismo protocolo binary que el endpoint Yjs ya existente.
+
+**Nuevo: `frontend/src/services/yjs_client.js`** (4071 bytes)
+- Carga Yjs via CDN: `import("https://cdn.jsdelivr.net/npm/yjs@13.6.32/+esm")`
+- `connectYjsRoom(notePath) → { doc, close, onStatus }`
+- Aplica updates binarios remotos vía `Y.applyUpdate(doc, bytes, "remote")`
+- Broadcast cambios locales vía `doc.on("update", update => ws.send(update))`
+- Buffer de updates pendientes mientras `WebSocket.readyState !== OPEN`
+- Status events: `syncing` (al abrir) / `synced` (al recibir primer update) / `disconnected` (al cerrar) / `error`
+
+Para documentos con muchas ediciones concurrentes, los binary deltas + Árbol interno de Yjs son mucho más eficientes que el JSON pub/sub broadcast.
+
+### User-uploaded .glb models
+
+**Nuevo: `backend/src/routes/glbModels.ts`** (4258 bytes)
+- `POST /api/v1/models/upload` (multipart, 50 MB cap, valida magic `glTF`)
+  - Sanitiza filename: `[a-z0-9_-]`, max 32 chars
+  - Almacena en `public/models/user/<safename>-<id>.glb`
+  - Retorna `{ id, filename, url, displayName, size, builtin: false }`
+- `GET /api/v1/models` → built-ins (animal_cell, plant_cell, bacterium) + user uploads, sorted by recency
+- `DELETE /api/v1/models/:filename` → 403 si built-in, 400 si extension != `.glb`, 404 si no existe
+
+**Modificado:**
+- `backend/src/server.ts` registra `@fastify/multipart` con límite 50MB
+- `backend/src/middleware/auth.ts` añade `/api/v1/models` a PUBLIC_PATHS
+- `backend/public/models/user/.gitkeep` placeholder
+
+Test E2E con curl: subí GLB de 96 bytes, recibí metadata correcta, GET list lo mostró, download URL sirvió con `Content-Type: model/gltf-binary`.
+
+### Pressure curve UI
+
+Settings sección nueva "Stylus & pressure" para calibrar cómo responde el stylus en el canvas.
+
+**Nuevo: `frontend/src/services/stylus.js`** (2922 bytes)
+- `STYLUS_PRESETS` con 4 curvas:
+  - `linear`: `f(p) = p` (pass-through)
+  - `soft`: `f(p) = sqrt(p)` — más ink a light touch (good para brushes finos)
+  - `firm`: `f(p) = p²` — necesita más presión para oscurecer (pencil feel)
+  - `exponential`: `f(p) = (e^(2p)-1)/(e²-1)` — heavier feel
+- `applyPressureCurve(rawP, curveName, { minPressure }) → 0..1.5 multiplier`
+- `tiltAlpha(tiltDegrees, response) → 0.4..1.0 opacity factor`
+- `getPressureConfig()` / `setPressureConfig()` con localStorage `mnexus.stylus.v1`
+
+**Modificado: `frontend/src/screens/settings.js`**
+- Nueva `<section class="settings-section">` con:
+  - Selector `<select name="st-curve">` (linear/soft/firm/exponential)
+  - Range slider `st-minP` (0..0.5) — sensitivity floor
+  - Range slider `st-tilt` (0..1) — tilt response factor
+  - Checkbox `st-hover` — show hover preview
+  - Buttons: Save + Test in canvas
+  - Canvas `<canvas id="st-curve-canvas" 320×120>` que dibuja la curva en vivo con grid + label "Pressure →"
+- Submit handler persiste a localStorage via `setPressureConfig()`
+
+**Modificado: `frontend/src/screens/notes.js`**
+- `onMove()` ahora usa `applyPressureCurve(rawP, cfg.curve, {minPressure: cfg.minPressure})` en vez de la fórmula hardcoded anterior
+- Tilt opacity usa `tiltAlpha(tiltDeg, cfg.tiltResponse)` en vez del factor 0.5 hardcoded
+
+### Tests (v2.16.0)
+
+- **frontend/tests/v2160.test.js**: 17 tests (pressure curves 4 + tilt 2 + get/set config 2 + Yjs client exports 5 + conflict panel sync wiring 2 + settings section 2)
+- **backend/tests/v2160.test.ts**: 11 tests (GLB header validation, upload/list/delete sources, sync history endpoint, CRDT regression, multipart registered, /models in PUBLIC_PATHS)
+
+### Metrics
+
+| Suite | Count | Delta |
+|---|---|---|
+| Backend vitest | 930 | +11 |
+| Frontend vitest | 255 | +17 |
+| **Total automated** | **1185** | **+28** |
+| Bundle size | 1217 KB | +26 KB |
+| Bundle files | 71 | +3 (yjs_client, stylus, conflict_merge_panel) |
+
+### Git
+
+- Commit `fac9b0f` — v2.16.0
+- Tag `v2.16.0` pusheado a `main`
+
+### What's still pending
+
+- Clickable merge cards (navigate al recurso merged)
+- Drag & drop UI para .glb upload (frontend, ahora solo curl)
+- Yjs awareness (cursores remotos en notas)
+- Pressure curve presets (FountainPen, Pencil, Brush)
+
+---
+
+## v2.15.0 (2026-09-19) — Cellular .glb + CRDT sync + AI provider + tilt Y
+
+Reemplaza huesos placeholder con biología celular (anatomía animal, vegetal, microbiología).
+
+### Cellular .glb models (NO huesos como pediste)
+
+Generados con script Python propio (esfera + cilindro + torus + PBR).
+
+| Modelo | Bytes | Verts | Triángulos | Contenido |
+|---|---|---|---|---|
+| `animal_cell.glb` | 105552 | 3116 | 5616 | membrana + núcleo + nucléolo + 3 mitocondrias + RE (torus) + Golgi (2 tori) + citoplasma |
+| `plant_cell.glb` | 60860 | 1808 | 3200 | pared + núcleo + vacuola + 3 cloroplastos + Golgi |
+| `bacterium.glb` | 48976 | 1474 | 2544 | cápsula + nucleoide + 5 ribosomas + plásmido |
+
+9-14 hotspots cada uno con noteAnchor (`celula-animal#membrana`, `bacteria#plasmido`, etc).
+
+**Modificado: `frontend/src/widgets/anatomy_generator.js`**
+- Reemplaza `ANATOMY_DATA` (huesos) con `CELL_DATA` (células)
+- `generateModel(key)` + `openModelViewer(modelKey)` API
+- Backward-compat alias `openBoneViewer = openModelViewer` (código viejo sigue funcionando)
+
+Capturas: `screenshots/v2150/01-3d-animal_cell.png`, `02-3d-plant_cell.png`, `03-3d-bacterium.png`
+
+### CRDT conflict resolution
+
+**Nuevo: `backend/src/services/crdt.ts`** (5942 bytes)
+- `VectorClock = Record<clientId, seqNumber>`
+- `FieldTimestamps = Record<fieldName, ts>`
+- `clockDominates(a, b)` — orden parcial estricto
+- `compareClocks(a, b)` → `'after'` / `'before'` / `'concurrent'`
+- `mergeFields(localData, localTs, incomingData, incomingTs)` — field-by-field LWW, nuevo ts gana, tie-break preferencia local (deterministic)
+- `bumpClock(clock, clientId)`, `joinClocks(a, b)`
+- `shouldApply(localData, localTs, localClock, incoming)` — decision unificada
+
+**Modificado: `backend/src/routes/sync_v2.ts`**
+- Nuevo `RESOURCE_STATE: Map<key, {data, ts, clock}>` donde `key = type:resourceId`
+- `applyMessageToStore(msg)` aplica CRDT antes de broadcast
+- Broadcast lleva `data.__mergedFields = [field, ...]` si hubo field-level merge
+- Nuevos endpoints:
+  - `GET /api/v1/sync/state/:type/:id` → merged view + clock + field timestamps
+  - `GET /api/v1/sync/state` → todos los recursos tracked
+  - `GET /api/v1/sync/stats` → ahora incluye `resourcesTracked`
+
+### AI auto-tagging usa provider configurado
+
+**Modificado: `backend/src/services/aiTagger.ts`**
+- Antes: `new LLMService()` directo, lee `MOCK_OLLAMA` env var
+- Ahora: usa `generateCompletion()` de `aiProviders.ts` que lee `data/ai-config.json`
+- Si admin configuró Ollama local en Settings → AI Provider, las flashcards se auto-tagean con LLM real sin env vars
+- Si provider=mock → fallback a heurístico solamente
+
+Resultado: AI auto-tagging **funciona en producción** sin tocar .env.
+
+### Tilt Y combinado (mobile canvas)
+
+**Modificado: `frontend/src/screens/notes.js`**
+- `getPos()` ahora captura `tiltX` Y `tiltY`
+- `onMove()` alpha: `Math.sqrt(tiltX² + tiltY²) / 90` (vector magnitude en vez de solo X)
+- Antes: stylus en diagonal no afectaba alpha, ahora sí (más ink shading real)
+
+### Hover preview para pen
+
+**Modificado: `frontend/src/screens/notes.js`**
+- Nuevo handler `onHover(e)` que:
+  - Solo dispara con `pointerType === "pen"` (mouse/touch no)
+  - Dibuja círculo de brush size en el tip
+  - Throttled con `requestAnimationFrame`
+- Se instala en `pointermove` con `rAF` para evitar spam
+
+### Tests
+
+- **backend/tests/v2150.test.ts**: 17 tests (cell GLB headers 5 + CRDT clocks 7 + CRDT field LWW 4 + AI tagger 1)
+- **frontend/tests/v2150.test.js**: 8 tests (cellular models 3 + tilt opacity 2 + CRDT source 1 + getPressureConfig 1 + features intact 1)
+
+### Metrics
+
+| Suite | Count | Delta |
+|---|---|---|
+| Backend | 921 | +19 |
+| Frontend | 238 | +8 |
+| **Total** | **1159** | **+27** |
+| Bundle | 1191 KB | (similar) |
+
+### Git
+
+- Commit `cf956b1`
+- Tag `v2.15.0`
+
+---
+
+## v2.14.0 (2026-09-19) — OCR confidence + tilt opacity + GLB infra
+
+### OCR confidence (real, not hardcoded)
+
+**Modificado: `backend/src/services/handwritingService.ts`**
+- Tesseract corre 2 veces: una para texto, otra para TSV
+- TSV parsea `cols[10]` per-word confidence (0-100), promedio normalizado 0..1
+- Frontend usa ese valor (antes hardcoded a 0.7)
+
+**Modificado: `frontend/src/screens/notes.js`**
+- OCR callback: `if (confidence < 0.3) return;` antes de append al body (filtra garbage)
+
+### Tesseract language packs configurable
+
+**Modificado: `backend/src/services/handwritingService.ts`**
+- `const langs = process.env.TESSERACT_LANGS || "spa+eng"`
+- Default `spa+eng` (Spanish + English) — configurable per-install
+
+### Tilt-based opacity
+
+**Modificado: `frontend/src/screens/notes.js`**
+- `onMove()`: para pen con `tiltX != undefined`, alpha × `(1 - |tilt|/90 × 0.5)`
+- Stylus en 0° → alpha 1.0, en 90° → alpha 0.5
+- Mouse/touch keep alpha 1
+
+### OCR toast widget
+
+**Nuevo: `frontend/src/widgets/ocrToast.js`** (2625 bytes)
+- `showOcrToast(text, confidence, source)` — toast transient 3.5s + 250ms fade
+- Stacks vertical, newest on top
+- Header: `OCR · {source} · conf {pct}%`
+- Body: monospace text (max 200 chars)
+- Wired en `notes.js runOCR()`
+
+### GLB infra
+
+**Modificado: `backend/src/middleware/auth.ts`**
+- PUBLIC_PATHS añade `/models` y `/public` (static files vía @fastify/static sin auth)
+- Sirve con `Content-Type: model/gltf-binary` correctamente
+
+3 archivos `.glb` placeholder de huesos generados con Python (procedural cylinder+sphere): humerus (24KB), femur (33KB), scapula (34KB). Estos fueron reemplazados por modelos de células en v2.15.0.
+
+### Tests
+
+- **frontend/tests/v2140.test.js**: 11 tests (8 ocrToast + 3 GLB header)
+- **backend/tests/v2140.test.ts**: 5 tests (singleton + env override + empty strokes + tiny bbox + heuristic word split)
+
+### Metrics
+
+| Suite | Count | Delta |
+|---|---|---|
+| Backend | 902 | +5 |
+| Frontend | 230 | +11 |
+| **Total** | **1132** | **+16** |
+| Bundle | 1190 KB | +1 file (ocrToast.js) |
+
+### Git
+
+- Commit `fffd0fc`
+- Tag `v2.14.0`
+
+---
+
+## v2.13.0 (2026-09-19) — Pressure drawing + palm rejection + offline OCR
+
+### Pressure-sensitive drawing
+
+**Modificado: `frontend/src/screens/notes.js`**
+- `onMove()`: `lineWidth = baseSize × (0.5 + pressure×1.0)` → 0.5..1.5 del base
+- Pen: real pressure 0..1
+- Mouse: default 0.5 (Safari) o 1.0 (default) → size × 1
+- Touch: usually 1.0 → size × 1 (touch es binary)
+
+### Palm rejection
+
+**Nuevo: `frontend/src/widgets/palmRejection.js`**
+- Capture-phase listener que intercepta ANTES de los handlers principales
+- Threshold: area > 1500 px² (iPad reporta ~200 fingertip, ~3000 palm)
+- Llamado via `installPalmRejection(canvas)` en `notes.js`
+
+### Offline handwriting OCR
+
+**Modificado: `frontend/src/screens/notes.js`**
+- Debounced 800ms para evitar spam cuando se sigue dibujando
+- Threshold >8 puntos (skip short strokes)
+- POST a `/api/v1/handwriting/recognize` con la imagen del stroke
+- Backend usa tesseract `--psm 7` (single line) con lang packs
+- Texto reconocido se APPEND al body (no replace)
+
+**Nuevo: `backend/src/services/handwritingService.ts`** (parcial, expandido en v2.14)
+
+### Metrics
+
+| Suite | Count |
+|---|---|
+| Backend | ~897 |
+| Frontend | ~219 |
+
+### Git
+
+- Commit `a6b18e4`
+- Tag `v2.13.0`
+
+---
+
+## v2.12.0 (2026-09-19) — LLM auto-tagging + mobile canvas + sync E2E
+
+### LLM-powered auto-tagging
+
+**Nuevo: `backend/src/services/aiTagger.ts`** (expandido en v2.15)
+- Heurística primero (`extractHeuristic` de `autoTagger.ts`)
+- Si >= 2 tags → skip LLM (ahorra API calls)
+- Si < 2 → llama LLMService con prompt bounded (200 tokens, temp 0.2, JSON output)
+- Si MOCK_OLLAMA=1 o fails → fallback a heurístico
+- LLM prompt: System:"You are a medical study assistant..." + User:"Front: ...\nBack: ...\nTags:"
+
+### Mobile canvas drawing
+
+**Modificado: `frontend/src/screens/notes.js`**
+- Narrow layout (mobile viewport) ahora mounta canvas + bottom toolbar
+- Toolbar tiene botones específicos: AI, PDF, New card, Search, Overview
+- Pointer events nativos funcionan (no requiere scroll)
+
+### Sync E2E tests reales
+
+**Nuevo: `backend/tests/syncE2E.test.ts`**
+- 2 clientes WS reales (mock connection)
+- Broadcast con origin exclusion — origin no recibe su propio mensaje
+- Buffered receive (`__buffer`) elimina race conditions de hello-before-handler-attached
+- Verifica `received.origin.toMatch(/[0-9a-f-]{36}/)` confirma server re-assigns clientId
+
+### Metrics
+
+- Backend: ~880, Frontend: ~207
+
+### Git
+
+- Commit `ab1cc57`
+- Tag `v2.12.0`
+
+---
+
+## v2.11.0 (2026-09-19) — AI tagger heurístico + CF Access cache + splitter hint + mobile toolbar
+
+### AI auto-tagging heurístico
+
+**Nuevo: `backend/src/services/autoTagger.ts`**
+- Diccionario Spanish/Latin anatomical (200+ términos)
+- Topic keywords (anatomía, fisiología, farmacología, etc)
+- Sin LLM, retorno en O(n) sobre el texto
+
+### Cloudflare Access JWT cache middleware
+
+**Nuevo: `backend/src/services/cloudflareAccess.ts`** (parcial, expandido luego)
+- Cert auto-discovery: `CF_ACCESS_CERT_PATH`, `data/cf-access-cert.pem`, `~/.cloudflared/cert.pem`
+- Cache key: `header.payload` (no full JWT)
+- TTL 5min < token lifetime 15min (rotate antes de expire)
+- RSA-SHA256 verify
+
+### Splitter first-use hint
+
+**Modificado: `frontend/src/screens/notes.js`**
+- `setTimeout` 4s después del primer mount
+- localStorage flag `mnexus.notes.splitterHintShown`
+- CSS `.hint-pulse` animation `splitter-hint 1.2s ease-in-out 3`
+- Solo aparece una vez por usuario
+
+### Mobile canvas toolbar drawer
+
+**Modificado: `frontend/src/screens/notes.js` y `widgets/`**
+- Layout narrow (mobile) tiene bottom toolbar separado
+- 5 botones: AI, PDF, New card, Search, Overview
+- FAB ✏️ ↔ ✕ toggle en base
+- `transform: translateY(calc(100% + 20px))` cuando colapsado
+- Slide-up animation 250ms
+
+### Git
+
+- Commit `2fd8577`
+- Tag `v2.11.0`
+
+---
+
+## v2.10.0 (2026-09-19) — Approval→flashcard auto + occlusion persistence + GLB loader + deterministic FSRS
+
+### Approve → flashcard auto-conversion
+
+**Modificado: `backend/src/services/studyPlanner.ts`**
+- 1-click approve convierte candidato AI en flashcard real via `decide()` endpoint
+- Fallback a file write si `createFlashcard()` named export no disponible
+- Status pending → active automáticamente
+
+### Image occlusion persistence
+
+**Modificado: `backend/src/services/imageOcclusion.ts`**
+- File-backed storage `data/occlusion.json`
+- Load on first access, debounced save 200ms
+- `_nextId` rehydrated desde JSON via regex `occ-\d+-(\w+)` + `parseInt(base36)`
+- Survives backend restarts
+
+### 3D .glb loader
+
+**Modificado: `frontend/src/widgets/three_d_viewer.js`**
+- Dynamic CDN import: `https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/loaders/GLTFLoader.js`
+- Auto-fit via `Box3` → `mesh.scale.setScalar(2.5 / maxDim)`
+- Fallback a procedural cylinder si loader no disponible
+
+### Deterministic FSRS
+
+**Modificado: `backend/src/services/fsrsSimulator.ts`**
+- Mulberry32 PRNG cuando `seed` provisto
+- No-deterministic default (Math.random)
+- 32-bit state, ~2^32 period
+- Tests reproducibles con seed fija
+
+### Git
+
+- Commit `17d1f50`
+- Tag `v2.10.0`
+
+---
+
+## v2.9.1 (2026-09-19) — Polish: 3D viewer modal positioning + 36 screenshots
+
+- **3D viewer modal fix**: era `position: relative` que renderizaba debajo del viewport, cambiado a `position: fixed` con overlay
+- **36 capturas showcase** en `screenshots/showcase/` cubriendo todas las features y viewports
+
+---
+
+## v2.9.0 (2026-09-19) — Occlusion UI + FSRS simulator + approval persistence
+
+### Image occlusion UI
+
+**Nuevo: `frontend/src/screens/occlusion_screen.js`**
+- Drag-to-draw masks en image overlay
+- 5×5 / 6×6 grid + manual tags
+- Quiz mode con auto-reveal
+
+### FSRS day-by-day simulator REAL
+
+**Nuevo: `backend/src/services/fsrsSimulator.ts`**
+- Usa `ts-fsrs` real (no estimates)
+- Simula N días con retention graph
+- Inputs: deck size, retention target, daily reviews
+
+### Approval queue persistence
+
+**Nuevo: `backend/src/services/generationApprovals.ts`**
+- Status: pending | approved | rejected
+- File: `data/generation-approvals.json`
+- Atomic writes con temp + rename
+
+### Git
+
+- Commit `2536956`
+- Tag `v2.9.0`
+
+---
+
+## v2.8.0 (2026-09-19) — Diagnostic + scheduler + AI approvals + anatomy
+
+- **Knowledge diagnostic**: `services/knowledgeDiagnostic.ts` con `computeProfile()` heurística FSRS-based (weak topics, retention estimate)
+- **Exam scheduler**: `services/examScheduler.ts` con `planStudy()` greedy set-cover + deadline-aware
+- **AI approvals**: `services/generationApprovals.ts` queue con review manual (no auto-commit), pending/approved/rejected
+- **Anatomy generator**: `widgets/anatomy_generator.js` 3 huesos con 14+ landmarks hotspots cada uno (humerus, femur, scapula)
+
+### Git
+
+- Commit `8b82c8b`
+- Tag `v2.8.0`
+
+---
+
+## v2.7.0 (2026-09-19) — Command palette verified + swipe nav + vault export + FSRS sim + occlusion backend
+
+- **Cmd-K palette verificado**: ya existía desde v1.9.0, testeado con 12 actions en 5 grupos (subjects/notes/flashcards/tasks/events)
+- **Swipe nav mobile**: edge swipe left/right cambia tab en dock
+- **Vault export**: JSON + MD per-vault, imports cross-vault (migrations posibles)
+- **Offline pill**: indicador de conexión real en top-bar (verde/amarillo/rojo)
+- **FSRS day-by-day simulator**: preview N días con retention graph (en study planner UI)
+- **Image occlusion CRUD backend**: masks con topic/tags + quiz mode auto-reveal en `services/imageOcclusion.ts`
+
+### Git
+
+- Commit `4578197`
+- Tag `v2.7.0`
 
 ---
 

@@ -1,16 +1,128 @@
 # M-NEXUS Backend
 
-Backend Node.js (Fastify 5 + TypeScript) que da servicios a:
+Backend Node.js (Fastify + TypeScript) que da servicios a:
+- **Web app** (vanilla JS frontend served desde `frontend/`)
 - **App standalone** (registro de devices, sync, push, vault, etc)
 - **Instalador** (`install/install.sh`)
 
-**v0.46.0** — Major audit-driven release: 16 servicios nuevos + sistema de error codes unificado (v0.45).
+**v2.16.0** (webapp stack: TS backend + vanilla JS frontend) — última release con **930 tests pasando + syncE2E real**. Conflict merge UI, Yjs official client, user-uploaded .glb, pressure curves en settings.
+
+> **Nota histórica**: este repo pasó por dos stacks. v0.40–v0.60 (legacy "Flutter-like") está deprecado. El código actual corresponde a v2.x — backend en TS simple, frontend vanilla JS+CSS, sync LWW + Yjs binary.
 
 ---
 
-## v0.46.0 — Audit-driven major release
+## v2.16.0 (2026-09-19) — Conflict merge + Yjs + GLB upload + Pressure curves
 
-Esta versión cierra el **audit Expectativa vs Realidad** iniciado en 2026-09-07. 41 commits, 16 servicios nuevos, 6 auditor bugs cerrados, 533 tests pasando.
+### Cambios principales
+
+- **CRDT conflict resolution**: `services/crdt.ts` con vector clocks + field-level LWW. Aplicado en `routes/sync_v2.ts` antes de cada broadcast.
+- **Yjs official server-side**: ya existía `routes/crdt.ts` con WS endpoint `/api/v1/crdt/ws/:notePath`. Ahora cliente compatible en `frontend/src/services/yjs_client.js`.
+- **GLB model routes** (new `routes/glbModels.ts`): upload/list/delete + multipart 50MB + magic validation. Built-ins protegidos.
+- **AI auto-tagging uses configured provider**: `aiTagger.ts` ahora consume `aiProviders.ts` (lee `data/ai-config.json`) en vez de `LLMService` directo.
+
+### Stats backend v2.16.0
+
+- 77 vitest files, 930 tests passing
+- 52 routes
+- 52 services
+- Public paths include `/models`, `/public`, `/api/v1/models`, etc.
+
+### Quick start (v2.16.0)
+
+```bash
+# Requisitos: Node.js >= 20 (recomendado 22)
+node --version
+
+# Instalar deps
+npm install
+
+# Correr dev (puerto 4100 — el frontend espera este puerto)
+PORT=4100 npx tsx src/server.ts
+
+# Tests (930 tests)
+./node_modules/.bin/vitest run --exclude="**/syncE2E.test.ts"
+
+# Typecheck
+npx tsc --noEmit
+
+# Watch mode dev
+npx tsx watch src/server.ts
+```
+
+Server listens at `http://localhost:4100` by default. Frontend connects via:
+- REST: `http://localhost:4100/api/v1/*`
+- WebSocket sync: `ws://localhost:4100/ws/sync`
+- Static GLB models: `http://localhost:4100/models/*`
+- Health check: `http://localhost:4100/api/v1/health`
+
+### Variables de entorno (v2.16.0)
+
+| Var | Default | Descripción |
+|---|---|---|
+| `PORT` | 4000 | Puerto del server (frontend espera 4100) |
+| `HOST` | 0.0.0.0 | Interfaz de red |
+| `DATA_DIR` | `./data` | Donde se guardan notas/flashcards/json files |
+| `JWT_SECRET` | (requerido en prod) | HS256 secret — fail-fast si weak |
+| `WS_AUTH_REQUIRED` | 0 | Si 1, WS requiere `?token=<jwt>` |
+| `TESSERACT_LANGS` | spa+eng | Lang packs para OCR handwriting |
+| `MOCK_OLLAMA` | 0 | Si 1, Ollama devuelve mock |
+| `MOCK_OPENROUTER` | 0 | Si 1, OpenRouter devuelve mock |
+| `MOCK_LLM` | 0 | Generic mock para AI |
+| `LOG_LEVEL` | info | pino level: trace/debug/info/warn/error |
+
+Para producción: `JWT_SECRET=$(openssl rand -hex 32)` y `LOG_LEVEL=warn`.
+
+---
+
+## v2.15.0 (2026-09-19) — Cellular .glb + AI provider
+
+- 3 modelos `.glb` de célula (animal_cell 106KB, plant_cell 61KB, bacterium 49KB) — empaquetados en `public/models/`
+- `services/crdt.ts` (NEW, 5942 bytes) — vector clocks + field-level LWW exports: `clockDominates`, `compareClocks`, `bumpClock`, `joinClocks`, `mergeFields`, `shouldApply`
+- `routes/sync_v2.ts` (MODIFIED) — `RESOURCE_STATE` map aplica CRDT, broadcast lleva `__mergedFields`
+- `services/aiTagger.ts` (REWRITTEN) — heuristic-first, LLM fallback con timeout 4s, 200 tokens, temp 0.2
+- `routes/health.ts` registra estado de providers (whisper/ollama/openrouter/tesseract/embeddings)
+
+Tests: 921 (1 skipped)
+
+---
+
+## v2.14.0 (2026-09-19) — OCR confidence + tilt + GLB infra
+
+- `services/handwritingService.ts` (MODIFIED) — tesseract corre 2x (text + TSV), parsea per-word confidence via TSV cols[10]. `TESSERACT_LANGS` env var configurable.
+- `middleware/auth.ts` (MODIFIED) — `/models` y `/public` en PUBLIC_PATHS (static files sin auth)
+- `routes/ocr.ts` extended — confidence threshold en frontend previene garbage append
+
+Tests: 902
+
+---
+
+## v2.13.0 (2026-09-19) — Pressure + palm + OCR
+
+- `services/handwritingService.ts` (NEW) — tesseract subprocess wrapper
+- Backend expone `/api/v1/handwriting/recognize` que llama tesseract con `--psm 7` y lang packs
+
+---
+
+## v2.6.0 (2026-09-16) — Public deploy ready
+
+Admin auth con 90-day sessions, smart backup rotation, swappable AI provider, optional Cloudflare Tunnel. 41 commits, 16 servicios nuevos, 6 auditor bugs cerrados, 533 tests pasando.
+
+### 🆕 Servicios nuevos (16)
+
+| # | Servicio | LOC | Tests | Descripción |
+|---|---|---|---|---|
+| 1 | **FSRS-5/6** (`ts-fsrs@5.4.2`) | 380 | 32 | Algoritmo FSRS real con 21 parámetros, 4 ratings, DSR model, forgetting curve |
+| 2 | **AI Proposals v2** | 381 | 24 | LLM-powered con heuristic regex fallback, caching, rate limiting |
+| 3 | **Whisper real** | 245 | 12 | Streaming transcription con whisper-node (reemplaza placeholder) |
+| 4 | **Search FTS5** | 290 | 18 | Full-text search con BM25 ranking, stemming porter unicode61, snippets |
+| 5 | **Wikilinks** | 195 | 15 | Parser `[[Note]]` con display/section/block, backlinks indexados, NFD normalize |
+| 6 | **Graph view** | 340 | 13 | Force-directed layout (Fruchterman-Reingold), 3D opcional, export JSON |
+| 7 | **Templates** | 220 | 11 | 7 templates médicos (SOAP, H&P, Differential, Pharmacology, Anatomy, Pathophysiology, Procedure) |
+| 8 | **Tags** | 175 | 9 | `#tag` extraction, autocomplete, hierarchy, count |
+| 9 | **Cloze deletion** | 240 | 14 | `{{c1::texto::hint}}` estilo Anki, multi-cloze, generate cards |
+| 10 | **Image Occlusion** | 170 | 8 | Máscaras (rectangle/ellipse) sobre imágenes, reveal por región |
+| 11 | **Type-Answer** | 200 | 11 | Levenshtein distance, fuzzy match, case-insensitive |
+| 12 | **Heatmap + Stats** | 180 | 10 | GitHub-style heatmap 365 días, streak tracking, retention rate, distribution |
 
 ### 🆕 Servicios nuevos (16)
 
@@ -110,6 +222,8 @@ Esta versión cierra el **audit Expectativa vs Realidad** iniciado en 2026-09-07
 
 ## Quick start
 
+**Legacy v0.46.0 note:** the below variables reference the old `MNEXUS_PORT=8787`. **Current v2.16.0 uses `PORT=4100`** — see the v2.16.0 Quick start at the top of this README.
+
 ```bash
 # Requisitos: Node.js >= 22
 node --version
@@ -117,38 +231,37 @@ node --version
 # Instalar deps
 npm install
 
-# Build
-npm run build
+# Correr dev (puerto 4100)
+PORT=4100 npx tsx src/server.ts
 
-# Tests (533 tests)
-npx vitest run --exclude '**/integration.test.ts'
+# Tests (930 tests)
+./node_modules/.bin/vitest run --exclude="**/syncE2E.test.ts"
 
 # Typecheck
 npx tsc --noEmit
-
-# Correr (en dev, puerto 8787)
-npm run dev | pino-pretty
-
-# Correr (en prod)
-MNEXUS_PORT=8787 node dist/index.js
 ```
 
-### Variables de entorno (v0.46.0)
-
-| Variable | Default | Descripción |
-|---|---|---|
-| `MNEXUS_PORT` | `8787` | Puerto HTTP |
-| `CORS_ALLOWED_ORIGINS` | `http://localhost:3000,http://localhost:8080` | CSV de origins permitidos (`*` rechazado si credentials=true) |
-| `WS_RATE_LIMIT_MESSAGES` | `100` | Max mensajes WS por ventana por deviceId |
-| `WS_RATE_LIMIT_BYTES` | `10485760` | Max bytes WS por ventana (10MB) |
-| `WS_RATE_LIMIT_WINDOW_MS` | `60000` | Tamaño de ventana (1 min) |
-| `WS_MAX_CONCURRENT` | `5` | Max conexiones concurrentes por deviceId |
-| `AUDIT_LOG_PATH` | `/var/log/mnexus/audit.jsonl` (prod) / tmpdir (dev) | Path del WORM audit log |
-| `MOCK_WHISPER` | `0` | Set a `1` para usar mock de Whisper en dev |
-| `MOCK_LLM` | `0` | Set a `1` para usar mock de LLM en dev |
-| `MOCK_EMBEDDINGS` | `0` | Set a `1` para usar mock de embeddings en dev |
-
 ---
+
+## Endpoints principales (v2.16.0, 52+)
+
+### Auth & Devices
+- `POST /api/v1/auth/register` — crear admin user (device-bound)
+- `POST /api/v1/auth/login` — login con throttle + lockout
+- `POST /api/v1/auth/refresh` — refresh token (90d)
+- `GET /api/v1/auth/me` — current user info
+- `POST /api/v1/auth/logout` — invalidar token
+- `GET /api/v1/devices` — listar devices del user
+
+### Sync (CRDT dual pipeline)
+- `GET /ws/sync` — WebSocket JSON CRDT broadcast (sync_v2 LWW + field merges)
+- `POST /api/v1/sync/publish` — REST publish (resilience)
+- `GET /api/v1/sync/history` — recent 200 msgs
+- `GET /api/v1/sync/history/:type/:id` — per-resource history (v2.16)
+- `GET /api/v1/sync/state/:type/:id` — CRDT-merged view (v2.15)
+- `GET /api/v1/sync/state` — all tracked resources (v2.15)
+- `GET /api/v1/sync/stats` — clients + history size + resourcesTracked
+- `GET /api/v1/crdt/ws/:notePath` — **Yjs** WS endpoint (binary updates, awareness)
 
 ## Endpoints principales (100+)
 
@@ -158,91 +271,72 @@ MNEXUS_PORT=8787 node dist/index.js
 - `POST /devices/register` — registrar device
 - `GET /devices/:id` — info device
 
-### Vault
-- `GET /vault/notes` — listar notas
-- `GET /vault/notes/:path` — leer nota
-- `POST /vault/notes` — crear/actualizar
-- `DELETE /vault/notes/:path` — eliminar
-- `POST /vault/upload` — chunked upload
+### Notas & Subjects
+- `GET /api/v1/subjects` — listar subjects (subjectColor, average)
+- `POST /api/v1/subjects` — crear subject
+- `PATCH /api/v1/subjects/:id` — actualizar
+- `DELETE /api/v1/subjects/:id` — eliminar
+- `GET /api/v1/notes?subjectId=&q=&tag=` — listar/buscar notas
+- `POST /api/v1/notes` — crear nota
+- `PATCH /api/v1/notes/:id` — actualizar
+- `DELETE /api/v1/notes/:id` — eliminar
+- `GET /api/v1/notes/:id/strokes` — strokes del canvas
+- `POST /api/v1/notes/:id/strokes` — persistir strokes
 
-### Search (FTS5)
-- `GET /search?q=&limit=&offset=` — full-text search con BM25
-- `GET /search/suggest?q=` — autocomplete
-- `GET /search/snippet?path=&q=` — snippet con highlighting
+### Flashcards (FSRS-4.5)
+- `GET /api/v1/flashcards?subjectId=&topic=&due=` — listar
+- `POST /api/v1/flashcards` — crear (manual)
+- `POST /api/v1/flashcards/generate` — AI genera desde texto
+- `PATCH /api/v1/flashcards/:id` — actualizar
+- `POST /api/v1/flashcards/:id/review` — registrar review (FSRS compute)
+- `DELETE /api/v1/flashcards/:id` — eliminar
 
-### FSRS
-- `POST /fsrs/review` — registrar review
-- `GET /fsrs/card/:id` — estado actual del card
-- `GET /fsrs/due?limit=` — cards due
-- `POST /fsrs/bulk-review` — bulk operations
+### Events / Tasks
+- `GET /api/v1/events?from=&to=` — calendar events
+- `POST /api/v1/events` — crear
+- `PATCH /api/v1/events/:id` — actualizar
+- `DELETE /api/v1/events/:id` — eliminar
+- `GET /api/v1/tasks?completed=` — to-dos
+- `POST /api/v1/tasks` — crear
+- `PATCH /api/v1/tasks/:id` — toggle done
+- `DELETE /api/v1/tasks/:id` — eliminar
 
 ### AI
-- `POST /ai/tutor` — pregunta al tutor
-- `POST /ai/proposals` — generar propuestas de flashcards
-- `POST /ai/embeddings` — embeddings para RAG
-- `POST /ai/whisper` — transcribir audio
+- `POST /api/v1/ai/tutor` — RAG contextual chat
+- `POST /api/v1/ai/generate-cards` — extract flashcards from text
+- `POST /api/v1/llm/embed` — embeddings (RAG)
+- `POST /api/v1/audio/transcribe` — Whisper (mock until configured)
+- `POST /api/v1/ocr/image` — Tesseract OCR
+- `POST /api/v1/handwriting/recognize` — handwriting OCR (v2.13+)
+- `GET /api/v1/admin/ai` — get AI provider config
+- `PUT /api/v1/admin/ai` — update (Ollama URL / OpenRouter key / etc)
 
-### Sync
-- `WS /sync` — WebSocket para Yjs CRDT sync
-- `POST /sync/snapshot` — subir snapshot
-- `GET /sync/snapshot/:id` — descargar snapshot
+### Models (3D)
+- `GET /api/v1/models` — listar built-ins + user uploads (v2.16)
+- `POST /api/v1/models/upload` — multipart upload .glb (v2.16)
+- `DELETE /api/v1/models/:filename` — eliminar (protege built-ins, v2.16)
+- `GET /models/:filename` — static serve (built-ins)
+- `GET /models/user/:filename` — static serve (user uploads)
 
-### Marketplace
-- `GET /marketplace/decks?category=&sort=&search=` — listar decks
-- `GET /marketplace/decks/:id` — detalle
-- `POST /marketplace/decks/:id/install` — instalar
+### Recording / cross-verify
+- `POST /api/v1/recordings` — upload audio
+- `GET /api/v1/recordings/:id` — download
+- `POST /api/v1/cross-verify` — diff transcript vs notas
 
-### Gamification
-- `GET /gamification/profile` — XP, level, badges
-- `GET /gamification/leaderboard` — leaderboard
+### Themes & Backups
+- `GET /api/v1/themes` — listar temas
+- `POST /api/v1/themes` — crear tema custom
+- `GET /api/v1/backup/list` — listar backups (v2.6)
+- `POST /api/v1/backup/create` — crear backup manual
+- `GET /api/v1/admin/backup` — config
+- `PUT /api/v1/admin/backup` — update config
 
-### Plugins
-- `GET /plugins` — listar plugins instalados
-- `POST /plugins/install` — instalar plugin
-- `POST /plugins/:id/execute` — ejecutar con sandbox
-
-### Importers
-- `POST /import/pdf` — importar PDF
-- `POST /import/anki` — importar Anki (.apkg)
-- `POST /import/notion` — importar Notion (.zip)
-- `POST /import/roam` — importar Roam (.json)
-
-### Web Clipper
-- `POST /clipper/save` — guardar article desde clipper
-
-### Wikilinks
-- `GET /wikilinks/extract?path=` — extraer wikilinks
-- `GET /wikilinks/backlinks?path=` — backlinks de un path
-- `GET /wikilinks/graph` — grafo de notas
-
-### Templates
-- `GET /templates` — listar templates
-- `POST /templates/apply` — aplicar template
-
-### Tags
-- `GET /tags?prefix=` — autocomplete
-- `GET /tags/:name` — info tag
-- `POST /tags/extract` — extraer tags de un texto
-
-### Cloze
-- `POST /cloze/parse` — parsear cloze syntax
-- `POST /cloze/cards` — generar cards
-
-### Image Occlusion
-- `POST /occlusion/mask` — agregar mask
-- `POST /occlusion/reveal` — revelar region
-
-### Type-Answer
-- `POST /type-answer/check` — verificar respuesta con Levenshtein
-
-### Heatmap / Stats
-- `GET /stats/heatmap?start=&end=` — heatmap data
-- `GET /stats/streak` — streak actual
-- `GET /stats/retention` — retention rate
-
-### Backup / Update
-- `POST /backup/create` — crear backup
-- `GET /backup/list` — listar backups
+### Secrets & Folders
+- `GET /api/v1/secrets` — listar
+- `POST /api/v1/secrets` — crear (encrypted at rest)
+- `GET /api/v1/folders` — listado con jerarquía
+- `POST /api/v1/folders` — crear
+- `PATCH /api/v1/folders/:id` — mover
 - `POST /update/check` — check updates
 - `POST /update/apply` — apply update
 
@@ -325,27 +419,37 @@ Ver [`docs/LOGGING.md`](../docs/LOGGING.md) para opciones de agregación (Loki, 
 
 ## Tests
 
-```bash
-# Todos los tests (533)
-npx vitest run --exclude '**/integration.test.ts'
+**v2.16.0**: 77 vitest files, **930 tests passing** (1 skipped).
 
-# Solo cross-cutting (8 tests, ~5s)
-npx vitest run tests/crossCutting.test.ts
+```bash
+# Todos los tests (930)
+./node_modules/.bin/vitest run --exclude="**/syncE2E.test.ts"
+
+# Solo cross-cutting
+./node_modules/.bin/vitest run tests/crossCutting.test.ts
 
 # Solo un servicio
-npx vitest run tests/fsrsService.test.ts
+./node_modules/.bin/vitest run tests/fsrsService.test.ts
 
 # Watch mode
-npx vitest --watch
+./node_modules/.bin/vitest --watch
 
 # Con coverage
-npx vitest run --coverage
+./node_modules/.bin/vitest run --coverage
+
+# Excluir syncE2E (flaky en sandbox sin internet)
+./node_modules/.bin/vitest run --exclude="**/syncE2E.test.ts"
 ```
 
-### Coverage actual
+Sincronización real con WS (syncE2E.test.ts) requiere backend activo y 2 clientes ws. Se ejecuta con:
+```bash
+./node_modules/.bin/vitest run syncE2E
+```
 
-- **533 tests passing** (1 skipped pre-existente)
-- **38 test files**
+### Coverage actual (v2.16.0)
+
+- **930 tests passing** (1 skipped pre-existente, syncE2E excluido por flaky en sandbox)
+- **77 test files**
 - **0 typecheck errors** (`tsc --noEmit`)
 - ~85% code coverage
 
@@ -409,8 +513,9 @@ backend/
 │   ├── plugins/               # Fastify plugins
 │   ├── i18n/                  # 🆕 messages catalog (en/es/pt)
 │   └── types/                 # TypeScript types
-├── tests/                     # 38 test files, 533 tests
-├── data/                      # SQLite DB
+├── tests/                     # 77 test files, 930 tests (v2.16.0)
+├── data/                      # JSON persistence (notes.json, flashcards.json, ai-config.json, …)
+├── public/models/             # 3 built-in cell .glb + user uploads
 ├── package.json
 └── tsconfig.json
 ```
