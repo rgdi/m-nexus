@@ -98,14 +98,17 @@ export const studyPlannerRoutes: FastifyPluginAsync = async (app) => {
     // approval is enough — no manual second step.
     let createdFlashcard = null;
     if (updated.status === "approved" && (updated.kind === "cloze" || updated.kind === "flashcard")) {
-      // v2.11.0: AI auto-tagging — extract relevant terms from front+back content.
+      // v2.11.0 + v2.12.0: auto-tagging — heuristic first, then LLM if heuristic
+      // returned < 2 tags. LLM uses the same aiProviders pipeline (Ollama,
+      // OpenRouter, OpenAI-compatible). Falls back to heuristic-only on failure.
       let autoTags = [];
       try {
-        const { tagsForFlashcard } = await import("../services/autoTagger.js");
-        autoTags = tagsForFlashcard(
+        const { aiTagsForFlashcard } = await import("../services/aiTagger.js");
+        autoTags = await aiTagsForFlashcard(
           updated.preview || (updated.payload as any)?.front,
           updated.answer || (updated.payload as any)?.back,
           [updated.kind],
+          { llmTimeoutMs: 3000, maxLlmTags: 3 },
         );
       } catch (e) { /* no-op if helper unavailable */ }
       try {

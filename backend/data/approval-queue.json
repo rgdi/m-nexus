@@ -1,17 +1,1 @@
-[
-  {
-    "topicId": "anatomy",
-    "kind": "cloze",
-    "payload": {
-      "front": "¿Qué inserta el troquiter?",
-      "back": "supraespinoso, infraespinoso y redondo menor"
-    },
-    "preview": "¿Qué inserta el troquiter?",
-    "answer": "supraespinoso, infraespinoso y redondo menor",
-    "confidence": 0.94,
-    "id": "cand-1789776639389-9xtwrr",
-    "createdAt": 1789776639389,
-    "status": "approved",
-    "decidedAt": 1789776639410
-  }
-]
+[]

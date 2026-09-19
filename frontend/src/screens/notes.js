@@ -226,7 +226,12 @@ async function renderNotebook(root, id) {
     }, 0);
     // Wire narrow-only handlers
     wireNarrow(root, id, note);
-    return; // narrow layout doesn't need canvas init / pencil drawer / AI submenu
+    // v2.12.0: narrow layout now also mounts a canvas so mobile users can
+    // draw with finger/stylus. The textarea is hidden but stays for text
+    // editing if needed. We mirror strokes → body so saves still work.
+    setupCanvas(root, id, state.page, pages[state.page]?.strokes || [], pages);
+    root._note = note;
+    return;
   }
 
   // === Wide layout (canvas + AI side panel) ===
@@ -1170,13 +1175,20 @@ function renderNotebookNarrowHTML(note) {
       </header>
 
       <div class="narrow-doc">
-        <textarea class="doc-textarea" id="body" placeholder="Write your note…">${escapeHtml(note.body || "")}</textarea>
+        <div class="canvas-wrap" id="canvas-wrap">
+          <canvas id="canvas"></canvas>
+        </div>
+        <textarea class="doc-textarea" id="body" placeholder="Write your note…" style="display:none;">${escapeHtml(note.body || "")}</textarea>
         <div class="narrow-actions">
           <button class="btn" id="open-ai">✦ ${i18n.t("ai.open") || "Open AI"}</button>
           <button class="btn" id="export-pdf">📄 PDF</button>
         </div>
       </div>
       <div class="notebook-toolbar-bottom" id="notebook-toolbar-bottom">
+        <button class="tool-btn" data-tool="pen" title="${i18n.t("notes.tool.pen")}" aria-label="${i18n.t("notes.tool.pen")}">${svgIcon("pen", 18)}</button>
+        <button class="tool-btn" data-tool="highlighter" title="${i18n.t("notes.tool.highlighter")}" aria-label="${i18n.t("notes.tool.highlighter")}">${svgIcon("highlighter", 18)}</button>
+        <button class="tool-btn" data-tool="eraser" title="${i18n.t("notes.tool.eraser")}" aria-label="${i18n.t("notes.tool.eraser")}">${svgIcon("eraser", 18)}</button>
+        <span class="tool-sep"></span>
         <button class="tool-btn" id="open-ai-side" title="${i18n.t("ai.open") || "AI"}" aria-label="AI">✦</button>
         <button class="tool-btn" id="export-pdf-mobile" title="PDF" aria-label="PDF">${svgIcon("text", 18)}</button>
         <button class="tool-btn" id="new-card-btn-mobile" title="${i18n.t("notes.newFlashcard")}" aria-label="${i18n.t("notes.newFlashcard")}">${svgIcon("flashcard", 18)}</button>
