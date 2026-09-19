@@ -1,0 +1,143 @@
+[
+  {
+    "deviceId": "test-d-001",
+    "deviceName": "Samsung SM-T870",
+    "platform": "android",
+    "appVersion": "2.19.0",
+    "osVersion": "Android 14",
+    "manufacturer": "Samsung",
+    "model": "SM-T870",
+    "pluginVersion": "8.0.0",
+    "registeredAt": 1789824604705,
+    "lastSeenAt": 1789824604705
+  },
+  {
+    "deviceId": "reg-1",
+    "deviceName": "Test",
+    "platform": "linux",
+    "registeredAt": 1789824760541,
+    "lastSeenAt": 1789824760541
+  },
+  {
+    "deviceId": "auth-http-1",
+    "deviceName": "Test",
+    "registeredAt": 1789824648667,
+    "lastSeenAt": 1789824801475,
+    "lastAccessTokenId": "10279e76ffd735c7ceef59fd78291db6"
+  },
+  {
+    "deviceId": "test-d-002",
+    "deviceName": "Phone",
+    "platform": "android",
+    "appVersion": "2.19.1",
+    "osVersion": "Android 15",
+    "registeredAt": 1789824604712,
+    "lastSeenAt": 1789824824041
+  },
+  {
+    "deviceId": "test-d-003",
+    "platform": "android",
+    "permissions": {
+      "storage": true,
+      "notifications": false,
+      "audio": true
+    },
+    "registeredAt": 1789824604744,
+    "lastSeenAt": 1789824824091
+  },
+  {
+    "deviceId": "test-d-004",
+    "preferences": {
+      "backendUrl": "http://x:4100",
+      "syncIntervalMinutes": 10
+    },
+    "registeredAt": 1789824604769,
+    "lastSeenAt": 1789824824111
+  },
+  {
+    "deviceId": "test-d-005",
+    "userId": "user-A",
+    "registeredAt": 1789824604788,
+    "lastSeenAt": 1789824824118
+  },
+  {
+    "deviceId": "test-d-006",
+    "userId": "user-A",
+    "registeredAt": 1789824604794,
+    "lastSeenAt": 1789824824123
+  },
+  {
+    "deviceId": "test-d-007",
+    "userId": "user-B",
+    "registeredAt": 1789824604799,
+    "lastSeenAt": 1789824824128
+  },
+  {
+    "deviceId": "test-d-008",
+    "registeredAt": 1789824604807,
+    "lastSeenAt": 1789824824137
+  },
+  {
+    "deviceId": "test-device-1",
+    "deviceName": "Test MacBook",
+    "platform": "macos",
+    "pluginVersion": "0.12.0",
+    "registeredAt": 1789824642925,
+    "lastSeenAt": 1789824807899,
+    "lastAccessTokenId": "816e04b8db8a3051182b6caceaeec074"
+  },
+  {
+    "deviceId": "device-for-list",
+    "deviceName": "List test",
+    "registeredAt": 1789824646022,
+    "lastSeenAt": 1789824807974,
+    "lastAccessTokenId": "d0b52a9db18f10299e76c2ef87f37417"
+  },
+  {
+    "deviceId": "device-token-test",
+    "registeredAt": 1789824646068,
+    "lastSeenAt": 1789824808012
+  },
+  {
+    "deviceId": "auth-http-2",
+    "registeredAt": 1789824648717,
+    "lastSeenAt": 1789824801541,
+    "lastAccessTokenId": "7292bfc5316b981c80fb9c0573452994"
+  },
+  {
+    "deviceId": "auth-http-3",
+    "registeredAt": 1789824648772,
+    "lastSeenAt": 1789824801582,
+    "lastAccessTokenId": "c4c209243e199552e8c691e00c46148f"
+  },
+  {
+    "deviceId": "auth-audit",
+    "registeredAt": 1789824648811,
+    "lastSeenAt": 1789824801615,
+    "lastAccessTokenId": "937c99f83db028fb19efa05e934b76df"
+  },
+  {
+    "deviceId": "auth-revoke",
+    "registeredAt": 1789824648846,
+    "lastSeenAt": 1789824801664
+  },
+  {
+    "deviceId": "ws-test-device",
+    "deviceName": "WS Test",
+    "registeredAt": 1789824759535,
+    "lastSeenAt": 1789824804162
+  },
+  {
+    "deviceId": "reg-2",
+    "deviceName": "New",
+    "pluginVersion": "1.0",
+    "registeredAt": 1789824760571,
+    "lastSeenAt": 1789824801048
+  },
+  {
+    "deviceId": "reg-3",
+    "registeredAt": 1789824760584,
+    "lastSeenAt": 1789824801053,
+    "blocked": false
+  }
+]

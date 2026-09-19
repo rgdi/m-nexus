@@ -20,7 +20,7 @@ describe("WebSocket /api/v1/audio/transcribe/stream", () => {
     if (typeof addr === "object" && addr) port = addr.port;
     wsUrl = `ws://127.0.0.1:${port}/api/v1/audio/transcribe/stream`;
     // Registrar y obtener token
-    registerDevice("ws-test-device", { deviceName: "WS Test" });
+    await registerDevice({ deviceId: "ws-test-device", deviceName: "WS Test" });
     const t = signAccessToken("ws-test-device");
     validToken = t.token;
   });

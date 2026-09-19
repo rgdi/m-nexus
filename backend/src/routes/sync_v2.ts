@@ -48,7 +48,7 @@ function resourceKey(type: string, id: string) {
   return `${type}:${id}`;
 }
 
-function applyMessageToStore(msg: SyncMessage): { accepted: boolean; conflicts: string[]; state: ResourceState | null } {
+export function applyMessageToStore(msg: SyncMessage): { accepted: boolean; conflicts: string[]; state: ResourceState | null } {
   const key = resourceKey(msg.type, msg.resourceId);
   if (msg.op === "delete") {
     RESOURCE_STATE.delete(key);

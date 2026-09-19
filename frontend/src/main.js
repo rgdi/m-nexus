@@ -173,6 +173,12 @@ async function bootstrap() {
   // v2.16.0: Conflict merge UI — listens for field-level merges from sync.
   // Lazy-loaded so first paint isn't blocked.
   import("./widgets/conflict_merge_panel.js").then((m) => m.installConflictMergePanel()).catch(() => {});
+  // v2.19.0: Android-specific device registration + permissions + offline queue.
+  // No-op on web (the module exports a guard that returns early).
+  import("./services/device_id.js").then((m) => m.registerDevice()).catch(() => {});
+  import("./widgets/android_settings.js").then((m) => m.installAndroidSettings({
+    onChange: () => { /* trigger sync queue drain */ }
+  })).catch(() => {});
   setupHamburger();
   setupDockCollapse();
   // Set initial lang attribute on html

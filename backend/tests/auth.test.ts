@@ -98,24 +98,24 @@ describe("Audit log", () => {
 });
 
 describe("Devices registry", () => {
-  it("registerDevice y lookup", () => {
-    const d = registerDevice("reg-1", { deviceName: "Test", platform: "linux" });
+  it("registerDevice y lookup", async () => {
+    const d = await registerDevice({ deviceId: "reg-1", deviceName: "Test", platform: "linux" });
     expect(d.deviceId).toBe("reg-1");
     expect(d.deviceName).toBe("Test");
     expect(isDeviceRegistered("reg-1")).toBe(true);
     expect(isDeviceRegistered("nope")).toBe(false);
   });
 
-  it("registerDevice actualiza info si ya existe", () => {
-    registerDevice("reg-2", { deviceName: "Old" });
-    registerDevice("reg-2", { deviceName: "New", pluginVersion: "1.0" });
+  it("registerDevice actualiza info si ya existe", async () => {
+    await registerDevice({ deviceId: "reg-2", deviceName: "Old" });
+    await registerDevice({ deviceId: "reg-2", deviceName: "New", pluginVersion: "1.0" });
     const d = getDevice("reg-2");
     expect(d?.deviceName).toBe("New");
     expect(d?.pluginVersion).toBe("1.0");
   });
 
-  it("blockDevice marca y desmarca", () => {
-    registerDevice("reg-3", {});
+  it("blockDevice marca y desmarca", async () => {
+    await registerDevice({ deviceId: "reg-3" });
     blockDevice("reg-3", true);
     expect(getDevice("reg-3")?.blocked).toBe(true);
     blockDevice("reg-3", false);

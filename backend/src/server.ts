@@ -25,6 +25,7 @@ import { tasksRoutes } from "./routes/tasks.js";
 import { recordingsRoutes } from "./routes/recordings.js";
 import { crossVerifyRoutes } from "./routes/cross_verify.js";
 import { syncV2Routes, syncV2RestRoutes } from "./routes/sync_v2.js";
+import { syncReplayRoutes } from "./routes/syncReplay.js";
 import { authRoutes } from "./routes/auth.js";
 import { adminRoutes } from "./routes/admin.js";
 import { studyPlannerRoutes } from "./routes/studyPlanner.js";
@@ -38,6 +39,7 @@ import { ocrRoutes } from "./routes/ocr.js";
 import { authMiddleware } from "./middleware/auth.js";
 import { cloudflareAccessMiddleware, isCloudflareAccessEnabled } from "./middleware/cloudflareAccess.js";
 import { dashboardRoutes } from "./routes/dashboard.js";
+import { deviceRoutes } from "./routes/devices.js";
 import { pdfRoutes } from "./routes/pdf.js";
 import { themesRoutes } from "./routes/themes.js";
 import { crdtRoutes } from "./routes/crdt.js";
@@ -123,6 +125,8 @@ export async function buildServer(): Promise<any> {
   // v2.0.6: E2E sync via WebSocket (WS at /ws/sync) + REST under /api/v1/sync
   await syncV2Routes(app);
   await app.register(syncV2RestRoutes, { prefix: "/api/v1" });
+  // v2.19.0: offline queue replay endpoint (batch sync).
+  await app.register(syncReplayRoutes, { prefix: "/api/v1" });
 
   // v2.1.4: register auth middleware globally so all routes get checked
   app.addHook("preHandler", authMiddleware);
@@ -168,6 +172,7 @@ export async function buildServer(): Promise<any> {
   await app.register(llmRoutes);
   await app.register(ocrRoutes);
   await app.register(dashboardRoutes);
+  await app.register(deviceRoutes);
   await app.register(pdfRoutes);
   // v2.2.0 W1: re-enable orphan routes that were disabled since v0.62.8 SIGSEGV workaround.
   // Node 22 + Fastify 5 don't have the original SIGSEGV, safe to register.

@@ -2,9 +2,12 @@
  * api.js — HTTP client for the M-NEXUS backend.
  * v1.0.0 — fetch + tiny retry layer. Falls back to local store if offline.
  * v2.6.0 — auto-attaches Bearer token + handles 401 → refresh → retry.
+ * v2.19.0 — offline mutations queued via IndexedDB and replayed later
+ *           through /api/v1/sync/replay.
  * ============================================================ */
 
 import { auth } from "./auth.js";
+import { enqueue as enqueueOffline } from "./offline_queue.js";
 
 // v2.18.0: detect if running inside a Capacitor WebView and pick the right backend.
 // In Capacitor (Android), location.hostname is "localhost" and the protocol is
@@ -71,6 +74,11 @@ async function refreshAccessToken() {
 /**
  * Wrap fetch with timeout + JSON + auto-Bearer + 401-refresh-retry.
  * Throws ApiError on non-2xx.
+ *
+ * v2.19.0: when opts.queueOffline is true and the request fails with a
+ * network error (TypeError or timeout), the mutation is enqueued in
+ * IndexedDB for later replay. The function resolves with { queued: true,
+ * entryId } instead of throwing, so callers can show "saved offline" UI.
  */
 async function req(method, path, body, opts = {}) {
   const doFetch = () => {
@@ -88,7 +96,27 @@ async function req(method, path, body, opts = {}) {
     }).finally(() => clearTimeout(timer));
   };
 
-  let res = await doFetch();
+  let res;
+  try {
+    res = await doFetch();
+  } catch (e) {
+    // v2.19.0: network error → optionally enqueue offline.
+    if (opts.queueOffline && isMutation(method)) {
+      try {
+        const entryId = await enqueueOffline({
+          type: opts.queueType,
+          op: method === "POST" ? "create" : method === "PATCH" ? "update" : method === "DELETE" ? "delete" : "create",
+          resourceId: opts.queueResourceId || extractResourceId(path) || path,
+          data: body,
+          ts: Date.now(),
+        });
+        return { queued: true, entryId };
+      } catch {
+        throw e; // can't enqueue either, give up
+      }
+    }
+    throw e;
+  }
 
   // 401 → try refresh once, then retry
   if (res.status === 401 && auth.getRefreshToken()) {
@@ -112,6 +140,15 @@ async function req(method, path, body, opts = {}) {
   return data;
 }
 
+function isMutation(method) {
+  return method === "POST" || method === "PATCH" || method === "PUT" || method === "DELETE";
+}
+
+function extractResourceId(path) {
+  const m = /\/([^/?]+)(?:\?|$)/.exec(path);
+  return m ? m[1] : null;
+}
+
 export class ApiError extends Error {
   constructor(message, status, payload) {
     super(message);
@@ -129,10 +166,10 @@ export const api = {
   notes: {
     list: () => req("GET", "/notes").then(r => r.notes ?? []).catch(() => []),
     get: (id) => req("GET", `/notes/${id}`),
-    create: (body) => req("POST", "/notes", body),
-    update: (id, body) => req("PATCH", `/notes/${id}`, body),
-    remove: (id) => req("DELETE", `/notes/${id}`),
-    appendStroke: (id, page, stroke) => req("POST", `/notes/${id}/pages/${page}/strokes`, { stroke }),
+    create: (body) => req("POST", "/notes", body, { queueOffline: true, queueType: "note", queueResourceId: body?.id }),
+    update: (id, body) => req("PATCH", `/notes/${id}`, body, { queueOffline: true, queueType: "note", queueResourceId: id }),
+    remove: (id) => req("DELETE", `/notes/${id}`, undefined, { queueOffline: true, queueType: "note", queueResourceId: id }),
+    appendStroke: (id, page, stroke) => req("POST", `/notes/${id}/pages/${page}/strokes`, { stroke }, { queueOffline: true, queueType: "recording", queueResourceId: `${id}-${page}` }),
   },
 
   // ----- Folders (v2.3.0-B) -----
@@ -174,8 +211,8 @@ export const api = {
   // ----- Flashcards -----
   flashcards: {
     due: () => req("GET", "/flashcards/due").catch(() => []),
-    review: (id, rating) => req("POST", `/flashcards/${id}/review`, { rating }),
-    create: (body) => req("POST", "/flashcards", body),
+    review: (id, rating) => req("POST", `/flashcards/${id}/review`, { rating }, { queueOffline: true, queueType: "flashcard", queueResourceId: id }),
+    create: (body) => req("POST", "/flashcards", body, { queueOffline: true, queueType: "flashcard", queueResourceId: body?.id }),
     filter: (noteId) => req("GET", `/flashcards/filter?noteId=${encodeURIComponent(noteId)}`),
   },
 

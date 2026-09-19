@@ -5,7 +5,7 @@
 //         LAN_AUTH_BYPASS env var skips auth for local network requests.
 
 import { FastifyInstance } from "fastify";
-import { registerDevice, getDevice, isDeviceRegistered, updateDeviceToken, getRegisteredDevices } from "../auth/devices.js";
+import { registerDevice, getDevice, isDeviceRegistered, getRegisteredDevices, blockDevice } from "../auth/devices.js";
 import {
   signAccessToken,
   issueRefreshToken,
@@ -68,14 +68,15 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
           });
         }
         // En producción: validar inviteToken. Aquí permitimos libre.
-        const dev = registerDevice(body.deviceId, {
+        const dev = await registerDevice({
+          deviceId: body.deviceId,
           deviceName: body.deviceName,
           platform: body.platform,
           pluginVersion: body.pluginVersion,
           publicKeyJwk: body.publicKeyJwk,
         });
         const access = signAccessToken(body.deviceId, body.deviceName);
-        updateDeviceToken(body.deviceId, access.jti);
+        dev.lastAccessTokenId = access.jti;
         const refresh = issueRefreshToken(body.deviceId);
         audit({ deviceId: body.deviceId, action: "register", allowed: true, meta: { name: body.deviceName, platform: body.platform } });
         logOp("auth", "device registered", true, { deviceId: body.deviceId, name: body.deviceName });
@@ -121,7 +122,10 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
         const isAdminUser = await getAdminUser().then((u) => u?.id === rec.deviceId).catch(() => false);
         const scope = isAdminUser ? "admin" : "device";
         const access = signAccessToken(rec.deviceId, undefined, scope);
-        if (!isAdminUser) updateDeviceToken(rec.deviceId, access.jti);
+        if (!isAdminUser) {
+          const d = getDevice(rec.deviceId);
+          if (d) d.lastAccessTokenId = access.jti;
+        }
         audit({ deviceId: rec.deviceId, action: "auth.refresh", allowed: true, meta: { scope } });
         logOp("auth", "token refreshed", true, { deviceId: rec.deviceId, scope });
         return {

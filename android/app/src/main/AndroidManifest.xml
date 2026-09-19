@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          xmlns:tools="http://schemas.android.com/tools">
 
     <application
         android:allowBackup="true"
@@ -35,11 +36,78 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
+
+        <!-- v2.19.0: intent for REQUEST_IGNORE_BATTERY_OPTIMIZATIONS dialog.
+             The JS layer dispatches this via the battery plugin to ask the
+             user to whitelist the app from doze mode. -->
+        <receiver
+            android:name=".BatteryOptimizationReceiver"
+            android:exported="false" />
+
+        <!-- v2.19.0: foreground service for sync. Keeps the WS connection
+             alive when the app is backgrounded. -->
+        <service
+            android:name=".SyncForegroundService"
+            android:foregroundServiceType="dataSync"
+            android:exported="false" />
     </application>
 
-    <!-- Permissions -->
+    <!-- ============================================================== -->
+    <!-- Permissions (v2.19.0: granular runtime permissions)              -->
+    <!--                                                                -->
+    <!-- All dangerous permissions are listed in <uses-permission>     -->
+    <!-- AND must be requested at runtime via Permission.request().     -->
+    <!-- The status is reported back to the backend via                  -->
+    <!-- PATCH /api/v1/devices/:id/permissions so admin dashboards      -->
+    <!-- can see which devices have granted what.                       -->
+    <!-- ============================================================== -->
 
+    <!-- Network (always) -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+
+    <!-- Storage / filesystem (offline queue + attachments) -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+                     android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+                     android:maxSdkVersion="29"
+                     tools:ignore="ScopedStorage" />
+    <!-- Android 13+ granular media perms -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <!-- Scoped storage for app's own files (no perm needed at runtime) -->
+
+    <!-- Audio recording (audio notes / waveform / OCR training) -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!-- Camera (future: scan textbook pages, profile photo) -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- Location (future: geotag events/notes) -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+    <!-- Notifications (FSRS reminders, conflict merges, sync status) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Pre-Android-13 (legacy) -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- Battery optimization (allow background sync + alarms) -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
+    <!-- Foreground service (keep sync alive when backgrounded) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
+    <!-- Exact alarms (FSRS "review at 09:00" reminders, Android 12+) -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+
+    <!-- Boot completed (restart scheduled reminders after device reboot) -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- Foreground sync types (Android 14 requires explicit type) -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 </manifest>

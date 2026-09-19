@@ -35,6 +35,9 @@ export const authMiddleware: (req: FastifyRequest, reply: FastifyReply) => Promi
     "/api/v1/flashcards/generate",
     "/api/v1/pdf/diff",
     "/api/v1/devices",  // GET devices (read-only)
+    "/api/v1/devices/register",  // v2.19.0: App-side device registration
+    "/api/v1/devices",          // v2.19.0: PATCH permissions/preferences/heartbeat
+    "/api/v1/sync/replay",      // v2.19.0: offline queue replay
     "/api/v1/stats",   // GET stats
     "/api/v1/secrets/test",  // Test secret
     "/api/v1/ai/embed",
