@@ -6,12 +6,34 @@
 
 import { auth } from "./auth.js";
 
-// v2.1.5: build API base URL robustly
-// - Dev: hardcode http://localhost:4100
-// - Prod: same origin (so we work behind any reverse proxy / domain)
-const API_BASE = (location.hostname === "localhost" || location.hostname === "127.0.0.1")
-  ? `http://${location.hostname}:4100/api/v1`
-  : `${location.protocol}//${location.host}/api/v1`;
+// v2.18.0: detect if running inside a Capacitor WebView and pick the right backend.
+// In Capacitor (Android), location.hostname is "localhost" and the protocol is
+// "https:" (we set androidScheme: "https"). The backend lives on the user's LAN
+// or on the emulator host.
+//   - Capacitor + emulator: 10.0.2.2 = host loopback
+//   - Capacitor + real device: user must set window.MNEXUS_BACKEND_URL or env at build time
+//   - Web (localhost/127.0.0.1 in dev): http://localhost:4100
+//   - Web (production): same origin
+function detectApiBase() {
+  // 1. Allow runtime override (e.g. dev tools or custom build)
+  if (typeof window !== "undefined" && window.MNEXUS_BACKEND_URL) {
+    return String(window.MNEXUS_BACKEND_URL).replace(/\/$/, "") + "/api/v1";
+  }
+  const isCapacitor =
+    typeof window !== "undefined" &&
+    (window.Capacitor || location.protocol === "https:" && location.hostname === "localhost" && location.port === "");
+  if (isCapacitor) {
+    // 2. Best guess: emulator host (10.0.2.2) on standard port.
+    return "http://10.0.2.2:4100/api/v1";
+  }
+  // 3. Web: dev = explicit localhost, prod = same origin
+  if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
+    return `http://${location.hostname}:4100/api/v1`;
+  }
+  return `${location.protocol}//${location.host}/api/v1`;
+}
+
+const API_BASE = detectApiBase();
 
 let refreshInFlight = null;
 

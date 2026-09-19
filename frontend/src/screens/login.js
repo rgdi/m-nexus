@@ -46,7 +46,15 @@ export async function renderLogin() {
     btn.disabled = true;
     btn.textContent = "...";
     try {
-      const r = await fetch(`${window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" ? "http://" + window.location.hostname + ":4100" : ""}/api/v1/auth/login`, {
+      // v2.18.0: detect Capacitor (uses https://localhost from androidScheme).
+      const isCapacitor = window.Capacitor || (window.location.protocol === "https:" && window.location.hostname === "localhost");
+      const base = isCapacitor
+        ? "http://10.0.2.2:4100"
+        : (window.MNEXUS_BACKEND_URL ||
+           (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+             ? `http://${window.location.hostname}:4100`
+             : window.location.origin));
+      const r = await fetch(`${base}/api/v1/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),

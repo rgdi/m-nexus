@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  v2.18.0: Allow cleartext HTTP for development convenience.
+
+  - 10.0.2.2 is the Android emulator's loopback alias for the host machine.
+    This lets a Capacitor app running in the emulator reach a backend at
+    http://localhost:4100 on the developer's machine.
+  - localhost itself is allowed for completeness (some WebView flows resolve it).
+  - For production release builds, set the backend to HTTPS and remove these
+    cleartext allowances, OR override MNEXUS_BACKEND_URL at build time.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">10.0.2.2</domain>
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">127.0.0.1</domain>
+    </domain-config>
+</network-security-config>

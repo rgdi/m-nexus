@@ -124,3 +124,40 @@ jobs:
           curl -f http://localhost:4100/api/v1/health || (docker logs mnexus-test; docker stop mnexus-test; docker rm mnexus-test; exit 1)
           docker stop mnexus-test
           docker rm mnexus-test
+
+  build-android:
+    # v2.18.0: Build the Capacitor-wrapped webview bundle as a debug APK.
+    # Uploads app-debug.apk as a workflow artifact (~30 MB).
+    name: Build Android APK (Capacitor)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: '36'
+          build-tools-version: '36.0.0'
+      - name: Build webview bundle + cap add/sync
+        run: bash scripts/build_android.sh bundle
+      - name: Gradle assembleDebug
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+      - name: Verify APK output
+        run: ls -la android/app/build/outputs/apk/debug/ || (echo "APK missing"; exit 1)
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: mnexus-android-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error

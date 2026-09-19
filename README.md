@@ -1,4 +1,4 @@
-# M-NEXUS — Education Service (v2.17.0)
+# M-NEXUS — Education Service (v2.18.0)
 
 > **Tablet-first** Education Service for medical students.
 > Notebook (stylus + pressure), calendar, subjects, to-dos, AI tutor, **spaced repetition (FSRS-4.5)**, **syllabus tracker**, **3D knowledge graph + 3D anatomy (cell biology)**, **admin auth with 90-day sessions**, **auto-backup**, **Cloudflare Tunnel ready**, **Yjs CRDT sync**, **conflict merge UI**, **user-uploaded .glb models**, **pressure-curve settings**, **offline handwriting OCR**.
@@ -23,6 +23,34 @@ Combina:
 - **Upload de modelos .glb** — trae tu propio modelo de anatomía (anatomía, célula, equipo, lo que sea)
 - **Pressure curve customizable** — soft/firm/exp/linear con preview en vivo
 - **Webview bundle** autocontenido (funciona en Capacitor/Cordova/WebView nativo)
+- **Android APK** vía Capacitor (CI genera `app-debug.apk` automáticamente)
+
+---
+
+## Android (Capacitor, v2.18.0)
+
+M-NEXUS envuelve el webview bundle en una APK Android nativa usando Capacitor 8.5. La APK se genera automáticamente en CI y se sube como artifact de workflow.
+
+**Build local**:
+```bash
+# Prerrequisitos: JDK 17 + Android SDK 34+ instalado
+export ANDROID_HOME=/path/to/android-sdk
+bash scripts/build_android.sh         # debug APK
+bash scripts/build_android.sh release # release APK (sin firma)
+```
+
+**Conectar al backend desde Android**:
+- Emulador: `http://10.0.2.2:4100` (loopback del host)
+- Device físico en LAN: `window.MNEXUS_BACKEND_URL = "http://192.168.1.X:4100"` (configurar antes de compilar el bundle)
+- Override runtime: `localStorage.setItem("mnexus.backendUrl", "http://...")` en devtools
+
+**Detección automática**: `frontend/src/services/api.js` detecta `window.Capacitor` y usa `10.0.2.2:4100` en emulador. La `network_security_config.xml` permite HTTP cleartext a `10.0.2.2`, `localhost`, `127.0.0.1` para dev.
+
+**Output**:
+```
+android/app/build/outputs/apk/debug/app-debug.apk    # ~10-15 MB
+adb install android/app/build/outputs/apk/debug/app-debug.apk
+```
 
 ---
 
