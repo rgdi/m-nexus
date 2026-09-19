@@ -19,6 +19,8 @@ import {
   openIgnoreBatteryOptimizations,
   isIgnoringBatteryOptimizations,
   openAppDetails,
+  openNotificationListenerSettings,
+  isNotificationListenerGranted,
 } from "../services/native_intents.js";
 import { detectApiBase } from "../services/api_base.js";
 
@@ -77,6 +79,12 @@ const PERMISSION_ROWS = [
     description: "Geotag en eventos y notas (opcional).",
     perm: "ACCESS_FINE_LOCATION",
   },
+  {
+    id: "notificationListener",
+    label: "Captura de notificaciones",
+    description: "Lee metadatos de notificaciones del sistema para crear eventos automáticamente. Solo metadatos (app, título, categoría), nunca contenido personal.",
+    perm: "BIND_NOTIFICATION_LISTENER_SERVICE",
+  },
 ];
 
 async function queryPermissions() {
@@ -108,6 +116,13 @@ async function queryPermissions() {
   } catch {
     // ignore
   }
+  // v2.21.0: notification listener is a Settings toggle (not a runtime perm).
+  try {
+    const nl = await isNotificationListenerGranted();
+    result.notificationListener = nl.granted ? "granted" : "denied";
+  } catch {
+    result.notificationListener = "denied";
+  }
   return result;
 }
 
@@ -123,14 +138,29 @@ async function requestPermission(permName) {
   }
 }
 
-async function openIgnoreBatteryOptimizations(): Promise<void> {
+async function openIgnoreBatteryOptimizationsPanel(): Promise<void> {
   if (!isCapacitor()) return;
   try {
     // v2.20.0: real native plugin (NativeIntentPlugin) dispatches
     // ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS intent to the system Settings.
     await openIgnoreBatteryOptimizations();
   } catch {
-    // ignore — handled by native plugin's own fallback
+    // Fallback: open app details page where battery settings live.
+    await openAppDetails();
+  }
+}
+
+/**
+ * v2.21.0: open the notification listener Settings page.
+ * The user must enable M-NEXUS manually in Settings → Notifications →
+ * "Device & app notifications" → M-NEXUS → toggle on.
+ */
+async function openNotificationListenerSettingsUI(): Promise<void> {
+  if (!isCapacitor()) return;
+  try {
+    await openNotificationListenerSettings();
+  } catch (e) {
+    console.warn("[android-settings] openNotificationListenerSettings failed:", e);
   }
 }
 
@@ -164,6 +194,7 @@ async function renderPanel(root) {
         <div class="android-perm-actions">
           ${row.perm ? `<button type="button" class="btn small android-perm-ask" data-perm-name="${escapeHtml(row.perm)}">Pedir permiso</button>` : ""}
           ${row.id === "batteryOptimizationIgnored" ? `<button type="button" class="btn small" data-battery-btn>Ir a ajustes</button>` : ""}
+          ${row.id === "notificationListener" ? `<button type="button" class="btn small" data-notif-listener-btn>Configurar</button>` : ""}
         </div>
       </div>
     `;
@@ -299,7 +330,7 @@ async function renderPanel(root) {
   });
 
   root.querySelector('[data-battery-btn]')?.addEventListener("click", async () => {
-    const dispatched = await openIgnoreBatteryOptimizations();
+    const dispatched = await openIgnoreBatteryOptimizationsPanel();
     if (dispatched) {
       // After the user closes the system dialog, refresh the status badge
       // so the UI reflects the new state.
@@ -311,8 +342,21 @@ async function renderPanel(root) {
         await renderPanel(root);
       }, 1500);
     } else {
-      // Fallback: open app details page where battery settings live.
-      void openAppDetails();
+      // Fallback path (handled by native plugin)
+    }
+  });
+
+  root.querySelector('[data-notif-listener-btn]')?.addEventListener("click", async () => {
+    const r = await openNotificationListenerSettingsUI();
+    if (r && r.opened) {
+      // After the user toggles us on/off in the system dialog, re-query
+      // the grant status and refresh the badge.
+      setTimeout(async () => {
+        const nl = await isNotificationListenerGranted();
+        currentPermissions.notificationListener = nl.granted ? "granted" : "denied";
+        await reportPermissions(currentPermissions);
+        await renderPanel(root);
+      }, 1500);
     }
   });
 

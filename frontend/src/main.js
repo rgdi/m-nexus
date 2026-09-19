@@ -189,6 +189,8 @@ async function bootstrap() {
   import("./widgets/android_settings.js").then((m) => m.installAndroidSettings({
     onChange: () => { /* trigger sync queue drain */ }
   })).catch(() => {});
+  // v2.21.0: notification capture (Android only, no-op on web).
+  import("./services/notif_capture.js").then((m) => m.installNotificationCapture()).catch(() => {});
   setupHamburger();
   setupDockCollapse();
   // Set initial lang attribute on html

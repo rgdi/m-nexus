@@ -38,6 +38,7 @@ export const authMiddleware: (req: FastifyRequest, reply: FastifyReply) => Promi
     "/api/v1/devices/register",  // v2.19.0: App-side device registration
     "/api/v1/devices",          // v2.19.0: PATCH permissions/preferences/heartbeat
     "/api/v1/sync/replay",      // v2.19.0: offline queue replay
+    "/api/v1/notifications/ingest",  // v2.21.0: notif listener ingest (device may have no JWT)
     "/api/v1/stats",   // GET stats
     "/api/v1/secrets/test",  // Test secret
     "/api/v1/ai/embed",

@@ -26,6 +26,7 @@ import { recordingsRoutes } from "./routes/recordings.js";
 import { crossVerifyRoutes } from "./routes/cross_verify.js";
 import { syncV2Routes, syncV2RestRoutes } from "./routes/sync_v2.js";
 import { syncReplayRoutes } from "./routes/syncReplay.js";
+import { notificationsRoutes } from "./routes/notifications.js";
 import { authRoutes } from "./routes/auth.js";
 import { adminRoutes } from "./routes/admin.js";
 import { studyPlannerRoutes } from "./routes/studyPlanner.js";
@@ -127,6 +128,8 @@ export async function buildServer(): Promise<any> {
   await app.register(syncV2RestRoutes, { prefix: "/api/v1" });
   // v2.19.0: offline queue replay endpoint (batch sync).
   await app.register(syncReplayRoutes, { prefix: "/api/v1" });
+  // v2.21.0: notification capture ingest + list.
+  await app.register(notificationsRoutes, { prefix: "/api/v1" });
 
   // v2.1.4: register auth middleware globally so all routes get checked
   app.addHook("preHandler", authMiddleware);

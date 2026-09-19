@@ -8,6 +8,7 @@ import android.os.Build;
 import android.os.PowerManager;
 import android.provider.Settings;
 
+import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -15,6 +16,11 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
 import com.mnexus.app.sync.SyncForegroundService;
+import com.mnexus.app.notif.NotificationCaptureService;
+import com.mnexus.app.notif.NotificationCaptureService.NotificationMeta;
+
+import java.util.List;
+import java.util.ArrayList;
 
 /**
  * NativeIntentPlugin (v2.20.0 + v2.21.0).
@@ -251,6 +257,110 @@ public class NativeIntentPlugin extends Plugin {
         JSObject ret = new JSObject();
         ret.put("updated", true);
         ret.put("count", count);
+        call.resolve(ret);
+    }
+
+    /**
+     * v2.21.0: open the system Settings page where the user can grant
+     * notification listener access to M-NEXUS. Android does not allow
+     * us to grant this permission programmatically (unlike runtime
+     * permissions) — the user must enable it manually.
+     *
+     * Required: Settings → Notifications → "Device & app notifications"
+     * → M-NEXUS → toggle on.
+     */
+    @PluginMethod
+    public void openNotificationListenerSettings(PluginCall call) {
+        Context ctx = getContext();
+        try {
+            Intent intent = new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            ctx.startActivity(intent);
+            call.resolve();
+        } catch (ActivityNotFoundException e) {
+            // Fallback: app details.
+            openAppDetailsFallback(ctx);
+            call.resolve();
+        }
+    }
+
+    /**
+     * v2.21.0: check whether the user has granted us notification
+     * listener access. Returns { granted: boolean, pendingCount: number }.
+     *
+     * Uses the system service API rather than our static flag because
+     * the service may have been killed by the OS — we want the *real*
+     * current state.
+     */
+    @PluginMethod
+    public void isNotificationListenerGranted(PluginCall call) {
+        Context ctx = getContext();
+        boolean granted = false;
+        try {
+            String flat = android.provider.Settings.Secure.getString(
+                ctx.getContentResolver(),
+                "enabled_notification_listeners"
+            );
+            if (flat != null && !flat.isEmpty()) {
+                String pkg = ctx.getPackageName();
+                String[] items = flat.split(":");
+                for (String item : items) {
+                    if (item.contains("/") && item.startsWith(pkg + "/")) {
+                        granted = true;
+                        break;
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+        JSObject ret = new JSObject();
+        ret.put("granted", granted);
+        ret.put("connected", NotificationCaptureService.isListenerConnected());
+        ret.put("pendingCount", NotificationCaptureService.pendingSize());
+        call.resolve(ret);
+    }
+
+    /**
+     * v2.21.0: drain the pending notification queue and return it to JS.
+     * Each call drains — the JS layer is expected to POST the result to
+     * /api/v1/notifications/ingest immediately, then drop its copy.
+     *
+     * Returns:
+     *   {
+     *     notifications: [
+     *       { key, packageName, postedAt, tag, id, isOngoing,
+     *         category, priority, channelId, title, text, subText,
+     *         tickerText, when },
+     *       ...
+     *     ],
+     *     count: number
+     *   }
+     */
+    @PluginMethod
+    public void getPendingNotifications(PluginCall call) {
+        List<NotificationMeta> drained = NotificationCaptureService.drainPending();
+        JSObject ret = new JSObject();
+        JSArray arr = new JSArray();
+        for (NotificationMeta m : drained) {
+            JSObject o = new JSObject();
+            o.put("key", m.key);
+            o.put("packageName", m.packageName);
+            o.put("postedAt", (double) m.postedAt);
+            o.put("tag", m.tag);
+            o.put("id", m.id);
+            o.put("isOngoing", m.isOngoing);
+            o.put("userId", m.userId);
+            o.put("category", m.category);
+            o.put("priority", m.priority);
+            o.put("channelId", m.channelId);
+            o.put("title", m.title);
+            o.put("text", m.text);
+            o.put("subText", m.subText);
+            o.put("tickerText", m.tickerText);
+            o.put("when", (double) m.when);
+            arr.put(o);
+        }
+        ret.put("notifications", arr);
+        ret.put("count", drained.size());
         call.resolve(ret);
     }
 }

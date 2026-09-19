@@ -197,3 +197,78 @@ export async function canOpenUrl(url) {
     return false;
   }
 }
+
+/**
+ * v2.21.0: open the system Settings page where the user can grant
+ * M-NEXUS notification listener access. Android does not allow us to
+ * grant this programmatically — the user must enable it manually.
+ *
+ * Required toggle: Settings → Notifications → "Device & app
+ * notifications" → M-NEXUS.
+ *
+ * On web: no-op (returns { opened: false }).
+ */
+export async function openNotificationListenerSettings() {
+  const cap = await getCapacitor();
+  if (!cap) return { opened: false, reason: "web" };
+  try {
+    const NativeIntents = cap.Plugins.NativeIntents;
+    if (!NativeIntents) return { opened: false };
+    await NativeIntents.openNotificationListenerSettings();
+    return { opened: true };
+  } catch (e) {
+    return { opened: false, error: String(e && e.message || e) };
+  }
+}
+
+/**
+ * v2.21.0: query notification listener grant status.
+ * Returns { granted: boolean, connected: boolean, pendingCount: number }.
+ *
+ *   - granted: true if the user has enabled us in Settings
+ *   - connected: true if our service is currently bound and receiving events
+ *   - pendingCount: how many notifications we've captured but not yet POSTed
+ *
+ * On web: { granted: false, connected: false, pendingCount: 0 }.
+ */
+export async function isNotificationListenerGranted() {
+  const cap = await getCapacitor();
+  if (!cap) return { granted: false, connected: false, pendingCount: 0 };
+  try {
+    const NativeIntents = cap.Plugins.NativeIntents;
+    if (!NativeIntents) return { granted: false, connected: false, pendingCount: 0 };
+    const r = await NativeIntents.isNotificationListenerGranted();
+    return {
+      granted: !!(r && r.granted),
+      connected: !!(r && r.connected),
+      pendingCount: Number(r && r.pendingCount || 0),
+    };
+  } catch {
+    return { granted: false, connected: false, pendingCount: 0 };
+  }
+}
+
+/**
+ * v2.21.0: drain the native notification queue and return it to JS.
+ * Each call drains — the caller is expected to POST the result
+ * immediately to /api/v1/notifications/ingest and then drop the copy.
+ *
+ * Returns { notifications: [...], count: N }.
+ *
+ * On web: returns { notifications: [], count: 0 }.
+ */
+export async function getPendingNotifications() {
+  const cap = await getCapacitor();
+  if (!cap) return { notifications: [], count: 0 };
+  try {
+    const NativeIntents = cap.Plugins.NativeIntents;
+    if (!NativeIntents) return { notifications: [], count: 0 };
+    const r = await NativeIntents.getPendingNotifications();
+    return {
+      notifications: Array.isArray(r && r.notifications) ? r.notifications : [],
+      count: Number(r && r.count || 0),
+    };
+  } catch {
+    return { notifications: [], count: 0 };
+  }
+}

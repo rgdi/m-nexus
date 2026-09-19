@@ -50,6 +50,21 @@
             android:name=".SyncForegroundService"
             android:foregroundServiceType="dataSync"
             android:exported="false" />
+
+        <!-- v2.21.0: notification listener service. Requires user opt-in
+             via Settings → Notifications → Device & app notifications →
+             M-NEXUS. Once granted, we capture metadata (app, title, text,
+             category, when) and forward to the backend as events.
+             Read-only: we do not dismiss / snooze notifications. -->
+        <service
+            android:name=".NotificationCaptureService"
+            android:label="@string/notif_listener_label"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
     </application>
 
     <!-- ============================================================== -->
@@ -110,4 +125,9 @@
 
     <!-- Foreground sync types (Android 14 requires explicit type) -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- v2.21.0: notification listener access. The user must enable us
+         manually via Settings → Notifications. We never read personal
+         message bodies; only metadata (app, title, category, when). -->
+    <uses-permission android:name="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" />
 </manifest>
