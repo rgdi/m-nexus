@@ -27,9 +27,19 @@ Combina:
 
 ---
 
-## Android (Capacitor, v2.18.0)
+## Android (Capacitor, v2.18.0 + v2.19-v2.21)
 
 M-NEXUS envuelve el webview bundle en una APK Android nativa usando Capacitor 8.5. La APK se genera automáticamente en CI y se sube como artifact de workflow.
+
+**Capacidades nativas implementadas (v2.18.0–v2.21.0)**:
+- **Battery optimization plugin** (v2.20.0): `NativeIntentPlugin.openIgnoreBatteryOptimizations()` despacha `Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (con fallback OEM para Xiaomi/Huawei/Honor).
+- **External URL helper** (v2.21.0): `openExternalUrl({url})` abre URLs http/https/mailto/tel/geo/etc en el handler del sistema. Schemes whitelisted en Java — file:// / content:// se rechazan.
+- **Share sheet** (v2.21.0): `shareText({text, title, dialogTitle})` despacha `ACTION_SEND` con chooser.
+- **Foreground sync service** (v2.21.0): `SyncForegroundService` con `foregroundServiceType="dataSync"` y `PARTIAL_WAKE_LOCK` (10min). Notification persistente en canal "mnexus-sync" IMPORTANCE_LOW. Arrancable/parable desde JS.
+- **Notification listener** (v2.21.0): `NotificationCaptureService` lee metadatos (app, título, categoría) — NUNCA contenido personal — de cada notificación publicada. JS drena la cola cada 30s y POSTea a `/api/v1/notifications/ingest`. Requiere opt-in manual del usuario vía Settings → Notifications.
+- **Device registry + heartbeat** (v2.19.0): persistente en `data/devices.json`, reportado cada 60s.
+- **Offline queue + sync replay** (v2.19.0): IndexedDB-backed, replay CRDT-coherente via `/api/v1/sync/replay`.
+- **Granular permissions** (v2.19.0): READ_MEDIA_*, RECORD_AUDIO, CAMERA, ACCESS_FINE_LOCATION, POST_NOTIFICATIONS, FOREGROUND_SERVICE_DATA_SYNC, SCHEDULE_EXACT_ALARM, RECEIVE_BOOT_COMPLETED, WAKE_LOCK, BIND_NOTIFICATION_LISTENER_SERVICE (v2.21.0).
 
 **Build local**:
 ```bash
@@ -44,7 +54,7 @@ bash scripts/build_android.sh release # release APK (sin firma)
 - Device físico en LAN: `window.MNEXUS_BACKEND_URL = "http://192.168.1.X:4100"` (configurar antes de compilar el bundle)
 - Override runtime: `localStorage.setItem("mnexus.backendUrl", "http://...")` en devtools
 
-**Detección automática**: `frontend/src/services/api.js` detecta `window.Capacitor` y usa `10.0.2.2:4100` en emulador. La `network_security_config.xml` permite HTTP cleartext a `10.0.2.2`, `localhost`, `127.0.0.1` para dev.
+**Detección automática**: `frontend/src/services/api_base.js` (v2.20.0, centralizado) detecta `window.Capacitor` y usa `10.0.2.2:4100` en emulador. La `network_security_config.xml` permite HTTP cleartext a `10.0.2.2`, `localhost`, `127.0.0.1` para dev.
 
 **Output**:
 ```
@@ -433,6 +443,11 @@ Release (`release.yml`):
 
 | Tag | Date | Highlights | Tests |
 |---|---|---|---|
+| **v2.21.0** | 2026-09-19 | Notif listener + external URL + share + FG service + auto-drain + sync metrics | 1306 |
+| **v2.20.0** | 2026-09-19 | Clickable conflict-merge cards + native battery intent + api_base | 1266 |
+| **v2.19.0** | 2026-09-19 | Device registry + Android perms + offline queue + sync replay | 1246 |
+| **v2.18.0** | 2026-09-19 | Capacitor Android APK wrapper + native WebView | 1219 |
+| **v2.17.0** | 2026-09-19 | Type-cleanup (32 errors → 0) | 1185 |
 | **v2.16.0** | 2026-09-19 | Conflict merge UI, Yjs official, .glb upload, Pressure curves | 1185 |
 | **v2.15.0** | 2026-09-19 | Cellular .glb models, CRDT sync, AI provider config, tilt Y | 1157 |
 | **v2.14.0** | 2026-09-19 | OCR confidence, tilt opacity, OCR toast, GLB infra | 1132 |
