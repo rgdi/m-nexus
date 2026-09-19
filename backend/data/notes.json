@@ -1,207 +1,22 @@
 [
   {
-    "id": "note-e90600bd-b664-4001-b924-d66aae172db6",
+    "id": "note-0a821442-88d2-4bee-ae44-ee7cec2bc37e",
     "title": "Math",
     "body": "x",
     "subject": "math",
     "tags": [],
     "pages": [
       {
-        "strokes": [
-          {
-            "tool": "pen",
-            "color": "#1a1d24",
-            "size": 3,
-            "alpha": 1,
-            "points": [
-              {
-                "x": 50,
-                "y": 100,
-                "p": 0.5,
-                "tilt": 0,
-                "pt": "mouse"
-              },
-              {
-                "x": 68,
-                "y": 111.98562622070312,
-                "p": 0.5,
-                "tilt": 0,
-                "pt": "mouse"
-              },
-              {
-                "x": 86,
-                "y": 121.03677368164062,
-                "p": 0.5,
-                "tilt": 0,
-                "pt": "mouse"
-              },
-              {
-                "x": 104,
-                "y": 124.9373779296875,
-                "p": 0.5,
-                "tilt": 0,
-                "pt": "mouse"
-              },
-              {
-                "x": 122,
-                "y": 122.732421875,
-                "p": 0.5,
-                "tilt": 0,
-                "pt": "mouse"
-              },
-              {
-                "x": 140,
-                "y": 114.9617919921875,
-                "p": 0.5,
-                "tilt": 0,
-                "pt": "mouse"
-              },
-              {
-                "x": 158,
-                "y": 103.52801513671875,
-                "p": 0.5,
-                "tilt": 0,
-                "pt": "mouse"
-              },
-              {
-                "x": 176,
-                "y": 91.23040771484375,
-                "p": 0.5,
-                "tilt": 0,
-                "pt": "mouse"
-              },
-              {
-                "x": 194,
-                "y": 81.07992553710938,
-                "p": 0.5,
-                "tilt": 0,
-                "pt": "mouse"
-              },
-              {
-                "x": 212,
-                "y": 75.56173706054688,
-                "p": 0.5,
-                "tilt": 0,
-                "pt": "mouse"
-              },
-              {
-                "x": 230,
-                "y": 76.02688598632812,
-                "p": 0.5,
-                "tilt": 0,
-                "pt": "mouse"
-              },
-              {
-                "x": 248,
-                "y": 82.36148071289062,
-                "p": 0.5,
-                "tilt": 0,
-                "pt": "mouse"
-              },
-              {
-                "x": 266,
-                "y": 93.01461791992188,
-                "p": 0.5,
-                "tilt": 0,
-                "pt": "mouse"
-              }
-            ]
-          },
-          {
-            "tool": "pen",
-            "color": "#1a1d24",
-            "size": 3,
-            "alpha": 1,
-            "points": [
-              {
-                "x": 50,
-                "y": 200,
-                "p": 0.5,
-                "tilt": 0,
-                "pt": "mouse"
-              },
-              {
-                "x": 72,
-                "y": 206.287109375,
-                "p": 0.5,
-                "tilt": 0,
-                "pt": "mouse"
-              },
-              {
-                "x": 94,
-                "y": 201.88189697265625,
-                "p": 0.5,
-                "tilt": 0,
-                "pt": "mouse"
-              },
-              {
-                "x": 116,
-                "y": 196.67083740234375,
-                "p": 0.5,
-                "tilt": 0,
-                "pt": "mouse"
-              },
-              {
-                "x": 138,
-                "y": 192.8853759765625,
-                "p": 0.5,
-                "tilt": 0,
-                "pt": "mouse"
-              },
-              {
-                "x": 160,
-                "y": 192.1466064453125,
-                "p": 0.5,
-                "tilt": 0,
-                "pt": "mouse"
-              },
-              {
-                "x": 182,
-                "y": 194.77084350585938,
-                "p": 0.5,
-                "tilt": 0,
-                "pt": "mouse"
-              },
-              {
-                "x": 204,
-                "y": 199.63433837890625,
-                "p": 0.5,
-                "tilt": 0,
-                "pt": "mouse"
-              },
-              {
-                "x": 226,
-                "y": 204.6544189453125,
-                "p": 0.5,
-                "tilt": 0,
-                "pt": "mouse"
-              },
-              {
-                "x": 248,
-                "y": 207.68136596679688,
-                "p": 0.5,
-                "tilt": 0,
-                "pt": "mouse"
-              },
-              {
-                "x": 270,
-                "y": 207.4189453125,
-                "p": 0.5,
-                "tilt": 0,
-                "pt": "mouse"
-              }
-            ]
-          }
-        ],
+        "strokes": [],
         "placeholders": []
       }
     ],
     "folderId": null,
-    "createdAt": 1789805109168,
-    "updatedAt": 1789805206461
+    "createdAt": 1789806041869,
+    "updatedAt": 1789806041869
   },
   {
-    "id": "note-2323dfae-4298-4ad3-a675-3eb4e12f0d15",
+    "id": "note-d04d2ef1-e594-4efc-8ee8-cace5edeeba6",
     "title": "Don Quixote",
     "body": "@cervantes/cap1 and @cervantes/cap3",
     "subject": "lit",
@@ -213,7 +28,42 @@
       }
     ],
     "folderId": null,
-    "createdAt": 1789805109326,
-    "updatedAt": 1789805109326
+    "createdAt": 1789806041944,
+    "updatedAt": 1789806041944
+  },
+  {
+    "id": "note-c9850ee1-f5c8-4fc0-b2f9-f5522a7a47a6",
+    "title": "Algebra",
+    "body": "Suma: {{c1::2+2::4}}\nProducto: {{c1::3*5::15}}",
+    "subject": "math",
+    "tags": [
+      "algebra",
+      "basics"
+    ],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "folderId": null,
+    "createdAt": 1789806047916,
+    "updatedAt": 1789806047916
+  },
+  {
+    "id": "note-92215c5c-20c1-41c1-bf07-bb26770f8ae0",
+    "title": "X",
+    "body": "{{c1::A::B}}",
+    "subject": "bio",
+    "tags": [],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "folderId": null,
+    "createdAt": 1789806047942,
+    "updatedAt": 1789806047942
   }
 ]

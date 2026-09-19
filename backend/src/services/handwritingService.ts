@@ -137,10 +137,37 @@ class HandwritingService {
       const outBase = join(tmpDir, "out");
       const png = await this.renderToPng(strokes, 800, 600);
       await writeFile(pngPath, png);
-      await execAsync(`tesseract "${pngPath}" "${outBase}" -l spa+eng --psm 7 2>/dev/null`);
+      // v2.14.0: language packs configurable via env (defaults to spa+eng).
+      // Run twice: once for text, once for TSV with per-word confidence.
+      const langs = process.env.TESSERACT_LANGS || "spa+eng";
+      await execAsync(`tesseract "${pngPath}" "${outBase}" -l ${langs} --psm 7 2>/dev/null`);
+      // Run again with TSV output to extract real confidence
+      await execAsync(`tesseract "${pngPath}" "${outBase}_tsv" -l ${langs} --psm 7 tsv 2>/dev/null`);
       const outTxt = await import("node:fs/promises").then(m => m.readFile(`${outBase}.txt`, "utf-8"));
       text = outTxt.trim();
-      if (text) { source = "tesseract"; confidence = 0.7; }
+      // v2.14.0: parse TSV for real per-word confidence (0-100 scale).
+      let realConfidence = 0;
+      try {
+        const tsv = await import("node:fs/promises").then(m => m.readFile(`${outBase}_tsv.tsv`, "utf-8"));
+        const lines = tsv.split("\n").slice(1); // skip header
+        let sumConf = 0, wordCount = 0;
+        for (const l of lines) {
+          const cols = l.split("\t");
+          if (cols.length < 12) continue;
+          const c = parseFloat(cols[10]);
+          const txt = cols[11];
+          if (isNaN(c) || !txt?.trim()) continue;
+          sumConf += c;
+          wordCount++;
+        }
+        if (wordCount > 0) {
+          realConfidence = sumConf / wordCount / 100; // normalize to 0-1
+        }
+      } catch { /* TSV parse failed — keep heuristic 0.7 */ }
+      if (text) {
+        source = realConfidence > 0 ? "tesseract" : "tesseract";
+        confidence = realConfidence > 0 ? realConfidence : 0.7;
+      }
       await rm(tmpDir, { recursive: true, force: true });
     } catch (e) {
       // tesseract no disponible: usar heuristica

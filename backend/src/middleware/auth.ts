@@ -71,6 +71,9 @@ export const authMiddleware: (req: FastifyRequest, reply: FastifyReply) => Promi
     // v2.8.0: study planner + image occlusion (used offline-first by side panel + scheduler)
     "/api/v1/study",
     "/api/v1/occlusion",
+    // v2.14.0: static asset paths (3D models, images) served by @fastify/static
+    "/models",
+    "/public",
     // v2.6.0: admin login/setup/status — must be public so you can actually log in.
     "/api/v1/auth/login",
     "/api/v1/auth/setup",

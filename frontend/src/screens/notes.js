@@ -827,11 +827,19 @@ function setupCanvas(root, noteId, pageIdx, strokes, pages) {
     const baseSize = currentStroke.size;
     const p = (next.pt === "pen" && next.p > 0) ? next.p : 1.0;
     const segmentSize = Math.max(0.5, baseSize * (0.5 + p));
+    // v2.14.0: tilt-based opacity. Pen tilt 0..90° → alpha 1..0.5.
+    // When stylus is tilted, strokes appear lighter (like real ink shading).
+    // Only applies for pen input; mouse/touch keep alpha 1.
+    let segAlpha = currentStroke.alpha;
+    if (next.pt === "pen" && next.tilt !== undefined) {
+      const tiltNorm = Math.min(1, Math.abs(next.tilt) / 90);
+      segAlpha = currentStroke.alpha * (1 - tiltNorm * 0.5);
+    }
     currentStroke.points.push(next);
     redraw();
     ctx.beginPath();
     ctx.lineCap = "round"; ctx.lineJoin = "round";
-    ctx.globalAlpha = currentStroke.alpha;
+    ctx.globalAlpha = segAlpha;
     ctx.strokeStyle = currentStroke.color;
     ctx.lineWidth = segmentSize;
     ctx.moveTo(last.x, last.y);
@@ -898,6 +906,9 @@ function setupCanvas(root, noteId, pageIdx, strokes, pages) {
       const data = await r.json();
       const text = (data?.text || "").trim();
       if (!text || text.length < 2) return;
+      // v2.14.0: confidence threshold (skip low-confidence OCR to avoid noise)
+      const confidence = typeof data.confidence === "number" ? data.confidence : 0.5;
+      if (confidence < 0.3) return;
       // Append to note body (debounced save)
       const note = root._note || (await dataSource.notes.get(noteId));
       const current = note.body || "";
@@ -905,6 +916,11 @@ function setupCanvas(root, noteId, pageIdx, strokes, pages) {
       await dataSource.notes.update(noteId, { body: next });
       root._note = { ...note, body: next };
       setAIScreenContext({ note: { ...note, body: next }, subject: note.subject });
+      // v2.14.0: visual feedback — show transient toast with recognized text
+      try {
+        const { showOcrToast } = await import("../widgets/ocrToast.js");
+        showOcrToast(text, confidence, data.source || "tesseract");
+      } catch { /* toast module optional */ }
     } catch (e) {
       // OCR unavailable (offline, no backend) — silently skip
     }
