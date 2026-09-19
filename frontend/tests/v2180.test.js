@@ -67,18 +67,19 @@ describe("v2.18.0 — android/ wrapper structure", () => {
 });
 
 describe("v2.18.0 — frontend backend URL detection", () => {
-  it("api.js has MNEXUS_BACKEND_URL window override", () => {
+  it("api.js imports detectApiBase from shared module", () => {
     const src = readFileSync(SRC("frontend/src/services/api.js"), "utf-8");
-    expect(src).toMatch(/MNEXUS_BACKEND_URL/);
-    expect(src).toMatch(/window\.Capacitor/);
-    expect(src).toMatch(/10\.0\.2\.2/);
+    expect(src).toMatch(/from "\.\/api_base\.js"/);
+    expect(src).toMatch(/detectApiBase/);
+    // 10.0.2.2 detection now lives in services/api_base.js, not api.js.
+    const base = readFileSync(SRC("frontend/src/services/api_base.js"), "utf-8");
+    expect(base).toMatch(/10\.0\.2\.2/);
   });
 
-  it("login.js detects Capacitor and uses 10.0.2.2 for emulator", () => {
+  it("login.js imports detectApiBase from shared module", () => {
     const src = readFileSync(SRC("frontend/src/screens/login.js"), "utf-8");
-    expect(src).toMatch(/isCapacitor/);
-    expect(src).toMatch(/10\.0\.2\.2/);
-    expect(src).toMatch(/MNEXUS_BACKEND_URL/);
+    expect(src).toMatch(/from "\.\.\/services\/api_base\.js"/);
+    expect(src).toMatch(/detectApiBase/);
   });
 });
 

@@ -5,6 +5,7 @@
 
 import { auth } from "../services/auth.js";
 import { i18n } from "../services/i18n.js";
+import { detectApiBase } from "../services/api_base.js";
 
 const t = (k, args) => i18n.t(k, args);
 
@@ -47,13 +48,7 @@ export async function renderLogin() {
     btn.textContent = "...";
     try {
       // v2.18.0: detect Capacitor (uses https://localhost from androidScheme).
-      const isCapacitor = window.Capacitor || (window.location.protocol === "https:" && window.location.hostname === "localhost");
-      const base = isCapacitor
-        ? "http://10.0.2.2:4100"
-        : (window.MNEXUS_BACKEND_URL ||
-           (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-             ? `http://${window.location.hostname}:4100`
-             : window.location.origin));
+      const base = detectApiBase();
       const r = await fetch(`${base}/api/v1/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

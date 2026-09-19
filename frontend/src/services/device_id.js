@@ -1,4 +1,4 @@
-// device_id.js — Device identification + registration (v2.19.0).
+// device_id.js — Device identification + registration (v2.19.0 + v2.20.0).
 //
 // On first launch (or when no cached deviceId exists), this service
 // generates a UUID, persists it to localStorage, and registers the
@@ -12,6 +12,7 @@
 // uses the browser user-agent.
 
 import { auth } from "./auth.js";
+import { detectApiBase } from "./api_base.js";
 
 const DEVICE_ID_KEY = "mnexus.device.id";
 const DEVICE_INFO_KEY = "mnexus.device.info";
@@ -19,15 +20,15 @@ const HEARTBEAT_INTERVAL_MS = 60_000; // 60 s
 
 let heartbeatTimer = null;
 
-function uuid(): string {
+function uuid() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
   }
   return "d-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
 }
 
-export function getDeviceId(): string {
-  let id: string | null = localStorage.getItem(DEVICE_ID_KEY);
+export function getDeviceId() {
+  let id = localStorage.getItem(DEVICE_ID_KEY);
   if (!id) {
     id = uuid();
     localStorage.setItem(DEVICE_ID_KEY, id);
@@ -35,28 +36,21 @@ export function getDeviceId(): string {
   return id;
 }
 
-export function setDeviceId(id: string): void {
+export function setDeviceId(id) {
   localStorage.setItem(DEVICE_ID_KEY, id);
 }
 
-async function detectNative(): Promise<{
-  platform: string;
-  manufacturer?: string;
-  model?: string;
-  osVersion?: string;
-  pluginVersion?: string;
-  appVersion?: string;
-}> {
+async function detectNative() {
   // Web fallback
-  const nav: any = typeof navigator !== "undefined" ? navigator : {};
+  const nav = typeof navigator !== "undefined" ? navigator : {};
   const ua = nav.userAgent || "";
   const baseInfo = {
     platform: "web",
-    manufacturer: undefined as string | undefined,
-    model: undefined as string | undefined,
-    osVersion: undefined as string | undefined,
-    pluginVersion: undefined as string | undefined,
-    appVersion: undefined as string | undefined,
+    manufacturer: undefined,
+    model: undefined,
+    osVersion: undefined,
+    pluginVersion: undefined,
+    appVersion: undefined,
   };
   // Capacitor native: dynamically import the plugin so web builds skip it.
   if (window.Capacitor) {
@@ -87,20 +81,10 @@ async function detectNative(): Promise<{
   return baseInfo;
 }
 
-/** @typedef {Object} DeviceInfo
- *  @property {string} deviceId
- *  @property {string} platform
- *  @property {string} [manufacturer]
- *  @property {string} [model]
- *  @property {string} [osVersion]
- *  @property {string} [pluginVersion]
- *  @property {string} [appVersion]
- *  @property {number} [registeredAt]
- *  @property {number} [lastSeenAt]
- */
-
-/** @type {DeviceInfo | null} */
-let cachedDeviceInfo = null;
+function apiBase() {
+  // v2.20.0: shared detection logic in services/api_base.js.
+  return detectApiBase();
+}
 
 /**
  * Registers the device with the backend.
@@ -114,7 +98,7 @@ export async function registerDevice() {
     const deviceId = getDeviceId();
     const native = await detectNative();
     const token = auth.getAccessToken();
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const headers = { "Content-Type": "application/json" };
     if (token) headers.Authorization = `Bearer ${token}`;
 
     const res = await fetch(`${apiBase()}/api/v1/devices/register`, {
@@ -145,32 +129,15 @@ export async function registerDevice() {
   }
 }
 
-function apiBase(): string {
-  // Reuse api.js detection logic without circular import.
-  if (typeof window !== "undefined" && (window as any).MNEXUS_BACKEND_URL) {
-    return String((window as any).MNEXUS_BACKEND_URL).replace(/\/$/, "");
-  }
-  if (typeof window !== "undefined" && window.Capacitor) {
-    return "http://10.0.2.2:4100";
-  }
-  if (typeof location !== "undefined" && (location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
-    return `http://${location.hostname}:4100`;
-  }
-  if (typeof location !== "undefined") {
-    return `${location.protocol}//${location.host}`;
-  }
-  return "http://localhost:4100";
-}
-
 /**
  * Send heartbeat to backend. If we lose network, queue locally (the
  * sync_queue service handles persistence).
  */
-export async function sendHeartbeat(): Promise<void> {
+export async function sendHeartbeat() {
   try {
     const deviceId = getDeviceId();
     const token = auth.getAccessToken();
-    const headers: Record<string, string> = {};
+    const headers = {};
     if (token) headers.Authorization = `Bearer ${token}`;
     await fetch(`${apiBase()}/api/v1/devices/${deviceId}/heartbeat`, {
       method: "POST",
@@ -181,12 +148,12 @@ export async function sendHeartbeat(): Promise<void> {
   }
 }
 
-export function startHeartbeat(deviceId?: string): void {
+export function startHeartbeat(deviceId) {
   if (heartbeatTimer) return;
   heartbeatTimer = setInterval(() => { void sendHeartbeat(); }, HEARTBEAT_INTERVAL_MS);
 }
 
-export function stopHeartbeat(): void {
+export function stopHeartbeat() {
   if (heartbeatTimer) {
     clearInterval(heartbeatTimer);
     heartbeatTimer = null;
@@ -198,11 +165,11 @@ export function stopHeartbeat(): void {
  * permissions via the @capacitor/permissions plugin and posts the actual
  * grants as a snapshot.
  */
-export async function reportPermissions(perms: Record<string, boolean>): Promise<void> {
+export async function reportPermissions(perms) {
   try {
     const deviceId = getDeviceId();
     const token = auth.getAccessToken();
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const headers = { "Content-Type": "application/json" };
     if (token) headers.Authorization = `Bearer ${token}`;
     await fetch(`${apiBase()}/api/v1/devices/${deviceId}/permissions`, {
       method: "PATCH",
@@ -218,11 +185,11 @@ export async function reportPermissions(perms: Record<string, boolean>): Promise
  * Update preferences (backend URL, sync interval, etc.) on the backend.
  * Also persists a copy locally for offline reads.
  */
-export async function reportPreferences(prefs: Record<string, unknown>): Promise<void> {
+export async function reportPreferences(prefs) {
   try {
     const deviceId = getDeviceId();
     const token = auth.getAccessToken();
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const headers = { "Content-Type": "application/json" };
     if (token) headers.Authorization = `Bearer ${token}`;
     await fetch(`${apiBase()}/api/v1/devices/${deviceId}/preferences`, {
       method: "PATCH",

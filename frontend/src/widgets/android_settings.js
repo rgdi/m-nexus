@@ -15,6 +15,12 @@
 import { getDeviceId, registerDevice, reportPermissions, reportPreferences, getCachedDeviceInfo } from "../services/device_id.js";
 import { size as queueSize, replay as replayQueue } from "../services/offline_queue.js";
 import { auth } from "../services/auth.js";
+import {
+  openIgnoreBatteryOptimizations,
+  isIgnoringBatteryOptimizations,
+  openAppDetails,
+} from "../services/native_intents.js";
+import { detectApiBase } from "../services/api_base.js";
 
 const PANEL_ID = "android-settings-panel";
 
@@ -73,9 +79,9 @@ const PERMISSION_ROWS = [
   },
 ];
 
-async function queryPermissions(): Promise<Record<string, string>> {
+async function queryPermissions() {
   // Capacitor Permissions plugin queries native Android permissions.
-  const result: Record<string, string> = {};
+  const result = {};
   if (!isCapacitor()) {
     return result;
   }
@@ -92,6 +98,15 @@ async function queryPermissions(): Promise<Record<string, string>> {
     }
   } catch {
     // Permissions plugin not available
+  }
+  // v2.20.0: battery optimization is a separate signal (not a runtime perm).
+  try {
+    const { ignoring, supported } = await isIgnoringBatteryOptimizations();
+    if (supported) {
+      result.batteryOptimizationIgnored = ignoring ? "granted" : "denied";
+    }
+  } catch {
+    // ignore
   }
   return result;
 }
@@ -111,17 +126,11 @@ async function requestPermission(permName) {
 async function openIgnoreBatteryOptimizations(): Promise<void> {
   if (!isCapacitor()) return;
   try {
-    // Capacitor App plugin doesn't expose this directly; dispatch an
-    // ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS intent via the App
-    // plugin's openUrl fallback or a tiny native plugin. For now we
-    // just instruct the user.
-    const appMod = await import("@capacitor/app");
-    // Some Android devices route this through Settings.ACTION_BATTERY_SAVER_SETTINGS;
-    // there is no exact Capacitor mapping so we surface a manual step.
-    void appMod;
-    return;
+    // v2.20.0: real native plugin (NativeIntentPlugin) dispatches
+    // ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS intent to the system Settings.
+    await openIgnoreBatteryOptimizations();
   } catch {
-    // ignore
+    // ignore — handled by native plugin's own fallback
   }
 }
 
@@ -188,7 +197,7 @@ async function renderPanel(root) {
         <label class="form-row">
           Backend URL
           <input name="backend-url" type="url" class="input" placeholder="http://10.0.2.2:4100"
-                 value="${escapeHtml(currentPrefs.backendUrl || window.MNEXUS_BACKEND_URL || detectCurrentBackend())}" />
+                 value="${escapeHtml(currentPrefs.backendUrl || window.MNEXUS_BACKEND_URL || detectApiBase())}" />
         </label>
         <label class="form-row">
           <input type="checkbox" name="offline-mode" ${currentPrefs.offlineMode ? "checked" : ""} />
@@ -289,14 +298,28 @@ async function renderPanel(root) {
     });
   });
 
-  root.querySelector('[data-battery-btn]')?.addEventListener("click", () => {
-    void openIgnoreBatteryOptimizations();
+  root.querySelector('[data-battery-btn]')?.addEventListener("click", async () => {
+    const dispatched = await openIgnoreBatteryOptimizations();
+    if (dispatched) {
+      // After the user closes the system dialog, refresh the status badge
+      // so the UI reflects the new state.
+      setTimeout(async () => {
+        const { ignoring } = await isIgnoringBatteryOptimizations();
+        if (ignoring) currentPermissions.batteryOptimizationIgnored = true;
+        else delete currentPermissions.batteryOptimizationIgnored;
+        await reportPermissions(currentPermissions);
+        await renderPanel(root);
+      }, 1500);
+    } else {
+      // Fallback: open app details page where battery settings live.
+      void openAppDetails();
+    }
   });
 
   root.querySelector('[data-action="drain-queue"]')?.addEventListener("click", async () => {
     const status = flashStatus("android-queue-status", "Enviando...");
     try {
-      const r = await replayQueue(getDeviceId(), `${currentPrefs.backendUrl || detectCurrentBackend()}/`, auth.getAccessToken() || undefined);
+      const r = await replayQueue(getDeviceId(), `${currentPrefs.backendUrl || detectApiBase()}/`, auth.getAccessToken() || undefined);
       status.textContent = `✓ Replay: ${r.applied} aplicadas, ${r.superseded} superseded, ${r.rejected} rechazadas, ${r.remaining} restantes`;
       await renderPanel(root);
     } catch (e) {
@@ -313,11 +336,8 @@ async function renderPanel(root) {
 }
 
 function detectCurrentBackend() {
-  if (window.Capacitor) return "http://10.0.2.2:4100";
-  if (typeof location !== "undefined" && (location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
-    return `http://${location.hostname}:4100`;
-  }
-  return "http://localhost:4100";
+  // v2.20.0: shared detection in services/api_base.js
+  return detectApiBase();
 }
 
 function flashStatus(id, text) {
