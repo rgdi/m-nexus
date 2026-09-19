@@ -20,6 +20,7 @@ import { renderAttachmentsGrid, addAttachment } from "../widgets/file_attachment
 import { mountAITutor, setAIContext } from "../widgets/ai_tutor.js";
 import { mountFlashcardSlash } from "../widgets/flashcard_slash.js";
 import { icon as svgIcon } from "../widgets/icons.js";
+import { trackField, applyRemoteUpdate } from "../services/field_history.js";
 
 const state = {
   selectedId: null,
@@ -215,14 +216,38 @@ async function renderNotebook(root, id) {
     setTimeout(() => {
       const ta = root.querySelector("#body");
       if (!ta) return;
+      // v2.21.1: per-field undo/redo history. Tracked on every input,
+      // flushed on blur, undo/redo via Cmd/Ctrl+Z / Cmd/Ctrl+Shift+Z.
+      const history = trackField(id, "body", note.body || "");
       let timer = null;
       ta.addEventListener("input", (e) => {
+        history.setValue(e.target.value);
         clearTimeout(timer);
         timer = setTimeout(async () => {
+          history.flush();
           await dataSource.notes.update(id, { body: e.target.value });
           // Notify AI context refresh so the AI screen reflects new body
           setAIScreenContext({ note: { ...note, body: e.target.value }, subject: note.subject });
         }, 600);
+      });
+      ta.addEventListener("blur", () => history.flush());
+      ta.addEventListener("keydown", (e) => {
+        const mod = e.ctrlKey || e.metaKey;
+        if (mod && !e.shiftKey && e.key.toLowerCase() === "z") {
+          const v = history.undo();
+          if (v !== null) {
+            e.preventDefault();
+            ta.value = v;
+            ta.dispatchEvent(new Event("input", { bubbles: true }));
+          }
+        } else if (mod && e.shiftKey && e.key.toLowerCase() === "z") {
+          const v = history.redo();
+          if (v !== null) {
+            e.preventDefault();
+            ta.value = v;
+            ta.dispatchEvent(new Event("input", { bubbles: true }));
+          }
+        }
       });
     }, 0);
     // Wire narrow-only handlers

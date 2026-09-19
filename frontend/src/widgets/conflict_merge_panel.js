@@ -136,8 +136,9 @@ function ensurePanel() {
         border-radius: 10px;
         padding: 8px 10px;
         background: var(--surface-1, #fff);
-        animation: cm-slide-in 0.2s ease-out;
+        animation: cm-slide-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) backwards;
         cursor: default;
+        will-change: transform, opacity;
       }
       .conflict-card.has-cta {
         cursor: pointer;
@@ -147,9 +148,57 @@ function ensurePanel() {
         border-color: var(--accent, #3b82f6);
         box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
       }
+      /* Per-card stagger via custom property (--cm-i set in JS). */
+      .conflict-card.cm-stagger { animation-delay: calc(var(--cm-i, 0) * 60ms); }
+      /* Dismissing: fade out + slide left before the element is removed. */
+      .conflict-card.cm-leaving {
+        animation: cm-slide-out 0.22s cubic-bezier(0.55, 0, 0.65, 0.45) forwards;
+      }
       @keyframes cm-slide-in {
-        from { opacity: 0; transform: translateY(-6px); }
-        to { opacity: 1; transform: translateY(0); }
+        from {
+          opacity: 0;
+          transform: translateY(-8px) scale(0.985);
+          filter: blur(2px);
+        }
+        60% {
+          filter: blur(0);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+          filter: blur(0);
+        }
+      }
+      @keyframes cm-slide-out {
+        from { opacity: 1; transform: translateX(0); max-height: 240px; }
+        to {
+          opacity: 0;
+          transform: translateX(-32px);
+          max-height: 0;
+          padding-top: 0;
+          padding-bottom: 0;
+          margin-top: 0;
+          margin-bottom: 0;
+          border-width: 0;
+        }
+      }
+      /* New card pulse: a subtle ring that fades when the card first appears. */
+      .conflict-card.cm-new {
+        animation:
+          cm-slide-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) backwards,
+          cm-pulse 1.2s ease-out 0.32s 1 backwards;
+      }
+      @keyframes cm-pulse {
+        0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.45); }
+        100% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .conflict-card,
+        .conflict-card.cm-new,
+        .conflict-card.cm-leaving {
+          animation-duration: 0s !important;
+          animation-delay: 0s !important;
+        }
       }
       .conflict-card-head {
         display: flex;
@@ -363,6 +412,16 @@ function escapeAttr(s) {
   return escapeHtml(s).replace(/"/g, "&quot;");
 }
 
+/** v2.21.1: respect prefers-reduced-motion. SSR-safe. */
+function prefersReducedMotion() {
+  if (typeof window === "undefined" || !window.matchMedia) return false;
+  try {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  } catch {
+    return false;
+  }
+}
+
 function fieldRow(field, mergedData, prevValue, removed) {
   const newValue = mergedData ? mergedData[field] : undefined;
   const hasPrev = prevValue !== undefined && prevValue !== null;
@@ -505,7 +564,7 @@ async function renderPanel() {
   }
   panel.classList.add("has-cards");
   const html = await Promise.all(
-    cards.slice(0, MAX_CARDS).map(async (c) => {
+    cards.slice(0, MAX_CARDS).map(async (c, idx) => {
       const prevValues = c.prevValues || (c.prevValues = await loadPreMergeValues(c));
       const fieldsHtml = c.mergedFields
         .filter((f) => f !== "__mergedFields")
@@ -513,8 +572,11 @@ async function renderPanel() {
         .join("");
       const href = resourceHref(c.type, c.resourceId);
       const reloadLabel = c.reloading ? "↻ Reloading…" : "↻ Reload";
+      const isFresh = !c._renderedOnce;
+      c._renderedOnce = true;
+      const animClass = isFresh ? "cm-stagger cm-new" : "cm-stagger";
       return `
-        <div class="conflict-card has-cta" data-id="${escapeAttr(c.id)}" data-href="${escapeAttr(href)}">
+        <div class="conflict-card has-cta ${animClass}" style="--cm-i: ${idx}" data-id="${escapeAttr(c.id)}" data-href="${escapeAttr(href)}">
           <div class="conflict-card-head">
             <span class="conflict-card-type">${escapeHtml(c.type)}</span>
             <span class="conflict-card-id" title="${escapeAttr(c.resourceId)}">${escapeHtml(c.resourceId.slice(0, 16))}</span>
@@ -540,8 +602,21 @@ async function renderPanel() {
     btn.addEventListener("click", (ev) => {
       ev.stopPropagation();
       const id = btn.getAttribute("data-dismiss");
-      cards = cards.filter((c) => c.id !== id);
-      renderPanel();
+      const cardEl = btn.closest(".conflict-card");
+      // Animate out before removing.
+      if (cardEl && !prefersReducedMotion()) {
+        cardEl.classList.add("cm-leaving");
+        const remove = () => {
+          cards = cards.filter((c) => c.id !== id);
+          renderPanel();
+        };
+        cardEl.addEventListener("animationend", remove, { once: true });
+        // Safety net in case animationend doesn't fire (e.g. tab hidden).
+        setTimeout(remove, 320);
+      } else {
+        cards = cards.filter((c) => c.id !== id);
+        renderPanel();
+      }
     });
   });
 

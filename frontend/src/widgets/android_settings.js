@@ -22,6 +22,7 @@ import {
   openNotificationListenerSettings,
   isNotificationListenerGranted,
 } from "../services/native_intents.js";
+import { getAllowedPackages, setAllowedPackages } from "../services/notif_capture.js";
 import { detectApiBase } from "../services/api_base.js";
 
 const PANEL_ID = "android-settings-panel";
@@ -174,6 +175,47 @@ let currentPrefs = {};
 /** @type {(() => void) | null} */
 let onChangeListener = null;
 
+/**
+ * v2.21.1: render the per-app filter section for the notification
+ * listener. The user enters package names (one per line, e.g.
+ * "com.whatsapp" or "com.android.systemui") and only those packages
+ * will have their notifications captured. Empty list = capture all.
+ */
+function renderNotifFilterSection() {
+  const allowed = getAllowedPackages();
+  const hasFilter = allowed.length > 0;
+  return `
+    <section class="settings-section android-only-section" id="notif-filter-section">
+      <h2>Filtro de captura de notificaciones</h2>
+      <p class="muted">
+        Por defecto capturamos metadatos (app, título, categoría) de todas las notificaciones.
+        Si quieres limitar la captura a ciertas apps, añade sus nombres de paquete aquí.
+        <br/><strong>Vacío = sin filtro (captura todo)</strong>.
+      </p>
+      <div class="android-card">
+        <form data-form="notif-filter">
+          <label class="form-row">
+            <span>Paquetes permitidos (uno por línea)</span>
+            <textarea name="packages" rows="4" class="input" placeholder="com.whatsapp&#10;org.telegram.messenger&#10;com.android.systemui">${
+              escapeHtml(allowed.join("\n"))
+            }</textarea>
+          </label>
+          <div class="form-row">
+            <button type="submit" class="btn primary">Guardar filtro</button>
+            <button type="button" class="btn" data-action="clear-notif-filter">Vaciar (capturar todo)</button>
+            <span id="notif-filter-status" class="settings-status"></span>
+          </div>
+          <p class="muted small">Estado actual: ${
+            hasFilter
+              ? `<strong>${allowed.length} paquete${allowed.length === 1 ? "" : "s"} permitido${allowed.length === 1 ? "" : "s"}</strong>`
+              : "sin filtro (todas las apps)"
+          }</p>
+        </form>
+      </div>
+    </section>
+  `;
+}
+
 async function renderPanel(root) {
   const deviceId = getDeviceId();
   const cached = getCachedDeviceInfo();
@@ -267,6 +309,8 @@ async function renderPanel(root) {
         </div>
       </div>
     </section>
+
+    ${renderNotifFilterSection()}
   `;
 
   // Wire handlers
@@ -375,6 +419,25 @@ async function renderPanel(root) {
     if (!confirm("¿Vaciar toda la cola offline? Las mutaciones pendientes se perderán.")) return;
     const { clear } = await import("../services/offline_queue.js");
     await clear();
+    await renderPanel(root);
+  });
+
+  // v2.21.1: notif filter form handlers.
+  root.querySelector('[data-form="notif-filter"]')?.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const ta = ev.currentTarget.querySelector('textarea[name="packages"]');
+    const text = (ta && ta.value) || "";
+    const pkgs = text.split("\n")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+    setAllowedPackages(pkgs);
+    flashStatus("notif-filter-status", `✓ Guardado: ${pkgs.length} paquete${pkgs.length === 1 ? "" : "s"}`);
+    await renderPanel(root);
+  });
+
+  root.querySelector('[data-action="clear-notif-filter"]')?.addEventListener("click", async () => {
+    setAllowedPackages([]);
+    flashStatus("notif-filter-status", "✓ Filtro vaciado (todas las apps)");
     await renderPanel(root);
   });
 }

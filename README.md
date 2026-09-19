@@ -1,4 +1,4 @@
-# M-NEXUS — Education Service (v2.21.0)
+# M-NEXUS — Education Service (v2.21.1)
 
 > **Tablet-first** Education Service for medical students.
 > Notebook (stylus + pressure), calendar, subjects, to-dos, AI tutor, **spaced repetition (FSRS-4.5)**, **syllabus tracker**, **3D knowledge graph + 3D anatomy (cell biology)**, **admin auth with 90-day sessions**, **auto-backup**, **Cloudflare Tunnel ready**, **Yjs CRDT sync**, **conflict merge UI**, **user-uploaded .glb models**, **pressure-curve settings**, **offline handwriting OCR**.
@@ -443,6 +443,7 @@ Release (`release.yml`):
 
 | Tag | Date | Highlights | Tests |
 |---|---|---|---|
+| **v2.21.1** | 2026-09-19 | Notif filter + IDB failure queue + undo/redo + conflict-merge animation | 1345 |
 | **v2.21.0** | 2026-09-19 | Notif listener + external URL + share + FG service + auto-drain + sync metrics | 1306 |
 | **v2.20.0** | 2026-09-19 | Clickable conflict-merge cards + native battery intent + api_base | 1266 |
 | **v2.19.0** | 2026-09-19 | Device registry + Android perms + offline queue + sync replay | 1246 |
