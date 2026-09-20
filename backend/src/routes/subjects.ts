@@ -1,8 +1,15 @@
 // subjects.ts: REST CRUD para asignaturas.
-// v1.1.0 — frontend Education Service
+// v2.22.1 — dinámico y personalizable en todo momento.
+// v2.22.1 — eliminada la seed de "Mr. Meier", "Fr. Stolz", "Dr. Seibert"… que
+//           hacía que cada usuario nuevo viera el instituto ficticio de un
+//           alumno alemán. Ahora subjects.json empieza vacío. El setup
+//           wizard ofrece añadir, y la pantalla de Subjects permite CRUD
+//           completo (add/edit/delete/reorder/color picker) en cualquier
+//           momento, no solo en el onboarding.
 //
 // Modelo: cada subject tiene id, name, icon (1-2 chars), color (CSS var),
-// grade (0-10), performance (% change), prof (teacher), next (próxima clase).
+// grade (0-10), performance (% change), prof (teacher), next (próxima clase),
+// order (position en la lista — menor = primero).
 
 import { FastifyInstance } from "fastify";
 import { randomUUID } from "node:crypto";
@@ -20,6 +27,7 @@ export interface Subject {
   performance: number;
   prof: string;
   next: string;
+  order?: number;
   createdAt: number;
   updatedAt: number;
 }
@@ -33,7 +41,8 @@ export class SubjectsService {
     if (this.cache) return this.cache;
     try {
       const buf = await fs.readFile(DATA_FILE, "utf-8");
-      this.cache = JSON.parse(buf);
+      const parsed = JSON.parse(buf);
+      this.cache = Array.isArray(parsed) ? parsed : [];
       return this.cache!;
     } catch {
       this.cache = [];
@@ -48,7 +57,14 @@ export class SubjectsService {
 
   async create(input: Omit<Subject, "id" | "createdAt" | "updatedAt">): Promise<Subject> {
     const list = await this.all();
-    const s: Subject = { ...input, id: `sub-${randomUUID()}`, createdAt: Date.now(), updatedAt: Date.now() };
+    const maxOrder = list.reduce((m, s) => Math.max(m, s.order ?? 0), -1);
+    const s: Subject = {
+      ...input,
+      id: `sub-${randomUUID()}`,
+      order: input.order ?? maxOrder + 1,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
     list.push(s);
     await this.save();
     return s;
@@ -73,6 +89,57 @@ export class SubjectsService {
     return true;
   }
 
+  /**
+   * v2.22.1: bulk import (replaces entire list). Used by "Import" button
+   * or by migration scripts. Returns the new list.
+   */
+  async bulkReplace(items: Array<Omit<Subject, "id" | "createdAt" | "updatedAt" | "order">>): Promise<Subject[]> {
+    const now = Date.now();
+    const next: Subject[] = items.map((it, idx) => ({
+      ...it,
+      id: `sub-${randomUUID()}`,
+      order: idx,
+      createdAt: now,
+      updatedAt: now,
+    }));
+    this.cache = next;
+    await this.save();
+    return next;
+  }
+
+  /**
+   * v2.22.1: reorder — accepts ordered id list, updates .order field.
+   */
+  async reorder(orderedIds: string[]): Promise<Subject[]> {
+    const list = await this.all();
+    const map = new Map(list.map((s) => [s.id, s]));
+    const next: Subject[] = [];
+    for (let i = 0; i < orderedIds.length; i++) {
+      const s = map.get(orderedIds[i]);
+      if (!s) continue;
+      next.push({ ...s, order: i, updatedAt: Date.now() });
+    }
+    // Add any subjects that weren't in the list (defensive).
+    for (const s of list) {
+      if (!orderedIds.includes(s.id)) next.push({ ...s, order: next.length, updatedAt: Date.now() });
+    }
+    this.cache = next;
+    await this.save();
+    return next;
+  }
+
+  /**
+   * v2.22.1: delete ALL subjects for the current user. Used by "Reset"
+   * button. Returns count deleted.
+   */
+  async removeAll(): Promise<number> {
+    const list = await this.all();
+    const n = list.length;
+    this.cache = [];
+    await this.save();
+    return n;
+  }
+
   private async save(): Promise<void> {
     if (!this.cache) return;
     await fs.mkdir(join(process.cwd(), "data"), { recursive: true });
@@ -84,12 +151,14 @@ const svc = new SubjectsService();
 export const subjectsServiceInstance = svc;
 
 export async function subjectsRoutes(app: FastifyInstance): Promise<void> {
-  // v2.6.0: demo data is opt-in. Auto-seed removed to prevent pollution.
-  // Load via POST /api/v1/admin/demo/load or "Cargar datos demo" button in UI.
+  // v2.22.1: NO auto-seed. subjects.json starts empty. The user adds what
+  // they want via the setup wizard or the Subjects screen at any time.
 
   app.get("/subjects", async () => {
     const list = await svc.all();
-    return { subjects: list, total: list.length };
+    // Sort by .order (ascending) — undefined order goes last.
+    const sorted = [...list].sort((a, b) => (a.order ?? 9999) - (b.order ?? 9999));
+    return { subjects: sorted, total: sorted.length };
   });
 
   app.get<{ Params: { id: string } }>("/subjects/:id", async (req) => {
@@ -100,10 +169,10 @@ export async function subjectsRoutes(app: FastifyInstance): Promise<void> {
 
   app.post<{ Body: Partial<Subject> }>("/subjects", async (req, reply) => {
     const b = req.body ?? ({} as any);
-    if (!b.name) throw E.val("EC-SUB-002", "name requerido", { context: { body: b } });
+    if (!b.name || !b.name.trim()) throw E.val("EC-SUB-002", "name requerido", { context: { body: b } });
     const s = await svc.create({
-      name: b.name,
-      icon: b.icon ?? (b.name[0] ?? "?").toUpperCase(),
+      name: b.name.trim(),
+      icon: b.icon ?? (b.name.trim()[0] ?? "?").toUpperCase(),
       color: b.color ?? "var(--subj-blue)",
       grade: b.grade ?? null,
       performance: b.performance ?? 0,
@@ -118,32 +187,49 @@ export async function subjectsRoutes(app: FastifyInstance): Promise<void> {
   app.patch<{ Params: { id: string }; Body: Partial<Subject> }>("/subjects/:id", async (req) => {
     const s = await svc.update(req.params.id, req.body ?? {});
     if (!s) throw E.val("EC-SUB-003", "Subject no encontrado", { context: { id: req.params.id }, statusCode: 404 });
+    logOp("subjects", "updated", true, { id: s.id });
     return s;
   });
 
   app.delete<{ Params: { id: string } }>("/subjects/:id", async (req) => {
     const ok = await svc.remove(req.params.id);
     if (!ok) throw E.val("EC-SUB-004", "Subject no encontrado", { context: { id: req.params.id }, statusCode: 404 });
+    logOp("subjects", "deleted", true, { id: req.params.id });
     return { deleted: true };
+  });
+
+  // v2.22.1: reorder endpoint — PATCH /api/v1/subjects/reorder with
+  // { order: ["sub-xxx", "sub-yyy", ...] }. Persists new .order on each subject.
+  app.patch<{ Body: { order: string[] } }>("/subjects/reorder", async (req) => {
+    const ids = (req.body ?? ({} as any)).order;
+    if (!Array.isArray(ids) || !ids.every((x) => typeof x === "string")) {
+      throw E.val("EC-SUB-005", "order must be string[]", { context: { body: req.body }, statusCode: 400 });
+    }
+    const list = await svc.reorder(ids);
+    return { ok: true, subjects: list };
+  });
+
+  // v2.22.1: bulk replace — POST /api/v1/subjects/bulk with { items: [...] }.
+  // Replaces the entire list. Used by "Reset / Import from another device".
+  app.post<{ Body: { items: any[] } }>("/subjects/bulk", async (req) => {
+    const items = (req.body ?? ({} as any)).items;
+    if (!Array.isArray(items)) {
+      throw E.val("EC-SUB-006", "items must be array", { context: { body: req.body }, statusCode: 400 });
+    }
+    const list = await svc.bulkReplace(items);
+    logOp("subjects", "bulk_replace", true, { count: list.length });
+    return { ok: true, subjects: list };
+  });
+
+  // v2.22.1: nuke all — DELETE /api/v1/subjects (no :id). Used by "Reset subjects"
+  // button (e.g. when the user starts fresh with a new school year).
+  app.delete("/subjects", async () => {
+    const n = await svc.removeAll();
+    logOp("subjects", "removed_all", true, { count: n });
+    return { ok: true, removed: n };
   });
 }
 
-async function ensureSeeded(svc: SubjectsService) {
-  const list = await svc.all();
-  if (list.length > 0) return;
-  const seed: Array<Omit<Subject, "id" | "createdAt" | "updatedAt">> = [
-    { name: "Math", icon: "M", color: "var(--subj-red)", grade: 9.23, performance: 3, prof: "Mr. Meier", next: "Algebra" },
-    { name: "Politics-economics", icon: "P", color: "var(--subj-yellow)", grade: 7.52, performance: 1, prof: "Fr. Stolz", next: "" },
-    { name: "Deutsch", icon: "D", color: "var(--subj-blue)", grade: 7.52, performance: 3, prof: "Dr. Seibert", next: "" },
-    { name: "Physics", icon: "Ψ", color: "var(--subj-purple)", grade: 6.98, performance: 1, prof: "Dr. Müller", next: "" },
-    { name: "Chemistry", icon: "C", color: "var(--subj-green)", grade: 7.24, performance: 2, prof: "Dr. Müller", next: "" },
-    { name: "French", icon: "F", color: "var(--subj-teal)", grade: 6.98, performance: 0, prof: "", next: "" },
-    { name: "Biology", icon: "B", color: "var(--subj-green)", grade: 7.24, performance: 0, prof: "", next: "" },
-    { name: "Computer Sci.", icon: "</>", color: "var(--subj-orange)", grade: 9.23, performance: 0, prof: "", next: "" },
-    { name: "History", icon: "H", color: "var(--subj-yellow)", grade: 7.83, performance: 0, prof: "", next: "" },
-    { name: "English", icon: "E", color: "var(--subj-blue)", grade: 8.41, performance: 0, prof: "", next: "" },
-    { name: "Art", icon: "A", color: "var(--subj-pink)", grade: 8.22, performance: 0, prof: "", next: "" },
-    { name: "Music", icon: "♪", color: "var(--subj-pink)", grade: 8.64, performance: 0, prof: "", next: "" },
-  ];
-  for (const s of seed) await svc.create(s);
-}
+// v2.22.1: ensureSeeded REMOVED. New users see an empty list, add what
+// they want via UI. The previous "12 fake subjects" was confusing UX
+// (looked like data from another user).

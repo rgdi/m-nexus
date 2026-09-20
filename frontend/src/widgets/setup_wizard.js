@@ -428,7 +428,9 @@ const SLIDES = [
   {
     id: "subject",
     setup: (root) => {
-      const chips = ["Anatomy", "Physiology", "Biochemistry", "Pathology", "Pharmacology", "Histology", "Other"];
+      // v2.22.1: generic suggestions (no longer medical-only). User can
+      // add anything later from the Subjects screen.
+      const chips = ["Matemáticas", "Lengua", "Historia", "Ciencias", "Inglés", "Filosofía", "Otro…"];
       const wrap = root.querySelector("#subject-chips");
       wrap.innerHTML = "";
       chips.forEach((c) => {
@@ -454,21 +456,23 @@ const SLIDES = [
       });
     },
     render: () => `
-      <h2 class="setup-hero" style="font-size:clamp(28px,4vw,40px)">Add your first subject</h2>
-      <p class="setup-body">Pick or type a subject name. You'll see it on the dashboard and can add notes, schedule exam date, and track coverage.</p>
+      <h2 class="setup-hero" style="font-size:clamp(28px,4vw,40px)">Añade tu primera asignatura</h2>
+      <p class="setup-body">Elige una sugerencia o escribe el nombre. La verás en el panel y podrás añadir más, editar, reordenar o borrar cuando quieras.</p>
       <div class="setup-chips" id="subject-chips"></div>
       <div class="setup-form">
         <label>Or type a custom name</label>
-        <input type="text" id="subject-other" placeholder="e.g. Anatomía, Histology…" maxlength="40" />
+        <input type="text" id="subject-other" placeholder="ej: Matemáticas, Historia, Programación…" maxlength="40" />
       </div>
     `,
     onNext: async (root) => {
-      const name = root._setupState.subject || "Anatomy";
+      // v2.22.1: only add the subject the user actually picked — no fake seed.
+      const name = (root._setupState.subject || "Matemáticas").trim();
+      if (!name) return;
       try {
         await fetch("/api/v1/subjects", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, color: "var(--subj-blue)", grade: 0, performance: 0 }),
+          body: JSON.stringify({ name, color: "var(--subj-blue)", grade: null, performance: 0 }),
         });
       } catch (e) { /* offline ok */ }
     },

@@ -165,6 +165,10 @@ export const api = {
     create: (body) => req("POST", "/subjects", body),
     update: (id, body) => req("PATCH", `/subjects/${id}`, body),
     remove: (id) => req("DELETE", `/subjects/${id}`),
+    // v2.22.1: dynamic subject management — reorder, bulk replace, nuke all
+    reorder: (order) => req("PATCH", "/subjects/reorder", { order }),
+    bulkReplace: (items) => req("POST", "/subjects/bulk", { items }),
+    removeAll: () => req("DELETE", "/subjects"),
   },
 
   // ----- Calendar / Events -----

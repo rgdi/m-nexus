@@ -1,4 +1,4 @@
-# M-NEXUS — Frontend (v2.22.0)
+# M-NEXUS — Frontend (v2.22.1)
 
 > **Tablet-first** Education Service UI: Overview, Calendar, Subjects, Notes (stylus-first canvas con pressure + tilt + palm rejection + OCR), To-do's, AI Tutor, 3D models (cell biology), 3D knowledge graph, FSRS-4.5 spaced repetition, Yjs official sync, conflict merge UI, pressure curve settings, command palette, multi-vault.
 
