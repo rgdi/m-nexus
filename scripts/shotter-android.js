@@ -16,6 +16,8 @@ const initScript = `
   localStorage.setItem('mnexus.setup.completed', '1');
   localStorage.setItem('mnexus.selectedSubject', 'anatomy');
   localStorage.setItem('mnexus.lang', 'es');
+  // Force backend URL — the WebView emulator needs explicit base
+  window.MNEXUS_BACKEND_URL = 'http://localhost:4100';
   // Fake Android Capacitor detection so the android settings panel renders
   window.Capacitor = {
     isNativePlatform: () => true,
@@ -66,6 +68,11 @@ const PAGES = [
     try {
       console.log(`[android] ${p.name}: ${p.hash}`);
       await page.goto('http://localhost:8080', { waitUntil: 'networkidle', timeout: 15000 });
+      // Force backend detection + reload
+      await page.evaluate(async () => {
+        const ds = await import('/src/services/dataSource.js');
+        await ds.detectBackend();
+      });
       await page.evaluate((h) => { window.location.hash = h; }, p.hash);
       await page.waitForTimeout(p.wait);
       if (p.interact === 'click-first-folder') {
