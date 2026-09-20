@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <!-- v2.22.0: viewport-fit=cover lets env(safe-area-inset-*) report notches. -->
   <meta name="theme-color" content="#0f1115" />
   <title>M-NEXUS — Education Service</title>
   <meta name="description" content="Notebook, calendar, subjects and AI tutor for medical students. Tablet-first with stylus support." />
@@ -18,8 +19,19 @@
 <body>
   <!-- v1.0.0 — entry point. Router + bootstrap -->
   <div id="app" class="app" data-route="overview"></div>
-  <!-- v1.5.x: hamburger drawer (mobile only) -->
-  <button class="hamburger" id="hamburger" aria-label="Menu">≡</button>
+
+  <!-- v2.22.0: hamburger FAB moved to BOTTOM-LEFT inside the safe-area.
+       The previous top-left placement overlapped the camera/notch on
+       Pixel/iPhone devices. Now sits above the gesture bar with
+       safe-bottom padding. -->
+  <button class="hamburger-fab" id="hamburger" type="button"
+          aria-label="Open menu" aria-expanded="false" aria-controls="app-drawer">
+    <span class="hamburger-icon" aria-hidden="true">
+      <span></span><span></span><span></span>
+    </span>
+    <span class="hamburger-sr">Menu</span>
+  </button>
+
   <nav class="dock" id="dock" aria-label="Primary">
     <a href="#/overview" class="dock-item" data-route="overview"><span class="i" data-icon="overview"></span><span class="lbl" data-i18n="dock.overview">Overview</span></a>
     <a href="#/calendar" class="dock-item" data-route="calendar"><span class="i" data-icon="calendar"></span><span class="lbl" data-i18n="dock.calendar">Calendar</span></a>

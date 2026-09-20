@@ -193,6 +193,9 @@ async function bootstrap() {
   import("./services/notif_capture.js").then((m) => m.installNotificationCapture()).catch(() => {});
   setupHamburger();
   setupDockCollapse();
+  // v2.22.0: detect notches / camera cutouts / gesture bars and expose
+  // window.MNEXUS_SAFE_AREAS + data-* attributes for advanced positioning.
+  import("./services/safe_areas.js").then((m) => m.installSafeAreas()).catch(() => {});
   // Set initial lang attribute on html
   document.documentElement.lang = i18n.lang;
   // v1.3.1: traducir todos los data-i18n al boot (dock, etc)
@@ -265,20 +268,16 @@ function applyIconsToDom() {
   });
 }
 
-/** v1.5.x: hamburger drawer (mobile only) */
-function setupHamburger() {
-  const btn = document.getElementById("hamburger");
-  if (!btn) return;
-  btn.addEventListener("click", () => openDrawer());
-  // close on outside click
-  document.addEventListener("click", (e) => {
-    if (e.target.closest(".drawer")) return;
-    const d = document.querySelector(".drawer");
-    if (d && !d.contains(e.target) && !btn.contains(e.target)) d.remove();
-  });
-}
-
-/** v1.9.0: command palette trigger button (search box top-center) */
+/**
+ * v2.22.0: hamburger drawer redesigned.
+ * - Bottom-left FAB (was top-left, overlapped camera on Android).
+ * - 56×56 size, exceeds WCAG 2.5.5 touch target (44px).
+ * - Positioned with env(safe-area-inset-bottom/left).
+ * - Opens a Material Design 3 left-navigation drawer with scrim.
+ * - Auto-focuses the close button on open (keyboard accessibility).
+ * - Closes on: scrim click, ESC key, link click, close button.
+ * - aria-expanded toggles on the FAB so screen readers know the state.
+ */
 function setupCmdTrigger() {
   if (document.getElementById("cmd-trigger")) return;
   const btn = document.createElement("button");
@@ -289,8 +288,29 @@ function setupCmdTrigger() {
   document.body.appendChild(btn);
 }
 
-function openDrawer() {
-  document.querySelector(".drawer")?.remove();
+function setupHamburger() {
+  const btn = document.getElementById("hamburger");
+  if (!btn) return;
+  btn.addEventListener("click", () => toggleAppDrawer());
+}
+
+let appDrawerOpen = false;
+
+function toggleAppDrawer(force) {
+  appDrawerOpen = typeof force === "boolean" ? force : !appDrawerOpen;
+  const btn = document.getElementById("hamburger");
+  if (appDrawerOpen) {
+    openAppDrawer();
+    btn && btn.setAttribute("aria-expanded", "true");
+  } else {
+    closeAppDrawer();
+    btn && btn.setAttribute("aria-expanded", "false");
+  }
+}
+
+function openAppDrawer() {
+  closeAppDrawer(); // ensure only one instance
+  const cur = (location.hash || "#/overview").split("?")[0];
   const routes = [
     { hash: "#/overview", i18n: "dock.overview", icon: "⊞" },
     { hash: "#/calendar", i18n: "dock.calendar", icon: "▦" },
@@ -299,43 +319,80 @@ function openDrawer() {
     { hash: "#/todos",    i18n: "dock.todos",    icon: "✓" },
     { hash: "#/ai",       i18n: "dock.tutor",    icon: "✦" },
   ];
-  const cur = location.hash || "#/overview";
-  const drawer = document.createElement("div");
-  drawer.className = "drawer";
+
+  const scrim = document.createElement("div");
+  scrim.className = "app-drawer-scrim";
+  scrim.setAttribute("aria-hidden", "true");
+  scrim.addEventListener("click", () => toggleAppDrawer(false));
+
+  const drawer = document.createElement("aside");
+  drawer.id = "app-drawer";
+  drawer.className = "app-drawer";
+  drawer.setAttribute("role", "navigation");
+  drawer.setAttribute("aria-label", "Application menu");
+  drawer.setAttribute("aria-hidden", "false");
   drawer.innerHTML = `
-    <div class="panel">
-      <h2 style="margin: 0 0 var(--s-3)">M-NEXUS</h2>
+    <header class="app-drawer-header">
+      <h2>M-NEXUS</h2>
+      <button class="app-drawer-close" type="button" aria-label="Close menu">✕</button>
+    </header>
+    <nav class="app-drawer-nav">
       ${routes.map((r) => `
-        <a href="${r.hash}" class="${cur === r.hash ? "active" : ""}" data-i18n="${r.i18n}">
-          <span style="margin-right: 10px">${r.icon}</span>
+        <a href="${r.hash}" class="${cur === r.hash ? "active" : ""}" ${cur === r.hash ? 'aria-current="page"' : ""}>
+          <span class="icon" aria-hidden="true">${r.icon}</span>
           <span>${i18n.t(r.i18n)}</span>
         </a>
       `).join("")}
-      <div style="margin-top: var(--s-4); padding-top: var(--s-3); border-top: 1px solid var(--border)">
-        <button id="rerun-setup" style="background:none;border:none;text-align:left;padding:10px 12px;width:100%;cursor:pointer;font-size:14px;color:var(--fg-muted);border-radius:8px">
-          🎬 Re-run setup wizard
-        </button>
-      </div>
-    </div>
+    </nav>
+    <footer class="app-drawer-footer">
+      <button id="drawer-rerun-setup" type="button">🎬 Re-run setup wizard</button>
+    </footer>
   `;
+
+  document.body.appendChild(scrim);
   document.body.appendChild(drawer);
-  drawer.addEventListener("click", (e) => {
-    if (e.target.closest("a")) drawer.remove();
-    if (e.target.closest("#rerun-setup")) {
-      drawer.remove();
-      resetSetup();
-      openSetupWizard({ force: true });
-      return;
-    }
-    if (!e.target.closest(".panel")) drawer.remove();
+
+  // Animate in
+  requestAnimationFrame(() => {
+    scrim.setAttribute("aria-hidden", "false");
+    drawer.setAttribute("aria-hidden", "false");
   });
+
+  // Wire close
+  drawer.querySelector(".app-drawer-close").addEventListener("click", () => toggleAppDrawer(false));
+  drawer.querySelector("#drawer-rerun-setup").addEventListener("click", () => {
+    toggleAppDrawer(false);
+    resetSetup();
+    openSetupWizard({ force: true });
+  });
+  drawer.querySelectorAll("a").forEach((a) => a.addEventListener("click", () => toggleAppDrawer(false)));
+
+  // Focus the close button for keyboard users
+  setTimeout(() => drawer.querySelector(".app-drawer-close")?.focus(), 100);
+
+  // ESC to close
+  const onKey = (e) => {
+    if (e.key === "Escape") {
+      toggleAppDrawer(false);
+      document.removeEventListener("keydown", onKey);
+    }
+  };
+  document.addEventListener("keydown", onKey);
+
+  appDrawerOpen = true;
 }
 
+function closeAppDrawer() {
+  document.querySelector(".app-drawer")?.remove();
+  document.querySelector(".app-drawer-scrim")?.remove();
+  appDrawerOpen = false;
+  document.getElementById("hamburger")?.setAttribute("aria-expanded", "false");
+}
+
+/** Backward-compat: legacy drawer called via openDrawer() in some modules. */
+function openDrawer() { return openAppDrawer(); }
+
 /* ============================================================
- * v2.4.0 — Collapsible main menu (dock).
- *
- * User can hide the dock to maximize content area. A small
- * hamburger button re-appears at bottom-left when collapsed.
  *
  * State persists in localStorage["mnexus.dock.collapsed"] = "1"|"0".
  * ============================================================ */

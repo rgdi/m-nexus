@@ -70,11 +70,18 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 
 ::selection { background: var(--accent-soft); color: var(--fg); }
 
+/* v2.22.0: prominent focus-visible for keyboard users. 3px outline + offset
+   is the standard WCAG 2.4.7 recommendation. Use a darker color on light
+   backgrounds (--accent is already dark purple) so it stays visible. */
 :focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-  border-radius: var(--r-1);
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: var(--r-2);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.4);
 }
+/* Don't show focus on mouse clicks — only keyboard nav. The above rule
+   already does this via :focus-visible. Touch devices still benefit. */
+:focus:not(:focus-visible) { outline: none; box-shadow: none; }
 
 /* Utilities */
 .row { display: flex; align-items: center; gap: var(--s-3); }
@@ -123,10 +130,16 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 
 /* Touch devices (phones, tablets): larger targets */
 @media (pointer: coarse) {
-  .btn { height: var(--hit-target-l); padding: 0 var(--s-5); font-size: var(--fs-md); }
-  .btn.small { height: var(--hit-target); }
+  .btn { height: var(--hit-target-coarse); padding: 0 var(--s-5); font-size: var(--fs-md); }
+  .btn.small { height: var(--hit-target-min); }
   .tool-btn { width: 44px; height: 44px; }
   .icon-btn { width: 44px; height: 44px; }
+  /* v2.22.0: bump small buttons / icons to 44px on touch (WCAG 2.5.5). */
+  .seg,
+  .tab,
+  .view-toggle .seg { min-height: 44px; }
+  .lang-switcher button,
+  .vault-switcher button { min-height: 44px; min-width: 44px; }
   /* No hover-only state changes on touch */
   .btn:hover, .subj-bubble:hover, .subj-row:hover { background: revert; }
   /* Disable text selection on long-press */

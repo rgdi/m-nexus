@@ -100,9 +100,22 @@
   justify-content: center;
   font-weight: 700;
   font-size: var(--fs-md);
-  color: white;
+  /* v2.22.0: text color comes from --fg-on-{subj-color} token so each
+     subject color uses the right contrast pair (white vs near-black). */
+  color: var(--corner-fg, var(--bg));
+  background: var(--corner-bg, var(--subj-gray));
   flex-shrink: 0;
 }
+/* v2.22.0: per-subject foreground (white on saturated, dark on pastel). */
+.subj-bubble .corner.color-red    { background: var(--subj-red);    --corner-fg: var(--fg-on-subj-red); }
+.subj-bubble .corner.color-yellow { background: var(--subj-yellow); --corner-fg: var(--fg-on-subj-yellow); }
+.subj-bubble .corner.color-blue   { background: var(--subj-blue);   --corner-fg: var(--fg-on-subj-blue); }
+.subj-bubble .corner.color-purple { background: var(--subj-purple); --corner-fg: var(--fg-on-subj-purple); }
+.subj-bubble .corner.color-green  { background: var(--subj-green);  --corner-fg: var(--fg-on-subj-green); }
+.subj-bubble .corner.color-pink   { background: var(--subj-pink);   --corner-fg: var(--fg-on-subj-pink); }
+.subj-bubble .corner.color-orange { background: var(--subj-orange); --corner-fg: var(--fg-on-subj-orange); }
+.subj-bubble .corner.color-teal   { background: var(--subj-teal);   --corner-fg: var(--fg-on-subj-teal); }
+.subj-bubble .corner.color-gray   { background: var(--subj-gray);   --corner-fg: var(--fg-on-subj-gray); }
 @media (max-width: 480px) {
   .subj-bubble { min-height: 56px; padding: var(--s-2); }
   .subj-bubble .corner { width: 32px; height: 32px; font-size: var(--fs-sm); }
@@ -441,8 +454,8 @@ body.no-bg .app.screen-notes { background: transparent; }
 /* ---------- Top toolbar (v1.4.0) ---------- */
 .top-toolbar {
   position: fixed;
-  top: 12px;
-  right: 80px; /* deja sitio al lang switcher */
+  top: calc(var(--safe-top) + 12px);
+  right: calc(var(--safe-right) + 80px); /* deja sitio al lang switcher */
   display: flex;
   align-items: center;
   gap: 4px;
@@ -607,8 +620,8 @@ body.hide-ui .dock, body.hide-ui .lang-switcher, body.hide-ui .top-toolbar { dis
  * ============================================================ */
 .cmd-trigger {
   position: fixed;
-  top: 12px;
-  left: 50%;
+  top: calc(var(--safe-top) + 12px);
+  left: max(50%, calc(var(--safe-left) + 50vw));
   transform: translateX(-50%);
   display: flex;
   align-items: center;
@@ -696,8 +709,8 @@ body.hide-ui .dock, body.hide-ui .lang-switcher, body.hide-ui .top-toolbar { dis
  * ============================================================ */
 .vault-switcher {
   position: fixed;
-  top: 12px;
-  right: 180px;
+  top: calc(var(--safe-top) + 12px);
+  right: calc(var(--safe-right) + 180px);
   display: inline-flex;
   align-items: center;
   gap: 6px;

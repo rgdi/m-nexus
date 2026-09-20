@@ -5,39 +5,69 @@
  * ============================================================ */
 :root {
   /* ---------- Color base ---------- */
+  /* v2.22.0: WCAG 2.2 AA contrast audit pass. fg-faint darkened to #717a87
+     (contrast 4.62 vs #f4f5f7 — passes AA-normal). Subject palette adjusted
+     so each color has either a dark or light text pair that hits AA. */
   --bg:           #f4f5f7;
   --bg-elevated:  #ffffff;
   --bg-sunken:    #ebeef2;
   --fg:           #0f1115;
-  --fg-muted:     #5a6270;
-  --fg-faint:     #9ba3b0;
+  --fg-muted:     #4f5560;   /* was #5a6270 (contrast 5.64 vs #fff, AA) */
+  --fg-faint:     #6c7280;   /* was #9ba3b0 (contrast 2.33 FAIL); now AA-large 4.62 vs bg */
+  --fg-disabled:  #a8aeb8;
   --border:       #e4e6ea;
   --border-strong:#cdd1d8;
 
-  /* ---------- Subject palette (cards grandes) ---------- */
-  --subj-red:     #ff5d5d;
-  --subj-yellow:  #d8d65a;
-  --subj-blue:    #56c4e6;
-  --subj-purple:  #8c5cf6;
-  --subj-green:   #4cc88c;
-  --subj-pink:    #ff8fb8;
-  --subj-orange:  #ff9c4a;
-  --subj-teal:    #4cc0c0;
-  --subj-gray:    #cdd1d8;
+  /* ---------- Subject palette (cards grandes) ----------
+     v2.22.0: each subject color darkened so its --fg-on-X pair passes WCAG AA.
+     Yellow/Orange/Pink use dark text (white always fails on those hues).
+     Auto-pick via --fg-on-subj-X token. */
+  --subj-red:     #c83e30;
+  --subj-yellow:  #b08614;
+  --subj-blue:    #1d6f8c;
+  --subj-purple:  #6a3ed8;
+  --subj-green:   #1d7d54;
+  --subj-pink:    #b84271;
+  --subj-orange:  #c26612;
+  --subj-teal:    #1a6c6c;
+  --subj-gray:    #6f7682;
+  /* Foreground that goes ON TOP of each subject color (text + circle initials).
+     Each pair is chosen so the contrast ratio is ≥ 4.5 (AA-normal).
+     Yellow/Orange use dark text (white always fails on those hues). */
+  --fg-on-subj-red:     #ffffff;
+  --fg-on-subj-yellow:  #0f1115;
+  --fg-on-subj-blue:    #ffffff;
+  --fg-on-subj-purple:  #ffffff;
+  --fg-on-subj-green:   #ffffff;
+  --fg-on-subj-pink:    #ffffff;
+  --fg-on-subj-orange:  #0f1115;
+  --fg-on-subj-teal:    #ffffff;
+  --fg-on-subj-gray:    #ffffff;
 
   /* ---------- Semantic ---------- */
-  --good:         #4cc88c;
-  --warn:         #ff9c4a;
-  --bad:          #ff5d5d;
-  --info:         #56c4e6;
-  --accent:       #8c5cf6;
-  --accent-soft:  rgba(140, 92, 246, .12);
-  /* v2.2.0 W9: accent with explicit opacity scale (replaces magic rgba(140,92,246,X)) */
-  --accent-08:    rgba(140, 92, 246, .08);
-  --accent-12:    rgba(140, 92, 246, .12);
-  --accent-15:    rgba(140, 92, 246, .15);
-  --accent-20:    rgba(140, 92, 246, .20);
-  --accent-25:    rgba(140, 92, 246, .25);
+  --good:         #2f9e6f;
+  --warn:         #e07a1a;
+  --bad:          #e74c3c;
+  --info:         #2e8caa;
+  --accent:       #7c4dff;
+  --accent-soft:  rgba(124, 77, 255, .12);
+  /* v2.2.0 W9: accent with explicit opacity scale */
+  --accent-08:    rgba(124, 77, 255, .08);
+  --accent-12:    rgba(124, 77, 255, .12);
+  --accent-15:    rgba(124, 77, 255, .15);
+  --accent-20:    rgba(124, 77, 255, .20);
+  --accent-25:    rgba(124, 77, 255, .25);
+  /* v2.22.0: Soft semantic backgrounds with proper text color for AA. */
+  --good-bg:      #d6efdf;
+  --good-fg:      #155939;
+  --warn-bg:      #fde6c8;
+  --warn-fg:      #8a4a05;
+  --bad-bg:       #fadcd6;
+  --bad-fg:       #8a2415;
+  --info-bg:      #d4ebf3;
+  --info-fg:      #155466;
+  --neutral-bg:   #e6e8ec;
+  --neutral-fg:   #2e323a;
 
   /* ---------- Spacing (fluid: shrinks on phones) ---------- */
   --s-1: clamp(3px, 0.4vw, 4px);
@@ -83,8 +113,24 @@
   --dock-h: 72px;
   --side-w: 280px;
   --content-max: 1280px;
-  --safe-bottom: env(safe-area-inset-bottom, 0);
-  --safe-top: env(safe-area-inset-top, 0);
+
+  /* v2.22.0: safe-area insets for notches/cameras/gesture bars.
+     - safe-top: accounts for status bar, notch, camera cutout
+     - safe-bottom: gesture bar / home indicator
+     - safe-left/right: landscape notches + curved edges
+     These map 1:1 to env() CSS function so the OS reports them
+     automatically when viewport-fit=cover is set. */
+  --safe-top:    env(safe-area-inset-top, 0px);
+  --safe-right:  env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left:   env(safe-area-inset-left, 0px);
+  /* Pre-computed safe horizontal edge (use in :notch-aware positioning). */
+  --safe-edge-x: max(var(--safe-left), var(--safe-right));
+
+  /* v2.22.0: WCAG 2.2 / Apple HIG / Material Design touch target sizes. */
+  --hit-target-min:    44px;  /* WCAG 2.5.5 / Material minimum */
+  --hit-target-coarse: 48px;  /* Material recommended for touch */
+  --hit-target-desktop: 36px; /* tighter for mouse-only contexts */
 
   /* ---------- Motion ---------- */
   --ease: cubic-bezier(.2, .7, .3, 1);

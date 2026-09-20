@@ -90,3 +90,6 @@ frontend-bundle/
 
 # Node deps for Capacitor (top-level)
 node_modules/@capacitor/
+frontend/index.html
+frontend/sw.js
+frontend/BUILD_INFO.json
