@@ -382,14 +382,62 @@ const SLIDES = [
     id: "welcome",
     render: () => `
       <h1 class="setup-hero">Welcome to<br/>M-NEXUS</h1>
-      <p class="setup-subtitle">Your medical-school knowledge system — notebook, flashcards, syllabus tracker, all in one place.</p>
+      <p class="setup-subtitle">Tu sistema personal de estudio — apuntes, flashcards, calendario y seguimiento, todo en un sitio.</p>
       <div class="setup-icon-row">
         <span>📓</span><span>🧠</span><span>📚</span><span>🎯</span>
       </div>
-      <p class="setup-body">Take a quick tour to set up your first subject and learn the essentials. You'll be studying in less than a minute.</p>
+      <p class="setup-body">Tour rápido para configurar tu primera asignatura y aprender lo esencial. En menos de un minuto estás estudiando.</p>
     `,
   },
-  // 2. Pick a vault
+  // 2. Topology (v2.23.3): single node / join cluster / create cluster
+  {
+    id: "topology",
+    render: () => `
+      <h1 class="setup-hero">¿Cómo quieres desplegarlo?</h1>
+      <p class="setup-body">M-NEXUS corre en un solo servidor, o sincroniza varios entre sí para repartir la carga.</p>
+      <div class="topology-cards" style="display:grid;grid-template-columns:1fr;gap:12px;margin-top:12px">
+        <button class="topology-card" data-topo="solo" type="button">
+          <div class="tc-icon">🖥️</div>
+          <div class="tc-title">Solo este servidor</div>
+          <div class="tc-sub">Mi PC, mi Raspberry, mi VPS. Un único nodo.</div>
+        </button>
+        <button class="topology-card" data-topo="join" type="button">
+          <div class="tc-icon">🔗</div>
+          <div class="tc-title">Unirme a un cluster existente</div>
+          <div class="tc-sub">Te paso una URL de un nodo líder y entras al cluster compartido.</div>
+        </button>
+        <button class="topology-card" data-topo="leader" type="button">
+          <div class="tc-icon">👑</div>
+          <div class="tc-title">Crear un cluster nuevo</div>
+          <div class="tc-sub">Esta instancia será el primer nodo líder. Más adelante puedes añadir workers.</div>
+        </button>
+      </div>
+      <p class="muted small" id="topology-hint" style="margin-top:16px">
+        Por defecto: solo este servidor. Lo puedes cambiar luego en Ajustes → Cluster.
+      </p>
+    `,
+    setup: (root) => {
+      const state = root._setupState;
+      if (!state.topology) state.topology = "solo";
+      const refresh = () => {
+        root.querySelectorAll(".topology-card").forEach((c) => {
+          c.classList.toggle("selected", c.dataset.topo === state.topology);
+        });
+      };
+      refresh();
+      root.querySelectorAll(".topology-card").forEach((c) => {
+        c.addEventListener("click", () => {
+          state.topology = c.dataset.topo;
+          refresh();
+          const hint = root.querySelector("#topology-hint");
+          if (state.topology === "solo") hint.textContent = "Todo local. Sin Redis ni configuración extra.";
+          else if (state.topology === "join") hint.textContent = "Necesitas la URL del nodo líder. Te la pediré en el siguiente paso.";
+          else hint.textContent = "Recibirás una URL para invitar a los demás nodos. Por defecto esta instancia es líder.";
+        });
+      });
+    },
+  },
+  // 3. Pick a vault
   {
     id: "vault",
     setup: (root) => {
@@ -435,7 +483,7 @@ const SLIDES = [
       wrap.innerHTML = "";
       chips.forEach((c) => {
         const b = document.createElement("button");
-        b.className = "setup-chip" + (c === (root._setupState.subject ?? "Anatomy") ? " selected" : "");
+        b.className = "setup-chip" + (c === (root._setupState.subject ?? "Matemáticas") ? " selected" : "");
         b.textContent = c;
         b.addEventListener("click", () => {
           root._setupState.subject = c;

@@ -19,7 +19,6 @@ import { i18n } from "../services/i18n.js";
 import { connectSync } from "../services/sync_client.js";
 
 const state = {
-  selectedId: null,
   draggingId: null,
   lastListFull: [],
   // v2.23.0: drag visual feedback
@@ -31,9 +30,8 @@ const state = {
 };
 
 export async function renderSubjects(root) {
-  if (state.selectedId) {
-    return renderSubjectDetail(root, state.selectedId);
-  }
+  // v2.23.3: deep links to "#/subjects/<id>" still resolve to the list.
+  // Clicking a subject opens the editor directly (no detail page).
   return renderSubjectList(root);
 }
 
@@ -93,13 +91,9 @@ async function renderSubjectList(root) {
   root.querySelector("#templates-btn")?.addEventListener("click", () => openTemplates(root));
   root.querySelector("#empty-templates")?.addEventListener("click", () => openTemplates(root));
 
-  const resetBtn = root.querySelector("#reset-all");
-  if (resetBtn) {
-    resetBtn.addEventListener("click", async () => {
-      if (!confirm(`¿Vaciar las ${subjects.length} asignaturas? Esta acción no se puede deshacer.`)) return;
-      await dataSource.subjects.removeAll();
-      renderSubjectList(root);
-    });
+  const toolsBtn = root.querySelector("#tools-menu");
+  if (toolsBtn) {
+    toolsBtn.addEventListener("click", () => openToolsMenu(toolsBtn, root));
   }
   const bulkBtn = root.querySelector("#bulk-add");
   if (bulkBtn) {
@@ -123,12 +117,73 @@ function renderEmptyState() {
 }
 
 function renderToolbar() {
+  // v2.23.3: separamos el reset destructivo del toolbar normal.
   return `
     <div class="subj-toolbar">
       <button class="btn small" id="bulk-add">＋ Añadir varias</button>
-      <button class="btn small danger" id="reset-all">🗑 Vaciar lista</button>
+      <button class="btn small ghost" id="tools-menu" aria-haspopup="menu" aria-expanded="false">⋯ Más</button>
     </div>
   `;
+}
+
+// "Más" submenu evita botones destructivos a plena vista.
+function openToolsMenu(anchor, root) {
+  let menu = document.querySelector("#subj-tools-menu");
+  if (menu) { menu.remove(); }
+  menu = document.createElement("div");
+  menu.id = "subj-tools-menu";
+  menu.className = "row-menu";
+  menu.setAttribute("role", "menu");
+  menu.innerHTML = `
+    <button role="menuitem" data-act="reset-all" class="danger">🗑 Vaciar lista…</button>
+    <button role="menuitem" data-act="export">📤 Exportar a JSON</button>
+    <button role="menuitem" data-act="import">📥 Importar desde JSON</button>
+  `;
+  const r = anchor.getBoundingClientRect();
+  menu.style.cssText = `position: fixed; right: 16px; bottom: ${Math.max(window.innerHeight - r.top, 80)}px; z-index: 1000; min-width: 200px`;
+  document.body.appendChild(menu);
+  anchor.setAttribute("aria-expanded", "true");
+  const close = () => { menu.remove(); anchor.setAttribute("aria-expanded", "false"); document.removeEventListener("click", onDoc); };
+  const onDoc = (ev) => { if (!menu.contains(ev.target) && ev.target !== anchor) close(); };
+  setTimeout(() => document.addEventListener("click", onDoc), 0);
+  menu.addEventListener("click", async (ev) => {
+    const btn = ev.target.closest("button");
+    if (!btn) return;
+    const act = btn.dataset.act;
+    close();
+    if (act === "reset-all") {
+      if (!confirm("¿Vaciar TODAS las asignaturas? Esta acción no se puede deshacer.")) return;
+      await dataSource.subjects.removeAll();
+      renderSubjectList(root);
+    } else if (act === "export") {
+      const list = await dataSource.subjects.list();
+      const blob = new Blob([JSON.stringify(list, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `mnexus-subjects-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } else if (act === "import") {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "application/json,.json";
+      input.onchange = async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const text = await file.text();
+        try {
+          const parsed = JSON.parse(text);
+          const items = Array.isArray(parsed) ? parsed : parsed.subjects || [];
+          await dataSource.subjects.bulkReplace(items);
+          renderSubjectList(root);
+        } catch (e) {
+          alert("JSON inválido: " + e.message);
+        }
+      };
+      input.click();
+    }
+  });
 }
 
 function renderRow(s) {
@@ -554,44 +609,8 @@ function openBulkAdder(root) {
   });
 }
 
-async function renderSubjectDetail(root, id) {
-  const s = await dataSource.subjects.get(id);
-  if (!s) { state.selectedId = null; return renderSubjectList(root); }
-
-  root.innerHTML = `
-    <div class="screen">
-      <header class="screen-header">
-        <button class="btn icon" id="back">←</button>
-        <h1 class="h-title">${escapeHtml(s.name)}</h1>
-        <div class="spacer"></div>
-        <button class="btn small" id="edit-detail">✏️ Editar</button>
-      </header>
-      <div class="tabs" role="tablist">
-        <div class="tab active" data-tab="classes">Clases</div>
-        <div class="tab" data-tab="topics">Temas</div>
-      </div>
-      <div id="tab-body" style="margin-top: var(--s-5)"></div>
-    </div>
-  `;
-  root.querySelector("#back").addEventListener("click", () => { state.selectedId = null; renderSubjectList(root); });
-  root.querySelector("#edit-detail").addEventListener("click", () => openEditor(s, root));
-  const body = root.querySelector("#tab-body");
-  body.innerHTML = `
-    <div class="grid grid-2">
-      <div class="card">
-        <h4>Notas</h4>
-        <div style="margin-top: var(--s-3); display:flex; flex-wrap:wrap; gap: 6px">
-          ${[7.5, 8.2, 8.7, 9.0, 8.5].map(g => `<span class="chip ${g >= 8 ? "ok" : g >= 6 ? "warn" : "bad"}">${g.toFixed(1)}</span>`).join("")}
-        </div>
-      </div>
-      <div class="card">
-        <h4>Próxima clase</h4>
-        <p class="muted">${s.next || "Sin programar"}</p>
-        <p class="muted small">${s.prof || ""}</p>
-      </div>
-    </div>
-  `;
-}
+// renderSubjectDetail REMOVED in v2.23.3 — the Subjects page is now flat.
+// Editor opens directly when clicking a row's "Editar" action.
 
 // ============================================================
 // v2.23.0: Multi-device sync via WebSocket

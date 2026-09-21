@@ -15,7 +15,7 @@ export async function renderOcclusionScreen(root) {
       <header class="screen-header">
         <button class="btn icon" id="back" aria-label="Back">←</button>
         <h1 class="h-title">${i18n.t("occlusion.title") || "Image Occlusion"}</h1>
-        <span class="h-sub">${i18n.t("occlusion.subtitle") || "Mask anatomy structures and study them"}</span>
+        <span class="h-sub">${i18n.t("occlusion.subtitle") || "Enmascara partes de una imagen para estudiarlas"}</span>
       </header>
 
       <div class="card occlusion-upload">
@@ -115,13 +115,14 @@ export async function renderOcclusionScreen(root) {
     const overlay = document.createElement("div");
     overlay.style.cssText = "position:fixed;inset:0;z-index:260;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;padding:20px;";
     const labels = card.masks.map((m) => escapeHtml(m.label || "?")).join(" · ");
+    const imgAlt = `Imagen de oclusión: ${labels}`;
     overlay.innerHTML = `
       <div style="position:relative;display:inline-block;">
-        <img src="${escapeHtml(src)}" style="max-width:80vw;max-height:70vh;display:block;" />
-        ${card.masks.map((m) => `<div style="position:absolute;left:${m.x * 100}%;top:${m.y * 100}%;width:${m.width * 100}%;height:${m.height * 100}%;background:#ef4444;border-radius:4px;cursor:pointer;" data-mask="${escapeHtml(m.label || '')}" title="Click to reveal"></div>`).join("")}
+        <img src="${escapeHtml(src)}" alt="${imgAlt}" style="max-width:80vw;max-height:70vh;display:block;" />
+        ${card.masks.map((m) => `<div style="position:absolute;left:${m.x * 100}%;top:${m.y * 100}%;width:${m.width * 100}%;height:${m.height * 100}%;background:#ef4444;border-radius:4px;cursor:pointer;" data-mask="${escapeHtml(m.label || '')}" title="Haz clic para revelar"></div>`).join("")}
       </div>
       <div style="color:white;font-size:14px;">${labels}</div>
-      <button class="btn primary" id="occ-close">Close</button>
+      <button class="btn primary" id="occ-close">Cerrar</button>
     `;
     document.body.appendChild(overlay);
     overlay.querySelectorAll("[data-mask]").forEach((el) => {

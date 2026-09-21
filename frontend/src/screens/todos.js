@@ -15,7 +15,9 @@ const fmtDateTime = (ms) => {
 };
 const isOverdue = (ms, done) => !done && ms && ms < Date.now();
 
-const PRIORITY_LABEL = ["", "🔼", "🔺"];
+// Prioridad: 1 = baja, 2 = media, 3 = alta (3 valores reconocidos, sin fila sin icono).
+const PRIORITY_LABEL = { 1: "Baja", 2: "Media", 3: "Alta" };
+const PRIORITY_COLOR = { 1: "muted", 2: "warn", 3: "bad" };
 
 export async function renderTodos(root) {
   const tasks = await dataSource.tasks.list();
@@ -75,7 +77,7 @@ function taskRow(t) {
         <div class="bold" style="word-break:break-word">${escapeHtml(t.text)}</div>
         ${t.due ? `<div class="small" style="color:${overdue ? "var(--bad)" : "var(--fg-muted)"}">📅 ${fmtDateTime(t.due)} ${overdue ? " · " + i18n.t("todos.overdueBadge") : ""}</div>` : ""}
         <div class="row gap-2 todo-chips">
-          ${t.priority ? `<span class="chip warn">${PRIORITY_LABEL[t.priority] || ""}</span>` : ""}
+          ${t.priority ? `<span class="chip ${PRIORITY_COLOR[t.priority] || ""}">${PRIORITY_LABEL[t.priority] || ""}</span>` : ""}
           ${t.subject ? `<span class="chip muted">${escapeHtml(t.subject)}</span>` : ""}
         </div>
       </div>

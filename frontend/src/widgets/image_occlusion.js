@@ -7,7 +7,7 @@
 //
 // Workflow:
 //   1. Mount editor on an image (URL or uploaded data URL)
-//   2. User drags rectangles over anatomy structures
+//   2. User drags rectangles over an image to occlude specific parts
 //   3. User types a label for each mask
 //   4. On save → POST /api/v1/occlusion/card → returns card
 //   5. Optionally → POST /api/v1/study/generation/add with kind="occlusion"
@@ -134,7 +134,7 @@ export async function openImageOcclusionEditor({ imageUrl, imageBase64, topicId,
         <span class="muted">${i18n.t("occlusion.help") || "Drag to draw masks. Click a mask to edit. Press Delete key to remove."}</span>
       </div>
       <div class="io-canvas-wrap" id="io-canvas-wrap">
-        <img id="io-img" src="${escapeHtml(src)}" />
+        <img id="io-img" src="${escapeHtml(src)}" alt="Imagen para oclusión" />
         <div id="io-overlay-masks" style="position:absolute;inset:0;"></div>
         <div id="io-drawing" class="io-drawing" style="display:none;"></div>
       </div>

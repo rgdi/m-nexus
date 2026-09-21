@@ -1297,9 +1297,9 @@ function renderNotebookWideHTML(note, pages) {
         <main class="notebook-main" id="notebook-main">
           <div class="notebook" id="canvas-wrap">
             <div class="pencil-drawer">
-              <button class="pencil add" id="add-pencil">+</button>
-              ${state.pencils.map(p => `<button class="pencil" data-pencil="${p.id}" style="background:${p.color}"></button>`).join("")}
-              <button class="pencil trash" data-act="trash" title="Delete pencil">🗑</button>
+              <button class="pencil add" id="add-pencil" aria-label="Añadir lápiz" title="Añadir lápiz">+</button>
+              ${state.pencils.map(p => `<button class="pencil" data-pencil="${p.id}" style="background:${p.color}" aria-label="Lápiz ${p.id}" title="Lápiz"></button>`).join("")}
+              <button class="pencil trash" data-act="trash" title="Borrar lápiz" aria-label="Borrar lápiz">🗑</button>
             </div>
             <canvas id="canvas"></canvas>
             <!-- v2.6.0: single consolidated bottom toolbar (replaces 3 floating toolbars) -->

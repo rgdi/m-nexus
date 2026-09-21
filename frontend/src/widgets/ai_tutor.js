@@ -181,7 +181,7 @@ function updateHeaderContext(panel) {
   ctx.innerHTML = `Subject: ${subj} · Note: ${note}`;
 }
 
-// v2.4.0: returns a short label like "Math · Heart anatomy"
+// v2.4.0: returns a short context label (e.g. "Math · Topic")
 function contextLabel() {
   const parts = [];
   if (currentContext.subject) parts.push(escapeHtml(currentContext.subject));

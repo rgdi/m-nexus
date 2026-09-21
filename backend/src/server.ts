@@ -46,6 +46,15 @@ import { themesRoutes } from "./routes/themes.js";
 import { crdtRoutes } from "./routes/crdt.js";
 import { pushRoutes } from "./routes/push.js";
 import { autoBackupRoutes } from "./routes/autoBackup.js";
+import { Cluster } from "./services/cluster.js";
+import { clusterRoutes } from "./routes/cluster.js";
+
+// v2.23.3: tell TypeScript about the cluster instance Fastify decorator.
+declare module "fastify" {
+  interface FastifyInstance {
+    cluster: Cluster;
+  }
+}
 import { fsrsQueueRoutes } from "./routes/fsrsQueue.js";
 import { keyExchangeRoutes } from "./routes/keyExchange.js";
 import { handwritingRoutes } from "./routes/handwriting.js";
@@ -204,6 +213,23 @@ export async function buildServer(): Promise<any> {
   // v0.62.8: /api/v1/ai/tutor is registered by aiRoutes (./routes/ai.ts).
   // Removed the inline handler to avoid duplicate-route registration error.
   console.log("DEBUG: tutor route registered via aiRoutes");
+
+  // v2.23.3: cluster routes (single-node default, multi-node when CLUSTER_REDIS=1).
+  // The cluster instance is shared across request handlers via app.decorate.
+  const cluster = new Cluster({
+    ttl: parseInt(process.env.PEER_TTL || "60", 10),
+    tick: parseInt(process.env.PEER_TICK || "15", 10),
+    port: config.port,
+    region: process.env.NODE_REGION || "local",
+    version: (await import("../package.json", { with: { type: "json" } }).catch(() => ({ default: { version: "dev" } }))).default?.version || "dev",
+    publicUrl: process.env.PUBLIC_URL,
+    capabilities: ["http", "ws", "ocr", "llm"],
+    redis: null, // start with single-node default; socket/client upgrade path kept for future
+    dataDir: process.cwd(),
+  });
+  await cluster.start();
+  app.decorate("cluster", cluster);
+  await clusterRoutes(app, cluster);
 
   return app;
 }

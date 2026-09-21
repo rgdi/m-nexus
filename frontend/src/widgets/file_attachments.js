@@ -335,7 +335,7 @@ function buildOcclusionTool(att, noteId, scrim) {
       <span class="muted small" style="margin-left:auto">Click a tag to toggle · double-click to edit</span>
     </div>
     <div class="occlusion-canvas-wrap" id="occ-wrap">
-      <img id="occ-img" src="${att.dataUrl}">
+      <img id="occ-img" src="${escapeHtml(att.dataUrl)}" alt="Imagen subida para crear tarjeta de oclusión">
     </div>
     <div style="margin-top:8px;font-size:12px;color:var(--fg-muted)">
       ${occ.approved

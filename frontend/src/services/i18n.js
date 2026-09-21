@@ -26,6 +26,7 @@ const STRINGS = {
   "dock.todos":              { en: "To-dos",   es: "Tareas",    pt: "Tarefas" },
   "dock.tutor":              { en: "AI",       es: "IA",        pt: "IA" },
   "dock.settings":           { en: "Settings", es: "Ajustes",   pt: "Ajustes" },
+  "dock.cluster":            { en: "Cluster",  es: "Cluster",   pt: "Cluster" },
 
   // ============================================================
   // Overview screen
@@ -38,12 +39,12 @@ const STRINGS = {
   "overview.exam":            { en: "Generate exam (FSRS-aware)", es: "Generar examen (con FSRS)", pt: "Gerar exame (com FSRS)" },
   "overview.dueToday":       { en: "Due today",        es: "Para hoy",       pt: "Para hoje" },
   "overview.openTasks":      { en: "open tasks total", es: "tareas abiertas",pt: "tarefas abertas" },
-  "overview.nextReferat":    { en: "Next Referat",     es: "Próximo referat",pt: "Próximo referat" },
+  "overview.nextReferat":    { en: "Next deadline",    es: "Próxima entrega", pt: "Próxima entrega" },
   "overview.noDeadline":     { en: "no deadline this week", es: "sin entrega esta semana", pt: "sem entrega esta semana" },
   "overview.avgGrade":       { en: "Avg grade",        es: "Nota media",     pt: "Nota média" },
   "overview.acrossSubjects": { en: "across {n} subjects", es: "en {n} asignaturas", pt: "em {n} disciplinas" },
   "overview.noEvents":       { en: "No events scheduled today", es: "Sin eventos hoy", pt: "Sem eventos hoje" },
-  "overview.referatBadge":   { en: "Referat deadline: {time}", es: "Entrega referat: {time}", pt: "Entrega referat: {time}" },
+  "overview.referatBadge":   { en: "Next deadline: {time}", es: "Próxima entrega: {time}", pt: "Próxima entrega: {time}" },
 
   // ============================================================
   // Calendar screen
@@ -383,7 +384,7 @@ STRINGS["simulator.retention"] = { es: "Retención predicha el día del examen",
 STRINGS["simulator.daily"] = { es: "Plan diario", en: "Daily plan", pt: "Plano diário" };
 STRINGS["diagnostic.s2.title"] = { es: "2. Pregunta {i} / {n}", en: "2. Question {i} / {n}", pt: "2. Pergunta {i} / {n}" };
 STRINGS["occlusion.title"] = { es: "Image Occlusion", en: "Image Occlusion", pt: "Image Occlusion" };
-STRINGS["occlusion.subtitle"] = { es: "Enmascara estructuras anatómicas y estudialas", en: "Mask anatomy structures and study them", pt: "Mascare estruturas anatômicas e estude-as" };
+STRINGS["occlusion.subtitle"] = { es: "Enmascara partes de una imagen para estudiarlas", en: "Mask parts of an image to study them", pt: "Mascare partes de uma imagem para estudá-las" };
 STRINGS["occlusion.newCard"] = { es: "Crear nueva tarjeta de oclusión", en: "Create new occlusion card", pt: "Criar novo cartão de oclusão" };
 STRINGS["occlusion.topic"] = { es: "Tema", en: "Topic", pt: "Tópico" };
 STRINGS["occlusion.upload"] = { es: "Subir imagen", en: "Upload image", pt: "Carregar imagem" };

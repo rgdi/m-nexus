@@ -1,15 +1,1 @@
-[
-  {
-    "name": "Test",
-    "icon": "T",
-    "color": "var(--subj-blue)",
-    "grade": null,
-    "performance": 0,
-    "prof": "",
-    "next": "",
-    "id": "sub-ce76cbf7-923a-4677-aa31-e1f7862d6ee5",
-    "order": 0,
-    "createdAt": 1789918348568,
-    "updatedAt": 1789918348568
-  }
-]
+[]

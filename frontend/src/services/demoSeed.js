@@ -88,7 +88,7 @@ export function seedDemo(store) {
   notes.create({
     title: "Flashcards demo",
     subject: "bio",
-    body: "# Cell biology\n\nMitochondria: the powerhouse of the cell.\n\n- {{c1::Main energy molecule::ATP}}\n- {{c1::Photosynthesis location::Chloroplast}}\n- {{c1::Number of chromosomes in humans::46}}\n- {{c1::DNA stands for::Deoxyribonucleic Acid}}\n\nReferencia: @campbell/cap9 (mitochondria) y @campbell/cap10 (cloroplastos).",
+    body: "# Cell biology (ejemplo offline)\n\nMitochondria: la central energética de la célula.\n\n- {{c1::Molécula de energía principal::ATP}}\n- {{c1::Dónde ocurre la fotosíntesis::Cloroplasto}}\n- {{c1::Cromosomas en humanos::46}}\n- {{c1::Qué significa ADN::Ácido desoxirribonucleico}}\n\nReferencia: @example/cap9 (mitochondria) y @example/cap10 (cloroplastos).",
     tags: ["biology", "review"],
   });
 

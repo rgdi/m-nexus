@@ -1,6 +1,6 @@
 /* ============================================================
  * three_d_viewer.js — visor 3D con hotspots/billboard/callouts.
- * v1.5.3 — replica el comportamiento de Anatomy/3D Viewer apps.
+ * v1.5.3 — replica el comportamiento de un visor 3D genérico (GLB viewer).
  *
  * Técnicas implementadas:
  *  - Screen-space projection: 3D→2D en cada frame

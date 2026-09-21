@@ -28,6 +28,8 @@ import { renderTodos } from "./screens/todos.js";
 import { renderAI } from "./screens/ai.js";
 import { renderSettings } from "./screens/settings.js";
 import { renderLogin } from "./screens/login.js";
+import { renderCluster } from "./screens/cluster.js";
+import { mountPeerIndicator } from "./widgets/peer_indicator.js";
 import { renderDiagnostic } from "./screens/diagnostic.js";
 import { renderApprovals } from "./screens/approvals.js";
 import { renderSimulator } from "./screens/simulator.js";
@@ -49,6 +51,7 @@ const ROUTES = {
   simulator: renderSimulator,
   "fsrs-sim": renderFsrsSim,
   occlusion: renderOcclusionScreen,
+  cluster: renderCluster,
 };
 
 const app = document.getElementById("app");
@@ -166,6 +169,8 @@ async function bootstrap() {
   mountOfflinePill();
   // v1.9.3: vault switcher
   mountVaultSwitcher();
+  // v2.23.3: peer indicator (top-right server pill + overlay)
+  mountPeerIndicator();
   // v2.0.2: AI tutor FAB
   mountAITutor();
   // v2.0.6: E2E sync via WebSocket
@@ -318,6 +323,8 @@ function openAppDrawer() {
     { hash: "#/notes",    i18n: "dock.notes",    icon: "✎" },
     { hash: "#/todos",    i18n: "dock.todos",    icon: "✓" },
     { hash: "#/ai",       i18n: "dock.tutor",    icon: "✦" },
+    { hash: "#/cluster",  i18n: "dock.cluster",  icon: "🛰️" },
+    { hash: "#/settings", i18n: "dock.settings", icon: "⚙" },
   ];
 
   const scrim = document.createElement("div");

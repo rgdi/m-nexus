@@ -115,6 +115,16 @@ export async function renderSettings(root) {
       </section>
 
       <section class="settings-section">
+        <h2>Cluster de servidores</h2>
+        <p class="muted">varios servidores sincronizando en paralelo, con auto-descubrimiento</p>
+        <a class="settings-option" id="cluster-link" href="#/cluster">
+          <span class="ico">🛰️</span>
+          <span class="name">Administrar cluster</span>
+          <span class="muted small">Ver peers, promover/demote, healthcheck</span>
+        </a>
+      </section>
+
+      <section class="settings-section">
         <h2>Export</h2>
         <p class="muted">Descarga tu vault para respaldo o migración</p>
         <div class="settings-grid" style="grid-template-columns: 1fr 1fr;">
