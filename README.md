@@ -66,36 +66,49 @@ adb install android/app/build/outputs/apk/debug/app-debug.apk
 
 ## Quick start
 
-### Install on a fresh server (one line)
+### Install with one command (v2.23.1+)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/rgdi/m-nexus/main/install/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/rgdi/m-nexus/main/install.sh | bash
 ```
 
-This single command:
-1. Detects OS (Linux/macOS) and package manager (apt/dnf/yum/apk/brew)
-2. Installs Node.js 22 if missing
-3. Downloads the latest release (backend ZIP + webview bundle, ~2 MB)
-4. Initializes the data store
-5. Installs a systemd service (if available) or runs in background
-6. Verifies the backend is healthy at `http://localhost:4100/health`
-7. Opens the **first-run setup wizard** in your browser (8 slides)
+That single command downloads the latest release and offers three modes
+for whatever you need:
 
-Options:
+| Mode | What you get |
+|---|---|
+| `app` *(default)* | Android APK in `~/.mnexus/apk/`. Then `adb install -r ./mnexus-v2.23.x-debug.apk` |
+| `server` | Backend running on `:4100`. `--full` también descarga el bundle para servirlo |
+| `deploy` | Bundle estático en `/var/www/html` o sirviendo vía `python3 -m http.server` |
+
+Examples:
 ```bash
-curl -fsSL ...install.sh | bash -s -- --port=4100 --data=/var/lib/mnexus
-curl -fsSL ...install.sh | bash -s -- --update         # upgrade existing install
-curl -fsSL ...install.sh | bash -s -- --no-systemd    # run without systemd
+# Solo el APK debug
+curl -fsSL .../install.sh | bash
+
+# Backend corriendo en tu VPS
+curl -fsSL .../install.sh | bash -s -- server
+
+# Solo frontend desplegado (Apache / Nginx o python http server)
+curl -fsSL .../install.sh | bash -s -- deploy --port 8080
+
+# Versión específica
+curl -fsSL .../install.sh | bash -s -- --version v2.23.2
+
+# Carpeta personalizada + dominio
+curl -fsSL .../install.sh | bash -s -- server \
+    INSTALL_DIR=/opt/mnexus INSTALL_DOMAIN=mysite.com
 ```
 
-After install:
+After install (server mode):
 ```bash
-mnexus status    # check backend
-mnexus logs      # tail backend.log
-mnexus restart   # restart service
-mnexus update    # re-run installer to upgrade
-mnexus uninstall # full removal
+~/.mnexus/run-server.sh                            # start
+kill $(cat ~/.mnexus/server.pid 2>/dev/null)       # stop
+tail -f ~/.mnexus/logs/server.log                  # logs
 ```
+
+The installer is fully idempotent — re-running it detects the existing
+install and upgrades in place.
 
 ### Develop locally
 
