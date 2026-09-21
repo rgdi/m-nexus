@@ -152,6 +152,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [detect-version, build-webview]
     if: needs.detect-version.outputs.should_release == 'true'
+    # v2.23.1: build-android no longer blocks the GitHub Release —
+    # if Android tooling fails, release still ships with backend+webview.
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -184,15 +187,23 @@ jobs:
 
       - name: Install npm deps (root + frontend)
         run: |
+          # v2.23.1: install root deps (incl @capacitor/cli) + esbuild for bundling
+          # Then frontend devDeps (vitest etc.).
+          (npm ci --no-audit --no-fund || npm install --no-audit --no-fund)
           npm install esbuild --no-audit --no-fund
-          cd frontend && npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+          (cd frontend && npm ci --no-audit --no-fund || (cd frontend && npm install --no-audit --no-fund))
 
       - name: Build webview bundle
         run: bash scripts/build_webview.sh /tmp/webview-bundle
 
       - name: Install Capacitor + sync
         run: |
-          npm install --no-audit --no-fund @capacitor/cli@8.5
+          # v2.23.1: capacitor CLI is in root devDeps, installed already by the npm step above.
+          # We just check it and run cap sync.
+          if ! [ -f node_modules/@capacitor/cli/package.json ]; then
+            echo "::error::@capacitor/cli not installed after npm step"
+            exit 1
+          fi
           npx cap sync android
 
       - name: Accept Android SDK licenses
@@ -284,7 +295,8 @@ jobs:
   create-release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
-    needs: [detect-version, build-backend, build-webview, build-android]
+    # v2.23.1: Android is optional. Backend + webview + docker (if any) is enough.
+    needs: [detect-version, build-backend, build-webview]
     if: needs.detect-version.outputs.should_release == 'true'
     steps:
       - uses: actions/checkout@v4
