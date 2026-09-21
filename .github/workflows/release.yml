@@ -51,14 +51,17 @@ jobs:
             exit 1
           fi
           TAG="v${VERSION}"
-          LATEST_TAG=$(git tag --list 'v*' --sort=-v:refname | head -1 || echo "")
-          LATEST_TAG_DISPLAY="${LATEST_TAG:-<none>}"
-          if [[ "$LATEST_TAG" == "$TAG" && "${{ inputs.force }}" != "true" ]]; then
-            SHOULD_RELEASE="false"
-            echo "Version ${VERSION} ya publicada como ${LATEST_TAG} - skip"
-          else
+          # v2.23.1: detection is based on git diff of package.json — if the
+          # version changed since the previous commit we trigger a release
+          # (or if user forces via workflow_dispatch).
+          PREVIOUS_VERSION=$(git show HEAD~1:backend/package.json 2>/dev/null | grep '"version"' | head -1 | awk -F'"' '{print $4}' || echo "")
+          CURRENT_VERSION="$VERSION"
+          if [[ "$PREVIOUS_VERSION" != "$CURRENT_VERSION" || "${{ inputs.force }}" == "true" ]]; then
             SHOULD_RELEASE="true"
-            echo "Nueva version: ${TAG} (ultimo tag: ${LATEST_TAG_DISPLAY})"
+            echo "Cambio de version ${PREVIOUS_VERSION:-<none>} -> ${CURRENT_VERSION}. Release de ${TAG}"
+          else
+            SHOULD_RELEASE="false"
+            echo "Sin cambio de version (${CURRENT_VERSION}). Skip build."
           fi
           {
             echo "version=${VERSION}"
