@@ -295,9 +295,14 @@ jobs:
   create-release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
-    # v2.23.1: Android is optional. Backend + webview + docker (if any) is enough.
+    # v2.23.1: Android AND Docker are optional. Backend + webview enough.
     needs: [detect-version, build-backend, build-webview]
-    if: needs.detect-version.outputs.should_release == 'true'
+    if: |
+      always() &&
+      needs.detect-version.outputs.should_release == 'true' &&
+      (needs.build-backend.result == 'success' || needs.build-backend.result == 'skipped') &&
+      (needs.build-webview.result == 'success' || needs.build-webview.result == 'skipped')
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
         with:
