@@ -138,6 +138,9 @@ export class ApiError extends Error {
 export const api = {
   base: API_BASE,
 
+  /** v2.24.0 — raw request primitive. Para uso interno (no usar en UI). */
+  _raw: req,
+
   health: () => req("GET", "/health"),
 
   // ----- Notes -----

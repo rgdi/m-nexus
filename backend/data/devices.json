@@ -25,7 +25,7 @@
     "appVersion": "2.19.1",
     "osVersion": "Android 15",
     "registeredAt": 1789828862078,
-    "lastSeenAt": 1789829197127
+    "lastSeenAt": 1790028184260
   },
   {
     "deviceId": "test-d-003",
@@ -36,7 +36,7 @@
       "audio": true
     },
     "registeredAt": 1789828862202,
-    "lastSeenAt": 1789829197160
+    "lastSeenAt": 1790028184288
   },
   {
     "deviceId": "test-d-004",
@@ -45,73 +45,73 @@
       "syncIntervalMinutes": 10
     },
     "registeredAt": 1789828862293,
-    "lastSeenAt": 1789829197182
+    "lastSeenAt": 1790028184302
   },
   {
     "deviceId": "test-d-005",
     "userId": "user-A",
     "registeredAt": 1789828862378,
-    "lastSeenAt": 1789829197191
+    "lastSeenAt": 1790028184307
   },
   {
     "deviceId": "test-d-006",
     "userId": "user-A",
     "registeredAt": 1789828862384,
-    "lastSeenAt": 1789829197196
+    "lastSeenAt": 1790028184312
   },
   {
     "deviceId": "test-d-007",
     "userId": "user-B",
     "registeredAt": 1789828862389,
-    "lastSeenAt": 1789829197202
+    "lastSeenAt": 1790028184317
   },
   {
     "deviceId": "test-d-008",
     "registeredAt": 1789828862395,
-    "lastSeenAt": 1789829197210
+    "lastSeenAt": 1790028184323
   },
   {
     "deviceId": "reg-2",
     "deviceName": "New",
     "pluginVersion": "1.0",
     "registeredAt": 1789829183764,
-    "lastSeenAt": 1789829183768
+    "lastSeenAt": 1790028151458
   },
   {
     "deviceId": "reg-3",
     "registeredAt": 1789829183773,
-    "lastSeenAt": 1789829183773,
+    "lastSeenAt": 1790028151463,
     "blocked": false
   },
   {
     "deviceId": "auth-http-1",
     "deviceName": "Test",
     "registeredAt": 1789829184425,
-    "lastSeenAt": 1789829184425,
-    "lastAccessTokenId": "882f6574c2836d2ff6fd0de46e20d575"
+    "lastSeenAt": 1790028152226,
+    "lastAccessTokenId": "9415dfcccd2460a045281d0503de22c8"
   },
   {
     "deviceId": "auth-http-2",
     "registeredAt": 1789829184495,
-    "lastSeenAt": 1789829184495,
-    "lastAccessTokenId": "9c5af58d7202f8185be99e0c1e3e5dbd"
+    "lastSeenAt": 1790028152263,
+    "lastAccessTokenId": "b1e1b229f153fad4916e9ab889620e12"
   },
   {
     "deviceId": "auth-http-3",
     "registeredAt": 1789829184552,
-    "lastSeenAt": 1789829184552,
-    "lastAccessTokenId": "b532fbc20f61d36e5716555a44ca4f47"
+    "lastSeenAt": 1790028152465,
+    "lastAccessTokenId": "70db71a474f27905ebb004a0da758088"
   },
   {
     "deviceId": "auth-audit",
     "registeredAt": 1789829184593,
-    "lastSeenAt": 1789829184593,
-    "lastAccessTokenId": "461d19a0e0328437dca27153333aad77"
+    "lastSeenAt": 1790028152593,
+    "lastAccessTokenId": "e69fa8458e0420446db96865c74fb410"
   },
   {
     "deviceId": "auth-revoke",
     "registeredAt": 1789829184680,
-    "lastSeenAt": 1789829184680
+    "lastSeenAt": 1790028152646
   },
   {
     "deviceId": "test-device-1",
@@ -119,25 +119,25 @@
     "platform": "linux",
     "pluginVersion": "0.28.0",
     "registeredAt": 1789829186447,
-    "lastSeenAt": 1789829188048,
-    "lastAccessTokenId": "87d633af53488076b139bf6ea0652c58"
+    "lastSeenAt": 1790028164320,
+    "lastAccessTokenId": "e006bc8afd0746c54805d3735d91e500"
   },
   {
     "deviceId": "device-for-list",
     "deviceName": "List test",
     "registeredAt": 1789829186477,
-    "lastSeenAt": 1789829186477,
-    "lastAccessTokenId": "8bd9e1a5bdc57c4e759483306ec28f2c"
+    "lastSeenAt": 1790028160905,
+    "lastAccessTokenId": "77e153529a4fc4521fb894b557e5cbfa"
   },
   {
     "deviceId": "device-token-test",
     "registeredAt": 1789829186507,
-    "lastSeenAt": 1789829186507
+    "lastSeenAt": 1790028160924
   },
   {
     "deviceId": "ws-test-device",
     "deviceName": "WS Test",
     "registeredAt": 1789829192257,
-    "lastSeenAt": 1789829192257
+    "lastSeenAt": 1790028171602
   }
 ]

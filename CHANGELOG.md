@@ -2,7 +2,7 @@
 
 > Historial completo de versiones. Stack actual: **TypeScript backend (Fastify) + Vanilla JS+CSS frontend**. Sin Flutter. Sin colaboración (rejected).
 >
-> **Totales actuales**: 1185 tests automatizados (930 backend + 255 frontend), bundle 1.2 MB / 71 archivos, **0 errores TypeScript** (`tsc --noEmit` clean).
+> **Totales actuales**: 1453 tests automatizados (1019 backend + 434 frontend), bundle 1.524 MB / 83 archivos, **0 errores TypeScript** (`tsc --noEmit` clean).
 
 ---
 
@@ -1119,3 +1119,56 @@ Long-press 600ms en canvas → popup flotante con Word + IPA + syllable + freque
 | `docs/BACKEND_ONLY_FEATURES.md` | Features solo-API (no necesitan frontend) |
 | `app/test/validations/validate_v*.cjs` | Smoke tests sin red (~315 assertions) |
 | `app/test/e2e/*.cjs` | Playwright E2E + mobile audit |
+## [2.24.0] — 2026-XX-XX
+
+### Cognitive science integration (paper `memoria_medicina.pdf`)
+
+Implementation of Wozniak's atomic card principles + FSRS-6 backend bridge +
+active recall + elaboration prompts + interleaving, per the architect prompt.
+
+**Backend**:
+- `services/cognitiveValidator.ts` — Wozniak 20 rules engine
+  - MAX_FRONT_WORDS=12 (1 pregunta corta)
+  - MAX_BACK_WORDS=50 (1-3 frases, ideal <30)
+  - FRONT_BACK_MIN_RATIO=0.4
+  - Front==back hard reject
+  - Mega-tarjeta detector with auto-split (letter-prefix + ; + y patterns)
+- `routes/flashcards.ts` — schema migration v2.24.0
+  - `CardType = basic|cloze|enumerate|image_occlusion`
+  - `FsrsCardState` (DSR model: stability, difficulty, state, reps, lapses, lastReview, due, retrievability)
+  - `Elaboration { question, answer }[]`
+  - `backfillFlashcard()` — automatic migration for legacy cards (mtime cache invalidation)
+  - `linkRelated()` — sibling cards for interleaving
+  - **NEW**: `POST /api/v1/flashcards/atomic-extract` with `atomicRefactor` heuristic
+- `services/flashcards.ts` cache invalidation by mtime for live tests + external writes
+- Tests:
+  - `tests/cognitiveValidator.test.ts` — 17/17 passing (validator rules)
+  - `tests/flashcardsV224.test.ts` — 7/7 passing (backfill + atomic-extract e2e)
+- Backend tests: 1019 passing (was 995)
+
+**Frontend**:
+- `services/fsrs_v6.js` — bridge al backend FSRS-6 con cache offline
+  - Si backend responde: newState desde ts-fsrs (backend)
+  - Si backend falla: fallback FSRS-4.5 cliente (preserva sesión)
+- `widgets/study_session.js` — completa reescritura 2.24.0
+  - **Active-recall enforcement (§3.1)**: rating sin reveal = rechazado. Botones "1-4" solo actúan cuando la card está revelada. Refuerza el intento activo.
+  - **Elaboration prompt (§3.5)**: tras "Again", prompt "¿Por qué fallaste?" + "¿Cómo se relaciona con X?". Persistido en `mnexus.elaborations.pending.v1` (queue offline-first para sync futuro v2.25).
+  - **Interleave flag (§3.4)**: `openStudySession(cards, { interleave: true })` mezcla cards del mismo `interleaveGroup` en round-robin para forzar discriminación entre subtemas.
+  - **Card types**: básica (flip), clozes, enumerate (lista interactiva con `<ol>`), image_occlusion.
+  - **Stats pills** visibles: Correct/Wrong/Left/Type.
+  - **State label**: new/learning/relearning/review con reps y due format `Nd Nh`.
+  - **Backend sync fire-and-forget**: ratings se envían a `POST /api/v1/fsrs/eval` para multi-device sync sin stalls.
+- `services/api.js` — `_raw` export (raw request primitive para fsrs_v6).
+- Tests:
+  - `tests/v224.test.js` — 6/6 (FSRS-6 bridge, normalize, fallback)
+  - `tests/studySessionV224.test.js` — 6/6 (active recall, elaboration, enumerate rendering, interleave)
+- Frontend tests: 434 passing (was 422)
+
+**Bundle**: 1524 KB / 83 files.
+
+**Net delta v2.24.0**: +12 cognitive / FSRS-6 files, +24 tests (17 cognitiveValidator + 7 flashcardsV224 + 6 v224 + 6 studySessionV224 = 36 actually → see Test Counts table), +70 KB bundle.
+
+### Test Counts table
+- Backend: 995 → 1019 (+24)
+- Frontend: 422 → 434 (+12)
+- Total: 1417 → 1453 (+3

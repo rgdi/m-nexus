@@ -1,1 +1,274 @@
-[]
+[
+  {
+    "topicId": "digestivo",
+    "sourceNoteId": "",
+    "kind": "basic",
+    "payload": {
+      "front": "¿Causas de pancreatitis aguda?",
+      "back": "A. Alcohol B. Colelitiasis C. Hipertrigliceridemia D. Traumatismo",
+      "subject": "digestivo"
+    },
+    "preview": "¿Causas de pancreatitis aguda?",
+    "answer": "A. Alcohol B. Colelitiasis C. Hipertrigliceridemia D. Traumatismo",
+    "confidence": 0.95,
+    "id": "cand-1790027901439-96rtz3",
+    "createdAt": 1790027901439,
+    "status": "pending"
+  },
+  {
+    "topicId": "digestivo",
+    "sourceNoteId": "",
+    "kind": "basic",
+    "payload": {
+      "front": "¿Causas de pancreatitis aguda?",
+      "back": "A. Alcohol B. Colelitiasis C. Hipertrigliceridemia D. Traumatismo",
+      "subject": "digestivo"
+    },
+    "preview": "¿Causas de pancreatitis aguda?",
+    "answer": "A. Alcohol B. Colelitiasis C. Hipertrigliceridemia D. Traumatismo",
+    "confidence": 0.95,
+    "id": "cand-1790027990706-x05y0f",
+    "createdAt": 1790027990706,
+    "status": "pending"
+  },
+  {
+    "topicId": "digestivo",
+    "sourceNoteId": "",
+    "kind": "basic",
+    "payload": {
+      "front": "¿Causas de pancreatitis aguda?",
+      "back": "A. Alcohol B. Colelitiasis C. Hipertrigliceridemia D. Traumatismo",
+      "subject": "digestivo"
+    },
+    "preview": "¿Causas de pancreatitis aguda?",
+    "answer": "A. Alcohol B. Colelitiasis C. Hipertrigliceridemia D. Traumatismo",
+    "confidence": 0.95,
+    "id": "cand-1790027992622-kmtk8w",
+    "createdAt": 1790027992622,
+    "status": "pending"
+  },
+  {
+    "topicId": "digestivo",
+    "sourceNoteId": "",
+    "kind": "basic",
+    "payload": {
+      "front": "¿Causas de pancreatitis aguda?",
+      "back": "A. Alcohol B. Colelitiasis C. Hipertrigliceridemia D. Traumatismo",
+      "subject": "digestivo"
+    },
+    "preview": "¿Causas de pancreatitis aguda?",
+    "answer": "A. Alcohol B. Colelitiasis C. Hipertrigliceridemia D. Traumatismo",
+    "confidence": 0.95,
+    "id": "cand-1790028034545-5zjxcf",
+    "createdAt": 1790028034545,
+    "status": "pending"
+  },
+  {
+    "topicId": "digestivo",
+    "sourceNoteId": "",
+    "kind": "basic",
+    "payload": {
+      "front": "¿Causas de pancreatitis aguda?",
+      "back": "A. Alcohol B. Colelitiasis C. Hipertrigliceridemia D. Traumatismo",
+      "subject": "digestivo"
+    },
+    "preview": "¿Causas de pancreatitis aguda?",
+    "answer": "A. Alcohol B. Colelitiasis C. Hipertrigliceridemia D. Traumatismo",
+    "confidence": 0.95,
+    "id": "cand-1790028056053-065cqd",
+    "createdAt": 1790028056053,
+    "status": "pending"
+  },
+  {
+    "topicId": "digestivo",
+    "sourceNoteId": "",
+    "kind": "basic",
+    "payload": {
+      "front": "¿Causas de pancreatitis?",
+      "back": "Alcohol",
+      "subject": "digestivo"
+    },
+    "preview": "¿Causas de pancreatitis?",
+    "answer": "Alcohol",
+    "confidence": 0.85,
+    "id": "cand-1790028107841-g4ecd0",
+    "createdAt": 1790028107841,
+    "status": "pending"
+  },
+  {
+    "topicId": "digestivo",
+    "sourceNoteId": "",
+    "kind": "basic",
+    "payload": {
+      "front": "¿Causas de pancreatitis?",
+      "back": "Colelitiasis",
+      "subject": "digestivo"
+    },
+    "preview": "¿Causas de pancreatitis?",
+    "answer": "Colelitiasis",
+    "confidence": 0.85,
+    "id": "cand-1790028107842-tjh7sb",
+    "createdAt": 1790028107842,
+    "status": "pending"
+  },
+  {
+    "topicId": "digestivo",
+    "sourceNoteId": "",
+    "kind": "basic",
+    "payload": {
+      "front": "¿Causas de pancreatitis?",
+      "back": "Hipertrigliceridemia",
+      "subject": "digestivo"
+    },
+    "preview": "¿Causas de pancreatitis?",
+    "answer": "Hipertrigliceridemia",
+    "confidence": 0.85,
+    "id": "cand-1790028107842-mfrr6v",
+    "createdAt": 1790028107842,
+    "status": "pending"
+  },
+  {
+    "topicId": "digestivo",
+    "sourceNoteId": "",
+    "kind": "basic",
+    "payload": {
+      "front": "¿Causas de pancreatitis?",
+      "back": "Trauma",
+      "subject": "digestivo"
+    },
+    "preview": "¿Causas de pancreatitis?",
+    "answer": "Trauma",
+    "confidence": 0.85,
+    "id": "cand-1790028107842-gacd4g",
+    "createdAt": 1790028107842,
+    "status": "pending"
+  },
+  {
+    "topicId": "digestivo",
+    "sourceNoteId": "",
+    "kind": "basic",
+    "payload": {
+      "front": "¿Causas de pancreatitis aguda?",
+      "back": "Alcohol",
+      "subject": "digestivo"
+    },
+    "preview": "¿Causas de pancreatitis aguda?",
+    "answer": "Alcohol",
+    "confidence": 0.85,
+    "id": "cand-1790028115060-zmursr",
+    "createdAt": 1790028115061,
+    "status": "pending"
+  },
+  {
+    "topicId": "digestivo",
+    "sourceNoteId": "",
+    "kind": "basic",
+    "payload": {
+      "front": "¿Causas de pancreatitis aguda?",
+      "back": "Colelitiasis",
+      "subject": "digestivo"
+    },
+    "preview": "¿Causas de pancreatitis aguda?",
+    "answer": "Colelitiasis",
+    "confidence": 0.85,
+    "id": "cand-1790028115061-6vxmyl",
+    "createdAt": 1790028115061,
+    "status": "pending"
+  },
+  {
+    "topicId": "digestivo",
+    "sourceNoteId": "",
+    "kind": "basic",
+    "payload": {
+      "front": "¿Causas de pancreatitis aguda?",
+      "back": "Hipertrigliceridemia",
+      "subject": "digestivo"
+    },
+    "preview": "¿Causas de pancreatitis aguda?",
+    "answer": "Hipertrigliceridemia",
+    "confidence": 0.85,
+    "id": "cand-1790028115061-sz9lkp",
+    "createdAt": 1790028115061,
+    "status": "pending"
+  },
+  {
+    "topicId": "digestivo",
+    "sourceNoteId": "",
+    "kind": "basic",
+    "payload": {
+      "front": "¿Causas de pancreatitis aguda?",
+      "back": "Traumatismo",
+      "subject": "digestivo"
+    },
+    "preview": "¿Causas de pancreatitis aguda?",
+    "answer": "Traumatismo",
+    "confidence": 0.85,
+    "id": "cand-1790028115061-aulx3r",
+    "createdAt": 1790028115061,
+    "status": "pending"
+  },
+  {
+    "topicId": "digestivo",
+    "sourceNoteId": "",
+    "kind": "basic",
+    "payload": {
+      "front": "¿Causas de pancreatitis aguda?",
+      "back": "Alcohol",
+      "subject": "digestivo"
+    },
+    "preview": "¿Causas de pancreatitis aguda?",
+    "answer": "Alcohol",
+    "confidence": 0.85,
+    "id": "cand-1790028179424-0mh0cr",
+    "createdAt": 1790028179424,
+    "status": "pending"
+  },
+  {
+    "topicId": "digestivo",
+    "sourceNoteId": "",
+    "kind": "basic",
+    "payload": {
+      "front": "¿Causas de pancreatitis aguda?",
+      "back": "Colelitiasis",
+      "subject": "digestivo"
+    },
+    "preview": "¿Causas de pancreatitis aguda?",
+    "answer": "Colelitiasis",
+    "confidence": 0.85,
+    "id": "cand-1790028179425-s1ny60",
+    "createdAt": 1790028179425,
+    "status": "pending"
+  },
+  {
+    "topicId": "digestivo",
+    "sourceNoteId": "",
+    "kind": "basic",
+    "payload": {
+      "front": "¿Causas de pancreatitis aguda?",
+      "back": "Hipertrigliceridemia",
+      "subject": "digestivo"
+    },
+    "preview": "¿Causas de pancreatitis aguda?",
+    "answer": "Hipertrigliceridemia",
+    "confidence": 0.85,
+    "id": "cand-1790028179425-33e9sp",
+    "createdAt": 1790028179425,
+    "status": "pending"
+  },
+  {
+    "topicId": "digestivo",
+    "sourceNoteId": "",
+    "kind": "basic",
+    "payload": {
+      "front": "¿Causas de pancreatitis aguda?",
+      "back": "Traumatismo",
+      "subject": "digestivo"
+    },
+    "preview": "¿Causas de pancreatitis aguda?",
+    "answer": "Traumatismo",
+    "confidence": 0.85,
+    "id": "cand-1790028179425-05vkjx",
+    "createdAt": 1790028179425,
+    "status": "pending"
+  }
+]
