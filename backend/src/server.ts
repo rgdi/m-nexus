@@ -20,6 +20,7 @@ import { glbModelsRoutes } from "./routes/glbModels.js";
 import { syncRoutes } from "./routes/sync.js";
 import { subjectsRoutes } from "./routes/subjects.js";
 import { notesRoutes } from "./routes/notes.js";
+import { journalRoutes } from "./routes/journal.js";
 import { eventsRoutes } from "./routes/events.js";
 import { tasksRoutes } from "./routes/tasks.js";
 import { recordingsRoutes } from "./routes/recordings.js";
@@ -122,6 +123,8 @@ export async function buildServer(): Promise<any> {
   // v1.1.0: frontend Education Service endpoints
   await app.register(subjectsRoutes, { prefix: "/api/v1" });
   await app.register(notesRoutes, { prefix: "/api/v1" });
+  // v2.26.0: premium daily journal
+  await app.register(journalRoutes, { prefix: "/api/v1" });
   await app.register(eventsRoutes, { prefix: "/api/v1" });
   await app.register(tasksRoutes, { prefix: "/api/v1" });
   // v1.5.1: flashcards CRUD + extracción automática desde notas

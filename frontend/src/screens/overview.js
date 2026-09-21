@@ -101,6 +101,11 @@ export async function renderOverview(root) {
         <div>
           <h3 class="muted small semibold" style="margin-bottom: var(--s-3)">${i18n.t("overview.atGlance")}</h3>
           <div class="col gap-3">
+            <a class="stat" href="#/journal" style="text-decoration:none;color:inherit;background:linear-gradient(135deg,rgba(124,77,255,0.10),rgba(34,180,255,0.06));border:1px solid rgba(124,77,255,0.20)">
+              <div class="lbl">📓 Diario</div>
+              <div class="val" style="font-size:var(--fs-md);font-weight:600">Escribe tu entrada de hoy</div>
+              <div class="sub">Plantilla + mood + live queries</div>
+            </a>
             <div class="stat">
               <div class="lbl">${i18n.t("overview.dueToday")}</div>
               <div class="val">${openTasks.filter(t => t.due && sameDay(t.due, Date.now())).length}</div>

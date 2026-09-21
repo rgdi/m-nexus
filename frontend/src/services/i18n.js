@@ -27,6 +27,7 @@ const STRINGS = {
   "dock.tutor":              { en: "AI",       es: "IA",        pt: "IA" },
   "dock.settings":           { en: "Settings", es: "Ajustes",   pt: "Ajustes" },
   "dock.cluster":            { en: "Cluster",  es: "Cluster",   pt: "Cluster" },
+  "dock.journal":            { en: "Journal",  es: "Diario",    pt: "Diário" },
 
   // ============================================================
   // Overview screen
