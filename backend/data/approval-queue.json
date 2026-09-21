@@ -11,8 +11,8 @@
     "preview": "¿Causas de pancreatitis aguda?",
     "answer": "Alcohol",
     "confidence": 0.85,
-    "id": "cand-1790031275095-cm9yyk",
-    "createdAt": 1790031275095,
+    "id": "cand-1790032438896-8qnewt",
+    "createdAt": 1790032438896,
     "status": "pending"
   },
   {
@@ -27,8 +27,8 @@
     "preview": "¿Causas de pancreatitis aguda?",
     "answer": "Colelitiasis",
     "confidence": 0.85,
-    "id": "cand-1790031275095-jyc4gp",
-    "createdAt": 1790031275095,
+    "id": "cand-1790032438896-32dmby",
+    "createdAt": 1790032438896,
     "status": "pending"
   },
   {
@@ -43,8 +43,8 @@
     "preview": "¿Causas de pancreatitis aguda?",
     "answer": "Hipertrigliceridemia",
     "confidence": 0.85,
-    "id": "cand-1790031275095-mwh695",
-    "createdAt": 1790031275095,
+    "id": "cand-1790032438896-yw7t7o",
+    "createdAt": 1790032438896,
     "status": "pending"
   },
   {
@@ -59,8 +59,8 @@
     "preview": "¿Causas de pancreatitis aguda?",
     "answer": "Traumatismo",
     "confidence": 0.85,
-    "id": "cand-1790031275095-45d8rw",
-    "createdAt": 1790031275095,
+    "id": "cand-1790032438896-tg4wvn",
+    "createdAt": 1790032438896,
     "status": "pending"
   }
 ]

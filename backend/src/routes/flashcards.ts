@@ -28,7 +28,7 @@ import { logOp } from "../utils/log.js";
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
 
-export type CardType = "basic" | "cloze" | "enumerate" | "image_occlusion";
+export type CardType = "basic" | "cloze" | "enumerate" | "image_occlusion" | "multiple_choice";
 
 export type CardState = "new" | "learning" | "relearning" | "review";
 
@@ -77,6 +77,9 @@ export interface Flashcard {
   relatedTo: string[];
   /** Grupo de intercalado (discriminación, §3.4). Cards con mismo grupo se sirven mezcladas. */
   interleaveGroup: string | null;
+  // v2.27.0 — multiple choice payload (only used when cardType === "multiple_choice")
+  options?: string[];
+  correctIndex?: number;
   // legacy
   createdAt: number;
   updatedAt: number;

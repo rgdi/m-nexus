@@ -93,6 +93,8 @@ export const authMiddleware: (req: FastifyRequest, reply: FastifyReply) => Promi
     "/api/v1/notes/query",
     // v2.26.0: daily journal (used offline-first by journal screen + widgets)
     "/api/v1/journal",
+    // v2.27.0: Anki .apkg import/export (used offline-first by file import widget)
+    "/api/v1/anki",
   ];
   const isPublic = PUBLIC_PATHS.some((p) => req.url === p || req.url.startsWith(p + "?") || req.url.startsWith(p + "/"));
   if (isPublic) return;

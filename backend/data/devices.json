@@ -16,7 +16,7 @@
     "deviceName": "Test",
     "platform": "linux",
     "registeredAt": 1789829183759,
-    "lastSeenAt": 1789829183759
+    "lastSeenAt": 1790032415711
   },
   {
     "deviceId": "test-d-002",
@@ -25,7 +25,7 @@
     "appVersion": "2.19.1",
     "osVersion": "Android 15",
     "registeredAt": 1789828862078,
-    "lastSeenAt": 1790031280912
+    "lastSeenAt": 1790032444485
   },
   {
     "deviceId": "test-d-003",
@@ -36,7 +36,7 @@
       "audio": true
     },
     "registeredAt": 1789828862202,
-    "lastSeenAt": 1790031280939
+    "lastSeenAt": 1790032444511
   },
   {
     "deviceId": "test-d-004",
@@ -45,99 +45,99 @@
       "syncIntervalMinutes": 10
     },
     "registeredAt": 1789828862293,
-    "lastSeenAt": 1790031280954
+    "lastSeenAt": 1790032444525
   },
   {
     "deviceId": "test-d-005",
     "userId": "user-A",
     "registeredAt": 1789828862378,
-    "lastSeenAt": 1790031280959
+    "lastSeenAt": 1790032444530
   },
   {
     "deviceId": "test-d-006",
     "userId": "user-A",
     "registeredAt": 1789828862384,
-    "lastSeenAt": 1790031280964
+    "lastSeenAt": 1790032444535
   },
   {
     "deviceId": "test-d-007",
     "userId": "user-B",
     "registeredAt": 1789828862389,
-    "lastSeenAt": 1790031280968
+    "lastSeenAt": 1790032444539
   },
   {
     "deviceId": "test-d-008",
     "registeredAt": 1789828862395,
-    "lastSeenAt": 1790031280975
+    "lastSeenAt": 1790032444545
   },
   {
     "deviceId": "reg-2",
     "deviceName": "New",
     "pluginVersion": "1.0",
     "registeredAt": 1789829183764,
-    "lastSeenAt": 1790031255525
+    "lastSeenAt": 1790032415722
   },
   {
     "deviceId": "reg-3",
     "registeredAt": 1789829183773,
-    "lastSeenAt": 1790031255530,
+    "lastSeenAt": 1790032415727,
     "blocked": false
   },
   {
     "deviceId": "auth-http-1",
     "deviceName": "Test",
     "registeredAt": 1789829184425,
-    "lastSeenAt": 1790031255989,
-    "lastAccessTokenId": "dabb87ac55c9346c258d88107d87211f"
+    "lastSeenAt": 1790032416244,
+    "lastAccessTokenId": "3a6f5ab5245bfc3bbdf1083fdaf081bb"
   },
   {
     "deviceId": "auth-http-2",
     "registeredAt": 1789829184495,
-    "lastSeenAt": 1790031256023,
-    "lastAccessTokenId": "dd1f1787236a4ec4f5e73be521269661"
+    "lastSeenAt": 1790032416305,
+    "lastAccessTokenId": "d8785a44077a859354a3fd6ea5e19a9c"
   },
   {
     "deviceId": "auth-http-3",
     "registeredAt": 1789829184552,
-    "lastSeenAt": 1790031256127,
-    "lastAccessTokenId": "5b0ccf7f8815adc7212fa1fdebef25ef"
+    "lastSeenAt": 1790032416364,
+    "lastAccessTokenId": "7a98f2154ea1b5f71a566f7091d9b0e6"
   },
   {
     "deviceId": "auth-audit",
     "registeredAt": 1789829184593,
-    "lastSeenAt": 1790031256204,
-    "lastAccessTokenId": "6a155461b5bc776bda09247cd9353498"
+    "lastSeenAt": 1790032416420,
+    "lastAccessTokenId": "4f5edb85669fe67615a21d3d1ccc1876"
   },
   {
     "deviceId": "auth-revoke",
     "registeredAt": 1789829184680,
-    "lastSeenAt": 1790031256224
+    "lastSeenAt": 1790032416445
   },
   {
     "deviceId": "test-device-1",
-    "deviceName": "Test Device",
-    "platform": "linux",
-    "pluginVersion": "0.28.0",
+    "deviceName": "Test MacBook",
+    "platform": "macos",
+    "pluginVersion": "0.12.0",
     "registeredAt": 1789829186447,
-    "lastSeenAt": 1790031257645,
-    "lastAccessTokenId": "dd119bd54721302ccd47acbdfdabe27b"
+    "lastSeenAt": 1790032420018,
+    "lastAccessTokenId": "fdee1ce803dd424961cb73838709e36b"
   },
   {
     "deviceId": "device-for-list",
     "deviceName": "List test",
     "registeredAt": 1789829186477,
-    "lastSeenAt": 1790031249687,
-    "lastAccessTokenId": "65bd3ff685d2ed80cfdf93ac4d1bd1a4"
+    "lastSeenAt": 1790032420049,
+    "lastAccessTokenId": "f02b73767055dd9bdeee561c9e2983cc"
   },
   {
     "deviceId": "device-token-test",
     "registeredAt": 1789829186507,
-    "lastSeenAt": 1790031249716
+    "lastSeenAt": 1790032420094
   },
   {
     "deviceId": "ws-test-device",
     "deviceName": "WS Test",
     "registeredAt": 1789829192257,
-    "lastSeenAt": 1790031264160
+    "lastSeenAt": 1790032429386
   }
 ]

@@ -158,7 +158,7 @@ export async function openStudySession(cards, opts = {}) {
       review: "✓ Review",
     }[fs.state || "new"];
     const repsLabel = fs.reps ? `rep ${fs.reps}` : "";
-    const typeLabel = ({ basic: "Básico", cloze: "Cloze", enumerate: "Lista", image_occlusion: "Imagen" })[card.cardType || "basic"] || "—";
+    const typeLabel = ({ basic: "Básico", cloze: "Cloze", enumerate: "Lista", image_occlusion: "Imagen", multiple_choice: "Opción múltiple" })[card.cardType || "basic"] || "—";
     root.innerHTML = `
       <div class="head">
         <button class="close" data-act="close">✕</button>
@@ -216,6 +216,32 @@ export async function openStudySession(cards, opts = {}) {
           </div>
         </div>`;
     }
+    if (cardType === "multiple_choice" && Array.isArray(card.options)) {
+      // v2.27.0 — multiple choice: user selects one option, then reveal.
+      // We render options even on the "back" (answer mode) and color the correct one.
+      const options = card.options.filter((o) => o != null);
+      const letters = ["A", "B", "C", "D", "E", "F"];
+      const correctIndex = typeof card.correctIndex === "number" ? card.correctIndex : -1;
+      return `
+        <div class="card is-mc ${showBack ? "flipped" : ""}" data-act="flip" data-correct-index="${correctIndex}">
+          <div class="face">
+            <div class="label">Front · Elige la opción correcta</div>
+            <div class="question">${escapeHtml(card.front)}</div>
+            <div class="mc-options" role="radiogroup" aria-label="Opciones">
+              ${options.map((opt, i) => `
+                <button class="mc-option" data-option-index="${i}" role="radio" aria-checked="false" tabindex="0">
+                  <span class="mc-letter">${letters[i] || i + 1}</span>
+                  <span class="mc-text">${escapeHtml(opt)}</span>
+                </button>
+              `).join("")}
+            </div>
+          </div>
+          <div class="back">
+            <div class="label">Back · Respuesta</div>
+            <div class="answer">${escapeHtml(card.back || options[correctIndex] || "—")}</div>
+          </div>
+        </div>`;
+    }
     // Default basic/cloze.
     return `
       <div class="card ${showBack ? "flipped" : ""}" data-act="flip">
@@ -245,6 +271,26 @@ export async function openStudySession(cards, opts = {}) {
       b.addEventListener("click", async () => {
         const rating = parseInt(b.dataset.rate, 10);
         await gradeCard(card, rating);
+      });
+    });
+    // v2.27.0 — multiple-choice option selection
+    root.querySelectorAll(".mc-option").forEach((opt) => {
+      opt.addEventListener("click", () => {
+        // reveal + auto-rate based on the selection
+        const idx = parseInt(opt.dataset.optionIndex, 10);
+        const correctIdx = typeof card.correctIndex === "number" ? card.correctIndex : -1;
+        card._mcChosen = idx;
+        card._showBack = true;
+        renderCard(card, true);
+        // restore selection visually after re-render
+        requestAnimationFrame(() => {
+          const all = root.querySelectorAll(".mc-option");
+          all.forEach((o, i) => {
+            if (i === idx) o.classList.add("selected");
+            if (i === correctIdx) o.classList.add("correct");
+            if (i === idx && i !== correctIdx) o.classList.add("wrong");
+          });
+        });
       });
     });
     // Limpieza del handler anterior (key listener) si la card cambió
@@ -305,6 +351,13 @@ export async function openStudySession(cards, opts = {}) {
     }
     if (card._pendingRating) return;
     card._pendingRating = true;
+
+    // v2.27.0 — multiple choice: si no hay _mcChosen, no se puede ratingear todavía
+    if ((card.cardType === "multiple_choice" || card.cardType === "multiplechoice") && card._mcChosen === undefined) {
+      // ignore — el user debe clickear una opción
+      card._pendingRating = false;
+      return;
+    }
 
     const priorFs = card.fsrs || {};
     const cardSnapshot = { ...card, fsrs: priorFs };

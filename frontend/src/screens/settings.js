@@ -12,6 +12,7 @@ import { escapeHtml } from "../services/safe.js";
 import { auth } from "../services/auth.js";
 import { api } from "../services/api.js";
 import { exportVaultJSON, exportNoteMarkdown } from "../widgets/export.js";
+import { openAnkiImport, exportMnxToAnki } from "../widgets/anki_import.js";
 import {
   getPressureConfig,
   setPressureConfig,
@@ -122,6 +123,21 @@ export async function renderSettings(root) {
           <span class="name">Administrar cluster</span>
           <span class="muted small">Ver peers, promover/demote, healthcheck</span>
         </a>
+      </section>
+
+      <section class="settings-section">
+        <h2>Anki interop</h2>
+        <p class="muted">Importar o exportar a .apkg (Anki)</p>
+        <button class="settings-option" id="anki-import-btn">
+          <span class="ico">📥</span>
+          <span class="name">Importar deck .apkg</span>
+          <span class="muted small">Detecta automáticamente collection.json o anki2</span>
+        </button>
+        <button class="settings-option" id="anki-export-btn">
+          <span class="ico">📤</span>
+          <span class="name">Exportar a .apkg</span>
+          <span class="muted small">Basic + Cloze, con historial FSRS-6</span>
+        </button>
       </section>
 
       <section class="settings-section">
@@ -293,6 +309,34 @@ export async function renderSettings(root) {
       location.reload();
     });
   });
+
+  // v2.27.0 — Anki interop buttons
+  const ankiImportBtn = root.querySelector("#anki-import-btn");
+  if (ankiImportBtn) {
+    ankiImportBtn.addEventListener("click", async () => {
+      ankiImportBtn.disabled = true;
+      try {
+        await openAnkiImport(async (res) => {
+          // After commit, refresh the page so flashcards re-load.
+          if (typeof window !== "undefined" && window.location) {
+            // Light toast before reload.
+            const toast = document.createElement("div");
+            toast.className = "muted small";
+            toast.textContent = `✅ Importadas ${res?.persisted ?? 0} tarjetas`;
+            ankiImportBtn.parentElement.appendChild(toast);
+          }
+        });
+      } finally {
+        ankiImportBtn.disabled = false;
+      }
+    });
+  }
+  const ankiExportBtn = root.querySelector("#anki-export-btn");
+  if (ankiExportBtn) {
+    ankiExportBtn.addEventListener("click", async () => {
+      await exportMnxToAnki();
+    });
+  }
 
   // AI form: show/hide conditional fields
   const aiSelect = root.querySelector('select[name="ai-provider"]');
