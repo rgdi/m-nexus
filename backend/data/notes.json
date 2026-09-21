@@ -1,6 +1,6 @@
 [
   {
-    "id": "note-6cd67f77-d0c9-4223-a9b3-2b8010cecf21",
+    "id": "note-1c7626ed-b2d2-4bbb-b7a0-737a53bf67df",
     "title": "Math",
     "body": "x",
     "subject": "math",
@@ -12,11 +12,11 @@
       }
     ],
     "folderId": null,
-    "createdAt": 1790028157572,
-    "updatedAt": 1790028157572
+    "createdAt": 1790029901377,
+    "updatedAt": 1790029901377
   },
   {
-    "id": "note-039a59fc-34c9-4ae1-8082-009da0d526d4",
+    "id": "note-d7083cc0-e88e-445e-a2da-31d9a63e3b45",
     "title": "Don Quixote",
     "body": "@cervantes/cap1 and @cervantes/cap3",
     "subject": "lit",
@@ -28,42 +28,7 @@
       }
     ],
     "folderId": null,
-    "createdAt": 1790028157622,
-    "updatedAt": 1790028157622
-  },
-  {
-    "id": "note-eb9500eb-9c89-4457-af55-48370437b4cf",
-    "title": "Algebra",
-    "body": "Suma: {{c1::2+2::4}}\nProducto: {{c1::3*5::15}}",
-    "subject": "math",
-    "tags": [
-      "algebra",
-      "basics"
-    ],
-    "pages": [
-      {
-        "strokes": [],
-        "placeholders": []
-      }
-    ],
-    "folderId": null,
-    "createdAt": 1790028165879,
-    "updatedAt": 1790028165879
-  },
-  {
-    "id": "note-c8cf086e-ece0-4443-b962-b0599b501841",
-    "title": "X",
-    "body": "{{c1::A::B}}",
-    "subject": "bio",
-    "tags": [],
-    "pages": [
-      {
-        "strokes": [],
-        "placeholders": []
-      }
-    ],
-    "folderId": null,
-    "createdAt": 1790028165925,
-    "updatedAt": 1790028165925
+    "createdAt": 1790029901497,
+    "updatedAt": 1790029901497
   }
 ]

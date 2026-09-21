@@ -38,6 +38,12 @@ export interface Note {
   folderId: string | null; // v2.3.0-B: optional folder
   createdAt: number;
   updatedAt: number;
+  // v2.25.0: outliner blocks (atomic unit). Optional for backward compat.
+  // Lazily derived from `body` on first read if missing.
+  blocks?: import("../services/blocks.js").Block[];
+  // v2.25.0: daily journal flag (auto-created note per day)
+  isJournal?: boolean;
+  journalDate?: string; // YYYY-MM-DD
 }
 
 const DATA_FILE = join(process.cwd(), "data", "notes.json");
@@ -241,6 +247,115 @@ export async function notesRoutes(app: FastifyInstance): Promise<void> {
       return { ok: true, strokeCount: n.pages[pageIdx].strokes.length };
     },
   );
+
+  // ============================================================
+  // v2.25.0 — Outliner block-level endpoints
+  // ============================================================
+  const { NoteBlocks, bodyToBlocks, blocksToBody, indexNote, backlinksFor, matchesBlockQuery, extractBlockRefs } =
+    await import("../services/blocks.js");
+
+  // List blocks of a note (auto-migrates body → blocks on first read)
+  app.get<{ Params: { id: string } }>("/notes/:id/blocks", async (req, reply) => {
+    const n = await svc.get(req.params.id);
+    if (!n) throw E.val("EC-NOTE-005", "Note no encontrada", { context: { id: req.params.id }, statusCode: 404 });
+    const blocks = NoteBlocks.ensure(n);
+    // Persist the lazy migration so subsequent reads are fast.
+    if (n.blocks === undefined || (n.blocks.length === 0 && (n.body || "").length > 0)) {
+      await svc.update(n.id, { blocks });
+      await indexNote(n);
+    }
+    return { blocks, total: blocks.length };
+  });
+
+  // Append a new block to a note
+  app.post<{ Params: { id: string }; Body: { parentId?: string | null; text: string; type?: string; meta?: any } }>(
+    "/notes/:id/blocks",
+    async (req, reply) => {
+      const n = await svc.get(req.params.id);
+      if (!n) throw E.val("EC-NOTE-006", "Note no encontrada", { context: { id: req.params.id }, statusCode: 404 });
+      const { parentId = null, text, type, meta } = req.body ?? ({} as any);
+      if (!text || typeof text !== "string") {
+        return reply.code(400).send({ error: "text required" });
+      }
+      const saneType = typeof type === "string" && ["text", "cloze", "callout", "code", "toggle", "quote"].includes(type) ? type : "text";
+      const block = NoteBlocks.append(n, {
+        parentId,
+        text,
+        type: saneType as any,
+        meta,
+      });
+      await svc.update(n.id, { blocks: n.blocks, body: blocksToBody(n.blocks!) });
+      await indexNote(n);
+      reply.code(201);
+      return block;
+    },
+  );
+
+  // Patch a block
+  app.patch<{ Params: { id: string; blockId: string }; Body: { text?: string; type?: string; meta?: any } }>(
+    "/notes/:id/blocks/:blockId",
+    async (req, reply) => {
+      const n = await svc.get(req.params.id);
+      if (!n) throw E.val("EC-NOTE-007", "Note no encontrada", { context: { id: req.params.id }, statusCode: 404 });
+      const patch: any = { ...req.body };
+      if (typeof patch.type !== "string" || !["text", "cloze", "callout", "code", "toggle", "quote"].includes(patch.type)) {
+        delete patch.type;
+      }
+      const patched = NoteBlocks.patch(n, req.params.blockId, patch);
+      if (!patched) return reply.code(404).send({ error: "Block not found" });
+      await svc.update(n.id, { blocks: n.blocks, body: blocksToBody(n.blocks!) });
+      await indexNote(n);
+      return patched;
+    },
+  );
+
+  // Move a block (re-parent + re-order)
+  app.patch<{ Params: { id: string; blockId: string }; Body: { newParentId: string | null; newOrder?: number } }>(
+    "/notes/:id/blocks/:blockId/move",
+    async (req, reply) => {
+      const n = await svc.get(req.params.id);
+      if (!n) throw E.val("EC-NOTE-008", "Note no encontrada", { context: { id: req.params.id }, statusCode: 404 });
+      const ok = NoteBlocks.move(n, req.params.blockId, req.body?.newParentId ?? null, req.body?.newOrder);
+      if (!ok) return reply.code(400).send({ error: "Move failed (cycle or not found)" });
+      await svc.update(n.id, { blocks: n.blocks, body: blocksToBody(n.blocks!) });
+      await indexNote(n);
+      return { ok: true };
+    },
+  );
+
+  // Delete a block (and descendants)
+  app.delete<{ Params: { id: string; blockId: string } }>(
+    "/notes/:id/blocks/:blockId",
+    async (req, reply) => {
+      const n = await svc.get(req.params.id);
+      if (!n) throw E.val("EC-NOTE-009", "Note no encontrada", { context: { id: req.params.id }, statusCode: 404 });
+      const ok = NoteBlocks.remove(n, req.params.blockId);
+      if (!ok) return reply.code(404).send({ error: "Block not found" });
+      await svc.update(n.id, { blocks: n.blocks, body: blocksToBody(n.blocks!) });
+      await indexNote(n);
+      return { ok: true };
+    },
+  );
+
+  // Backlinks for a block (across all notes)
+  app.get<{ Params: { blockId: string } }>("/blocks/:blockId/backlinks", async (req) => {
+    const list = await backlinksFor(req.params.blockId);
+    return { backlinks: list, total: list.length };
+  });
+
+  // Extract block-references from arbitrary text (for `[[ ]]` auto-complete in editor)
+  app.post<{ Body: { text: string } }>("/blocks/extract-refs", async (req) => {
+    const text = req.body?.text ?? "";
+    return { refs: extractBlockRefs(text) };
+  });
+
+  // Block query (subset of Logseq Datalog; v2.25 starts simple)
+  app.post<{ Body: any }>("/notes/query", async (req) => {
+    const q = req.body ?? {};
+    const list = await svc.all();
+    const filtered = list.filter((n) => matchesBlockQuery(n, q));
+    return { notes: filtered, total: filtered.length };
+  });
 }
 
 async function ensureSeeded(svc: NotesService) {

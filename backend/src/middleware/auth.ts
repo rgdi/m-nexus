@@ -88,6 +88,9 @@ export const authMiddleware: (req: FastifyRequest, reply: FastifyReply) => Promi
     "/api/v1/auth/refresh",
     "/api/v1/auth/logout",
     "/api/v1/auth/status",
+    // v2.25.0: block backlinks + query (used offline-first by editor)
+    "/api/v1/blocks",
+    "/api/v1/notes/query",
   ];
   const isPublic = PUBLIC_PATHS.some((p) => req.url === p || req.url.startsWith(p + "?") || req.url.startsWith(p + "/"));
   if (isPublic) return;

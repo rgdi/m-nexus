@@ -2,7 +2,7 @@
 
 > Historial completo de versiones. Stack actual: **TypeScript backend (Fastify) + Vanilla JS+CSS frontend**. Sin Flutter. Sin colaboración (rejected).
 >
-> **Totales actuales**: 1453 tests automatizados (1019 backend + 434 frontend), bundle 1.524 MB / 83 archivos, **0 errores TypeScript** (`tsc --noEmit` clean).
+> **Totales actuales**: 1489 tests automatizados (1040 backend + 449 frontend), bundle 1.557 MB / 84 archivos, **0 errores TypeScript** (`tsc --noEmit` clean).
 
 ---
 
@@ -1171,4 +1171,4 @@ active recall + elaboration prompts + interleaving, per the architect prompt.
 ### Test Counts table
 - Backend: 995 → 1019 (+24)
 - Frontend: 422 → 434 (+12)
-- Total: 1417 → 1453 (+3
+- Total: 1417 → 1453 (+36)

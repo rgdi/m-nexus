@@ -1,0 +1,18 @@
+{
+  "references": {
+    "block-345a780e-7907-4928-ad06-65048838eeed": [
+      {
+        "blockId": "block-c10137de-1dad-4f57-9bef-16bbd41eaf12",
+        "noteId": "note-eb9500eb-9c89-4457-af55-48370437b4cf",
+        "text": "Esto referencia [[block-345a780e-7907-4928-ad06-65048838eeed]] y ((block-6fed981d-cf26-4c21-92dd-02a666505de8))"
+      }
+    ],
+    "block-6fed981d-cf26-4c21-92dd-02a666505de8": [
+      {
+        "blockId": "block-c10137de-1dad-4f57-9bef-16bbd41eaf12",
+        "noteId": "note-eb9500eb-9c89-4457-af55-48370437b4cf",
+        "text": "Esto referencia [[block-345a780e-7907-4928-ad06-65048838eeed]] y ((block-6fed981d-cf26-4c21-92dd-02a666505de8))"
+      }
+    ]
+  }
+}
