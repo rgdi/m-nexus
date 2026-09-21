@@ -16,8 +16,19 @@
 
 import { dataSource } from "../services/dataSource.js";
 import { i18n } from "../services/i18n.js";
+import { connectSync } from "../services/sync_client.js";
 
-const state = { selectedId: null, draggingId: null, lastListFull: [] };
+const state = {
+  selectedId: null,
+  draggingId: null,
+  lastListFull: [],
+  // v2.23.0: drag visual feedback
+  dropIndicator: null,
+  dropPosition: null,
+  dropTarget: null,
+  touchDragging: null,
+  touchClone: null,
+};
 
 export async function renderSubjects(root) {
   if (state.selectedId) {
@@ -50,11 +61,18 @@ async function renderSubjectList(root) {
   const subjects = await dataSource.subjects.list();
   state.lastListFull = subjects;
 
+  // v2.23.0: ensure WS connected so we receive other-device changes.
+  connectSync();
+
+  // v2.23.0: multi-device sync — refresh on incoming subject events.
+  installRemoteSyncListener(root);
+
   root.innerHTML = `
     <div class="screen subjects-screen">
       <header class="screen-header">
         <h1 class="h-title">Asignaturas</h1>
         <div class="spacer"></div>
+        <button class="btn ghost" id="templates-btn" aria-label="Plantillas" title="Plantillas por carrera">📋</button>
         <button class="btn primary" id="new-subject" aria-label="Nueva asignatura">＋</button>
       </header>
       <p class="muted small" style="margin: 8px 0 0">
@@ -72,6 +90,8 @@ async function renderSubjectList(root) {
   wireRowEvents(root, list);
 
   root.querySelector("#new-subject")?.addEventListener("click", () => openEditor(null, root));
+  root.querySelector("#templates-btn")?.addEventListener("click", () => openTemplates(root));
+  root.querySelector("#empty-templates")?.addEventListener("click", () => openTemplates(root));
 
   const resetBtn = root.querySelector("#reset-all");
   if (resetBtn) {
@@ -92,9 +112,10 @@ function renderEmptyState() {
     <div class="empty-state">
       <div class="empty-icon">📚</div>
       <div class="em-title">Aún no tienes asignaturas</div>
-      <div class="em-sub">Añade la primera con el botón ＋ arriba, o impórtalas desde un backup.</div>
+      <div class="em-sub">Añade la primera con el botón ＋ arriba, usa una plantilla por carrera o impórtalas desde un backup.</div>
       <div class="empty-actions">
         <button class="btn primary" id="empty-add">＋ Añadir primera asignatura</button>
+        <button class="btn ghost" id="empty-templates">📋 Plantillas por carrera</button>
         <button class="btn" id="empty-import">📥 Importar desde JSON</button>
       </div>
     </div>
@@ -153,43 +174,156 @@ function wireRowEvents(root, list) {
       ev.dataTransfer.setData("text/plain", id);
       el.classList.add("dragging");
     });
-    el.addEventListener("dragend", () => {
+    el.addEventListener("dragend", (ev) => {
+      // v2.23.0: clean up ghost + drop indicator
       el.classList.remove("dragging");
       state.draggingId = null;
+      hideDropIndicator();
+      ev.dataTransfer.clearData?.();
     });
     el.addEventListener("dragover", (ev) => {
       ev.preventDefault();
-      el.classList.add("drag-over");
+      const rect = el.getBoundingClientRect();
+      const offsetY = ev.clientY - rect.top;
+      const isUpperHalf = offsetY < rect.height / 2;
+      showDropIndicator(el, isUpperHalf ? "before" : "after");
     });
-    el.addEventListener("dragleave", () => el.classList.remove("drag-over"));
+    el.addEventListener("dragleave", (ev) => {
+      // Only hide if the drag is leaving THIS row (not entering a child)
+      const rect = el.getBoundingClientRect();
+      if (ev.clientY < rect.top || ev.clientY > rect.bottom ||
+          ev.clientX < rect.left || ev.clientX > rect.right) {
+        hideDropIndicator();
+      }
+    });
     el.addEventListener("drop", async (ev) => {
       ev.preventDefault();
-      el.classList.remove("drag-over");
+      hideDropIndicator();
       const src = ev.dataTransfer.getData("text/plain");
       const dst = id;
+      const position = state.dropPosition; // "before" | "after"
+      state.dropPosition = null;
       if (src && dst && src !== dst) {
-        await reorderAround(src, dst);
+        await reorderAround(src, dst, position);
         renderSubjectList(root);
       }
     });
-    // Long press → actions menu (touch)
+    // Touch reorder via long-press + drag (mobile)
     let pressTimer = null;
-    el.addEventListener("touchstart", () => {
-      pressTimer = setTimeout(() => openRowMenu(root, id, el), 600);
+    let touchMoved = false;
+    let touchClone = null;
+    let lastTouchY = 0;
+    let lastTouchId = null;
+    el.addEventListener("touchstart", (ev) => {
+      const touch = ev.touches[0];
+      lastTouchY = touch.clientY;
+      lastTouchId = id;
+      touchMoved = false;
+      pressTimer = setTimeout(() => {
+        // Start drag mode on long press
+        if (!touchMoved) {
+          startTouchDrag(el, id, touch, root);
+        }
+      }, 350);
     });
-    el.addEventListener("touchend", () => clearTimeout(pressTimer));
-    el.addEventListener("touchmove", () => clearTimeout(pressTimer));
+    el.addEventListener("touchmove", (ev) => {
+      const touch = ev.touches[0];
+      if (Math.abs(touch.clientY - lastTouchY) > 10) {
+        touchMoved = true;
+        clearTimeout(pressTimer);
+        if (state.touchDragging === id && touchClone) {
+          ev.preventDefault();
+          touchClone.style.top = (touch.clientY - 30) + "px";
+          // Find the row we're hovering
+          const elBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+          const rowBelow = elBelow?.closest(".subj-row");
+          if (rowBelow && rowBelow.dataset.id !== id) {
+            const rect = rowBelow.getBoundingClientRect();
+            const isUpperHalf = touch.clientY < rect.top + rect.height / 2;
+            showDropIndicator(rowBelow, isUpperHalf ? "before" : "after");
+            state.dropTarget = rowBelow.dataset.id;
+            state.dropPosition = isUpperHalf ? "before" : "after";
+          } else {
+            hideDropIndicator();
+            state.dropTarget = null;
+          }
+        }
+      }
+    });
+    el.addEventListener("touchend", () => {
+      clearTimeout(pressTimer);
+      if (state.touchDragging === id) {
+        endTouchDrag(id, root);
+      }
+    });
+    el.addEventListener("touchcancel", () => {
+      clearTimeout(pressTimer);
+      if (state.touchDragging === id) {
+        endTouchDrag(id, root);
+      }
+    });
   });
 }
 
-async function reorderAround(srcId, dstId) {
+function startTouchDrag(el, id, touch, root) {
+  state.touchDragging = id;
+  el.classList.add("dragging");
+  // Create floating clone that follows the finger
+  const clone = el.cloneNode(true);
+  clone.classList.add("drag-clone");
+  const rect = el.getBoundingClientRect();
+  clone.style.cssText = `position: fixed; left: ${rect.left}px; top: ${rect.top}px; width: ${rect.width}px; pointer-events: none; z-index: 999; opacity: 0.92; box-shadow: var(--shadow-3);`;
+  document.body.appendChild(clone);
+  state.touchClone = clone;
+  if (navigator.vibrate) navigator.vibrate(20); // haptic feedback on drag start
+}
+
+async function endTouchDrag(id, root) {
+  state.touchDragging = null;
+  document.querySelectorAll(".subj-row.dragging").forEach(el => el.classList.remove("dragging"));
+  if (state.touchClone) {
+    state.touchClone.remove();
+    state.touchClone = null;
+  }
+  hideDropIndicator();
+  const dst = state.dropTarget;
+  const position = state.dropPosition;
+  state.dropTarget = null;
+  state.dropPosition = null;
+  if (dst && dst !== id) {
+    await reorderAround(id, dst, position);
+    renderSubjectList(root);
+  }
+}
+
+function showDropIndicator(targetEl, position) {
+  hideDropIndicator();
+  if (!targetEl) return;
+  targetEl.classList.add("drop-target-" + position);
+  state.dropIndicator = { el: targetEl, position };
+}
+
+function hideDropIndicator() {
+  if (state.dropIndicator) {
+    state.dropIndicator.el.classList.remove("drop-target-before", "drop-target-after");
+    state.dropIndicator = null;
+  }
+}
+
+async function reorderAround(srcId, dstId, position = "after") {
   const list = await dataSource.subjects.list();
   const ids = list.map(s => s.id);
   const srcIdx = ids.indexOf(srcId);
   const dstIdx = ids.indexOf(dstId);
   if (srcIdx < 0 || dstIdx < 0 || srcIdx === dstIdx) return;
   ids.splice(srcIdx, 1);
-  ids.splice(dstIdx, 0, srcId);
+  // Re-insert relative to the dst position.
+  let targetIdx = ids.indexOf(dstId);
+  if (position === "before") {
+    ids.splice(targetIdx, 0, srcId);
+  } else {
+    ids.splice(targetIdx + 1, 0, srcId);
+  }
   await dataSource.subjects.reorder(ids);
 }
 
@@ -457,4 +591,240 @@ async function renderSubjectDetail(root, id) {
       </div>
     </div>
   `;
+}
+
+// ============================================================
+// v2.23.0: Multi-device sync via WebSocket
+// ============================================================
+//
+// Listen to 'sync:incoming' events from sync_client.js.
+// When a subject is created/updated/reordered/deleted on another
+// device, the backend broadcasts via /ws/sync and we refresh.
+//
+// Implementation: a single globally-unique listener bound per
+// render. We re-fetch from the data source so local CRDT applies
+// any field-level conflict merges.
+let remoteSyncListenerInstalled = null; // function ref
+let remoteSyncRoot = null; // last root
+function installRemoteSyncListener(root) {
+  // If we had a different root mounted, clean up the old listener
+  uninstallRemoteSyncListener();
+  remoteSyncRoot = root;
+  const handler = (msg) => {
+    if (!msg || msg.type !== "subject") return;
+    if (!remoteSyncRoot || !document.contains(remoteSyncRoot)) {
+      // element is gone, nothing to refresh
+      return;
+    }
+    // Fetch the updated list & re-render
+    const screenStillActive = remoteSyncRoot.querySelector(".subjects-screen");
+    if (!screenStillActive) return;
+    // Schedule a microtask refresh
+    queueMicrotask(async () => {
+      try {
+        await renderSubjectList(remoteSyncRoot);
+      } catch (e) {
+        console.warn("[subjects sync] refresh failed:", e);
+      }
+    });
+  };
+  document.addEventListener("sync:incoming", (ev) => handler(ev.detail));
+  remoteSyncListenerInstalled = handler;
+}
+
+function uninstallRemoteSyncListener() {
+  // Listeners are anonymous; we can't remove the specific one.
+  // Instead, guard at handler-level: if `remoteSyncRoot` is gone
+  // or no longer showing the subjects screen, we no-op.
+  remoteSyncRoot = null;
+  remoteSyncListenerInstalled = null;
+}
+
+// ============================================================
+// v2.23.0: Templates por carrera
+// ============================================================
+//
+// One-click addition of common subject sets. Press the "+" button
+// or use the bulk adder to seed a typical academic load.
+
+const TEMPLATES = [
+  {
+    id: "eso-1",
+    title: "ESO 1º (Educación Secundaria)",
+    emoji: "🎒",
+    subjects: [
+      { name: "Matemáticas", icon: "M", color: "var(--subj-blue)" },
+      { name: "Lengua Castellana", icon: "L", color: "var(--subj-red)" },
+      { name: "Inglés", icon: "E", color: "var(--subj-yellow)" },
+      { name: "Biología y Geología", icon: "B", color: "var(--subj-green)" },
+      { name: "Geografía e Historia", icon: "H", color: "var(--subj-orange)" },
+      { name: "Tecnología", icon: "T", color: "var(--subj-teal)" },
+      { name: "Educación Física", icon: "PE", color: "var(--subj-pink)" },
+      { name: "Música", icon: "♪", color: "var(--subj-purple)" },
+      { name: "Religión / Valores", icon: "RV", color: "var(--subj-yellow)" },
+    ],
+  },
+  {
+    id: "bach-cientifico",
+    title: "Bachillerato Científico",
+    emoji: "🔬",
+    subjects: [
+      { name: "Matemáticas II", icon: "M2", color: "var(--subj-blue)" },
+      { name: "Física", icon: "F", color: "var(--subj-purple)" },
+      { name: "Química", icon: "Q", color: "var(--subj-green)" },
+      { name: "Biología", icon: "B", color: "var(--subj-teal)" },
+      { name: "Lengua", icon: "L", color: "var(--subj-red)" },
+      { name: "Inglés", icon: "E", color: "var(--subj-yellow)" },
+      { name: "Historia de España", icon: "H", color: "var(--subj-orange)" },
+    ],
+  },
+  {
+    id: "bach-humanidades",
+    title: "Bachillerato Humanidades",
+    emoji: "📜",
+    subjects: [
+      { name: "Latín", icon: "L", color: "var(--subj-yellow)" },
+      { name: "Historia del Arte", icon: "A", color: "var(--subj-red)" },
+      { name: "Lengua", icon: "L", color: "var(--subj-blue)" },
+      { name: "Inglés", icon: "E", color: "var(--subj-green)" },
+      { name: "Filosofía", icon: "φ", color: "var(--subj-purple)" },
+      { name: "Matemáticas Aplicadas", icon: "M", color: "var(--subj-orange)" },
+    ],
+  },
+  {
+    id: "uni-medicina",
+    title: "Universidad — Medicina",
+    emoji: "⚕️",
+    subjects: [
+      { name: "Anatomía", icon: "A", color: "var(--subj-red)" },
+      { name: "Fisiología", icon: "Φ", color: "var(--subj-pink)" },
+      { name: "Bioquímica", icon: "B", color: "var(--subj-green)" },
+      { name: "Histología", icon: "H", color: "var(--subj-yellow)" },
+      { name: "Genética", icon: "G", color: "var(--subj-purple)" },
+      { name: "Farmacología", icon: "Rx", color: "var(--subj-blue)" },
+      { name: "Microbiología", icon: "µ", color: "var(--subj-teal)" },
+    ],
+  },
+  {
+    id: "uni-ingenieria",
+    title: "Universidad — Ingeniería",
+    emoji: "⚙️",
+    subjects: [
+      { name: "Cálculo", icon: "∂", color: "var(--subj-blue)" },
+      { name: "Álgebra", icon: "Æ", color: "var(--subj-purple)" },
+      { name: "Física", icon: "F", color: "var(--subj-red)" },
+      { name: "Programación", icon: "{} ", color: "var(--subj-green)" },
+      { name: "Electrónica", icon: "Ω", color: "var(--subj-yellow)" },
+      { name: "Estadística", icon: "σ", color: "var(--subj-orange)" },
+      { name: "Termodinámica", icon: "θ", color: "var(--subj-teal)" },
+    ],
+  },
+  {
+    id: "uni-derecho",
+    title: "Universidad — Derecho",
+    emoji: "⚖️",
+    subjects: [
+      { name: "Derecho Civil", icon: "Cv", color: "var(--subj-yellow)" },
+      { name: "Derecho Penal", icon: "P", color: "var(--subj-red)" },
+      { name: "Derecho Constitucional", icon: "Co", color: "var(--subj-blue)" },
+      { name: "Derecho Romano", icon: "R", color: "var(--subj-orange)" },
+      { name: "Filosofía del Derecho", icon: "φ", color: "var(--subj-purple)" },
+      { name: "Derecho Internacional", icon: "I", color: "var(--subj-green)" },
+    ],
+  },
+  {
+    id: "uni-ade",
+    title: "Universidad — ADE / Empresa",
+    emoji: "📊",
+    subjects: [
+      { name: "Contabilidad", icon: "$", color: "var(--subj-green)" },
+      { name: "Marketing", icon: "M", color: "var(--subj-pink)" },
+      { name: "Finanzas", icon: "€", color: "var(--subj-yellow)" },
+      { name: "Microeconomía", icon: "m", color: "var(--subj-blue)" },
+      { name: "Macroeconomía", icon: "M", color: "var(--subj-red)" },
+      { name: "Estadística", icon: "σ", color: "var(--subj-purple)" },
+      { name: "Recursos Humanos", icon: "RH", color: "var(--subj-orange)" },
+    ],
+  },
+  {
+    id: "uni-veterinaria",
+    title: "Universidad — Veterinaria",
+    emoji: "🐄",
+    subjects: [
+      { name: "Anatomía Animal", icon: "A", color: "var(--subj-red)" },
+      { name: "Fisiología Animal", icon: "Φ", color: "var(--subj-pink)" },
+      { name: "Microbiología", icon: "µ", color: "var(--subj-green)" },
+      { name: "Patología", icon: "Pt", color: "var(--subj-orange)" },
+      { name: "Farmacología", icon: "Rx", color: "var(--subj-purple)" },
+      { name: "Nutrición Animal", icon: "N", color: "var(--subj-yellow)" },
+      { name: "Cirugía", icon: "Qx", color: "var(--subj-blue)" },
+    ],
+  },
+];
+
+
+// ============================================================
+// v2.23.0: Templates modal
+// ============================================================
+function openTemplates(root) {
+  const ov = document.createElement("div");
+  ov.className = "editor-overlay";
+  ov.innerHTML = `
+    <div class="subject-editor templates-modal">
+      <header class="editor-header">
+        <h3>📋 Plantillas por carrera</h3>
+        <button class="icon-btn" aria-label="Cerrar" data-act="close">✕</button>
+      </header>
+      <div class="editor-body">
+        <p class="muted small" style="margin: 0 0 var(--s-4)">
+          Un click añade el conjunto de asignaturas típico. Puedes editar o borrar después.
+        </p>
+        <ul class="templates-list">
+          ${TEMPLATES.map(t => `
+            <li class="template-card">
+              <div class="t-emoji">${t.emoji}</div>
+              <div class="t-body">
+                <div class="t-title">${escapeHtml(t.title)}</div>
+                <div class="t-sub">${t.subjects.length} asignaturas · ${t.subjects.slice(0, 4).map(s => escapeHtml(s.name)).join(", ")}${t.subjects.length > 4 ? `, +${t.subjects.length - 4} más` : ""}</div>
+              </div>
+              <button class="btn primary" data-tpl="${t.id}">Añadir</button>
+            </li>
+          `).join("")}
+        </ul>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(ov);
+  const close = () => ov.remove();
+  ov.querySelector("[data-act='close']").addEventListener("click", close);
+  ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
+  ov.querySelectorAll("[data-tpl]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const tpl = TEMPLATES.find(t => t.id === btn.dataset.tpl);
+      if (!tpl) return;
+      btn.disabled = true;
+      btn.textContent = "Añadiendo…";
+      // Backend sequential POST so .order field is contiguous.
+      let i = 0;
+      for (const s of tpl.subjects) {
+        await dataSource.subjects.create({
+          name: s.name,
+          icon: s.icon,
+          color: s.color,
+          grade: null,
+          performance: 0,
+          prof: "",
+          next: "",
+          order: Number.MAX_SAFE_INTEGER - 1000 + i++, // append at end
+        });
+      }
+      close();
+      renderSubjectList(root);
+    });
+  });
+  // ESC close
+  const escHandler = (e) => {
+    if (e.key === "Escape") { close(); document.removeEventListener("keydown", escHandler); }
+  };
+  document.addEventListener("keydown", escHandler);
 }

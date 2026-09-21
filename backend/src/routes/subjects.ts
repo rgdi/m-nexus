@@ -17,6 +17,7 @@ import { E } from "../utils/errorCodes.js";
 import { logOp } from "../utils/log.js";
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
+import { publishSync } from "./sync_v2.js";
 
 export interface Subject {
   id: string;
@@ -181,6 +182,16 @@ export async function subjectsRoutes(app: FastifyInstance): Promise<void> {
     });
     reply.code(201);
     logOp("subjects", "created", true, { id: s.id, name: s.name });
+    // v2.23.0: broadcast to all WS clients on this device for multi-device sync.
+    await publishSync(app, {
+      id: s.id,
+      type: "subject",
+      op: "create",
+      resourceId: s.id,
+      data: s,
+      origin: "api",
+      ts: Date.now(),
+    });
     return s;
   });
 
@@ -188,6 +199,16 @@ export async function subjectsRoutes(app: FastifyInstance): Promise<void> {
     const s = await svc.update(req.params.id, req.body ?? {});
     if (!s) throw E.val("EC-SUB-003", "Subject no encontrado", { context: { id: req.params.id }, statusCode: 404 });
     logOp("subjects", "updated", true, { id: s.id });
+    // v2.23.0: broadcast update to other devices.
+    await publishSync(app, {
+      id: s.id,
+      type: "subject",
+      op: "update",
+      resourceId: s.id,
+      data: s,
+      origin: "api",
+      ts: Date.now(),
+    });
     return s;
   });
 
@@ -195,6 +216,15 @@ export async function subjectsRoutes(app: FastifyInstance): Promise<void> {
     const ok = await svc.remove(req.params.id);
     if (!ok) throw E.val("EC-SUB-004", "Subject no encontrado", { context: { id: req.params.id }, statusCode: 404 });
     logOp("subjects", "deleted", true, { id: req.params.id });
+    // v2.23.0: broadcast delete so other devices remove it too.
+    await publishSync(app, {
+      id: req.params.id,
+      type: "subject",
+      op: "delete",
+      resourceId: req.params.id,
+      origin: "api",
+      ts: Date.now(),
+    });
     return { deleted: true };
   });
 
@@ -206,6 +236,18 @@ export async function subjectsRoutes(app: FastifyInstance): Promise<void> {
       throw E.val("EC-SUB-005", "order must be string[]", { context: { body: req.body }, statusCode: 400 });
     }
     const list = await svc.reorder(ids);
+    // v2.23.0: broadcast each reorder — receivers re-order their UI.
+    for (const s of list) {
+      await publishSync(app, {
+        id: randomUUID(),
+        type: "subject",
+        op: "update",
+        resourceId: s.id,
+        data: { id: s.id, order: s.order },
+        origin: "api",
+        ts: Date.now(),
+      });
+    }
     return { ok: true, subjects: list };
   });
 
@@ -218,6 +260,18 @@ export async function subjectsRoutes(app: FastifyInstance): Promise<void> {
     }
     const list = await svc.bulkReplace(items);
     logOp("subjects", "bulk_replace", true, { count: list.length });
+    // v2.23.0: nuke + recreate broadcast
+    for (const s of list) {
+      await publishSync(app, {
+        id: s.id,
+        type: "subject",
+        op: "create",
+        resourceId: s.id,
+        data: s,
+        origin: "api",
+        ts: Date.now(),
+      });
+    }
     return { ok: true, subjects: list };
   });
 
@@ -226,6 +280,16 @@ export async function subjectsRoutes(app: FastifyInstance): Promise<void> {
   app.delete("/subjects", async () => {
     const n = await svc.removeAll();
     logOp("subjects", "removed_all", true, { count: n });
+    // v2.23.0: broadcast nuke so other devices clear their lists.
+    await publishSync(app, {
+      id: randomUUID(),
+      type: "subject",
+      op: "delete",
+      resourceId: "__nuke_all__",
+      data: { all: true },
+      origin: "api",
+      ts: Date.now(),
+    });
     return { ok: true, removed: n };
   });
 }

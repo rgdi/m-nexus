@@ -1857,3 +1857,126 @@ body.hide-ui .dock, body.hide-ui .lang-switcher, body.hide-ui .top-toolbar { dis
   display: flex; gap: var(--s-2); align-items: center;
 }
 .editor-footer .spacer { flex: 1; }
+
+/* ============================================================
+ * v2.23.0 — Drag & drop visual feedback
+ * Drop indicators (top/bottom edge) + ghost clone + cursor hint
+ * ============================================================ */
+.subj-row.drop-target-before {
+  box-shadow: 0 -3px 0 0 var(--accent), 0 2px 8px rgba(0,0,0,0.06);
+  border-color: var(--accent);
+}
+.subj-row.drop-target-after {
+  box-shadow: 0 3px 0 0 var(--accent), 0 2px 8px rgba(0,0,0,0.06);
+  border-color: var(--accent);
+}
+/* Animated insertion line (the actual line indicator) */
+.subj-row.drop-target-before::before,
+.subj-row.drop-target-after::after {
+  content: "";
+  position: absolute;
+  left: 12px; right: 12px;
+  height: 3px;
+  background: var(--accent);
+  border-radius: 2px;
+  animation: drop-line-pulse 1.2s ease-in-out infinite;
+  pointer-events: none;
+}
+.subj-row.drop-target-before::before { top: -1.5px; }
+.subj-row.drop-target-after::after { bottom: -1.5px; }
+
+@keyframes drop-line-pulse {
+  0%, 100% { opacity: 1; transform: scaleX(1); }
+  50% { opacity: 0.6; transform: scaleX(0.96); }
+}
+
+.subj-row.dragging {
+  opacity: 0.4;
+  cursor: grabbing;
+  background: var(--bg-sunken);
+}
+
+.drag-clone {
+  transform: rotate(-1.5deg);
+  background: var(--bg-elevated) !important;
+  border: 2px solid var(--accent) !important;
+  border-radius: 14px !important;
+  cursor: grabbing !important;
+}
+
+/* ============================================================
+ * v2.23.0 — Templates modal & ghost button
+ * ============================================================ */
+.btn.ghost {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn.ghost:hover { background: var(--bg-sunken); border-color: var(--accent); }
+
+.templates-modal {
+  max-width: 560px;
+  width: 100%;
+}
+.templates-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.template-card {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-3);
+  background: var(--bg-elevated, #fff);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.template-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  border-color: var(--accent);
+}
+.t-emoji {
+  font-size: 28px;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-sunken);
+  border-radius: 12px;
+}
+.t-body { flex: 1; min-width: 0; }
+.t-title {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+.t-sub {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.template-card .btn { flex-shrink: 0; }
+
+/* v2.23.0: Background states for drag-and-drop */
+:root {
+  --bg-sunken: #f4f5f7;
+  --bg-elevated: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-sunken: #1f2126;
+    --bg-elevated: #2b2d33;
+  }
+}
