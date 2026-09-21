@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# M-NEXUS installer (v2.23.1)
+# M-NEXUS installer (v2.23.2)
 # Single-command installer for the rgdi/m-nexus education platform.
 #
 # Usage:
