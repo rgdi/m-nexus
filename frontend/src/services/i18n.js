@@ -28,6 +28,7 @@ const STRINGS = {
   "dock.settings":           { en: "Settings", es: "Ajustes",   pt: "Ajustes" },
   "dock.cluster":            { en: "Cluster",  es: "Cluster",   pt: "Cluster" },
   "dock.journal":            { en: "Journal",  es: "Diario",    pt: "Diário" },
+  "dock.pdf":                { en: "PDF",      es: "PDF",       pt: "PDF"     },
 
   // ============================================================
   // Overview screen

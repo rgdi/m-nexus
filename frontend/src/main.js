@@ -28,6 +28,7 @@ import { renderTodos } from "./screens/todos.js";
 import { renderAI } from "./screens/ai.js";
 import { renderSettings } from "./screens/settings.js";
 import { renderJournal } from "./screens/journal.js";
+import { renderPdfScreen } from "./screens/pdf.js";
 import { renderLogin } from "./screens/login.js";
 import { renderCluster } from "./screens/cluster.js";
 import { mountPeerIndicator } from "./widgets/peer_indicator.js";
@@ -54,6 +55,7 @@ const ROUTES = {
   occlusion: renderOcclusionScreen,
   cluster: renderCluster,
   journal: renderJournal,
+  pdf: renderPdfScreen,
 };
 
 const app = document.getElementById("app");
@@ -327,6 +329,7 @@ function openAppDrawer() {
     { hash: "#/ai",       i18n: "dock.tutor",    icon: "✦" },
     { hash: "#/cluster",  i18n: "dock.cluster",  icon: "🛰️" },
     { hash: "#/journal",  i18n: "dock.journal",  icon: "📓" },
+    { hash: "#/pdf",      i18n: "dock.pdf",      icon: "📄" },
     { hash: "#/settings", i18n: "dock.settings", icon: "⚙" },
   ];
 
