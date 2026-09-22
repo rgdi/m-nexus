@@ -63,6 +63,8 @@ import { handwritingRoutes } from "./routes/handwriting.js";
 import { marketplaceRealRoutes } from "./routes/marketplaceReal.js";
 import { marketplaceSqliteRoutes } from "./routes/marketplaceSqlite.js";
 import { pdfAnnotationRoutes } from "./routes/pdfAnnotation.js";
+import { pdfOcclusionRoutes } from "./routes/pdfOcclusion.js";
+import { pdfSyncRoutes } from "./routes/pdfSync.js";
 import { rollbackRoutes } from "./routes/rollback.js";
 import { stemmerRoutes } from "./routes/stemmer.js";
 import { clipRoutes } from "./routes/clip.js";
@@ -204,6 +206,8 @@ export async function buildServer(): Promise<any> {
   await app.register(marketplaceRealRoutes);
   await app.register(marketplaceSqliteRoutes);
   await app.register(pdfAnnotationRoutes);
+await app.register(pdfOcclusionRoutes);
+await app.register(pdfSyncRoutes);
   await app.register(rollbackRoutes);
   await app.register(stemmerRoutes);
   await app.register(clipRoutes);

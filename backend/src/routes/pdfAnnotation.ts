@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import { E } from "../utils/errorCodes.js";
 import { logOp } from "../utils/log.js";
 import { pdfAnnotationStorage } from "../services/pdfAnnotationStorage.js";
+import { pdfCrdtSync } from "../services/pdfCrdtSync.js";
 import { createAtomicCardFromHighlight, batchFromHighlights } from "../services/pdfAtomicCard.js";
 
 export async function pdfAnnotationRoutes(app: FastifyInstance): Promise<void> {
@@ -55,6 +56,7 @@ export async function pdfAnnotationRoutes(app: FastifyInstance): Promise<void> {
       });
       reply.code(201);
       logOp("pdf", "highlight added (v2.28)", true, { documentPath: b.documentPath, page: b.page });
+      void pdfCrdtSync.applyLocalOp(b.documentPath, "highlights", "create", created).catch(() => {});
       return created;
     },
   );
@@ -67,6 +69,7 @@ export async function pdfAnnotationRoutes(app: FastifyInstance): Promise<void> {
       if (!b.documentPath) return reply.code(400).send({ error: "documentPath required" });
       const updated = await pdfAnnotationStorage.update(req.params.id, b.documentPath, b);
       if (!updated) return reply.code(404).send({ error: "Highlight not found" });
+      void pdfCrdtSync.applyLocalOp(b.documentPath, "highlights", "update", updated).catch(() => {});
       return updated;
     },
   );
@@ -79,6 +82,7 @@ export async function pdfAnnotationRoutes(app: FastifyInstance): Promise<void> {
       if (!dp) return reply.code(400).send({ error: "documentPath required" });
       const ok = await pdfAnnotationStorage.remove(req.params.id, dp);
       if (!ok) return reply.code(404).send({ error: "Highlight not found" });
+      void pdfCrdtSync.applyLocalOp(dp, "highlights", "delete", { id: req.params.id }).catch(() => {});
       return { deleted: true };
     },
   );

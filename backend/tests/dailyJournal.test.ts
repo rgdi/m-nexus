@@ -147,10 +147,11 @@ describe("v2.26.0 — dailyJournal · moodHistory", () => {
   });
 
   it("moodHistory extrae el mood del bloque kind=mood", () => {
+    const today = new Date().toISOString().slice(0, 10);
     const journals = [
       {
         id: "j1", title: "t", body: "", subject: "", tags: [], pages: [], folderId: null,
-        createdAt: 0, updatedAt: 0, isJournal: true, journalDate: "2026-09-21",
+        createdAt: 0, updatedAt: 0, isJournal: true, journalDate: today,
         blocks: [
           { id: "b0", parentId: null, order: 0, text: "", type: "text", meta: { kind: "mood", mood: { score: 5 as Mood, note: "great" } }, createdAt: 0, updatedAt: 0 },
         ],

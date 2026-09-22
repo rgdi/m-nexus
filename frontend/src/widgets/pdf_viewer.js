@@ -13,6 +13,8 @@
  * ============================================================ */
 
 import { makeModal } from "./modal.js";
+import { attachOcclusionMode, renderOcclusions } from "./pdf_occlusion.js";
+import { mountSyncIndicator } from "./pdf_sync_indicator.js";
 
 const API = "/api/v1/pdf";
 let pdfjsPromise = null;
@@ -59,10 +61,14 @@ export async function openPdfViewer({ pdfUrl, title = "Visor PDF", onChange = ()
           <button class="pdf-tool" data-tool="rect" aria-pressed="false" type="button">
             <span aria-hidden="true">▭</span> Área
           </button>
+          <button class="pdf-tool" data-tool="occlusion" aria-pressed="false" type="button">
+            <span aria-hidden="true">▮</span> Oclusión
+          </button>
           <span class="pdf-stat" data-stat="count">0 highlights</span>
           <button class="pdf-tool" data-action="batch" type="button">
             Convertir todas a cards
           </button>
+          <div class="pdf-sync-mount" data-sync-mount></div>
         </div>
         <div class="pdf-body">
           <div class="pdf-pages" data-pdf-pages role="region" aria-label="Páginas"></div>
@@ -134,6 +140,16 @@ export async function openPdfViewer({ pdfUrl, title = "Visor PDF", onChange = ()
     }
     bindSelectionHandlers();
     await loadExistingHighlights();
+    // v2.29.0: occlusion mode + cross-device sync indicator
+    attachOcclusionMode(pagesHost, () => {
+      loadExistingHighlights().then(() => renderOcclusions(pagesHost, documentPath));
+    }, () => documentPath);
+    await renderOcclusions(pagesHost, documentPath);
+    const syncMount = root.querySelector("[data-sync-mount]");
+    if (syncMount) {
+      const handle = mountSyncIndicator(syncMount);
+      handle.setDocumentPath(documentPath);
+    }
   }
 
   async function renderTextLayer(page, host, viewport) {
@@ -341,6 +357,7 @@ export async function openPdfViewer({ pdfUrl, title = "Visor PDF", onChange = ()
       root.querySelectorAll(".pdf-tool[data-tool]").forEach((b) =>
         b.setAttribute("aria-pressed", String(b.dataset.tool === tool)),
       );
+      pagesHost.classList.toggle("pdf-mode--occlusion", tool === "occlusion");
     });
   });
 

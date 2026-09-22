@@ -2710,3 +2710,143 @@ body.hide-ui .dock, body.hide-ui .lang-switcher, body.hide-ui .top-toolbar { dis
     transition: none;
   }
 }
+
+/* ============================================================
+ * v2.29.0 — PDF Occlusion rectangles + cross-device sync indicator
+ * ============================================================ */
+.pdf-pages.pdf-mode--occlusion {
+  cursor: crosshair;
+}
+.pdf-pages.pdf-mode--occlusion .pdf-text-layer {
+  pointer-events: none;
+}
+.pdf-oclusion-rect {
+  position: absolute;
+  background: rgba(26, 26, 26, 0.85);
+  border: 2px solid #ff9800;
+  border-radius: 2px;
+  cursor: move;
+  z-index: 5;
+  transition: background 120ms;
+}
+.pdf-oclusion-rect--draft {
+  background: rgba(26, 26, 26, 0.5);
+  border-style: dashed;
+}
+.pdf-oclusion-rect--card-created {
+  background: rgba(76, 175, 80, 0.4);
+  border-color: #4caf50;
+}
+.pdf-oclusion-rect:hover {
+  background: rgba(26, 26, 26, 0.65);
+}
+.pdf-oclusion-marker {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 10px;
+  background: #fff;
+  border-radius: 4px;
+  padding: 1px 3px;
+  line-height: 1;
+}
+
+/* Occlusion menu (modal) */
+.pdf-oclusion-menu {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10001;
+}
+.pdf-oclusion-menu > * {
+  background: var(--card, #fff);
+  padding: 20px;
+  border-radius: 12px;
+  min-width: 320px;
+  max-width: 90vw;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+.pdf-oclusion-menu h4 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: var(--text, #222);
+}
+.pdf-oclusion-menu p {
+  margin: 4px 0;
+  font-size: 13px;
+  color: var(--muted, #666);
+}
+.pdf-oclusion-menu-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.pdf-oclusion-menu-actions button {
+  flex: 1;
+  min-width: 100px;
+  background: var(--accent, #667eea);
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.pdf-oclusion-menu-actions button.danger {
+  background: #c62828;
+}
+.pdf-oclusion-menu-actions button:hover {
+  filter: brightness(1.1);
+}
+.pdf-oclusion-menu-actions button:focus-visible {
+  outline: 2px solid var(--accent, #667eea);
+  outline-offset: 2px;
+}
+
+/* Sync indicator */
+.pdf-sync-mount {
+  display: flex;
+  align-items: center;
+}
+.pdf-sync-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-soft, #f6f7fb);
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--muted, #666);
+}
+.pdf-sync-indicator--error {
+  border-color: #c62828;
+  color: #c62828;
+}
+.pdf-sync-btn {
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 11px;
+  cursor: pointer;
+  color: inherit;
+}
+.pdf-sync-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+.pdf-sync-btn:focus-visible {
+  outline: 2px solid var(--accent, #667eea);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pdf-oclusion-rect,
+  .pdf-sync-btn {
+    transition: none;
+  }
+}

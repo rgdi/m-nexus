@@ -97,6 +97,8 @@ export const authMiddleware: (req: FastifyRequest, reply: FastifyReply) => Promi
     "/api/v1/anki",
     // v2.28.0: PDF highlights + atomic card creation (used offline-first by PDF viewer)
     "/api/v1/pdf",
+    // v2.29.0: CRDT sync of PDF entities across devices (state, update, log, devices, stats)
+    "/api/v1/sync/pdf",
   ];
   const isPublic = PUBLIC_PATHS.some((p) => req.url === p || req.url.startsWith(p + "?") || req.url.startsWith(p + "/"));
   if (isPublic) return;
