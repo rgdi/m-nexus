@@ -30,9 +30,11 @@ import { renderSettings } from "./screens/settings.js";
 import { renderJournal } from "./screens/journal.js";
 import { renderPdfScreen } from "./screens/pdf.js";
 import { renderKgScreen } from "./screens/kg.js";
+import { renderBoardsScreen } from "./screens/boards.js";
 import { renderLogin } from "./screens/login.js";
 import { renderCluster } from "./screens/cluster.js";
 import { mountPeerIndicator } from "./widgets/peer_indicator.js";
+import { mountNotificationBell } from "./widgets/notifications_bell.js";
 import { renderDiagnostic } from "./screens/diagnostic.js";
 import { renderApprovals } from "./screens/approvals.js";
 import { renderSimulator } from "./screens/simulator.js";
@@ -58,6 +60,7 @@ const ROUTES = {
   journal: renderJournal,
   pdf: renderPdfScreen,
   kg: renderKgScreen,
+  boards: renderBoardsScreen,
 };
 
 const app = document.getElementById("app");
@@ -177,6 +180,8 @@ async function bootstrap() {
   mountVaultSwitcher();
   // v2.23.3: peer indicator (top-right server pill + overlay)
   mountPeerIndicator();
+  // v2.32.0: Smart notifications bell (FSRS-7 predictive)
+  mountNotificationBell(document.body);
   // v2.0.2: AI tutor FAB
   mountAITutor();
   // v2.0.6: E2E sync via WebSocket
@@ -333,6 +338,7 @@ function openAppDrawer() {
     { hash: "#/journal",  i18n: "dock.journal",  icon: "📓" },
     { hash: "#/pdf",      i18n: "dock.pdf",      icon: "📄" },
     { hash: "#/kg",       i18n: "dock.kg",       icon: "🕸️" },
+    { hash: "#/boards",   i18n: "dock.boards",   icon: "📚" },
     { hash: "#/settings", i18n: "dock.settings", icon: "⚙" },
   ];
 

@@ -107,6 +107,11 @@ export const authMiddleware: (req: FastifyRequest, reply: FastifyReply) => Promi
     "/api/v1/fsrs/calibration",
     // v2.31.0: Knowledge Graph endpoints (extraction, search, neighbours, communities)
     "/api/v1/kg",
+    // v2.32.0: Smart Notifications + OCR/HTR + Multi-board
+    "/api/v1/smart-notifications",
+    "/api/v1/ocr-v2",
+    "/api/v1/htr",
+    "/api/v1/boards",
   ];
   const isPublic = PUBLIC_PATHS.some((p) => req.url === p || req.url.startsWith(p + "?") || req.url.startsWith(p + "/"));
   if (isPublic) return;
