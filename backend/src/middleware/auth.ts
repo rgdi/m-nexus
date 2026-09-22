@@ -99,6 +99,12 @@ export const authMiddleware: (req: FastifyRequest, reply: FastifyReply) => Promi
     "/api/v1/pdf",
     // v2.29.0: CRDT sync of PDF entities across devices (state, update, log, devices, stats)
     "/api/v1/sync/pdf",
+    // v2.30.0: FSRS-7 predictive endpoints (predict, optimal-window, risk-heatmap, calibrate)
+    "/api/v1/fsrs/predict",
+    "/api/v1/fsrs/optimal-window",
+    "/api/v1/fsrs/risk-heatmap",
+    "/api/v1/fsrs/calibrate",
+    "/api/v1/fsrs/calibration",
   ];
   const isPublic = PUBLIC_PATHS.some((p) => req.url === p || req.url.startsWith(p + "?") || req.url.startsWith(p + "/"));
   if (isPublic) return;
