@@ -11,11 +11,14 @@
  * Stack: vanilla canvas + requestAnimationFrame.
  * ============================================================ */
 
-const API_GRAPH = "/api/v1/kg/graph";
-const API_REBUILD = "/api/v1/kg/rebuild";
-const API_NEIGHBOURS = "/api/v1/kg/neighbours";
-const API_COMMUNITIES = "/api/v1/kg/communities";
-const API_SEARCH = "/api/v1/kg/search";
+import { detectApiBase } from "../services/api_base.js";
+
+const BASE = detectApiBase();
+const API_GRAPH = `${BASE}/api/v1/kg/graph`;
+const API_REBUILD = `${BASE}/api/v1/kg/rebuild`;
+const API_NEIGHBOURS = `${BASE}/api/v1/kg/neighbours`;
+const API_COMMUNITIES = `${BASE}/api/v1/kg/communities`;
+const API_SEARCH = `${BASE}/api/v1/kg/search`;
 
 const PALETTE = [
   "#667eea", "#764ba2", "#f093fb", "#4facfe", "#43e97b",
@@ -102,10 +105,12 @@ export function mountKgGraph(host, opts = {}) {
     velocities.clear();
     const cx = width / 2;
     const cy = height / 2;
+    if (graph.nodes.length === 0) return;
+    // Place on a circle around the center for visibility; simulation refines.
     for (let i = 0; i < graph.nodes.length; i++) {
       const n = graph.nodes[i];
       const angle = (i / graph.nodes.length) * Math.PI * 2;
-      const radius = 120 + Math.random() * 80;
+      const radius = Math.min(width, height) * 0.35;
       positions.set(n.id, {
         x: cx + Math.cos(angle) * radius,
         y: cy + Math.sin(angle) * radius,
@@ -115,7 +120,7 @@ export function mountKgGraph(host, opts = {}) {
   }
 
   function step() {
-    if (graph.nodes.length === 0) {
+    if (graph.nodes.length === 0 || positions.size === 0) {
       draw();
       return;
     }
@@ -125,11 +130,13 @@ export function mountKgGraph(host, opts = {}) {
     for (let i = 0; i < graph.nodes.length; i++) {
       const a = graph.nodes[i];
       const pa = positions.get(a.id);
+      if (!pa) continue;
       let fx = 0, fy = 0;
       for (let j = 0; j < graph.nodes.length; j++) {
         if (i === j) continue;
         const b = graph.nodes[j];
         const pb = positions.get(b.id);
+        if (!pb) continue;
         const dx = pa.x - pb.x;
         const dy = pa.y - pb.y;
         const d2 = Math.max(50, dx * dx + dy * dy);
@@ -158,8 +165,8 @@ export function mountKgGraph(host, opts = {}) {
       fy += (cy - pa.y) * 0.002;
 
       const v = velocities.get(a.id);
-      v.x = (v.x + fx * 0.5) * 0.85; // damping
-      v.y = (v.y + fy * 0.5) * 0.85;
+      v.x = (v.x + fx * 0.5) * 0.55; // damping
+      v.y = (v.y + fy * 0.5) * 0.55;
       if (drag?.kind === "node" && drag.nodeId === a.id) {
         v.x = 0;
         v.y = 0;
@@ -430,13 +437,25 @@ export function mountKgGraph(host, opts = {}) {
   const ro = new ResizeObserver(resize);
   ro.observe(canvas.parentElement);
   resize();
+  // Schedule both RAF and setInterval for max reliability across browsers
+  // (RAF can be throttled in background tabs / headless capture).
+  function loop() {
+    step();
+  }
+  function rafLoop() {
+    loop();
+    rafId = requestAnimationFrame(rafLoop);
+  }
+  rafId = requestAnimationFrame(rafLoop);
+  const intervalId = setInterval(loop, 32);
+
   refresh();
-  rafId = requestAnimationFrame(step);
 
   return {
     refresh,
     destroy() {
       cancelAnimationFrame(rafId);
+      clearInterval(intervalId);
       ro.disconnect();
       canvas.removeEventListener("mousemove", onMouseMove);
       canvas.removeEventListener("mousedown", onMouseDown);

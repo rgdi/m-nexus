@@ -11,7 +11,9 @@
  * Botón de "Sync now" envía el state vector local al server.
  * ============================================================ */
 
-const API = "/api/v1/sync/pdf";
+import { detectApiBase } from "../services/api_base.js";
+
+const API = `${detectApiBase()}/api/v1/sync/pdf`;
 const POLL_MS = 5000;
 
 let pollTimer = null;

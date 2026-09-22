@@ -17,7 +17,9 @@
  * Stack: vanilla DOM, sin dependencias.
  * ============================================================ */
 
-const API = "/api/v1/pdf/occlusions";
+import { detectApiBase } from "../services/api_base.js";
+
+const API = `${detectApiBase()}/api/v1/pdf/occlusions`;
 
 let dragState = null; // { startX, startY, currentEl, page, pageEl }
 

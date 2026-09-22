@@ -15,8 +15,9 @@
 import { makeModal } from "./modal.js";
 import { attachOcclusionMode, renderOcclusions } from "./pdf_occlusion.js";
 import { mountSyncIndicator } from "./pdf_sync_indicator.js";
+import { detectApiBase } from "../services/api_base.js";
 
-const API = "/api/v1/pdf";
+const API = `${detectApiBase()}/api/v1/pdf`;
 let pdfjsPromise = null;
 
 /** Lazy-load pdf.js from CDN; ensures single-flight */

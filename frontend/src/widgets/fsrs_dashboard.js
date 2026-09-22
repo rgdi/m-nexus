@@ -9,11 +9,14 @@
  *   el dashboard muestra "qué se te va a olvidar si no repasas hoy".
  * ============================================================ */
 
-const API_PREDICT = "/api/v1/fsrs/predict";
-const API_OPTIMAL = "/api/v1/fsrs/optimal-window";
-const API_HEATMAP = "/api/v1/fsrs/risk-heatmap";
-const API_CALIBRATE = "/api/v1/fsrs/calibrate";
-const API_CALIBRATION = "/api/v1/fsrs/calibration";
+import { detectApiBase } from "../services/api_base.js";
+
+const BASE = detectApiBase();
+const API_PREDICT = `${BASE}/api/v1/fsrs/predict`;
+const API_OPTIMAL = `${BASE}/api/v1/fsrs/optimal-window`;
+const API_HEATMAP = `${BASE}/api/v1/fsrs/risk-heatmap`;
+const API_CALIBRATE = `${BASE}/api/v1/fsrs/calibrate`;
+const API_CALIBRATION = `${BASE}/api/v1/fsrs/calibration`;
 
 const DAY = 86_400_000;
 

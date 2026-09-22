@@ -5,6 +5,7 @@
 */
 
 import { openPdfViewer } from "../widgets/pdf_viewer.js";
+import { detectApiBase } from "../services/api_base.js";
 
 export async function renderPdfScreen(host) {
   host.innerHTML = `
@@ -34,7 +35,7 @@ export async function renderPdfScreen(host) {
   async function refresh() {
     list.innerHTML = `<p class="pdf-loading">Cargando…</p>`;
     try {
-      const r = await fetch("/api/v1/pdf/pdfs");
+      const r = await fetch(`${detectApiBase()}/api/v1/pdf/pdfs`);
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const data = await r.json();
       renderList(data.documents || []);
