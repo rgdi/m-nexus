@@ -3069,3 +3069,208 @@ body.hide-ui .dock, body.hide-ui .lang-switcher, body.hide-ui .top-toolbar { dis
     transition: none;
   }
 }
+
+/* ============================================================
+ * v2.31.0 — Knowledge Graph visualization
+ * ============================================================ */
+.kg-screen {
+  padding: 0;
+  height: 100%;
+}
+.kg-graph {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  height: calc(100vh - 60px);
+  background: linear-gradient(135deg, #fafbff 0%, #f0f4ff 100%);
+}
+.kg-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: var(--card, #fff);
+  border-bottom: 1px solid var(--border, #e0e0e0);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.kg-header h2 {
+  margin: 0;
+  font-size: 18px;
+  color: var(--text, #222);
+}
+.kg-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.kg-search {
+  border: 1px solid var(--border, #ccc);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 14px;
+  min-width: 240px;
+  background: var(--card, #fff);
+}
+.kg-search:focus-visible {
+  outline: 2px solid var(--accent, #667eea);
+  outline-offset: 1px;
+}
+.kg-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.kg-btn:hover { filter: brightness(1.1); }
+.kg-btn:disabled { opacity: 0.6; cursor: wait; }
+
+.kg-stats {
+  display: flex;
+  gap: 16px;
+  padding: 8px 20px;
+  background: var(--card, #fff);
+  border-bottom: 1px solid var(--border, #e0e0e0);
+  font-size: 12px;
+  color: var(--muted, #666);
+  flex-wrap: wrap;
+}
+.kg-stats > span {
+  padding: 2px 8px;
+  background: var(--bg-soft, #f6f7fb);
+  border-radius: 6px;
+}
+
+.kg-canvas-wrap {
+  position: relative;
+  overflow: hidden;
+}
+.kg-canvas {
+  display: block;
+  cursor: grab;
+  background: linear-gradient(135deg, #fafbff 0%, #f0f4ff 100%);
+}
+.kg-canvas:active { cursor: grabbing; }
+
+.kg-tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: rgba(26, 26, 26, 0.95);
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  max-width: 240px;
+}
+.kg-tip-meta {
+  font-size: 10px;
+  color: rgba(255,255,255,0.6);
+}
+
+.kg-detail {
+  background: var(--card, #fff);
+  border-top: 1px solid var(--border, #e0e0e0);
+  padding: 12px 20px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.kg-empty {
+  margin: 0;
+  color: var(--muted, #888);
+  font-style: italic;
+  font-size: 13px;
+}
+.kg-detail h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  color: var(--text, #222);
+}
+.kg-detail h4 {
+  margin: 12px 0 6px;
+  font-size: 12px;
+  color: var(--muted, #666);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.kg-detail-meta {
+  display: grid;
+  grid-template-columns: auto auto auto auto auto auto;
+  gap: 4px 12px;
+  font-size: 12px;
+  margin: 0;
+}
+.kg-detail-meta dt {
+  color: var(--muted, #888);
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+}
+.kg-detail-meta dd {
+  margin: 0;
+  font-weight: 600;
+  color: var(--text, #222);
+}
+.kg-detail-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.kg-detail-list li {
+  background: var(--bg-soft, #f6f7fb);
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.kg-detail-list small {
+  color: var(--muted, #888);
+}
+.kg-detail-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.kg-detail-loading {
+  color: var(--muted, #888);
+  font-size: 12px;
+  font-style: italic;
+}
+.kg-error {
+  color: #c62828;
+  font-size: 13px;
+}
+
+.kg-toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #2a2a2a;
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms, transform 180ms;
+  z-index: 10000;
+}
+.kg-toast--show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.kg-toast--error { background: #c62828; }
+
+@media (prefers-reduced-motion: reduce) {
+  .kg-btn,
+  .kg-toast { transition: none; }
+}

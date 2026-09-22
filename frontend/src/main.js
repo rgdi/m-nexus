@@ -29,6 +29,7 @@ import { renderAI } from "./screens/ai.js";
 import { renderSettings } from "./screens/settings.js";
 import { renderJournal } from "./screens/journal.js";
 import { renderPdfScreen } from "./screens/pdf.js";
+import { renderKgScreen } from "./screens/kg.js";
 import { renderLogin } from "./screens/login.js";
 import { renderCluster } from "./screens/cluster.js";
 import { mountPeerIndicator } from "./widgets/peer_indicator.js";
@@ -56,6 +57,7 @@ const ROUTES = {
   cluster: renderCluster,
   journal: renderJournal,
   pdf: renderPdfScreen,
+  kg: renderKgScreen,
 };
 
 const app = document.getElementById("app");
@@ -330,6 +332,7 @@ function openAppDrawer() {
     { hash: "#/cluster",  i18n: "dock.cluster",  icon: "🛰️" },
     { hash: "#/journal",  i18n: "dock.journal",  icon: "📓" },
     { hash: "#/pdf",      i18n: "dock.pdf",      icon: "📄" },
+    { hash: "#/kg",       i18n: "dock.kg",       icon: "🕸️" },
     { hash: "#/settings", i18n: "dock.settings", icon: "⚙" },
   ];
 

@@ -29,6 +29,7 @@ const STRINGS = {
   "dock.cluster":            { en: "Cluster",  es: "Cluster",   pt: "Cluster" },
   "dock.journal":            { en: "Journal",  es: "Diario",    pt: "Diário" },
   "dock.pdf":                { en: "PDF",      es: "PDF",       pt: "PDF"     },
+  "dock.kg":                 { en: "Graph",    es: "Grafo",     pt: "Grafo"   },
 
   // ============================================================
   // Overview screen
