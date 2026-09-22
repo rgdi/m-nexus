@@ -181,6 +181,8 @@ async function bootstrap() {
   // v2.23.3: peer indicator (top-right server pill + overlay)
   mountPeerIndicator();
   // v2.32.0: Smart notifications bell (FSRS-7 predictive)
+  // Mount directly (notif_bell uses appendChild, not innerHTML, to preserve
+  // existing children like the #app mount).
   mountNotificationBell(document.body);
   // v2.0.2: AI tutor FAB
   mountAITutor();

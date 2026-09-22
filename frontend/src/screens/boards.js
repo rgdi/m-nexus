@@ -5,6 +5,9 @@ import { detectApiBase } from "../services/api_base.js";
 const BASE = detectApiBase();
 
 export async function renderBoardsScreen(host) {
+  // Close any open notification dropdown
+  const dd = document.querySelector(".notif-dropdown");
+  if (dd) dd.hidden = true;
   host.innerHTML = `
     <section class="screen boards-screen">
       <header class="screen-header">

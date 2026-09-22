@@ -30,7 +30,10 @@ const TYPE_LABEL = {
 };
 
 export function mountNotificationBell(host) {
-  host.innerHTML = `
+  // IMPORTANT: use appendChild (not host.innerHTML = ...) so we don't wipe
+  // existing children of the host (which may include the SPA's #app mount).
+  const wrapper = document.createElement("div");
+  wrapper.innerHTML = `
     <div class="notif-bell" aria-live="polite">
       <button class="notif-bell-btn" data-bell type="button" aria-label="Notificaciones">
         🔔
@@ -52,6 +55,7 @@ export function mountNotificationBell(host) {
       </div>
     </div>
   `;
+  while (wrapper.firstChild) host.appendChild(wrapper.firstChild);
 
   const bellBtn = host.querySelector("[data-bell]");
   const badge = host.querySelector("[data-badge]");
@@ -126,6 +130,19 @@ export function mountNotificationBell(host) {
     open = !open;
     dropdown.hidden = !open;
     if (open) fetchList();
+  });
+
+  // Auto-close when route changes
+  const closeHandler = () => {
+    open = false;
+    dropdown.hidden = true;
+  };
+  window.addEventListener("hashchange", closeHandler);
+  // SPA also navigates without hashchange (it intercepts and dispatches its own)
+  document.addEventListener("click", (e) => {
+    if (!dropdown.hidden && !e.target.closest(".notif-bell")) {
+      closeHandler();
+    }
   });
 
   refreshBtn.addEventListener("click", () => fetchList());
