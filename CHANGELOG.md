@@ -2,7 +2,252 @@
 
 > Historial completo de versiones. Stack actual: **TypeScript backend (Fastify) + Vanilla JS+CSS frontend**. Sin Flutter. Sin colaboración (rejected).
 >
-> **Totales actuales**: 1539 tests automatizados (1040 backend + 449 frontend), bundle 1.694 MB / 87 archivos, **0 errores TypeScript** (`tsc --noEmit` clean).
+> **Totales actuales**: 1645 tests automatizados (1147 backend + 498 frontend), bundle **2.032 MB / 100 archivos** (crossed 100-file milestone), **0 errores TypeScript** (`tsc --noEmit` clean), **a11y 0 errores** (axe-core).
+
+---
+
+## v2.32.1 (2026-09-23) — UI cleanup + legacy widget removal
+
+**Tagline**: "Dock menos cargado, todo en su sitio".
+
+### Highlights
+
+- **Dock principal**: 12 → **9 items**. Removidos del dock: cluster, pdf, kg, v232 (placeholder), boards (consolidado).
+- **Insights screen** (antes v232): agrupa Knowledge Graph + Multi-board + FSRS Dashboard en una sola pantalla con tabs.
+- **Drawer** (hamburger FAB): añade sección "Advanced" con PDF, Graph, Cluster — accesible pero no en dock principal (mobile-first).
+- **Widget cleanup**: eliminado `anatomy_generator.js` (reemplazado por `glbModels` route + `three_d_viewer` widget). Eliminado `boards.js` screen (consolidado en Insights/Multi-board).
+- **fsrs_dashboard widget**: ahora se monta en Insights/FSRS tab (antes era un widget huérfano). Tests pasan.
+
+### Dock final (9 items)
+
+| # | Item | i18n | Hash |
+|---|------|------|------|
+| 1 | Overview | dock.overview | `#/overview` |
+| 2 | Calendar | dock.calendar | `#/calendar` |
+| 3 | Subjects | dock.subjects | `#/subjects` |
+| 4 | Notes | dock.notes | `#/notes` |
+| 5 | To-dos | dock.todos | `#/todos` |
+| 6 | AI Tutor | dock.tutor | `#/ai` |
+| 7 | Journal | dock.journal | `#/journal` |
+| 8 | Insights | dock.insights | `#/v232` |
+| 9 | Settings | dock.settings | `#/settings` |
+
+**Drawer "Advanced" section**: PDF, Graph (KG), Cluster.
+
+### Tests
+
+- **Frontend**: 498 passing (v232 7/7, fsrsV230 5/5, v280 5/5 sin anatomy, v2150 4/4 sin anatomy)
+- **Backend**: 1147 passing
+- **TS**: 0 errors
+- **a11y**: 0 errors, 1 warning (preexistente en boards.js — ya eliminado)
+
+### Archivos modificados
+
+```
+frontend/src/main.js              — Dock: 13→9 items, drawer section "Advanced"
+frontend/src/screens/v232.js      — Renombrado a "Insights" + 3 tabs (Graph/Multi-board/FSRS)
+frontend/src/screens/boards.js    — ELIMINADO (consolidado en Insights)
+frontend/src/widgets/anatomy_generator.js — ELIMINADO (legacy)
+frontend/src/services/i18n.js     — dock.insights, drawer.advanced
+frontend/src/styles/layout.css    — .app-drawer-section h3 styles
+frontend/tests/v2150.test.js      — remove 4 anatomy_generator tests
+frontend/tests/v280.test.js       — remove 3 anatomy_generator tests
+```
+
+### Commit
+
+- `73defb3` — v2.32.1 followup — UI cleanup
+
+---
+
+## v2.32.0 (2026-09-23) — OCR/Handwriting · Multi-board SR · Smart Notifications
+
+**Tagline**: "Tres features nuevas en una sola release".
+
+### Feature 1 — OCR + Handwriting Recognition
+
+- `services/ocrHandwriting.ts` — pipeline Tesseract (system binary) → Vision LLM fallback (Ollama llava).
+- Caching por SHA-1 de image bytes.
+- Detección de regiones manuscritas via OCR-confidence proxy.
+- Endpoints: `/api/v1/ocr/recognize`, `/recognize-pdf-page`, `/recognize-highlight` (integra con `pdfAtomicCard`).
+- Widget con drag/drop, language selector (spa+eng/spa/eng/lat), confidence slider, lista de regiones con bboxes.
+
+### Feature 2 — Multi-Board Spaced Repetition
+
+- `services/multiBoard.ts` — Deck CRUD + per-deck FSRS-7 calibration + many-to-many card-deck links.
+- Cross-deck diagnostic: overlap, divergent state, consolidation recommendations.
+- Endpoints: `/api/v1/boards`, `/boards/:id/calibrate`, `/boards/diagnostic`.
+- Widget con sidebar de decks, panel de detalle con calibración, tabla de diagnóstico.
+
+### Feature 3 — Smart Retention-Predictive Notifications
+
+- `services/smartNotifications.ts` — agrupa cards por action (review-now/today/soon/safe).
+- Severity-tiered (critical/warning/info/success).
+- Dedup por cardIds para evitar spam.
+- Endpoints: `/api/v1/notifications-smart/generate`, `/notifications-smart/:id/{read,dismiss}`.
+- Widget polled (60s) con badges severity-colored.
+
+### Tests + verificado
+
+- Backend: **1147 passing** (+16 v2.32)
+- Frontend: **498 passing** (+7 v2.32)
+- TS: 0 errors
+- Bundle: **2032 KB / 100 files** (crossed 100-file milestone)
+
+Deployed: https://vcvrt36su6nao.space.minimax.io
+
+### Commit
+
+- `89bd816` — v2.32.0 — OCR + Multi-board SR + Smart Notifications
+- `49836d6` — v2.32.0 followup — fix SPA mount order + screenshots
+- `6f2a5e9` — v2.32.0 — screenshots + capture script
+
+---
+
+## v2.31.1 (2026-09-22) — Followup: widget API base fix + 14 screenshots
+
+- Bugfix: `widgets/kg_graph.js` API base detection.
+- 14 screenshots added to `screenshots/v231-*.png`.
+
+---
+
+## v2.31.0 (2026-09-22) — Knowledge Graph from notes + cards + journal
+
+**Tagline**: "Tu mapa mental automático de todo lo que estudias".
+
+- `services/kgExtractor.ts` — TF + n-grams (1..3) con stopwords + diacritic stripping.
+- Greedy label propagation para comunidades.
+- PageRank-lite weight = freq × (1 + log(communityDensity)).
+- `routes/kg.ts`: GET /graph, /neighbours/:id?hops=, /communities, /search?q=, /rebuild, /documents.
+- `widgets/kg_graph.js`: canvas-based force-directed graph (drag, click-and-drag, wheel-zoom, hover tooltip, ego-network panel, search-as-you-type, 15-color palette).
+- **Bugfixes**: `detectApiBase()` for fetch calls; force-directed step() guards undefined positions; RAF + setInterval belt-and-braces; damping 0.55.
+
+### Tests
+- Backend: **1131 passing** (+15 v2.31)
+- Frontend: **485 passing** (+4 v2.31)
+- Bundle: **1877 KB / 94 files**
+
+Deployed: https://lpq9f7votrwum.space.minimax.io
+
+---
+
+## v2.30.0 (2026-09-21) — FSRS-7 Spaced Repetition 2.0 + Predictive Scheduler
+
+**Tagline**: "El scheduler que te dice qué se te va a olvidar antes de que pase".
+
+- `services/fsrs7.ts`: 19-param vector (FSRS-6 17 + w[17] curve stretch + w[18] post-lapse boost).
+- Fórmula canónica FSRS-6/7 inverse: `t = (R^(1/d) - 1) / f * S` con `d = -w[15]`, `f = exp(ln(0.9)/d) - 1`.
+- **Bugfix crítico**: hand-rolled formula `9*S*((1/R-1)^(1/c))` daba 1787852-day intervals. Reemplazado con `optimalInterval()` canónica.
+- `services/predictiveScheduler.ts`: predictCard/batch, timeToTargetR, riskHeatmap (30-day calendar con log₂ intensity), optimalWindow (top-K at-risk cards).
+- `routes/fsrsPredictive.ts`: predict, optimal-window, risk-heatmap, calibrate, calibration/:key.
+- `widgets/fsrs_dashboard.js`: retention dial (0.70-0.97), 3 stat cards, 30-day heatmap, top-K list con action-coded colors.
+
+### Tests
+- Backend: **1116 passing** (+20 fsrs7V230)
+- Frontend: **481 passing** (+5 fsrsV230)
+- Bundle: **1831 KB / 92 files**
+
+Deployed: https://5d1uq6cauhe85.space.minimax.io
+
+---
+
+## v2.29.0 (2026-09-21) — PDF Image Occlusion v2 + Cross-device CRDT sync
+
+**Tagline**: "Oculta partes de tus PDFs y sincroniza entre todos tus dispositivos".
+
+- `services/pdfOcclusionStorage.ts` + `pdfOcclusionAtomic.ts` + `routes/pdfOcclusion.ts`.
+- `services/pdfCrdtSync.ts` — Yjs Doc per documentPath, 3 maps (highlights/occlusions/meta), Lamport clock.
+- `services/pdfSync.ts` — state/update/log/devices/stats.
+- `widgets/pdf_occlusion.js` — drag-to-create masks, ARIA-labelled boxes.
+- `widgets/pdf_sync_indicator.js` — 🟢/🟡/🔴 indicator.
+
+### Tests
+- Backend: **1095 passing** (+15 pdfV229)
+- Frontend: **477 passing** (+6 pdfV229)
+- Bundle: **1790 KB / 92 files**
+
+Deployed: https://ewea3a1bigwqw.space.minimax.io
+
+---
+
+## v2.28.0 (2026-09-20) — PDF annotation pipeline + atomic flashcard
+
+**Tagline**: "Subraya PDFs → flashcard atómica → FSRS queue en un click".
+
+- `routes/pdfAnnotation.ts` + `routes/pdf.ts` (highlights → atomic flashcard → FSRS).
+- `widgets/pdf_viewer.js` — floating "Crear flashcard" en selección, side panel con highlight list, batch convert.
+
+### Tests
+- Backend: **1080 passing** (+12)
+- Frontend: **471 passing** (+5)
+- Bundle: **1756 KB / 89 files**
+
+Deployed: https://u18ah1rxgwblu.space.minimax.io
+
+---
+
+## v2.27.0 (2026-09-19) — Anki .apkg import/export + Multiple Choice cards
+
+- Anki .apkg parsing (sqlite + zip) → cards atómicas.
+- Export .apkg round-trip.
+- Multiple Choice card type.
+
+### Tests
+- Backend: **1068 passing** (+11 v2.27)
+- Frontend: **471 passing** (+8 v2.27)
+- Bundle: **1694 KB / 87 files**
+
+Deployed: https://1yfja8zl4ugj5.space.minimax.io
+
+---
+
+## v2.26.0 (2026-09-19) — Daily Journal Notion-grade
+
+- Premium templates, mood tracker, live embeds, streak, heatmap, week/month nav.
+- `services/dailyJournal.ts` — ROLLOVER_HOUR=4 offset, journalDayKey() helper.
+
+### Tests
+- Backend: **1057 passing** (+17)
+- Frontend: **463 passing** (+14)
+- Bundle: **1653 KB / 86 files**
+
+---
+
+## v2.25.0 (2026-09-19) — Atomic block outliner + block references
+
+- Block UUIDs, `[[]]` y `((uuid))` block refs, backlinks index, query predicates.
+
+### Tests
+- Backend: **1040 passing** (+23)
+- Frontend: **449 passing** (+15)
+- Bundle: **1557 KB / 84 files**
+
+---
+
+## v2.24.0 (2026-09-18) — Dynamic customizable subjects system
+
+- Subjects on-the-fly creation (engineering, law, business, nursing, veterinary, custom).
+- Atomic card extraction from notes.
+- Study session tracking con FSRS integration.
+
+### Tests
+- Backend: **1019 passing**
+- Frontend: **434 passing**
+- Bundle: **1524 KB / 83 files**
+
+---
+
+## v2.23.0–v2.23.4 — Foundation (cross-device sync, audio transcription, OCR)
+
+- v2.23.0: Cross-device sync (CRDT Lamport clocks)
+- v2.23.1: Audio transcription (Whisper)
+- v2.23.2: OCR (Tesseract fallback to Vision LLM)
+- v2.23.3: Single-command installer + auto-upgrade
+- v2.23.4: Multi-server cluster auto-discovery
+
+### Tests (at v2.23.4)
+- Backend: ~900 passing
+- Frontend: ~400 passing
 
 ---
 

@@ -1,6 +1,7 @@
 # M-NEXUS — Education OS for any career
 
-> **v2.23.3** — Single-command installer · SHA-256 verified · systemd / Docker Compose /
+> **v2.32.1** — OCR/Handwriting · Multi-board SR · Smart Notifications · UI cleanup ·
+> Single-command installer · SHA-256 verified · systemd / Docker Compose /
 > auto-upgrade · multi-server with auto-discovery · Accessible from day one.
 
 M-NEXUS is a self-hosted education tracker. It is **not** limited to medical school:
