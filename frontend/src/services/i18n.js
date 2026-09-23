@@ -30,6 +30,7 @@ const STRINGS = {
   "dock.journal":            { en: "Journal",  es: "Diario",    pt: "Diário" },
   "dock.pdf":                { en: "PDF",      es: "PDF",       pt: "PDF"     },
   "dock.kg":                 { en: "Graph",    es: "Grafo",     pt: "Grafo"   },
+  "dock.v232":               { en: "v2.32",    es: "v2.32",     pt: "v2.32"   },
   "dock.boards":             { en: "Boards",   es: "Boards",    pt: "Quadros" },
 
   // ============================================================

@@ -30,6 +30,7 @@ import { renderSettings } from "./screens/settings.js";
 import { renderJournal } from "./screens/journal.js";
 import { renderPdfScreen } from "./screens/pdf.js";
 import { renderKgScreen } from "./screens/kg.js";
+import { renderV232Screen } from "./screens/v232.js";
 import { renderBoardsScreen } from "./screens/boards.js";
 import { renderLogin } from "./screens/login.js";
 import { renderCluster } from "./screens/cluster.js";
@@ -60,6 +61,7 @@ const ROUTES = {
   journal: renderJournal,
   pdf: renderPdfScreen,
   kg: renderKgScreen,
+  v232: renderV232Screen,
   boards: renderBoardsScreen,
 };
 
@@ -340,6 +342,7 @@ function openAppDrawer() {
     { hash: "#/journal",  i18n: "dock.journal",  icon: "📓" },
     { hash: "#/pdf",      i18n: "dock.pdf",      icon: "📄" },
     { hash: "#/kg",       i18n: "dock.kg",       icon: "🕸️" },
+    { hash: "#/v232",     i18n: "dock.v232",     icon: "🆕" },
     { hash: "#/boards",   i18n: "dock.boards",   icon: "📚" },
     { hash: "#/settings", i18n: "dock.settings", icon: "⚙" },
   ];

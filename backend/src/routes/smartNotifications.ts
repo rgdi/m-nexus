@@ -1,76 +1,84 @@
 /* ============================================================
- * routes/smartNotifications.ts — Endpoints de notificaciones predictivas.
+ * routes/smartNotifications.ts — Smart notifications endpoints (v2.32.0).
  *
- * v2.32.0 (note: usamos prefijo /smart-notifications para no chocar
- * con el endpoint existente /api/v1/notifications/ingest):
+ *   POST /api/v1/notifications/generate
+ *     body: { cards: PredictableCard[], targetRetention?, horizonDays? }
+ *     → { notifications, generatedAt }
  *
- *   GET  /api/v1/smart-notifications?since=&unseenOnly=
- *   POST /api/v1/smart-notifications/generate
- *   POST /api/v1/smart-notifications/:id/seen
- *   GET  /api/v1/smart-notifications/unseen/count
+ *   GET  /api/v1/notifications              → pending notifications
+ *   GET  /api/v1/notifications/all          → full store (pending + history)
+ *   POST /api/v1/notifications/:id/read     → mark as read
+ *   POST /api/v1/notifications/:id/dismiss  → dismiss + archive
+ *   POST /api/v1/notifications/clear        → clear all
  * ============================================================ */
 
 import type { FastifyInstance } from "fastify";
-import { smartNotifications } from "../services/smartNotifications.js";
+import {
+  smartNotifications,
+  type Notification,
+} from "../services/smartNotifications.js";
 import type { PredictableCard } from "../services/predictiveScheduler.js";
-import { logOp } from "../utils/log.js";
 
-function userFromReq(req: any): string {
-  return req.headers["x-user-id"] || req.query?.userId || "demo-user";
-}
-
-export async function smartNotificationRoutes(app: FastifyInstance): Promise<void> {
-  app.get<{ Querystring: { since?: string; unseenOnly?: string; userId?: string } }>(
-    "/api/v1/smart-notifications",
+export async function smartNotificationsRoutes(app: FastifyInstance): Promise<void> {
+  app.post<{
+    Body: {
+      cards: Array<{ id: string } & Record<string, any>>;
+      targetRetention?: number;
+      horizonDays?: number;
+    };
+  }>(
+    "/api/v1/notifications-smart/generate",
     async (req) => {
-      const userId = req.query.userId ?? userFromReq(req);
-      const since = req.query.since ? parseInt(req.query.since, 10) : undefined;
-      const all = await smartNotifications.list(userId, since);
-      const unseenOnly = req.query.unseenOnly === "1";
-      return { notifications: unseenOnly ? all.filter((n) => !n.seenAt) : all };
+      const b = req.body ?? ({} as any);
+      const cards: PredictableCard[] = (b.cards ?? []).map((c: any) => ({
+        id: c.id,
+        card: {
+          stability: c.stability ?? 0.5,
+          difficulty: c.difficulty ?? 5,
+          elapsed: c.elapsed ?? 0,
+          reps: c.reps ?? 0,
+          lapses: c.lapses ?? 0,
+          state: c.state ?? "new",
+          lastReview: c.lastReview ?? 0,
+          due: c.due ?? 0,
+        },
+      }));
+      const notifications = await smartNotifications.generate({
+        cards,
+        targetRetention: b.targetRetention,
+        horizonDays: b.horizonDays,
+      });
+      return { notifications, generatedAt: Date.now() };
     },
   );
 
-  app.post<{
-    Body: {
-      userId?: string;
-      cards: PredictableCard[];
-      lastStudyBySubject?: Record<string, number>;
-      earlyWarnDays?: number;
-      masteredThreshold?: number;
-    };
-  }>(
-    "/api/v1/smart-notifications/generate",
+  app.get("/api/v1/notifications-smart", async () => {
+    const pending = await smartNotifications.getPending();
+    return { notifications: pending };
+  });
+
+  app.get("/api/v1/notifications-smart/all", async () => smartNotifications.getAll());
+
+  app.post<{ Params: { id: string } }>(
+    "/api/v1/notifications-smart/:id/read",
     async (req, reply) => {
-      const b = req.body ?? ({} as any);
-      if (!Array.isArray(b.cards)) {
-        return reply.code(400).send({ error: "cards array required" });
-      }
-      const userId = b.userId ?? userFromReq(req);
-      const fresh = await smartNotifications.generateForUser(userId, b.cards, {
-        lastStudyBySubject: b.lastStudyBySubject,
-        earlyWarnDays: b.earlyWarnDays,
-        masteredThreshold: b.masteredThreshold,
-      });
-      logOp("notifications", "generate", true, { userId, fresh: fresh.length });
-      return { ok: true, generated: fresh.length, notifications: fresh };
+      const ok = await smartNotifications.markRead(req.params.id);
+      if (!ok) return reply.code(404).send({ error: "Notification not found" });
+      return { marked: true };
     },
   );
 
   app.post<{ Params: { id: string } }>(
-    "/api/v1/smart-notifications/:id/seen",
+    "/api/v1/notifications-smart/:id/dismiss",
     async (req, reply) => {
-      const ok = await smartNotifications.markSeen(req.params.id);
-      if (!ok) return reply.code(404).send({ error: "notif not found" });
-      return { ok: true };
+      const ok = await smartNotifications.dismiss(req.params.id);
+      if (!ok) return reply.code(404).send({ error: "Notification not found" });
+      return { dismissed: true };
     },
   );
 
-  app.get<{ Querystring: { userId?: string } }>(
-    "/api/v1/smart-notifications/unseen/count",
-    async (req) => {
-      const userId = req.query.userId ?? userFromReq(req);
-      return { count: await smartNotifications.unseenCount(userId) };
-    },
-  );
+  app.post("/api/v1/notifications-smart/clear", async () => {
+    await smartNotifications.clearAll();
+    return { cleared: true };
+  });
 }

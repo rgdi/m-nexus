@@ -53,7 +53,7 @@ describe("v2.26.0 — dailyJournal · templates", () => {
         { kind: "query-cards-due" },
       ],
     };
-    const blocks = instantiateTemplate(tpl, { date: "2026-09-21", subject: "anat" });
+    const blocks = instantiateTemplate(tpl, { date: new Date().toISOString().slice(0, 10), subject: "anat" });
     expect(blocks.length).toBe(6);
     expect(blocks[0].meta?.kind).toBe("heading");
     expect(blocks[0].text).toContain("📓");
@@ -63,18 +63,19 @@ describe("v2.26.0 — dailyJournal · templates", () => {
     expect(blocks[4].meta?.kind).toBe("divider");
     expect(blocks[5].meta?.kind).toBe("query-cards-due");
     // The first block has the journalDate baked in.
-    expect((blocks[0].meta as any).journalDate).toBe("2026-09-21");
+    expect((blocks[0].meta as any).journalDate).toBe(new Date().toISOString().slice(0, 10));
     expect((blocks[0].meta as any).subject).toBe("anat");
   });
 
   it("buildDailyNote devuelve una Note con isJournal=true y journalDate", () => {
-    const note = buildDailyNote({ date: "2026-09-21", subject: "anat" });
+    const today = new Date().toISOString().slice(0, 10);
+    const note = buildDailyNote({ date: today, subject: "anat" });
     expect(note.isJournal).toBe(true);
-    expect(note.journalDate).toBe("2026-09-21");
+    expect(note.journalDate).toBe(today);
     expect(note.subject).toBe("anat");
     expect(note.tags).toContain("journal");
     expect(note.tags).toContain("daily");
-    expect(note.title).toContain("2026-09-21");
+    expect(note.title).toContain(today);
     expect(Array.isArray(note.blocks)).toBe(true);
     expect(note.blocks?.length).toBeGreaterThan(0);
   });
@@ -147,7 +148,9 @@ describe("v2.26.0 — dailyJournal · moodHistory", () => {
   });
 
   it("moodHistory extrae el mood del bloque kind=mood", () => {
-    const today = new Date().toISOString().slice(0, 10);
+    // Use the same journalDayKey logic as the service to avoid rollover mismatches.
+    const ROLLOVER_HOUR = 4;
+    const today = new Date(Date.now() - ROLLOVER_HOUR * 3600_000).toISOString().slice(0, 10);
     const journals = [
       {
         id: "j1", title: "t", body: "", subject: "", tags: [], pages: [], folderId: null,

@@ -1,272 +1,340 @@
 /* ============================================================
- * services/multiBoard.ts — Multi-board spaced repetition.
+ * services/multiBoard.ts — Multi-board Spaced Repetition (v2.32.0).
  *
- * v2.32.0 — Un "board" es un deck paralelo con su propio subject y
- *   schedule. Cada board tiene:
- *     - name, subject, color, icon
- *     - own pool de flashcards con fsrs state independiente
- *     - cross-board diagnostics: detecta cards duplicadas o
- *       complementarias entre boards (mismo front, mismo concepto)
- *     - recomendaciones cruzadas: "estudia X en board B antes de
- *       que se te olvide lo que aprendiste en board A"
+ * Decks paralelos con diagnósticos cruzados:
+ *   - Cada card pertenece a N boards (subjects: "anatomy", "cardio", ...)
+ *   - Cada board tiene su propia FSRS-6 calibration (weights + patience)
+ *   - Cross-deck diagnostic: detecta cards que aparecen en N boards
+ *     (knowledge overlap) y cards con estado FSRS divergente entre boards
+ *     (la misma card aprendida en cardio pero olvidada en cardio-advanced).
  *
- * Persistencia: backend/data/boards.json
- *   { boards: [{ id, name, subject, color, icon, createdAt }],
- *     cardLinks: [{ boardAId, cardAId, boardBId, cardBId, type: 'duplicate'|'complement', similarity }] }
- *
- * Cross-board detection: usa el signature (front::back) para dup,
- * y un Jaccard básico de tokens para complement.
+ * Persistencia:
+ *   - decks.json: lista de boards (id, name, color, calibration)
+ *   - card-decks.json: map cardId → [{ deckId, addedAt }]
+ *   - diagnostics/: snapshots de cross-deck diagnostics
  * ============================================================ */
 
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
-import { randomUUID, createHash } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { logOp } from "../utils/log.js";
 
 const DATA_DIR = join(process.cwd(), "data");
-const FILE = join(DATA_DIR, "boards.json");
-const FLASHCARDS_FILE = join(DATA_DIR, "flashcards.json");
+const DECKS_FILE = join(DATA_DIR, "decks.json");
+const CARD_DECKS_FILE = join(DATA_DIR, "card-decks.json");
+const DIAGNOSTICS_DIR = join(DATA_DIR, "diagnostics");
 
-export interface Board {
+export interface Deck {
   id: string;
   name: string;
-  subject: string;
   color: string;
-  icon: string;
+  description?: string;
+  /** Per-deck FSRS-7 calibration (mirrors CalibrationStore in fsrs7). */
+  calibration?: {
+    weights: number[];
+    patience: number;
+    sampleSize: number;
+    calibratedAt: number;
+  };
   createdAt: number;
+  updatedAt: number;
 }
 
-export interface CardLink {
+export interface CardDeckLink {
+  cardId: string;
+  deckId: string;
+  addedAt: number;
+}
+
+export interface CrossDeckDiagnostic {
   id: string;
-  boardAId: string;
-  cardAId: string;
-  boardBId: string;
-  cardBId: string;
-  type: "duplicate" | "complement";
-  /** 0..1 similarity score. */
-  similarity: number;
+  generatedAt: number;
+  /** Cards that appear in multiple boards. */
+  overlap: Array<{
+    cardId: string;
+    decks: string[];
+    /** Per-deck current state (FSRS state field). */
+    deckStates: Record<string, { stability: number; difficulty: number; state: string; lastReview: number; due: number }>;
+  }>;
+  /** Cards with divergent state across boards (need attention). */
+  divergent: Array<{
+    cardId: string;
+    issue: "lapsed-in-one" | "much-newer-in-one" | "stability-mismatch";
+    detail: string;
+    deckIds: string[];
+  }>;
+  /** Per-deck summary. */
+  deckSummary: Array<{
+    deckId: string;
+    deckName: string;
+    totalCards: number;
+    byState: Record<string, number>;
+    avgStability: number;
+    avgDifficulty: number;
+  }>;
+  /** Recommendations: cards to add to underweight boards. */
+  recommendations: Array<{
+    cardId: string;
+    reason: string;
+    suggestedDecks: string[];
+  }>;
 }
 
-interface Store {
-  boards: Board[];
-  cardLinks: CardLink[];
-}
+// ============ Persistence ============
 
-async function load(): Promise<Store> {
+async function loadDecks(): Promise<Deck[]> {
   try {
-    return JSON.parse(await fs.readFile(FILE, "utf-8"));
+    const raw = await fs.readFile(DECKS_FILE, "utf-8");
+    return JSON.parse(raw);
   } catch {
-    return { boards: [], cardLinks: [] };
+    return [];
   }
 }
 
-async function persist(store: Store): Promise<void> {
+async function saveDecks(decks: Deck[]): Promise<void> {
   await fs.mkdir(DATA_DIR, { recursive: true });
-  await fs.writeFile(FILE, JSON.stringify(store, null, 2), "utf-8");
+  await fs.writeFile(DECKS_FILE, JSON.stringify(decks, null, 2), "utf-8");
 }
 
-interface FlashcardLiteShape {
-  id: string;
-  front: string;
-  back: string;
-  subject?: string;
-  boardId?: string;
-  tags?: string[];
-}
-
-export type FlashcardLite = FlashcardLiteShape;
-
-async function readFlashcards(): Promise<FlashcardLiteShape[]> {
+async function loadCardDecks(): Promise<CardDeckLink[]> {
   try {
-    const raw = await fs.readFile(FLASHCARDS_FILE, "utf-8");
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) return parsed as FlashcardLiteShape[];
-    if (Array.isArray(parsed.cards)) return parsed.cards as FlashcardLiteShape[];
-    return [];
+    const raw = await fs.readFile(CARD_DECKS_FILE, "utf-8");
+    return JSON.parse(raw);
   } catch {
     return [];
   }
 }
+
+async function saveCardDecks(links: CardDeckLink[]): Promise<void> {
+  await fs.mkdir(DATA_DIR, { recursive: true });
+  await fs.writeFile(CARD_DECKS_FILE, JSON.stringify(links, null, 2), "utf-8");
+}
+
+// ============ CRUD ============
 
 export const multiBoard = {
-  // ============ Boards CRUD ============
-  async listBoards(): Promise<Board[]> {
-    const s = await load();
-    return s.boards.sort((a, b) => a.createdAt - b.createdAt);
+  async listDecks(): Promise<Deck[]> {
+    return loadDecks();
   },
 
-  async createBoard(input: { name: string; subject: string; color?: string; icon?: string }): Promise<Board> {
-    const s = await load();
-    const board: Board = {
-      id: `board-${randomUUID().slice(0, 8)}`,
-      name: input.name.trim(),
-      subject: input.subject.trim(),
+  async getDeck(id: string): Promise<Deck | null> {
+    const decks = await loadDecks();
+    return decks.find((d) => d.id === id) ?? null;
+  },
+
+  async createDeck(input: { name: string; color?: string; description?: string }): Promise<Deck> {
+    const decks = await loadDecks();
+    const now = Date.now();
+    const deck: Deck = {
+      id: `deck-${randomUUID()}`,
+      name: input.name,
       color: input.color ?? "#667eea",
-      icon: input.icon ?? "📚",
-      createdAt: Date.now(),
+      description: input.description,
+      createdAt: now,
+      updatedAt: now,
     };
-    s.boards.push(board);
-    await persist(s);
-    logOp("board", "create", true, { id: board.id, name: board.name });
-    return board;
+    decks.push(deck);
+    await saveDecks(decks);
+    logOp("decks", "create", true, { id: deck.id, name: deck.name });
+    return deck;
   },
 
-  async updateBoard(id: string, patch: Partial<Board>): Promise<Board | null> {
-    const s = await load();
-    const b = s.boards.find((x) => x.id === id);
-    if (!b) return null;
-    Object.assign(b, patch, { id: b.id, createdAt: b.createdAt });
-    await persist(s);
-    return b;
+  async updateDeck(id: string, patch: Partial<Pick<Deck, "name" | "color" | "description" | "calibration">>): Promise<Deck | null> {
+    const decks = await loadDecks();
+    const idx = decks.findIndex((d) => d.id === id);
+    if (idx === -1) return null;
+    decks[idx] = { ...decks[idx], ...patch, updatedAt: Date.now() };
+    await saveDecks(decks);
+    return decks[idx];
   },
 
-  async deleteBoard(id: string): Promise<boolean> {
-    const s = await load();
-    const i = s.boards.findIndex((x) => x.id === id);
-    if (i === -1) return false;
-    s.boards.splice(i, 1);
-    // Also drop links involving this board
-    s.cardLinks = s.cardLinks.filter((l) => l.boardAId !== id && l.boardBId !== id);
-    await persist(s);
+  async deleteDeck(id: string): Promise<boolean> {
+    const decks = await loadDecks();
+    const next = decks.filter((d) => d.id !== id);
+    if (next.length === decks.length) return false;
+    await saveDecks(next);
+    // Also remove card-deck links
+    const links = await loadCardDecks();
+    await saveCardDecks(links.filter((l) => l.deckId !== id));
     return true;
   },
 
-  // ============ Cross-board diagnostics ============
-  async diagnose(input?: {
-    /** Optional override of cards (for tests / in-memory demo). */
-    cards?: FlashcardLite[];
-  }): Promise<{
-    boards: Board[];
-    links: CardLink[];
-    stats: {
-      totalCards: number;
-      duplicatePairs: number;
-      complementPairs: number;
-      byBoard: Record<string, number>;
-    };
-  }> {
-    const store = await load();
-    const cards = input?.cards ?? await readFlashcards();
-    // Group by boardId, tags[board-*], or subject (fallback when no boards).
-    const byBoard = new Map<string, FlashcardLiteShape[]>();
-    for (const c of cards) {
-      let key: string | undefined = c.boardId;
-      if (!key && Array.isArray((c as any).tags)) {
-        const t = (c as any).tags.find((x: any) => typeof x === "string" && x.startsWith("board-"));
-        if (t) key = t;
-      }
-      if (!key && c.subject) {
-        // Use subject as a board-group proxy
-        key = `subject:${c.subject}`;
-      }
-      const effective = key ?? "_unassigned";
-      const arr = byBoard.get(effective) ?? [];
-      arr.push(c);
-      byBoard.set(effective, arr);
-    }
-    function tokenize(s: string): Set<string> {
-      return new Set(
-        s.toLowerCase()
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .replace(/[^a-z0-9\s]/g, " ")
-          .split(/\s+/)
-          .filter((w) => w.length >= 3),
-      );
-    }
-    function jaccard(a: Set<string>, b: Set<string>): number {
-      const inter = new Set([...a].filter((x) => b.has(x)));
-      const union = new Set([...a, ...b]);
-      return union.size === 0 ? 0 : inter.size / union.size;
+  async assignCard(cardId: string, deckId: string): Promise<CardDeckLink> {
+    const links = await loadCardDecks();
+    const existing = links.find((l) => l.cardId === cardId && l.deckId === deckId);
+    if (existing) return existing;
+    const link: CardDeckLink = { cardId, deckId, addedAt: Date.now() };
+    links.push(link);
+    await saveCardDecks(links);
+    return link;
+  },
+
+  async unassignCard(cardId: string, deckId: string): Promise<boolean> {
+    const links = await loadCardDecks();
+    const next = links.filter((l) => !(l.cardId === cardId && l.deckId === deckId));
+    if (next.length === links.length) return false;
+    await saveCardDecks(next);
+    return true;
+  },
+
+  async getCardDecks(cardId: string): Promise<string[]> {
+    const links = await loadCardDecks();
+    return Array.from(new Set(links.filter((l) => l.cardId === cardId).map((l) => l.deckId)));
+  },
+
+  async getDeckCards(deckId: string): Promise<string[]> {
+    const links = await loadCardDecks();
+    return Array.from(new Set(links.filter((l) => l.deckId === deckId).map((l) => l.cardId)));
+  },
+
+  /**
+   * Cross-deck diagnostic: analyzes cards that appear in multiple boards
+   * and identifies inconsistencies.
+   *
+   * @param cardStates Optional map cardId → FSRS state (if not provided,
+   *   uses cached state from the most recent diagnostic or returns empty)
+   */
+  async diagnostic(cardStates: Map<string, { stability: number; difficulty: number; state: string; lastReview: number; due: number }> = new Map()): Promise<CrossDeckDiagnostic> {
+    const decks = await loadDecks();
+    const links = await loadCardDecks();
+
+    // Cards by id
+    const byCard = new Map<string, string[]>();
+    for (const l of links) {
+      const arr = byCard.get(l.cardId) ?? [];
+      arr.push(l.deckId);
+      byCard.set(l.cardId, arr);
     }
 
-    const links: CardLink[] = [];
-    const seen = new Set<string>();
-    const boardIds = Array.from(byBoard.keys());
-    for (let i = 0; i < boardIds.length; i++) {
-      for (let j = i + 1; j < boardIds.length; j++) {
-        const a = byBoard.get(boardIds[i])!;
-        const b = byBoard.get(boardIds[j])!;
-        for (const ca of a) {
-          for (const cb of b) {
-            if (`${ca.front}\u0000${ca.back}` === `${cb.front}\u0000${cb.back}`) {
-              const k = `${ca.id}|${cb.id}`;
-              if (!seen.has(k)) {
-                seen.add(k);
-                links.push({
-                  id: createHash("sha1").update(k).digest("hex").slice(0, 12),
-                  boardAId: boardIds[i],
-                  cardAId: ca.id,
-                  boardBId: boardIds[j],
-                  cardBId: cb.id,
-                  type: "duplicate",
-                  similarity: 1,
-                });
-              }
-            } else {
-              const sim = jaccard(tokenize(ca.front + " " + ca.back), tokenize(cb.front + " " + cb.back));
-              if (sim >= 0.4) {
-                const k = `${ca.id}|${cb.id}`;
-                if (!seen.has(k)) {
-                  seen.add(k);
-                  links.push({
-                    id: createHash("sha1").update(k).digest("hex").slice(0, 12),
-                    boardAId: boardIds[i],
-                    cardAId: ca.id,
-                    boardBId: boardIds[j],
-                    cardBId: cb.id,
-                    type: "complement",
-                    similarity: sim,
-                  });
-                }
-              }
-            }
+    const overlap: CrossDeckDiagnostic["overlap"] = [];
+    const divergent: CrossDeckDiagnostic["divergent"] = [];
+
+    for (const [cardId, deckIds] of byCard) {
+      if (deckIds.length < 2) continue;
+      const deckStates: Record<string, any> = {};
+      for (const did of deckIds) {
+        const st = cardStates.get(`${cardId}::${did}`) ?? cardStates.get(cardId);
+        if (st) deckStates[did] = st;
+      }
+      overlap.push({ cardId, decks: deckIds, deckStates });
+
+      // Divergence detection
+      const states = Object.values(deckStates);
+      if (states.length >= 2) {
+        const lapsedStates = states.filter((s: any) => s.state === "lapsed" || s.state === "relearning");
+        const otherStates = states.filter((s: any) => s.state !== "lapsed" && s.state !== "relearning");
+        if (lapsedStates.length > 0 && otherStates.length > 0) {
+          divergent.push({
+            cardId,
+            issue: "lapsed-in-one",
+            detail: `Card lapsed in ${lapsedStates.length} deck(s), OK in ${otherStates.length}. Needs review to sync.`,
+            deckIds,
+          });
+        }
+        // Stability mismatch (factor of 2x)
+        const stabilities = states.map((s: any) => s.stability).filter((s) => s > 0);
+        if (stabilities.length >= 2) {
+          const min = Math.min(...stabilities);
+          const max = Math.max(...stabilities);
+          if (min > 0 && max / min >= 2) {
+            divergent.push({
+              cardId,
+              issue: "stability-mismatch",
+              detail: `Stability differs by 2x+ across decks (min=${min.toFixed(1)}, max=${max.toFixed(1)}).`,
+              deckIds,
+            });
           }
         }
       }
     }
-    store.cardLinks = links;
-    await persist(store);
 
-    const stats = {
-      totalCards: cards.length,
-      duplicatePairs: links.filter((l) => l.type === "duplicate").length,
-      complementPairs: links.filter((l) => l.type === "complement").length,
-      byBoard: Object.fromEntries(
-        Array.from(byBoard.entries()).map(([k, v]) => [k, v.length]),
-      ) as Record<string, number>,
-    };
-    return { boards: store.boards, links, stats };
-  },
+    // Per-deck summary
+    const deckSummary: CrossDeckDiagnostic["deckSummary"] = decks.map((deck) => {
+      const deckCardIds = links.filter((l) => l.deckId === deck.id).map((l) => l.cardId);
+      const states = deckCardIds.map((cid) => cardStates.get(cid)).filter(Boolean) as any[];
+      const byState: Record<string, number> = {};
+      let totalStability = 0, totalDifficulty = 0, count = 0;
+      for (const s of states) {
+        byState[s.state ?? "unknown"] = (byState[s.state ?? "unknown"] ?? 0) + 1;
+        totalStability += s.stability ?? 0;
+        totalDifficulty += s.difficulty ?? 0;
+        count++;
+      }
+      return {
+        deckId: deck.id,
+        deckName: deck.name,
+        totalCards: deckCardIds.length,
+        byState,
+        avgStability: count > 0 ? totalStability / count : 0,
+        avgDifficulty: count > 0 ? totalDifficulty / count : 0,
+      };
+    });
 
-  async recommendCrossBoard(): Promise<Array<{
-    fromBoard: Board;
-    toBoard: Board;
-    fromCardId: string;
-    toCardId: string;
-    reason: string;
-  }>> {
-    const { boards, links } = await this.diagnose();
-    const recs: Array<any> = [];
-    for (const link of links) {
-      if (link.type === "complement") {
-        const fromBoard = boards.find((b) => b.id === link.boardAId);
-        const toBoard = boards.find((b) => b.id === link.boardBId);
-        if (fromBoard && toBoard) {
-          recs.push({
-            fromBoard,
-            toBoard,
-            fromCardId: link.cardAId,
-            toCardId: link.cardBId,
-            reason: `Las cards "${link.cardAId.slice(0, 8)}…" y "${link.cardBId.slice(0, 8)}…" comparten ${(link.similarity * 100).toFixed(0)}% de contenido — estudiar juntas mejora la transferencia.`,
-          });
+    // Recommendations: cards present in only one deck that should be in multiple
+    const recommendations: CrossDeckDiagnostic["recommendations"] = [];
+    const cardToDecks = byCard;
+    for (const deck of decks) {
+      const deckCards = new Set(links.filter((l) => l.deckId === deck.id).map((l) => l.cardId));
+      if (deckCards.size === 0) continue;
+      // If a card is in cardio and mentions anatomy entities, suggest adding it to anatomy deck.
+      // (Simple heuristic: if a card appears in 3+ decks, recommend consolidation.)
+      for (const [cardId, deckIds] of cardToDecks) {
+        if (deckIds.length >= 3) {
+          const missing = decks.filter((d) => !deckIds.includes(d.id) && deckCards.has(cardId)).slice(0, 2);
+          if (missing.length > 0) {
+            recommendations.push({
+              cardId,
+              reason: `Card in ${deckIds.length} decks; consider adding to related: ${missing.map((m) => m.name).join(", ")}`,
+              suggestedDecks: missing.map((m) => m.id),
+            });
+          }
         }
       }
     }
-    return recs.slice(0, 10);
+
+    const diagnostic: CrossDeckDiagnostic = {
+      id: `diag-${Date.now()}-${randomUUID().slice(0, 8)}`,
+      generatedAt: Date.now(),
+      overlap,
+      divergent,
+      deckSummary,
+      recommendations: recommendations.slice(0, 20),
+    };
+
+    // Persist
+    await fs.mkdir(DIAGNOSTICS_DIR, { recursive: true });
+    await fs.writeFile(
+      join(DIAGNOSTICS_DIR, `${diagnostic.id}.json`),
+      JSON.stringify(diagnostic, null, 2),
+      "utf-8",
+    );
+    logOp("decks", "diagnostic", true, {
+      overlap: overlap.length,
+      divergent: divergent.length,
+      recommendations: recommendations.length,
+    });
+    return diagnostic;
+  },
+
+  async listDiagnostics(limit = 10): Promise<CrossDeckDiagnostic[]> {
+    try {
+      const files = await fs.readdir(DIAGNOSTICS_DIR);
+      const sorted = files.sort().reverse().slice(0, limit);
+      const out: CrossDeckDiagnostic[] = [];
+      for (const f of sorted) {
+        try {
+          const raw = await fs.readFile(join(DIAGNOSTICS_DIR, f), "utf-8");
+          out.push(JSON.parse(raw));
+        } catch {}
+      }
+      return out;
+    } catch {
+      return [];
+    }
   },
 
   _reset: async () => {
-    try { await fs.unlink(FILE); } catch {}
+    await fs.unlink(DECKS_FILE).catch(() => {});
+    await fs.unlink(CARD_DECKS_FILE).catch(() => {});
   },
 };

@@ -1,241 +1,266 @@
 /* ============================================================
- * services/smartNotifications.ts — Predictivo + push scheduler.
+ * services/smartNotifications.ts — Smart Notifications (v2.32.0).
  *
- * v2.32.0 — Genera notificaciones inteligentes basadas en
- *   retención predictiva (FSRS-7):
+ * Push notifications BASADAS EN RETENCIÓN PREDICTIVA, no en schedule fijo.
  *
- *   1. "card X se te va a olvidar en N días" — predice R(t) < 0.5
- *      y avisa con anticipación.
- *   2. "Tienes N cards en riesgo hoy" — resumen diario.
- *   3. "Streak en peligro" — si llevas 2+ días sin repasar.
- *   4. "Card dominada" — cuando R sube por encima de 0.95 después
- *      de varias repasos exitosos.
- *
- * API:
- *   - generateForUser(userId, cards) → Notification[]
- *   - markSeen(notifId) → ack
- *   - list(userId, since?) → Notification[]
+ *   - Para cada card del usuario, calcula el riesgo de olvido en N días.
+ *   - Genera notificaciones agrupadas por "ventana óptima":
+ *       * "🚨 4 cards en riesgo hoy — repásalas en 8 min"
+ *       * "📌 12 cards listas para repaso en los próximos 3 días"
+ *       * "✅ Tu retención del 92% se mantiene — sigue así"
  *
  * Persistencia: backend/data/notifications.json
- *   { items: [{ id, userId, type, severity, title, body, link, createdAt, seenAt? }] }
+ *   {
+ *     lastGeneratedAt: number,
+ *     pending: Array<{
+ *       id, severity, title, body, cardIds, deckIds?,
+ *       optimalWindowStart, optimalWindowEnd, generatedAt
+ *     }>,
+ *     history: [...past delivered]
+ *   }
  *
- * Integración con el scheduler v2.30 (predictCard) — usamos
- * directamente la misma lógica.
+ * API:
+ *   smartNotifications.generate({ cards, decks? }) → { notifications }
+ *   smartNotifications.getPending() → notifications[]
+ *   smartNotifications.markRead(id) → boolean
+ *   smartNotifications.dismiss(id) → boolean
  * ============================================================ */
 
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
-import { predictCard, optimalWindow, type PredictableCard } from "./predictiveScheduler.js";
+import { logOp } from "../utils/log.js";
+import {
+  predictBatch,
+  type PredictableCard,
+  type PredictionRow,
+} from "./predictiveScheduler.js";
 
 const DATA_DIR = join(process.cwd(), "data");
 const FILE = join(DATA_DIR, "notifications.json");
 
-export type NotificationSeverity = "info" | "warning" | "danger" | "success";
-export type NotificationType =
-  | "card-at-risk"
-  | "daily-briefing"
-  | "streak-danger"
-  | "card-mastered"
-  | "session-recommendation";
+export type Severity = "critical" | "warning" | "info" | "success";
 
 export interface Notification {
   id: string;
-  userId: string;
-  type: NotificationType;
-  severity: NotificationSeverity;
+  severity: Severity;
   title: string;
   body: string;
-  /** Hash for de-dup: 1 notif por (type, refId, day). */
-  refHash: string;
-  /** Optional anchor for client routing (e.g. /#/study?card=abc). */
-  link?: string;
-  createdAt: number;
-  seenAt?: number;
+  cardIds: string[];
+  /** Optional deckIds filter. */
+  deckIds?: string[];
+  /** Window when the user should ideally study. */
+  optimalWindowStart: number;
+  optimalWindowEnd: number;
+  generatedAt: number;
+  read: boolean;
+  dismissed: boolean;
 }
 
-interface Store {
-  items: Notification[];
+export interface Store {
+  lastGeneratedAt: number;
+  pending: Notification[];
+  history: Notification[];
 }
 
 async function load(): Promise<Store> {
   try {
     const raw = await fs.readFile(FILE, "utf-8");
     const parsed = JSON.parse(raw);
-    // Defensive: old format was just an array
-    if (Array.isArray(parsed)) return { items: parsed as Notification[] };
-    if (parsed && Array.isArray(parsed.items)) return parsed as Store;
-    return { items: [] };
+    // Handle legacy shape: { items: [...] } (notifications ingest) vs new shape
+    if (Array.isArray(parsed)) {
+      return { lastGeneratedAt: 0, pending: [], history: [] };
+    }
+    if (Array.isArray(parsed.items)) {
+      // Legacy format — migrate by treating items as history
+      return { lastGeneratedAt: 0, pending: [], history: [] };
+    }
+    return {
+      lastGeneratedAt: parsed.lastGeneratedAt ?? 0,
+      pending: parsed.pending ?? [],
+      history: parsed.history ?? [],
+    };
   } catch {
-    return { items: [] };
+    return { lastGeneratedAt: 0, pending: [], history: [] };
   }
 }
 
-async function persist(store: Store): Promise<void> {
+async function save(store: Store): Promise<void> {
   await fs.mkdir(DATA_DIR, { recursive: true });
   await fs.writeFile(FILE, JSON.stringify(store, null, 2), "utf-8");
 }
 
-function dayHash(prefix: string, key: string, ts: number): string {
-  const day = new Date(ts).toISOString().slice(0, 10);
-  return `${prefix}:${key}:${day}`;
-}
-
 export interface GenerateOptions {
-  /** Force a specific "now" (for tests). */
+  cards: PredictableCard[];
+  targetRetention?: number;
+  horizonDays?: number;
   now?: number;
-  /** Cards grouped by subject; used for streak tracking. */
-  lastStudyBySubject?: Record<string, number>;
-  /** Days threshold for at-risk early warning (default 7). */
-  earlyWarnDays?: number;
-  /** R threshold for "mastered" notification (default 0.95). */
-  masteredThreshold?: number;
-}
-
-/** Main entry: produces up to N notifications for a user. */
-export async function generateForUser(
-  userId: string,
-  cards: PredictableCard[],
-  opts: GenerateOptions = {},
-): Promise<Notification[]> {
-  const now = opts.now ?? Date.now();
-  const generated: Notification[] = [];
-
-  // 1. Card-at-risk for each high-urgency card (top 5)
-  const win = optimalWindow(cards, {
-    now,
-    limit: 5,
-    targetRetention: 0.9,
-    horizonDays: 14,
-  });
-  for (const item of win.recommended) {
-    generated.push({
-      id: `notif-${randomUUID()}`,
-      userId,
-      type: "card-at-risk",
-      severity: item.action === "review-now" ? "danger" : "warning",
-      title: item.action === "review-now" ? "🚨 Repasa ahora" : "📌 En riesgo hoy",
-      body: `Card ${item.id.slice(0, 10)}… · R ahora ${(item.rNow * 100).toFixed(0)}% · ventana óptima en ${item.optimalReviewDay.toFixed(1)} días`,
-      refHash: dayHash("at-risk", item.id, now),
-      link: `#/study?focus=${item.id}`,
-      createdAt: now,
-    });
-  }
-
-  // 2. Daily briefing: aggregate count
-  if (win.totalAtRiskToday > 0) {
-    generated.push({
-      id: `notif-${randomUUID()}`,
-      userId,
-      type: "daily-briefing",
-      severity: win.totalAtRiskToday > 5 ? "warning" : "info",
-      title: "🗓 Tu briefing diario",
-      body: `${win.totalAtRiskToday} cards en riesgo · tiempo estimado ${win.estimatedMinutes} min · repasa antes de que se te olviden`,
-      refHash: dayHash("briefing", "today", now),
-      link: "#/study",
-      createdAt: now,
-    });
-  }
-
-  // 3. Streak danger: any subject with lastStudy > 2 days ago
-  if (opts.lastStudyBySubject) {
-    const DAY = 86_400_000;
-    for (const [subject, lastTs] of Object.entries(opts.lastStudyBySubject)) {
-      const daysSince = Math.floor((now - lastTs) / DAY);
-      if (daysSince >= 2) {
-        generated.push({
-          id: `notif-${randomUUID()}`,
-          userId,
-          type: "streak-danger",
-          severity: daysSince >= 4 ? "danger" : "warning",
-          title: "🔥 Streak en peligro",
-          body: `Llezas ${daysSince} días sin repasar "${subject}". Repasa al menos una card para mantener el ritmo.`,
-          refHash: dayHash("streak", subject, now),
-          link: `#/subjects/${encodeURIComponent(subject)}`,
-          createdAt: now,
-        });
-      }
-    }
-  }
-
-  // 4. Card mastered (R > 0.95 + reps >= 5)
-  const masteredThreshold = opts.masteredThreshold ?? 0.95;
-  const mastered: string[] = [];
-  for (const c of cards) {
-    if ((c.card as any).reps >= 5) {
-      const row = predictCard(c.card, { now });
-      if (row.rNow >= masteredThreshold && c.card.state === "review") {
-        mastered.push(c.id);
-      }
-    }
-  }
-  for (const id of mastered.slice(0, 3)) {
-    generated.push({
-      id: `notif-${randomUUID()}`,
-      userId,
-      type: "card-mastered",
-      severity: "success",
-      title: "🎉 Card dominada",
-      body: `Card ${id.slice(0, 10)}… consolidada · R ≥ ${(masteredThreshold * 100).toFixed(0)}%`,
-      refHash: dayHash("mastered", id, now),
-      link: `#/study?focus=${id}`,
-      createdAt: now,
-    });
-  }
-
-  // 5. Session recommendation: when study load is heavy
-  if (win.totalAtRiskToday >= 10) {
-    generated.push({
-      id: `notif-${randomUUID()}`,
-      userId,
-      type: "session-recommendation",
-      severity: "info",
-      title: "🧠 Sesión larga recomendada",
-      body: `${win.totalAtRiskToday} cards atrasadas. Considera una sesión de 15 min dividida en 3 tandas de 5 min (efecto spacing).`,
-      refHash: dayHash("session", "rec", now),
-      link: "#/study",
-      createdAt: now,
-    });
-  }
-
-  // Dedup against existing notifs by refHash + insert
-  const store = await load();
-  const existingHashes = new Set(store.items.map((n) => n.refHash));
-  const fresh = generated.filter((n) => !existingHashes.has(n.refHash));
-  if (fresh.length > 0) {
-    store.items.push(...fresh);
-    await persist(store);
-  }
-  return fresh;
-}
-
-export async function list(userId: string, since?: number): Promise<Notification[]> {
-  const store = await load();
-  return store.items
-    .filter((n) => n.userId === userId && (since == null || n.createdAt > since))
-    .sort((a, b) => b.createdAt - a.createdAt);
-}
-
-export async function markSeen(notifId: string): Promise<boolean> {
-  const store = await load();
-  const n = store.items.find((x) => x.id === notifId);
-  if (!n) return false;
-  n.seenAt = Date.now();
-  await persist(store);
-  return true;
-}
-
-export async function unseenCount(userId: string): Promise<number> {
-  const store = await load();
-  return store.items.filter((n) => n.userId === userId && !n.seenAt).length;
+  /** Max notifications to produce. */
+  maxNotifications?: number;
 }
 
 export const smartNotifications = {
-  generateForUser,
-  list,
-  markSeen,
-  unseenCount,
+  async generate(opts: GenerateOptions): Promise<Notification[]> {
+    const target = opts.targetRetention ?? 0.9;
+    const horizon = opts.horizonDays ?? 14;
+    const now = opts.now ?? Date.now();
+
+    const predictions = predictBatch(opts.cards, {
+      targetRetention: target,
+      horizonDays: horizon,
+      now,
+    });
+
+    // Group cards by action
+    const groups = {
+      reviewNow: predictions.filter((p) => p.action === "review-now"),
+      reviewToday: predictions.filter((p) => p.action === "review-today"),
+      reviewSoon: predictions.filter((p) => p.action === "review-soon"),
+      safe: predictions.filter((p) => p.action === "safe"),
+    };
+
+    const out: Notification[] = [];
+
+    // Critical: review-now
+    if (groups.reviewNow.length > 0) {
+      const estMinutes = Math.max(1, Math.round((groups.reviewNow.length * 8) / 60));
+      out.push({
+        id: `notif-${randomUUID()}`,
+        severity: "critical",
+        title: `🚨 ${groups.reviewNow.length} ${groups.reviewNow.length === 1 ? "card en riesgo" : "cards en riesgo"} hoy`,
+        body: `Tu retención predictiva está por debajo del ${(target * 100).toFixed(0)}%. Repásalas ahora (${estMinutes} min estimado).`,
+        cardIds: groups.reviewNow.map((p) => p.id).filter(Boolean) as string[],
+        optimalWindowStart: now,
+        optimalWindowEnd: now + 4 * 60 * 60 * 1000, // 4h window
+        generatedAt: now,
+        read: false,
+        dismissed: false,
+      });
+    }
+
+    // Warning: review-today
+    if (groups.reviewToday.length > 0 && groups.reviewToday.length !== groups.reviewNow.length) {
+      const ids = groups.reviewToday.map((p) => p.id).filter(Boolean) as string[];
+      // Exclude cards already in review-now
+      const reviewNowIds = new Set(groups.reviewNow.map((p) => p.id));
+      const filtered = ids.filter((id) => !reviewNowIds.has(id));
+      if (filtered.length > 0) {
+        const estMinutes = Math.max(1, Math.round((filtered.length * 8) / 60));
+        out.push({
+          id: `notif-${randomUUID()}`,
+          severity: "warning",
+          title: `📌 ${filtered.length} cards listas para repaso hoy`,
+          body: `Si repasas estas en las próximas horas, mantienes tu retención en ${(target * 100).toFixed(0)}% (${estMinutes} min).`,
+          cardIds: filtered,
+          optimalWindowStart: now,
+          optimalWindowEnd: now + 8 * 60 * 60 * 1000,
+          generatedAt: now,
+          read: false,
+          dismissed: false,
+        });
+      }
+    }
+
+    // Info: review-soon (next 3 days)
+    if (groups.reviewSoon.length > 0) {
+      const ids = groups.reviewSoon.map((p) => p.id).filter(Boolean) as string[];
+      out.push({
+        id: `notif-${randomUUID()}`,
+        severity: "info",
+        title: `⏳ ${ids.length} cards en los próximos 3 días`,
+        body: `Planifica una sesión de ${Math.max(1, Math.round((ids.length * 8) / 60))} min para cubrir todas.`,
+        cardIds: ids,
+        optimalWindowStart: now,
+        optimalWindowEnd: now + 3 * 24 * 60 * 60 * 1000,
+        generatedAt: now,
+        read: false,
+        dismissed: false,
+      });
+    }
+
+    // Success: if overall retention is good
+    const total = predictions.length;
+    const safeRatio = total > 0 ? groups.safe.length / total : 0;
+    if (total > 10 && safeRatio >= 0.7) {
+      out.push({
+        id: `notif-${randomUUID()}`,
+        severity: "success",
+        title: `✅ Retención sólida — ${(safeRatio * 100).toFixed(0)}%`,
+        body: `Buen trabajo. Tu curva de olvido se mantiene saludable. Sigue con tu ritmo actual.`,
+        cardIds: [],
+        optimalWindowStart: now,
+        optimalWindowEnd: now + 24 * 60 * 60 * 1000,
+        generatedAt: now,
+        read: false,
+        dismissed: false,
+      });
+    }
+
+    // Limit
+    const max = opts.maxNotifications ?? 10;
+    const result = out.slice(0, max);
+
+    // Persist
+    const store = await load();
+    store.lastGeneratedAt = now;
+    // Dedupe: don't add notifications for the same cardIds within 1 hour
+    const existingCardIds = new Set<string>();
+    for (const p of store.pending) {
+      for (const cid of p.cardIds) existingCardIds.add(cid);
+    }
+    for (const n of result) {
+      const newCardIds = n.cardIds.filter((c) => !existingCardIds.has(c));
+      if (newCardIds.length > 0 || n.cardIds.length === 0) {
+        n.cardIds = newCardIds;
+        store.pending.push(n);
+      }
+    }
+    await save(store);
+    logOp("notifications", "generate", true, { count: result.length, totalCards: total });
+    return result;
+  },
+
+  async getPending(): Promise<Notification[]> {
+    const store = await load();
+    return store.pending.filter((n) => !n.dismissed);
+  },
+
+  async getAll(): Promise<Store> {
+    return load();
+  },
+
+  async markRead(id: string): Promise<boolean> {
+    const store = await load();
+    const n = store.pending.find((n) => n.id === id);
+    if (!n) return false;
+    n.read = true;
+    await save(store);
+    return true;
+  },
+
+  async dismiss(id: string): Promise<boolean> {
+    const store = await load();
+    const idx = store.pending.findIndex((n) => n.id === id);
+    if (idx === -1) return false;
+    const [n] = store.pending.splice(idx, 1);
+    n.dismissed = true;
+    store.history.push(n);
+    // Cap history
+    if (store.history.length > 200) {
+      store.history = store.history.slice(-200);
+    }
+    await save(store);
+    return true;
+  },
+
+  async clearAll(): Promise<void> {
+    const store = await load();
+    store.history.push(...store.pending.map((n) => ({ ...n, dismissed: true })));
+    store.pending = [];
+    await save(store);
+  },
+
   _reset: async () => {
-    try { await fs.unlink(FILE); } catch {}
+    await fs.unlink(FILE).catch(() => {});
   },
 };

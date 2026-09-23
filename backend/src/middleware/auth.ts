@@ -107,6 +107,12 @@ export const authMiddleware: (req: FastifyRequest, reply: FastifyReply) => Promi
     "/api/v1/fsrs/calibration",
     // v2.31.0: Knowledge Graph endpoints (extraction, search, neighbours, communities)
     "/api/v1/kg",
+    // v2.32.0: OCR + handwriting recognition endpoints
+    "/api/v1/ocr",
+    // v2.32.0: Multi-board spaced repetition
+    "/api/v1/boards",
+    // v2.32.0: Smart retention-predictive notifications
+    "/api/v1/notifications-smart",
     // v2.32.0: Smart Notifications + OCR/HTR + Multi-board
     "/api/v1/smart-notifications",
     "/api/v1/ocr-v2",
