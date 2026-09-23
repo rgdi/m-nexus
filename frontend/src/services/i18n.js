@@ -212,6 +212,7 @@ const STRINGS = {
   "common.loading":         { en: "Loading…", es: "Cargando…", pt: "Carregando…" },
   "common.cancel":          { en: "Cancel", es: "Cancelar", pt: "Cancelar" },
   "common.save":            { en: "Save", es: "Guardar", pt: "Guardar" },
+  "common.print":           { en: "Print", es: "Imprimir", pt: "Imprimir" },
   "common.edit":            { en: "Edit", es: "Editar", pt: "Editar" },
   "common.delete":          { en: "Delete", es: "Eliminar", pt: "Excluir" },
   "common.close":           { en: "Close", es: "Cerrar", pt: "Fechar" },

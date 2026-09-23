@@ -359,6 +359,22 @@ async function renderNotebook(root, id) {
   // v1.7.3: export PDF
   root.querySelector("#export-pdf").addEventListener("click", () => downloadNoteAsPDF(note));
 
+  // v2.33.0: print note (premium print stylesheet)
+  const printBtn = root.querySelector("#print-note");
+  if (printBtn) {
+    printBtn.addEventListener("click", async () => {
+      try {
+        await printNote(note, {
+          vaultName: localStorage.getItem("mnexus.vault.name") || "M-NEXUS",
+        });
+      } catch (e) {
+        console.error("print failed", e);
+        // Fallback: print current document
+        window.print();
+      }
+    });
+  }
+
   // v1.6.1: AI submenú
   setupAIMenu(root, id, note);
 
@@ -1322,6 +1338,7 @@ function renderNotebookWideHTML(note, pages) {
               <button class="tool-btn" id="open-ai-side" title="${i18n.t("ai.open") || "AI"}" aria-label="${i18n.t("ai.open") || "AI"}">✦</button>
               <button class="tool-btn" id="new-card-btn" title="${i18n.t("notes.newFlashcard")}" aria-label="${i18n.t("notes.newFlashcard")}">${svgIcon("flashcard", 18)}</button>
               <button class="tool-btn" id="export-pdf" title="PDF" aria-label="PDF">${svgIcon("text", 18)}</button>
+              <button class="tool-btn" id="print-note" title="${i18n.t("common.print") || "Print"}" aria-label="${i18n.t("common.print") || "Print"}">${svgIcon("print", 18)}</button>
             </div>
           </div>
         </main>
@@ -1376,6 +1393,7 @@ function renderNotebookNarrowHTML(note) {
         <span class="tool-sep"></span>
         <button class="tool-btn" id="open-ai-side" title="${i18n.t("ai.open") || "AI"}" aria-label="AI">✦</button>
         <button class="tool-btn" id="export-pdf-mobile" title="PDF" aria-label="PDF">${svgIcon("text", 18)}</button>
+        <button class="tool-btn" id="print-note-mobile" title="${i18n.t("common.print") || "Print"}" aria-label="${i18n.t("common.print") || "Print"}">${svgIcon("print", 18)}</button>
         <button class="tool-btn" id="new-card-btn-mobile" title="${i18n.t("notes.newFlashcard")}" aria-label="${i18n.t("notes.newFlashcard")}">${svgIcon("flashcard", 18)}</button>
         <button class="tool-btn" id="search-btn-mobile" title="${i18n.t("common.search")}" aria-label="${i18n.t("common.search")}">${svgIcon("search", 18)}</button>
         <button class="tool-btn" id="overview-btn-mobile" title="${i18n.t("notes.intelligentOverview")}" aria-label="${i18n.t("notes.intelligentOverview")}">${svgIcon("eye", 18)}</button>
@@ -1406,6 +1424,21 @@ function wireNarrow(root, id, note) {
   });
   root.querySelector("#export-pdf").addEventListener("click", () => downloadNoteAsPDF(note));
 
+  // v2.33.0: print note (premium print stylesheet)
+  const printBtn2 = root.querySelector("#print-note");
+  if (printBtn2) {
+    printBtn2.addEventListener("click", async () => {
+      try {
+        await printNote(note, {
+          vaultName: localStorage.getItem("mnexus.vault.name") || "M-NEXUS",
+        });
+      } catch (e) {
+        console.error("print failed", e);
+        window.print();
+      }
+    });
+  }
+
   // v2.11.0: mobile toolbar buttons (mirror the wide layout actions)
   const mirror = (srcId, fn) => {
     const el = root.querySelector(srcId);
@@ -1413,6 +1446,7 @@ function wireNarrow(root, id, note) {
   };
   mirror("#open-ai-side", () => root.querySelector("#open-ai")?.click());
   mirror("#export-pdf-mobile", () => root.querySelector("#export-pdf")?.click());
+  mirror("#print-note-mobile", () => root.querySelector("#print-note")?.click());
   mirror("#new-card-btn-mobile", () => {
     // Trigger the existing flashcard slash flow (or open side panel)
     location.hash = "#/notes?topic=" + encodeURIComponent(note.subject || "general");
@@ -1907,4 +1941,168 @@ function setupSplitter(root) {
       collapseBtn.textContent = i18n.t("notes.expand") || "Show";
     }
   }
+}
+
+/* ============================================================
+ * v2.33.0 — Print helpers for notes.
+ *
+ * printNote(note) — builds a `.note-print` document fragment with
+ *   premium header (title + author + date + subject) + the note body
+ *   (preserving atomic blocks, highlights, wikilinks, flashcards),
+ *   then calls window.print(). The print stylesheet (print.css)
+ *   handles the actual layout — paper type, typography, page breaks.
+ *
+ * printNotesBatch(notes[]) — same but for multiple notes: each note
+ *   starts a new page, with a print-only TOC at the start.
+ *
+ * Both functions inject the fragment into a hidden iframe so the
+ * live notebook / side-panel are not affected.
+ * ============================================================ */
+
+function buildNotePrintHTML(note, opts = {}) {
+  const escHtml = (s) => String(s || "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c]));
+  const dateStr = new Date().toLocaleDateString(opts.locale || "es-ES", {
+    year: "numeric", month: "long", day: "numeric",
+  });
+  const subject = note.subject || opts.subjectFallback || "Sin asignatura";
+  const vaultName = opts.vaultName || "M-NEXUS";
+
+  // Render note body. Strip script/style. Preserve atomic blocks / highlights.
+  let body = String(note.body || note.html || note.content || "");
+  body = body.replace(/<script[\s\S]*?<\/script>/gi, "");
+  body = body.replace(/<style[\s\S]*?<\/style>/gi, "");
+  body = body.replace(/data-remote="[^"]*"/g, "");
+  body = body.replace(/contenteditable="[^"]*"/g, "");
+
+  // Convert atomic flashcard markers (if any) to styled blocks.
+  body = body.replace(/<div class="atomic-flashcard"/g, '<div class="atomic-flashcard no-break"');
+
+  const cardsHTML = (note.cards || [])
+    .slice(0, 30)
+    .map((c) => `
+      <div class="atomic-flashcard no-break">
+        <div class="fc-front">${escHtml(c.front || c.q || "")}</div>
+        <div class="fc-back">${escHtml(c.back || c.a || "")}</div>
+      </div>
+    `).join("");
+
+  return `
+    <article class="note-print print-document">
+      <header class="print-header">
+        <h1>${escHtml(note.title || "Sin título")}</h1>
+        <div class="print-meta">
+          ${subject ? `<span><span class="meta-key">Asignatura</span>${escHtml(subject)}</span>` : ""}
+          <span><span class="meta-key">Fecha</span>${escHtml(dateStr)}</span>
+          ${note.author ? `<span><span class="meta-key">Autor</span>${escHtml(note.author)}</span>` : ""}
+          ${note.id ? `<span><span class="meta-key">ID</span>${escHtml(note.id.slice(0, 8))}</span>` : ""}
+        </div>
+      </header>
+      <section class="note-content">${body}</section>
+      ${cardsHTML ? `
+        <section class="print-cards no-break">
+          <h2>🎴 Flashcards (${(note.cards || []).length})</h2>
+          ${cardsHTML}
+        </section>
+      ` : ""}
+    </article>
+  `;
+}
+
+function buildBatchPrintHTML(notes, opts = {}) {
+  const escHtml = (s) => String(s || "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c]));
+  const dateStr = new Date().toLocaleDateString("es-ES", {
+    year: "numeric", month: "long", day: "numeric",
+  });
+  const vaultName = opts.vaultName || "M-NEXUS";
+  const toc = notes.map((n, i) => `
+    <li>
+      <span class="meta-key">${i + 1}.</span>
+      ${escHtml(n.title || "Sin título")}
+      ${n.subject ? ` <span class="muted">— ${escHtml(n.subject)}</span>` : ""}
+    </li>
+  `).join("");
+
+  const docs = notes.map((n) => buildNotePrintHTML(n, opts)).join("");
+
+  return `
+    <div class="print-document">
+      <section class="print-toc">
+        <h2>📑 Índice</h2>
+        <ol>${toc}</ol>
+        <div class="print-meta" style="margin-top:6mm;">
+          <span><span class="meta-key">Vault</span>${escHtml(vaultName)}</span>
+          <span><span class="meta-key">Notas</span>${notes.length}</span>
+          <span><span class="meta-key">Fecha</span>${escHtml(dateStr)}</span>
+        </div>
+      </section>
+      ${docs}
+    </div>
+  `;
+}
+
+/**
+ * Inject HTML into a hidden iframe, print it, then remove the iframe.
+ * Works around the fact that window.print() prints the current document;
+ * by using an iframe we can style a fragment independently.
+ */
+function printInIframe(html) {
+  const iframe = document.createElement("iframe");
+  iframe.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;";
+  iframe.setAttribute("aria-hidden", "true");
+  iframe.setAttribute("tabindex", "-1");
+  iframe.title = "print-frame";
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentDocument || iframe.contentWindow.document;
+  // Copy all stylesheet links from parent so the fragment is fully styled.
+  const parentLinks = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+    .map((l) => l.outerHTML).join("");
+  const parentStyles = Array.from(document.querySelectorAll("style"))
+    .map((s) => s.outerHTML).join("");
+
+  doc.open();
+  doc.write(`<!doctype html><html><head>
+    <meta charset="utf-8" />
+    <title>Print</title>
+    ${parentLinks}
+    ${parentStyles}
+  </head><body>${html}</body></html>`);
+  doc.close();
+
+  // Wait for the iframe to render before printing.
+  return new Promise((resolve) => {
+    const trigger = () => {
+      try {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+      } catch (e) {
+        console.error("print failed", e);
+      }
+      setTimeout(() => {
+        iframe.remove();
+        resolve();
+      }, 500);
+    };
+    if (iframe.contentDocument && iframe.contentDocument.readyState === "complete") {
+      setTimeout(trigger, 200);
+    } else {
+      iframe.addEventListener("load", () => setTimeout(trigger, 200), { once: true });
+    }
+  });
+}
+
+export async function printNote(note, opts = {}) {
+  if (!note) return;
+  const html = buildNotePrintHTML(note, opts);
+  await printInIframe(html);
+}
+
+export async function printNotesBatch(notes, opts = {}) {
+  if (!notes || notes.length === 0) return;
+  const html = buildBatchPrintHTML(notes, opts);
+  await printInIframe(html);
 }

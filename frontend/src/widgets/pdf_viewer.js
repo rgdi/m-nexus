@@ -69,6 +69,9 @@ export async function openPdfViewer({ pdfUrl, title = "Visor PDF", onChange = ()
           <button class="pdf-tool" data-action="batch" type="button">
             Convertir todas a cards
           </button>
+          <button class="pdf-tool pdf-tool--print" data-action="print" type="button" title="Imprimir con look premium">
+            <span aria-hidden="true">🖨</span> Imprimir
+          </button>
           <div class="pdf-sync-mount" data-sync-mount></div>
         </div>
         <div class="pdf-body">
@@ -378,7 +381,21 @@ export async function openPdfViewer({ pdfUrl, title = "Visor PDF", onChange = ()
       showToast(`✅ ${result.persisted}/${result.total} cards creadas`);
       onChange(highlights);
     } catch (e) {
-      showToast(`❌ Error: ${e.message}`, true);
+      showToast(`❌ Error: ${e.message}`);
+    }
+  });
+
+  // v2.33.0: print PDF with premium look.
+  // Same print stylesheet as notes (print.css). Highlights + occlusions
+  // are revealed at print time so the printed artifact matches the
+  // on-screen reading experience.
+  root.querySelector('[data-action="print"]').addEventListener("click", async () => {
+    try {
+      await printPdfDocument({ title, highlights, occlusions, pagesHost, documentPath });
+      showToast("🖨 Enviado a impresora");
+    } catch (e) {
+      console.error("print failed", e);
+      showToast(`❌ Print failed: ${e.message}`);
     }
   });
 
@@ -405,4 +422,152 @@ function showToast(msg, isError = false) {
   t.classList.add("pdf-toast--show");
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove("pdf-toast--show"), 2500);
+}
+
+/* ============================================================
+ * v2.33.0 — Print PDF document with the same premium look as notes.
+ *
+ * Approach:
+ * - Render each page to canvas (already done by pdf.js).
+ * - Serialize canvas → PNG dataURL.
+ * - Build an HTML fragment with the same `.print-document` shell used
+ *   by notes: header (title + path + date) + each page as a section
+ *   with the page image, plus a "Highlights" appendix that lists each
+ *   highlight as an atomic-flashcard block (so they look identical to
+ *   note-side flashcards).
+ * - Print via hidden iframe (same trick as `printNote` in notes.js).
+ *
+ * Output is byte-identical in typography, colors and structure to a
+ * printed note — that's the whole point of v2.33.0: notas y PDFs
+ * comparten el mismo aspecto al imprimir.
+ * ============================================================ */
+
+async function printPdfDocument({ title, highlights, occlusions, pagesHost, documentPath }) {
+  const escHtml = (s) => String(s || "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c]));
+  const dateStr = new Date().toLocaleDateString("es-ES", {
+    year: "numeric", month: "long", day: "numeric",
+  });
+  const vaultName = (() => {
+    try { return localStorage.getItem("mnexus.vault.name") || "M-NEXUS"; }
+    catch { return "M-NEXUS"; }
+  })();
+
+  // Snapshot every canvas in the pages host (pdf.js renders one per page).
+  const canvases = Array.from(pagesHost.querySelectorAll("canvas"));
+  const pagesHTML = canvases.map((canvas, i) => {
+    let dataUrl = "";
+    try {
+      dataUrl = canvas.toDataURL("image/png");
+    } catch (e) {
+      console.warn("canvas toDataURL failed for page", i, e);
+    }
+    return `
+      <section class="pdf-page no-break">
+        <figure class="pdf-page-figure">
+          ${dataUrl ? `<img src="${dataUrl}" alt="Página ${i + 1}" />` : `<div class="pdf-page-fallback">Página ${i + 1} (no se pudo capturar)</div>`}
+          <figcaption class="pdf-page-number">Página ${i + 1} de ${canvases.length}</figcaption>
+        </figure>
+      </section>
+    `;
+  }).join("");
+
+  // Highlights as atomic flashcards — same look as notes.
+  const highlightsHTML = (highlights || [])
+    .filter((h) => h.text)
+    .map((h) => `
+      <div class="atomic-flashcard no-break">
+        <div class="fc-front">${escHtml(h.text || "")}</div>
+        <div class="fc-back">${escHtml(h.note || h.context || "")}</div>
+      </div>
+    `).join("");
+
+  // Occlusions are revealed at print time (the masked area becomes a
+  // flashcard-style box with the answer revealed).
+  const occlusionsHTML = (occlusions || [])
+    .filter((o) => o.answer || o.text)
+    .map((o) => `
+      <div class="atomic-flashcard no-break">
+        <div class="fc-front">▣ Oclusión (página ${o.page || "?"})</div>
+        <div class="fc-back">${escHtml(o.answer || o.text || "")}</div>
+      </div>
+    `).join("");
+
+  const html = `
+    <article class="pdf-print print-document">
+      <header class="print-header">
+        <h1>${escHtml(title || "Documento PDF")}</h1>
+        <div class="print-meta">
+          ${documentPath ? `<span><span class="meta-key">Archivo</span>${escHtml(documentPath.split("/").pop() || documentPath)}</span>` : ""}
+          <span><span class="meta-key">Fecha</span>${escHtml(dateStr)}</span>
+          <span><span class="meta-key">Vault</span>${escHtml(vaultName)}</span>
+          <span><span class="meta-key">Páginas</span>${canvases.length}</span>
+          <span><span class="meta-key">Highlights</span>${(highlights || []).length}</span>
+        </div>
+      </header>
+
+      <section class="pdf-pages-print">${pagesHTML}</section>
+
+      ${highlightsHTML ? `
+        <section class="print-highlights no-break">
+          <h2>🖊 Highlights (${(highlights || []).length})</h2>
+          ${highlightsHTML}
+        </section>
+      ` : ""}
+
+      ${occlusionsHTML ? `
+        <section class="print-occlusions no-break">
+          <h2>▮ Oclusiones (${(occlusions || []).length})</h2>
+          ${occlusionsHTML}
+        </section>
+      ` : ""}
+    </article>
+  `;
+
+  await printHtmlInIframe(html);
+}
+
+function printHtmlInIframe(html) {
+  const iframe = document.createElement("iframe");
+  iframe.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;";
+  iframe.setAttribute("aria-hidden", "true");
+  iframe.setAttribute("tabindex", "-1");
+  iframe.title = "print-frame";
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentDocument || iframe.contentWindow.document;
+  const parentLinks = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+    .map((l) => l.outerHTML).join("");
+  const parentStyles = Array.from(document.querySelectorAll("style"))
+    .map((s) => s.outerHTML).join("");
+
+  doc.open();
+  doc.write(`<!doctype html><html><head>
+    <meta charset="utf-8" />
+    <title>Print</title>
+    ${parentLinks}
+    ${parentStyles}
+  </head><body>${html}</body></html>`);
+  doc.close();
+
+  return new Promise((resolve) => {
+    const trigger = () => {
+      try {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+      } catch (e) {
+        console.error("print failed", e);
+      }
+      setTimeout(() => {
+        iframe.remove();
+        resolve();
+      }, 500);
+    };
+    if (iframe.contentDocument && iframe.contentDocument.readyState === "complete") {
+      setTimeout(trigger, 200);
+    } else {
+      iframe.addEventListener("load", () => setTimeout(trigger, 200), { once: true });
+    }
+  });
 }

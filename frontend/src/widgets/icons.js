@@ -24,6 +24,7 @@ const PATHS = {
   eraser:     '<path d="M18 13l-6 6-9-9 9-9 6 6v6z"/><path d="M9 7l9 9"/>',
   select:     '<path d="M3 3l7 17 2-8 8-2L3 3z"/>',
   ruler:      '<rect x="2" y="10" width="20" height="4" rx="1"/><path d="M6 10v3M10 10v3M14 10v3M18 10v3"/>',
+  print:      '<path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>',
   // Insert actions
   voice:    '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4"/>',
   code:     '<path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/>',

@@ -1,0 +1,497 @@
+/* ============================================================
+ * print.css — Shared print stylesheet for Notes + PDF.
+ *
+ * v2.33.0 — Notas y PDFs comparten look premium al imprimir.
+ *
+ * Diseño:
+ * - Mismo papel "warm off-white" con tipografía serif de imprenta
+ * - Encabezado: título + autor + fecha + asignatura
+ * - Footer: URL vault + timestamp
+ * - Page-break optimizado: cada "página lógica" empieza en hoja nueva
+ * - Highlight box: amarillo translúcido (mismo color en notas y PDF)
+ * - Occlusion masks: se imprimen como texto revelado
+ * - Atomic blocks: jerarquía visual con sangría y divisor
+ * - Code blocks: sans mono con fondo sutil
+ * - Wikilinks [[x]]: gris cursiva, no enlace clickable en print
+ *
+ * Activación: solo @media print. En pantalla el estilo normal aplica.
+ * ============================================================ */
+
+@media print {
+  /* === Reset shell === */
+  :root {
+    --print-paper: #fafaf6;        /* warm off-white (Kindle paper) */
+    --print-paper-edge: #f1ede4;
+    --print-ink: #1a1a1a;          /* near-black, no pure black */
+    --print-ink-soft: #4a4a4a;
+    --print-ink-faded: #7a7a7a;
+    --print-rule: #c8c2b6;         /* divider lines */
+    --print-highlight: rgba(255, 235, 100, 0.45);  /* amarillo highlight */
+    --print-accent: #5b3a8e;       /* morado acento para atomic blocks */
+    --print-warn: #b85c00;
+  }
+
+  /* Hide everything by default, then surface only the doc body. */
+  body {
+    background: var(--print-paper) !important;
+    color: var(--print-ink) !important;
+    font-family: "Charter", "Iowan Old Style", "Source Serif Pro",
+                 "Cambria", "Georgia", serif !important;
+    font-size: 11pt;
+    line-height: 1.55;
+    margin: 0;
+    padding: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    color-adjust: exact;
+  }
+
+  /* Hide chrome */
+  #dock, #topbar, .cmd-trigger, .app-drawer, .app-drawer-scrim,
+  .hamburger-fab, .dock-expand, .notif-dropdown, .peer-indicator,
+  .offline-pill, .theme-toggle, .lang-switcher, .vault-switcher,
+  .setup-wizard-overlay, .splash, .ai-tutor, .modal-host,
+  .toast-container, .swipe-nav, .command-palette,
+  [data-toolbar], [data-pencil-drawer], [data-hamburger] {
+    display: none !important;
+  }
+
+  /* Page setup */
+  @page {
+    size: A4 portrait;
+    margin: 18mm 16mm 22mm 16mm;
+    /* Footer: URL + page number via running headers (limited support, JS fallback below) */
+    @bottom-center {
+      content: "M-NEXUS · " attr(data-vault-name) " · " counter(page) "/" counter(pages);
+      font-family: var(--font-mono);
+      font-size: 8pt;
+      color: var(--print-ink-faded);
+    }
+    @bottom-right {
+      content: "Impreso " attr(data-printed-at);
+      font-family: var(--font-mono);
+      font-size: 8pt;
+      color: var(--print-ink-faded);
+    }
+  }
+
+  /* === Print container === */
+  .print-document,
+  .note-print,
+  .pdf-print {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: var(--print-paper) !important;
+    color: var(--print-ink) !important;
+    box-shadow: none !important;
+    border: 0 !important;
+  }
+
+  /* === Header / metadata block === */
+  .print-header {
+    display: block !important;
+    border-bottom: 1px solid var(--print-rule);
+    padding-bottom: 8mm;
+    margin-bottom: 8mm;
+  }
+  .print-header h1 {
+    font-family: "Charter", "Iowan Old Style", "Source Serif Pro",
+                 "Cambria", "Georgia", serif !important;
+    font-size: 22pt;
+    font-weight: 600;
+    line-height: 1.2;
+    margin: 0 0 4mm;
+    color: var(--print-ink) !important;
+  }
+  .print-meta {
+    display: flex !important;
+    gap: 6mm;
+    flex-wrap: wrap;
+    font-family: var(--font-mono);
+    font-size: 8.5pt;
+    color: var(--print-ink-soft);
+    letter-spacing: 0.02em;
+  }
+  .print-meta span::before { content: ""; }
+  .print-meta .meta-key {
+    color: var(--print-ink-faded);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-right: 1.5mm;
+  }
+
+  /* === Note body === */
+  .note-print .note-content,
+  .note-print .note-body,
+  .pdf-print .pdf-page-content {
+    font-size: 11pt !important;
+    line-height: 1.6;
+    color: var(--print-ink) !important;
+  }
+
+  /* Headings */
+  .note-print h1, .pdf-print h1 {
+    font-size: 18pt;
+    font-weight: 600;
+    margin: 8mm 0 3mm;
+    page-break-after: avoid;
+  }
+  .note-print h2, .pdf-print h2 {
+    font-size: 14pt;
+    font-weight: 600;
+    margin: 6mm 0 2mm;
+    page-break-after: avoid;
+  }
+  .note-print h3, .pdf-print h3 {
+    font-size: 12pt;
+    font-weight: 600;
+    margin: 5mm 0 1.5mm;
+    color: var(--print-ink);
+    page-break-after: avoid;
+  }
+
+  /* Paragraphs */
+  .note-print p, .pdf-print p {
+    margin: 0 0 3mm;
+    text-align: justify;
+    hyphens: auto;
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* Lists */
+  .note-print ul, .note-print ol,
+  .pdf-print ul, .pdf-print ol {
+    margin: 0 0 4mm;
+    padding-left: 7mm;
+  }
+  .note-print li, .pdf-print li {
+    margin-bottom: 1.2mm;
+  }
+
+  /* Blockquote */
+  .note-print blockquote, .pdf-print blockquote {
+    margin: 4mm 0;
+    padding: 2mm 5mm;
+    border-left: 3px solid var(--print-accent);
+    color: var(--print-ink-soft);
+    font-style: italic;
+    page-break-inside: avoid;
+  }
+
+  /* === Atomic blocks (notes) === */
+  .note-print .atomic-block,
+  .note-print [data-block] {
+    border-left: 3px solid var(--print-accent);
+    padding: 1.5mm 0 1.5mm 5mm;
+    margin: 3mm 0;
+    page-break-inside: avoid;
+  }
+  .note-print .atomic-block.depth-2,
+  .note-print [data-block-depth="2"] { margin-left: 6mm; }
+  .note-print .atomic-block.depth-3,
+  .note-print [data-block-depth="3"] { margin-left: 12mm; }
+
+  /* === Code blocks (monospace) === */
+  .note-print pre, .note-print code,
+  .pdf-print pre, .pdf-print code {
+    font-family: var(--font-mono);
+    font-size: 9pt;
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: 2px;
+  }
+  .note-print pre, .pdf-print pre {
+    padding: 3mm;
+    border: 1px solid var(--print-rule);
+    overflow-x: auto;
+    page-break-inside: avoid;
+    margin: 3mm 0;
+  }
+
+  /* === Inline code === */
+  .note-print code, .pdf-print code {
+    padding: 0.5mm 1.5mm;
+    color: var(--print-ink);
+  }
+
+  /* === Highlights === */
+  .note-print mark,
+  .note-print .highlight,
+  .pdf-print mark,
+  .pdf-print .highlight,
+  .pdf-print .pdf-highlight {
+    background: var(--print-highlight) !important;
+    color: var(--print-ink) !important;
+    padding: 0.2mm 0.5mm;
+    border-radius: 1px;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* === PDF highlights (rect-based) === */
+  .pdf-print .pdf-highlight-overlay {
+    background: var(--print-highlight) !important;
+    border: 0.5pt solid rgba(180, 150, 0, 0.5) !important;
+    mix-blend-mode: multiply;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* === Occlusion masks: reveal at print time === */
+  .pdf-print .pdf-occlusion-mask,
+  .pdf-print .occlusion-mask {
+    background: var(--print-paper) !important;
+    color: var(--print-ink) !important;
+    border: 0.5pt dashed var(--print-ink-soft) !important;
+    /* Keep visible answer text but remove "hover/click" affordances */
+    cursor: default !important;
+  }
+  .pdf-print .pdf-occlusion-mask .occlusion-hint,
+  .pdf-print .pdf-occlusion-mask::after {
+    content: "▣";
+    color: var(--print-ink-faded);
+    font-size: 8pt;
+  }
+
+  /* === Wikilinks / block refs === */
+  .note-print .wikilink,
+  .note-print [data-wikilink],
+  .note-print a {
+    color: var(--print-ink) !important;
+    text-decoration: none !important;
+    border-bottom: 0.5pt dotted var(--print-ink-faded) !important;
+  }
+  .note-print .wikilink::before,
+  .note-print [data-wikilink]::before {
+    content: "→ ";
+    color: var(--print-ink-faded);
+    font-size: 0.85em;
+  }
+
+  /* === Atomic flashcards (created from highlights) === */
+  .note-print .atomic-flashcard,
+  .pdf-print .atomic-flashcard {
+    border: 1px solid var(--print-rule);
+    border-radius: 4px;
+    padding: 4mm;
+    margin: 4mm 0;
+    page-break-inside: avoid;
+    background: rgba(91, 58, 142, 0.04);
+  }
+  .note-print .atomic-flashcard .fc-front,
+  .pdf-print .atomic-flashcard .fc-front {
+    font-weight: 600;
+    margin-bottom: 2mm;
+  }
+  .note-print .atomic-flashcard .fc-back,
+  .pdf-print .atomic-flashcard .fc-back {
+    color: var(--print-ink-soft);
+    font-style: italic;
+  }
+  .note-print .atomic-flashcard::after,
+  .pdf-print .atomic-flashcard::after {
+    content: "📝 Flashcard atómica · FSRS due";
+    display: block;
+    margin-top: 2mm;
+    font-family: var(--font-mono);
+    font-size: 7.5pt;
+    color: var(--print-ink-faded);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* === Tables (subjects, journal, etc) === */
+  .note-print table, .pdf-print table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 4mm 0;
+    font-size: 10pt;
+    page-break-inside: avoid;
+  }
+  .note-print th, .note-print td,
+  .pdf-print th, .pdf-print td {
+    border: 0.5pt solid var(--print-rule);
+    padding: 2mm 3mm;
+    text-align: left;
+  }
+  .note-print th, .pdf-print th {
+    background: rgba(0, 0, 0, 0.04);
+    font-weight: 600;
+  }
+
+  /* === Page breaks === */
+  .page-break-before { page-break-before: always; break-before: page; }
+  .page-break-after  { page-break-after: always;  break-after: page; }
+  .no-break          { page-break-inside: avoid;   break-inside: avoid; }
+
+  /* Each top-level note or each PDF page is its own section */
+  .note-print > section,
+  .pdf-print > .pdf-page {
+    page-break-after: always;
+    break-after: page;
+  }
+  .note-print > section:last-child,
+  .pdf-print > .pdf-page:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+
+  /* === Hide "edit" / "delete" controls in print === */
+  [data-action="delete"], [data-action="edit"],
+  .note-edit-toolbar, .pdf-toolbar, .pdf-toolbar-print {
+    display: none !important;
+  }
+
+  /* === Image attachments === */
+  .note-print img, .pdf-print img {
+    max-width: 100% !important;
+    height: auto !important;
+    page-break-inside: avoid;
+    border-radius: 2px;
+  }
+
+  /* === Handwritten canvas (notebook) === */
+  .note-print .notebook,
+  .note-print .pencil-canvas-container {
+    page-break-inside: avoid;
+    border: 0.5pt solid var(--print-rule);
+    background: var(--print-paper);
+  }
+
+  /* === PDF pages === */
+  .pdf-print .pdf-page {
+    margin-bottom: 8mm;
+    page-break-inside: avoid;
+  }
+  .pdf-print .pdf-page-figure {
+    margin: 0;
+    padding: 0;
+    text-align: center;
+  }
+  .pdf-print .pdf-page-figure img {
+    max-width: 100% !important;
+    width: auto !important;
+    height: auto !important;
+    box-shadow: 0 1mm 3mm rgba(0, 0, 0, 0.12);
+    border: 0.5pt solid var(--print-rule);
+    border-radius: 1px;
+  }
+  .pdf-print .pdf-page-fallback {
+    padding: 20mm;
+    border: 1px dashed var(--print-rule);
+    color: var(--print-ink-faded);
+    text-align: center;
+  }
+  .pdf-print .pdf-page-number {
+    font-family: var(--font-mono);
+    font-size: 8pt;
+    color: var(--print-ink-faded);
+    text-align: center;
+    margin-top: 2mm;
+  }
+  .pdf-print .pdf-pages-print {
+    display: block;
+  }
+  .pdf-print .print-highlights h2,
+  .pdf-print .print-occlusions h2 {
+    margin-top: 10mm;
+    border-bottom: 0.5pt solid var(--print-rule);
+    padding-bottom: 2mm;
+  }
+
+  /* === Anchor links === */
+  a[href]::after {
+    content: ""; /* don't print URL after every link */
+  }
+
+  /* === Selection highlight (forced when window.print() is called) === */
+  ::selection {
+    background: var(--print-highlight);
+    color: var(--print-ink);
+  }
+
+  /* === Notes-specific: sidebar / list / outliner (collapsed) === */
+  .note-print .notes-sidebar,
+  .note-print .notes-list,
+  .note-print .outliner-tree {
+    display: none !important;
+  }
+  .note-print .notes-main {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  /* === PDF-specific: viewer chrome === */
+  .pdf-print .pdf-toolbar,
+  .pdf-print .pdf-page-nav,
+  .pdf-print .pdf-thumbs {
+    display: none !important;
+  }
+  .pdf-print .pdf-pages {
+    display: block !important;
+  }
+  .pdf-print .pdf-canvas-host {
+    background: var(--print-paper) !important;
+    box-shadow: none !important;
+    border: 0 !important;
+  }
+
+  /* === Print watermark (subtle, optional) === */
+  body::before {
+    content: "";
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-30deg);
+    font-family: var(--font-mono);
+    font-size: 80pt;
+    color: rgba(0, 0, 0, 0.025);
+    pointer-events: none;
+    z-index: -1;
+    /* Vault name pulled from data attribute via JS */
+  }
+
+  /* === Hide empty paragraphs === */
+  .note-print p:empty,
+  .pdf-print p:empty {
+    display: none;
+  }
+
+  /* === Print-only summary table of contents === */
+  .print-toc {
+    display: block !important;
+    page-break-after: always;
+    break-after: page;
+  }
+  .print-toc h2 {
+    font-size: 14pt;
+    margin-bottom: 4mm;
+  }
+  .print-toc ol {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .print-toc li {
+    margin-bottom: 1.5mm;
+    border-bottom: 0.25pt dotted var(--print-rule);
+    padding-bottom: 1mm;
+  }
+  .print-toc li::before {
+    content: counter(toc-item) ".  ";
+    counter-increment: toc-item;
+    color: var(--print-ink-faded);
+    font-family: var(--font-mono);
+    font-size: 9pt;
+  }
+  .print-toc ol { counter-reset: toc-item; }
+}
+
+/* === Print preview (browser native print preview matches these styles) === */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  /* No-op placeholder; print rules above already cover screen preview. */
+}
