@@ -26,12 +26,13 @@ const STRINGS = {
   "dock.todos":              { en: "To-dos",   es: "Tareas",    pt: "Tarefas" },
   "dock.tutor":              { en: "AI",       es: "IA",        pt: "IA" },
   "dock.settings":           { en: "Settings", es: "Ajustes",   pt: "Ajustes" },
-  "dock.cluster":            { en: "Cluster",  es: "Cluster",   pt: "Cluster" },
   "dock.journal":            { en: "Journal",  es: "Diario",    pt: "Diário" },
+  "dock.insights":           { en: "Insights", es: "Ideas",     pt: "Ideias"  },
+  // Advanced (in drawer, not in dock)
   "dock.pdf":                { en: "PDF",      es: "PDF",       pt: "PDF"     },
   "dock.kg":                 { en: "Graph",    es: "Grafo",     pt: "Grafo"   },
-  "dock.v232":               { en: "v2.32",    es: "v2.32",     pt: "v2.32"   },
-  "dock.boards":             { en: "Boards",   es: "Boards",    pt: "Quadros" },
+  "dock.cluster":            { en: "Cluster",  es: "Cluster",   pt: "Cluster" },
+  "drawer.advanced":         { en: "Advanced", es: "Avanzado",  pt: "Avançado" },
 
   // ============================================================
   // Overview screen

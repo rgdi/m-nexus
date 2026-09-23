@@ -31,7 +31,6 @@ import { renderJournal } from "./screens/journal.js";
 import { renderPdfScreen } from "./screens/pdf.js";
 import { renderKgScreen } from "./screens/kg.js";
 import { renderV232Screen } from "./screens/v232.js";
-import { renderBoardsScreen } from "./screens/boards.js";
 import { renderLogin } from "./screens/login.js";
 import { renderCluster } from "./screens/cluster.js";
 import { mountPeerIndicator } from "./widgets/peer_indicator.js";
@@ -62,7 +61,6 @@ const ROUTES = {
   pdf: renderPdfScreen,
   kg: renderKgScreen,
   v232: renderV232Screen,
-  boards: renderBoardsScreen,
 };
 
 const app = document.getElementById("app");
@@ -338,13 +336,15 @@ function openAppDrawer() {
     { hash: "#/notes",    i18n: "dock.notes",    icon: "✎" },
     { hash: "#/todos",    i18n: "dock.todos",    icon: "✓" },
     { hash: "#/ai",       i18n: "dock.tutor",    icon: "✦" },
-    { hash: "#/cluster",  i18n: "dock.cluster",  icon: "🛰️" },
     { hash: "#/journal",  i18n: "dock.journal",  icon: "📓" },
+    { hash: "#/v232",     i18n: "dock.insights", icon: "💡" },
+    { hash: "#/settings", i18n: "dock.settings", icon: "⚙" },
+  ];
+  // Advanced screens (accessible via drawer, not in dock for mobile clarity)
+  const advanced = [
     { hash: "#/pdf",      i18n: "dock.pdf",      icon: "📄" },
     { hash: "#/kg",       i18n: "dock.kg",       icon: "🕸️" },
-    { hash: "#/v232",     i18n: "dock.v232",     icon: "🆕" },
-    { hash: "#/boards",   i18n: "dock.boards",   icon: "📚" },
-    { hash: "#/settings", i18n: "dock.settings", icon: "⚙" },
+    { hash: "#/cluster",  i18n: "dock.cluster",  icon: "🛰️" },
   ];
 
   const scrim = document.createElement("div");
@@ -363,7 +363,7 @@ function openAppDrawer() {
       <h2>M-NEXUS</h2>
       <button class="app-drawer-close" type="button" aria-label="Close menu">✕</button>
     </header>
-    <nav class="app-drawer-nav">
+    <nav class="app-drawer-nav" aria-label="Primary">
       ${routes.map((r) => `
         <a href="${r.hash}" class="${cur === r.hash ? "active" : ""}" ${cur === r.hash ? 'aria-current="page"' : ""}>
           <span class="icon" aria-hidden="true">${r.icon}</span>
@@ -371,6 +371,19 @@ function openAppDrawer() {
         </a>
       `).join("")}
     </nav>
+    ${advanced.length ? `
+      <div class="app-drawer-section">
+        <h3>${i18n.t("drawer.advanced")}</h3>
+        <nav class="app-drawer-nav" aria-label="Advanced">
+          ${advanced.map((r) => `
+            <a href="${r.hash}" class="${cur === r.hash ? "active" : ""}" ${cur === r.hash ? 'aria-current="page"' : ""}>
+              <span class="icon" aria-hidden="true">${r.icon}</span>
+              <span>${i18n.t(r.i18n)}</span>
+            </a>
+          `).join("")}
+        </nav>
+      </div>
+    ` : ""}
     <footer class="app-drawer-footer">
       <button id="drawer-rerun-setup" type="button">🎬 Re-run setup wizard</button>
     </footer>

@@ -1,45 +1,66 @@
-/* screens/v232.js — Combined v2.32 features screen. */
+/* screens/v232.js — Insights screen (KG + Multi-board + FSRS dashboard).
+ *
+ * v2.32.0 — Consolidates Knowledge Graph + Multi-Board diagnostics
+ * + FSRS-7 dashboard under a single "Insights" screen. Smart
+ * Notifications widget lives globally (bell) and OCR is available
+ * in pdf_viewer + notes screen.
+ */
 
-import { openOcrRecognize } from "../widgets/ocr_recognize.js";
+import { mountKgGraph } from "../widgets/kg_graph.js";
 import { mountMultiBoard } from "../widgets/multi_board.js";
-import { mountSmartNotifications } from "../widgets/smart_notifications.js";
+import { mountFsrsDashboard } from "../widgets/fsrs_dashboard.js";
 
 export async function renderV232Screen(host) {
   host.innerHTML = `
-    <section class="screen v232-screen">
+    <section class="screen insights-screen">
       <header class="screen-header">
-        <h1>🆕 v2.32.0 — Features</h1>
-        <p class="screen-subtitle">OCR/Handwriting · Multi-board SR · Smart Notifications.</p>
+        <h1>💡 Insights</h1>
+        <p class="screen-subtitle">Knowledge Graph · Multi-board · FSRS Dashboard.</p>
       </header>
 
-      <div class="v232-actions">
-        <button class="v232-btn-primary" data-action="open-ocr" type="button">
-          🔍 Abrir OCR + Handwriting
+      <nav class="insights-tabs" role="tablist" aria-label="Insights views">
+        <button class="insights-tab" data-tab="kg" role="tab" aria-selected="true">
+          🕸️ Graph
         </button>
-      </div>
+        <button class="insights-tab" data-tab="mb" role="tab" aria-selected="false">
+          📚 Multi-board
+        </button>
+        <button class="insights-tab" data-tab="fsrs" role="tab" aria-selected="false">
+          📈 FSRS
+        </button>
+      </nav>
 
-      <div class="v232-ocr-host" data-ocr-host></div>
-      <div class="v232-mb-host" data-mb-host></div>
-      <div class="v232-sn-host" data-sn-host></div>
+      <div class="insights-panels">
+        <section class="insights-panel" data-panel="kg" role="tabpanel">
+          <div class="kg-host" data-kg-host></div>
+        </section>
+        <section class="insights-panel" data-panel="mb" role="tabpanel" hidden>
+          <div class="mb-host" data-mb-host></div>
+        </section>
+        <section class="insights-panel" data-panel="fsrs" role="tabpanel" hidden>
+          <div class="fsrs-host" data-fsrs-host></div>
+        </section>
+      </div>
     </section>
   `;
 
-  const ocrHost = host.querySelector("[data-ocr-host]");
+  const kgHost = host.querySelector("[data-kg-host]");
   const mbHost = host.querySelector("[data-mb-host]");
-  const snHost = host.querySelector("[data-sn-host]");
+  const fsrsHost = host.querySelector("[data-fsrs-host]");
+  const tabs = host.querySelectorAll(".insights-tab");
+  const panels = host.querySelectorAll(".insights-panel");
 
-  host.querySelector('[data-action="open-ocr"]').addEventListener("click", () => {
-    openOcrRecognize({ host: ocrHost });
-  });
-
+  // Mount all (they fetch data lazily on first paint)
+  mountKgGraph(kgHost);
   mountMultiBoard(mbHost);
-  const snHandle = mountSmartNotifications(snHost);
-  // Demo cards for the notifications widget
-  snHandle.setCards([
-    { id: "c1", stability: 2, difficulty: 5, state: "review", lastReview: 1700000000000, due: 1700100000000 },
-    { id: "c2", stability: 50, difficulty: 3, state: "review", lastReview: 1700000000000, due: 1701000000000 },
-    { id: "c3", stability: 0.5, difficulty: 8, state: "learning", lastReview: 1700000000000, due: 1700003600000 },
-    { id: "c4", stability: 1, difficulty: 9, state: "relearning", lastReview: 1700000000000, due: 1700000000000 },
-    { id: "c5", stability: 5, difficulty: 5, state: "review", lastReview: 1700000000000, due: 1700100000000 },
-  ]);
+  // FSRS dashboard expects { fetchCards } option; default to empty list.
+  mountFsrsDashboard(fsrsHost, { fetchCards: async () => [] });
+
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      const target = tab.dataset.tab;
+      tabs.forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === target)));
+      panels.forEach((p) => p.hidden = p.dataset.panel !== target);
+    });
+  });
 }
