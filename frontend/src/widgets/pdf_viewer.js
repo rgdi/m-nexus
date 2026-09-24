@@ -385,16 +385,23 @@ export async function openPdfViewer({ pdfUrl, title = "Visor PDF", onChange = ()
     }
   });
 
-  // v2.33.0: print PDF with premium look.
+  // v2.33.1: print PDF with live preview modal (instead of native dialog).
   // Same print stylesheet as notes (print.css). Highlights + occlusions
   // are revealed at print time so the printed artifact matches the
   // on-screen reading experience.
   root.querySelector('[data-action="print"]').addEventListener("click", async () => {
     try {
-      await printPdfDocument({ title, highlights, occlusions, pagesHost, documentPath });
-      showToast("🖨 Enviado a impresora");
+      const html = await buildPdfPrintHTML({ title, highlights, occlusions, pagesHost, documentPath });
+      const { openPrintPreview } = await import("./print_preview.js");
+      await openPrintPreview({
+        html,
+        title: title || "PDF",
+        note: null,
+        kind: "pdf",
+      });
+      showToast("🖨 Preview abierto");
     } catch (e) {
-      console.error("print failed", e);
+      console.error("print preview failed", e);
       showToast(`❌ Print failed: ${e.message}`);
     }
   });
@@ -442,7 +449,7 @@ function showToast(msg, isError = false) {
  * comparten el mismo aspecto al imprimir.
  * ============================================================ */
 
-async function printPdfDocument({ title, highlights, occlusions, pagesHost, documentPath }) {
+async function buildPdfPrintHTML({ title, highlights, occlusions, pagesHost, documentPath }) {
   const escHtml = (s) => String(s || "").replace(/[&<>"']/g, (c) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
   }[c]));
@@ -525,7 +532,7 @@ async function printPdfDocument({ title, highlights, occlusions, pagesHost, docu
     </article>
   `;
 
-  await printHtmlInIframe(html);
+  return html;
 }
 
 function printHtmlInIframe(html) {

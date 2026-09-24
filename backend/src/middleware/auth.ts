@@ -56,6 +56,7 @@ export const authMiddleware: (req: FastifyRequest, reply: FastifyReply) => Promi
     "/api/v1/subjects",
     "/api/v1/events",
     "/api/v1/tasks",
+    "/api/v1/print-defaults",   // v2.33.1: built-in defaults (no user data)
     "/api/v1/cross-verify",
     "/api/v1/recordings",
     "/api/v1/sync",

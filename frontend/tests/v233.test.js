@@ -33,7 +33,7 @@ describe("v2.33.0 — PDF viewer print button", () => {
       "utf-8",
     );
     expect(src).toMatch(/data-action="print"/);
-    expect(src).toMatch(/printPdfDocument/);
+    expect(src).toMatch(/buildPdfPrintHTML/);
     expect(src).toMatch(/pdf-print/);
   });
 });

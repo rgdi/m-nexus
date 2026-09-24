@@ -44,6 +44,33 @@ export interface Note {
   // v2.25.0: daily journal flag (auto-created note per day)
   isJournal?: boolean;
   journalDate?: string; // YYYY-MM-DD
+  // v2.33.1: per-note print/PDF configuration. Optional; sensible
+  // defaults applied if absent.
+  printConfig?: PrintConfig;
+}
+
+/**
+ * PrintConfig — controls the print/PDF output for a single note.
+ * Stored on the Note; falls back to global settings / built-in defaults.
+ */
+export interface PrintConfig {
+  // Header overrides
+  customAuthor?: string;      // overrides the global "author"
+  customFooter?: string;      // free-form text shown in page footer
+  customSubject?: string;     // overrides note.subject in header
+  // Page settings
+  pageSize?: "A4" | "Letter" | "A5";   // default: "A4"
+  orientation?: "portrait" | "landscape"; // default: "portrait"
+  // Content toggles
+  showHeader?: boolean;       // default: true
+  showFooter?: boolean;       // default: true
+  showFlashcards?: boolean;   // default: true (append flashcards section)
+  showHighlights?: boolean;   // default: true (PDFs only)
+  // Watermark
+  watermark?: string;         // default: vault name
+  watermarkOpacity?: number;  // 0..1, default 0.025
+  // Page numbering
+  pageNumbering?: "arabic" | "roman" | "none"; // default: "arabic"
 }
 
 const DATA_FILE = join(process.cwd(), "data", "notes.json");
@@ -232,6 +259,43 @@ export async function notesRoutes(app: FastifyInstance): Promise<void> {
     return { deleted: true };
   });
 
+  // v2.33.1: per-note print config.
+  // PATCH /notes/:id/print-config  Body: Partial<PrintConfig>
+  app.patch<{ Params: { id: string }; Body: Partial<PrintConfig> }>(
+    "/notes/:id/print-config",
+    async (req) => {
+      const patch = req.body ?? {};
+      // Validate fields
+      const allowedSizes = ["A4", "Letter", "A5"];
+      const allowedOr  = ["portrait", "landscape"];
+      const allowedNum = ["arabic", "roman", "none"];
+      if (patch.pageSize && !allowedSizes.includes(patch.pageSize))
+        throw E.val("EC-PRINT-001", "pageSize inválido", { context: { value: patch.pageSize }, statusCode: 400 });
+      if (patch.orientation && !allowedOr.includes(patch.orientation))
+        throw E.val("EC-PRINT-002", "orientation inválida", { context: { value: patch.orientation }, statusCode: 400 });
+      if (patch.pageNumbering && !allowedNum.includes(patch.pageNumbering))
+        throw E.val("EC-PRINT-003", "pageNumbering inválido", { context: { value: patch.pageNumbering }, statusCode: 400 });
+      if (patch.watermarkOpacity !== undefined &&
+          (typeof patch.watermarkOpacity !== "number" || patch.watermarkOpacity < 0 || patch.watermarkOpacity > 1))
+        throw E.val("EC-PRINT-004", "watermarkOpacity debe estar entre 0 y 1", { statusCode: 400 });
+
+      const n = await svc.update(req.params.id, { printConfig: { ...(await svc.get(req.params.id))?.printConfig, ...patch } } as Partial<Note>);
+      if (!n) throw E.val("EC-NOTE-002", "Note no encontrada", { context: { id: req.params.id }, statusCode: 404 });
+      logOp("notes", "print-config", true, { id: req.params.id });
+      return n;
+    }
+  );
+
+  // v2.33.1: GET print config for a note (returns built-in defaults if absent).
+  app.get<{ Params: { id: string } }>("/notes/:id/print-config", async (req) => {
+    const n = await svc.get(req.params.id);
+    if (!n) throw E.val("EC-NOTE-002", "Note no encontrada", { context: { id: req.params.id }, statusCode: 404 });
+    return resolvePrintConfig(n, await getVaultName());
+  });
+
+  // v2.33.1: GET global print defaults (vault-level).
+  app.get("/print-defaults", async () => resolvePrintDefaults());
+
   /// v1.1.0: append stroke a una página específica (sin reenviar toda la nota)
   app.post<{ Params: { id: string; page: string }; Body: { stroke: Stroke } }>(
     "/notes/:id/pages/:page/strokes",
@@ -367,4 +431,59 @@ async function ensureSeeded(svc: NotesService) {
     { title: "Flashcards demo", subject: "bio", tags: ["biology", "review"], body: "# Cell biology\n\nMitochondria: the powerhouse of the cell.\n\n- {{c1::Main energy molecule::ATP}}\n- {{c1::Photosynthesis location::Chloroplast}}\n- {{c1::Number of chromosomes in humans::46}}\n- {{c1::DNA stands for::Deoxyribonucleic Acid}}\n\nReferencia: @campbell/cap9 (mitochondria) y @campbell/cap10 (cloroplastos).", pages: [{ strokes: [], placeholders: [] }] },
   ];
   for (const s of seed) await svc.create(s);
+}
+
+/* ============================================================
+ * v2.33.1 — PrintConfig resolution helpers.
+ *
+ * resolvePrintConfig(note, vaultName) — merges note.printConfig over
+ *   the vault-wide defaults and returns a fully-populated PrintConfig.
+ *   Missing fields get built-in fallbacks.
+ *
+ * resolvePrintDefaults() — returns the global default PrintConfig
+ *   (would normally come from vault settings; we use sensible builtins
+ *   for v2.33.1 and add an endpoint to override later).
+ *
+ * getVaultName() — reads the vault name from the active device
+ *   (or "M-NEXUS" if not found).
+ * ============================================================ */
+
+export const PRINT_DEFAULTS: PrintConfig = {
+  pageSize: "A4",
+  orientation: "portrait",
+  showHeader: true,
+  showFooter: true,
+  showFlashcards: true,
+  showHighlights: true,
+  watermarkOpacity: 0.025,
+  pageNumbering: "arabic",
+};
+
+function deepMergePrint<T extends PrintConfig>(base: T, override: Partial<PrintConfig> | undefined): T {
+  if (!override) return { ...base };
+  const out: PrintConfig = { ...base, ...override };
+  return out as T;
+}
+
+export function resolvePrintConfig(note: Note, vaultName = "M-NEXUS"): PrintConfig {
+  const cfg = deepMergePrint(PRINT_DEFAULTS, note.printConfig);
+  if (!cfg.watermark) cfg.watermark = vaultName;
+  return cfg;
+}
+
+export function resolvePrintDefaults(): PrintConfig {
+  return { ...PRINT_DEFAULTS, watermark: "M-NEXUS" };
+}
+
+async function getVaultName(): Promise<string> {
+  try {
+    const { readFile } = await import("node:fs/promises");
+    const { join } = await import("node:path");
+    const path = join(process.cwd(), "data", "vault.json");
+    const buf = await readFile(path, "utf-8");
+    const v = JSON.parse(buf);
+    return v.name || "M-NEXUS";
+  } catch {
+    return "M-NEXUS";
+  }
 }

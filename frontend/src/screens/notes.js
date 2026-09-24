@@ -364,14 +364,33 @@ async function renderNotebook(root, id) {
   if (printBtn) {
     printBtn.addEventListener("click", async () => {
       try {
+        // v2.33.1: fetch per-note print config + global defaults
+        const printCfg = await loadPrintConfig(note);
         await printNote(note, {
           vaultName: localStorage.getItem("mnexus.vault.name") || "M-NEXUS",
+          printConfig: printCfg,
         });
       } catch (e) {
         console.error("print failed", e);
         // Fallback: print current document
         window.print();
       }
+    });
+  }
+
+  // v2.33.1: gear icon for print-config modal
+  const cfgBtn = root.querySelector("#print-config");
+  if (cfgBtn) {
+    cfgBtn.addEventListener("click", async () => {
+      const printCfg = await loadPrintConfig(note);
+      const { openPrintConfigModal } = await import("../widgets/print_config_modal.js");
+      await openPrintConfigModal({
+        noteId: note.id,
+        currentConfig: printCfg,
+        onSaved: (updated) => {
+          if (updated?.printConfig) note.printConfig = updated.printConfig;
+        },
+      });
     });
   }
 
@@ -1339,6 +1358,7 @@ function renderNotebookWideHTML(note, pages) {
               <button class="tool-btn" id="new-card-btn" title="${i18n.t("notes.newFlashcard")}" aria-label="${i18n.t("notes.newFlashcard")}">${svgIcon("flashcard", 18)}</button>
               <button class="tool-btn" id="export-pdf" title="PDF" aria-label="PDF">${svgIcon("text", 18)}</button>
               <button class="tool-btn" id="print-note" title="${i18n.t("common.print") || "Print"}" aria-label="${i18n.t("common.print") || "Print"}">${svgIcon("print", 18)}</button>
+              <button class="tool-btn" id="print-config" title="Configurar impresión / PDF" aria-label="Configurar impresión">⚙️</button>
             </div>
           </div>
         </main>
@@ -1394,6 +1414,7 @@ function renderNotebookNarrowHTML(note) {
         <button class="tool-btn" id="open-ai-side" title="${i18n.t("ai.open") || "AI"}" aria-label="AI">✦</button>
         <button class="tool-btn" id="export-pdf-mobile" title="PDF" aria-label="PDF">${svgIcon("text", 18)}</button>
         <button class="tool-btn" id="print-note-mobile" title="${i18n.t("common.print") || "Print"}" aria-label="${i18n.t("common.print") || "Print"}">${svgIcon("print", 18)}</button>
+        <button class="tool-btn" id="print-config-mobile" title="Configurar impresión / PDF" aria-label="Configurar impresión">⚙️</button>
         <button class="tool-btn" id="new-card-btn-mobile" title="${i18n.t("notes.newFlashcard")}" aria-label="${i18n.t("notes.newFlashcard")}">${svgIcon("flashcard", 18)}</button>
         <button class="tool-btn" id="search-btn-mobile" title="${i18n.t("common.search")}" aria-label="${i18n.t("common.search")}">${svgIcon("search", 18)}</button>
         <button class="tool-btn" id="overview-btn-mobile" title="${i18n.t("notes.intelligentOverview")}" aria-label="${i18n.t("notes.intelligentOverview")}">${svgIcon("eye", 18)}</button>
@@ -1447,6 +1468,7 @@ function wireNarrow(root, id, note) {
   mirror("#open-ai-side", () => root.querySelector("#open-ai")?.click());
   mirror("#export-pdf-mobile", () => root.querySelector("#export-pdf")?.click());
   mirror("#print-note-mobile", () => root.querySelector("#print-note")?.click());
+  mirror("#print-config-mobile", () => root.querySelector("#print-config")?.click());
   mirror("#new-card-btn-mobile", () => {
     // Trigger the existing flashcard slash flow (or open side panel)
     location.hash = "#/notes?topic=" + encodeURIComponent(note.subject || "general");
@@ -2098,11 +2120,55 @@ function printInIframe(html) {
 export async function printNote(note, opts = {}) {
   if (!note) return;
   const html = buildNotePrintHTML(note, opts);
-  await printInIframe(html);
+  // v2.33.1: open live preview modal instead of printing directly.
+  const { openPrintPreview } = await import("../widgets/print_preview.js");
+  await openPrintPreview({
+    html,
+    title: note.title || "Nota",
+    note,
+    kind: "note",
+    opts,
+  });
 }
 
 export async function printNotesBatch(notes, opts = {}) {
   if (!notes || notes.length === 0) return;
   const html = buildBatchPrintHTML(notes, opts);
-  await printInIframe(html);
+  const { openPrintPreview } = await import("../widgets/print_preview.js");
+  await openPrintPreview({
+    html,
+    title: `${notes.length} notas`,
+    note: null,
+    kind: "note",
+    opts,
+  });
+}
+
+/* ============================================================
+ * v2.33.1 — Load print config for a note (per-note → vault defaults).
+ * Returns a fully-resolved PrintConfig suitable for the print preview.
+ * ============================================================ */
+async function loadPrintConfig(note) {
+  const BASE = "http://localhost:4000";
+  try {
+    const token = localStorage.getItem("mnexus.auth.access");
+    const r = await fetch(`${BASE}/api/v1/notes/${note.id}/print-config`, {
+      headers: token ? { authorization: `Bearer ${token}` } : {},
+    });
+    if (r.ok) return await r.json();
+  } catch (e) {
+    console.warn("loadPrintConfig failed", e);
+  }
+  // Fallback: hard-coded defaults
+  return {
+    pageSize: "A4",
+    orientation: "portrait",
+    showHeader: true,
+    showFooter: true,
+    showFlashcards: true,
+    showHighlights: true,
+    watermarkOpacity: 0.025,
+    pageNumbering: "arabic",
+    watermark: "M-NEXUS",
+  };
 }
