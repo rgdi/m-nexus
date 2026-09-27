@@ -69,6 +69,28 @@ export function isOriginAllowed(origin: string | undefined): boolean {
     return true;
   }
   const allowed = getAllowedOrigins();
+  // v2.27.1: allow any LAN/Tailscale IP on common dev ports so the webview
+  // (served on a different port than the backend) can talk to the backend
+  // without manually whitelisting every host. Matches the convention used
+  // by the m-nexus dev install script and the LAN auth bypass in routes/auth.js.
+  // Production should set CORS_ALLOWED_ORIGINS explicitly and not rely on this.
+  try {
+    const u = new URL(origin);
+    const host = u.hostname;
+    const port = u.port;
+    const isPrivateLan =
+      host === "192.168.1.83" ||                          // nuc LAN IP
+      host === "100.125.141.33" ||                        // tailscale IP
+      /^192\.168\.\d+\.\d+$/.test(host) ||                // any 192.168.x.x
+      /^10\.\d+\.\d+\.\d+$/.test(host) ||                  // any 10.x.x.x
+      /^172\.(1[6-9]|2[0-9]|3[01])\.\d+\.\d+$/.test(host) || // 172.16-31.x.x
+      host.endsWith(".ts.net") ||                         // tailscale magic DNS
+      host.endsWith(".local");                            // mDNS
+    const isCommonPort = ["4500", "8080", "4100", ""].includes(port);
+    if (isPrivateLan && isCommonPort) return true;
+  } catch {
+    // URL parse failed — fall through to whitelist check
+  }
   return allowed.includes(origin);
 }
 

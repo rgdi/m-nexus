@@ -123,6 +123,45 @@ export async function buildServer(): Promise<any> {
     attachFieldsToBody: false,
   });
 
+  // v2.27.1: serve a friendly index.html for unauthenticated visitors that
+  // redirects them to the frontend login screen. Without this, GET / returns
+  // a JSON "Missing Authorization header" error which confuses browser users.
+  // Registered BEFORE staticPlugin so this wins over its default `/` handler.
+  app.get("/", async (_req, reply) => {
+    const FRONTEND_URL =
+      process.env.FRONTEND_URL ||
+      (process.env.HOST && process.env.PORT
+        ? `http://${process.env.HOST === "0.0.0.0" ? "localhost" : process.env.HOST}:${process.env.PORT === "4500" ? "8080" : process.env.PORT}`
+        : "http://localhost:8080");
+    return reply.type("text/html; charset=utf-8").send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>M-NEXUS — redirect to app</title>
+  <meta http-equiv="refresh" content="2;url=${FRONTEND_URL}">
+  <style>
+    body { font-family: system-ui; max-width: 640px; margin: 4rem auto; padding: 1rem; background: #0f1115; color: #e5e7eb; }
+    .card { background: #1f2937; border: 1px solid #374151; border-radius: 12px; padding: 2rem; text-align: center; }
+    a { color: #22d3ee; text-decoration: none; font-weight: 600; }
+    a:hover { text-decoration: underline; }
+    code { background: #111827; padding: 2px 6px; border-radius: 4px; color: #fbbf24; }
+    .meta { color: #9ca3af; font-size: 0.9rem; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>✦ M-NEXUS</h1>
+    <p>You've reached the backend API directly.</p>
+    <p>The web app is served at:</p>
+    <p><a href="${FRONTEND_URL}">${FRONTEND_URL}</a></p>
+    <p class="meta">Redirecting in 2 seconds…</p>
+    <p class="meta">API endpoints are at <code>${FRONTEND_URL.replace(/\\:\\d+$/, ":4500")}/api/v1/*</code></p>
+  </div>
+</body>
+</html>`);
+  });
+
   // Static (use absolute path so __dirname resolves correctly under tsx)
   await app.register(staticPlugin, {
     root: join(process.cwd(), "public"),

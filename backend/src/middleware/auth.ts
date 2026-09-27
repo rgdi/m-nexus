@@ -24,6 +24,7 @@ export const authMiddleware: (req: FastifyRequest, reply: FastifyReply) => Promi
 
   // Skip si ya está en el path público
   const PUBLIC_PATHS = [
+    "/",
     "/health",
     "/metrics",
     "/api/v1/health",
