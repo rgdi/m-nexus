@@ -226,6 +226,13 @@ export async function notesRoutes(app: FastifyInstance): Promise<void> {
     return n;
   });
 
+  // v2.27.1: REST-style PUT as alias of PATCH for partial update. Issue #4.
+  app.put<{ Params: { id: string }; Body: Partial<Note> }>("/notes/:id", async (req) => {
+    const n = await svc.update(req.params.id, req.body ?? {});
+    if (!n) throw E.val("EC-NOTE-002", "Note no encontrada", { context: { id: req.params.id }, statusCode: 404 });
+    return n;
+  });
+
   app.delete<{ Params: { id: string } }>("/notes/:id", async (req) => {
     const ok = await svc.remove(req.params.id);
     if (!ok) throw E.val("EC-NOTE-003", "Note no encontrada", { context: { id: req.params.id }, statusCode: 404 });

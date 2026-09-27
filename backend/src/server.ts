@@ -67,6 +67,12 @@ import { rollbackRoutes } from "./routes/rollback.js";
 import { stemmerRoutes } from "./routes/stemmer.js";
 import { clipRoutes } from "./routes/clip.js";
 import { secretsRoutes } from "./routes/secrets.js";
+// v2.27.1: routes added but not yet wired up — fixed by Hermes audit 2026-09-26
+import { importRoutes } from "./routes/import.js";
+import { uploadRoutes } from "./routes/upload.js";
+import { searchRoutes } from "./routes/search.js";
+import { structuredRoutes } from "./routes/structured.js";
+// registerTranscriptionStreamRoutes disabled — see comment in buildServer below.
 
 export async function buildServer(): Promise<any> {
   const app = Fastify({
@@ -85,6 +91,17 @@ export async function buildServer(): Promise<any> {
     "application/octet-stream",
     { parseAs: "buffer" },
     (_req, body, done) => done(null, body)
+  );
+  // v2.27.1: permissive JSON parser — empty body (e.g. DELETE with no payload)
+  // is treated as {} instead of FST_ERR_CTP_EMPTY_JSON_BODY. Fixes DELETE notes/flashcards/folders.
+  app.addContentTypeParser(
+    "application/json",
+    { parseAs: "string" },
+    (_req: unknown, body: string, done: (err: Error | null, val?: unknown) => void) => {
+      if (body === undefined || body === null || body === "") return done(null, {});
+      try { done(null, JSON.parse(body)); }
+      catch (err) { done(err as Error, undefined); }
+    }
   );
 
   // CORS
@@ -208,6 +225,18 @@ export async function buildServer(): Promise<any> {
   await app.register(stemmerRoutes);
   await app.register(clipRoutes);
   await app.register(secretsRoutes);
+
+  // v2.27.1: register routes that existed but were never wired up.
+  // Issue #4 reported by Hermes audit 2026-09-26.
+  // NOTE: registerTranscriptionStreamRoutes intentionally skipped — the handler
+  // writes reply.raw.writeHead(200) before validating input, then throws on empty
+  // bodies, which triggers ERR_HTTP_HEADERS_SENT in our error handler and crashes
+  // the process. Pre-existing bug; tracked separately.
+  await app.register(importRoutes);
+  await app.register(uploadRoutes);
+  await app.register(searchRoutes);
+  await app.register(structuredRoutes);
+  // await app.register(registerTranscriptionStreamRoutes); // disabled: see note above
 
   // v2.6.0: admin routes (AI config + backup trigger)
   await app.register(adminRoutes, { prefix: "/api/v1" });

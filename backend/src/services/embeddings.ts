@@ -129,32 +129,44 @@ export class EmbeddingsService {
       context: { model, count: texts.length, baseUrl: config.ollamaBaseUrl },
       op: async () => {
         const start = Date.now();
-        const res = await fetch(`${config.ollamaBaseUrl}/api/embeddings`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ model, prompt: texts }),
-        });
-        const durationMs = Date.now() - start;
+        // v2.27.1: Ollama /api/embeddings requires `prompt` to be a single string,
+        // not an array. Iterate and concatenate results. Issue #5 reported by
+        // Hermes audit 2026-09-26.
+        const embeddings: number[][] = [];
+        for (const text of texts) {
+          const res = await fetch(`${config.ollamaBaseUrl}/api/embeddings`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ model, prompt: text }),
+            signal: AbortSignal.timeout(parseInt(process.env.OLLAMA_TIMEOUT_MS ?? "30000", 10)),
+          });
+          const durationMs = Date.now() - start;
+          if (!res.ok) {
+            throw E.emb("EC-EMB-004", "Ollama embeddings error", {
+              context: { status: res.status, model, body: (await res.text()).substring(0, 500), durationMs },
+              hint: "Check Ollama is running and model is available",
+            });
+          }
+          const data = (await res.json()) as { embedding?: number[]; embeddings?: number[][] };
+          // Ollama returns {embedding: [...]} for single prompt, {embeddings: [[...]]} for batch.
+          // We send one at a time so always single.
+          const vec = data.embedding ?? data.embeddings?.[0];
+          if (!vec || vec.length === 0) {
+            throw E.emb("EC-EMB-005", "Embeddings empty response", {
+              context: { model, text: text.substring(0, 50) },
+              hint: "Model returned no embedding; check input text",
+            });
+          }
+          embeddings.push(vec);
+        }
+        const totalMs = Date.now() - start;
         logNetwork("POST", `${config.ollamaBaseUrl}/api/embeddings`, {
-          statusCode: res.status, durationMs,
+          statusCode: 200, durationMs: totalMs,
         });
-        if (!res.ok) {
-          throw E.emb("EC-EMB-004", "Ollama embeddings error", {
-            context: { status: res.status, model, body: (await res.text()).substring(0, 500), durationMs },
-            hint: "Check Ollama is running and model is available",
-          });
-        }
-        const data = (await res.json()) as { embeddings: number[][] };
-        if (!data.embeddings || data.embeddings.length === 0) {
-          throw E.emb("EC-EMB-005", "Embeddings empty response", {
-            context: { model, count: texts.length },
-            hint: "Model returned no embeddings; check input text",
-          });
-        }
         return {
-          embeddings: data.embeddings,
+          embeddings,
           model,
-          dim: data.embeddings[0].length,
+          dim: embeddings[0]?.length ?? 0,
         };
       },
     });
