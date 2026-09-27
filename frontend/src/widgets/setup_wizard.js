@@ -21,6 +21,13 @@
 const SETUP_KEY = "mnexus.setup.v1";
 const COMPLETED_FLAG = "mnexus.setup.completed";
 
+// v2.27.1: build absolute API base URL so fetch() resolves to the backend
+// host (port 4500) and not the frontend host (port 8080). Without this,
+// `fetch(`${API_BASE}/...")` resolves against the frontend origin and returns
+// HTML instead of JSON ("Unexpected token '<', '<!DOCTYPE'…").
+import { detectApiBase } from "../services/api_base.js";
+const API_BASE = detectApiBase() + "/api/v1";
+
 let styleMounted = false;
 
 const STYLE = `
@@ -381,7 +388,7 @@ const SLIDES = [
   {
     id: "welcome",
     render: () => `
-      <h1 class="setup-hero">Welcome to<br/>M-NEXUS</h1>
+      <h1 class="setup-hero">Bienvenido a<br/>M-NEXUS</h1>
       <p class="setup-subtitle">Tu sistema personal de estudio — apuntes, flashcards, calendario y seguimiento, todo en un sitio.</p>
       <div class="setup-icon-row">
         <span>📓</span><span>🧠</span><span>📚</span><span>🎯</span>
@@ -443,10 +450,10 @@ const SLIDES = [
     setup: (root) => {
       const selected = (root._setupState.vault ?? "default");
       const opts = [
-        { id: "default",  ico: "🏠", name: "Personal",  desc: "Mixed topics, your private space" },
-        { id: "school",   ico: "🎒", name: "School",    desc: "Subjects, lectures, exam prep" },
-        { id: "personal", ico: "✨", name: "Personal",  desc: "Hobbies, journal, reading notes" },
-        { id: "work",     ico: "💼", name: "Work",      desc: "Research, projects, meetings" },
+        { id: "default",  ico: "🏠", name: "Personal",  desc: "Temas variados, tu espacio privado" },
+        { id: "school",   ico: "🎒", name: "Escuela",   desc: "Asignaturas, clases, preparación de exámenes" },
+        { id: "personal", ico: "✨", name: "Personal",  desc: "Aficciones, diario, notas de lectura" },
+        { id: "work",     ico: "💼", name: "Trabajo",   desc: "Investigación, proyectos, reuniones" },
       ];
       const wrap = root.querySelector("#vault-grid");
       wrap.innerHTML = "";
@@ -517,7 +524,7 @@ const SLIDES = [
       const name = (root._setupState.subject || "Matemáticas").trim();
       if (!name) return;
       try {
-        await fetch("/api/v1/subjects", {
+        await fetch(`${API_BASE}/subjects`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name, color: "var(--subj-blue)", grade: null, performance: 0 }),
@@ -552,7 +559,7 @@ const SLIDES = [
       <h2 class="setup-hero" style="font-size:clamp(28px,4vw,40px)">Flashcards with FSRS</h2>
       <p class="setup-body">FSRS-4.5 spaced repetition. Cards in 4 states (new / learning / relearning / review). Rating Again/Hard/Good/Easy updates the schedule.</p>
       <div class="setup-tip">
-        <b>Auto-extract flashcards</b> from any note: open note → AI menu → <code>Extract flashcards</code>.
+        <b>Extracción automática de flashcards</b> desde cualquier nota: abre nota → menú IA → <code>Extraer flashcards</code>.
         Or type <code>/flashcards</code> in the text layer.
       </div>
       <p class="setup-body" style="margin-top: var(--s-4)">
@@ -620,7 +627,7 @@ const SLIDES = [
           testBtn.textContent = "Probando...";
           const result = root.querySelector("#wiz-test-result");
           try {
-            const r = await fetch("/api/v1/admin/ai/test", {
+            const r = await fetch(`${API_BASE}/admin/ai/test`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -679,7 +686,7 @@ const SLIDES = [
         apiKey: apiKeyInput?.value || undefined,
       };
       try {
-        await fetch("/api/v1/admin/ai", {
+        await fetch(`${API_BASE}/admin/ai`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -740,7 +747,7 @@ const SLIDES = [
       }
       // Create admin via /auth/setup
       try {
-        const r = await fetch("/api/v1/auth/setup", {
+        const r = await fetch(`${API_BASE}/auth/setup`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ username, password: pwd }),
@@ -756,7 +763,7 @@ const SLIDES = [
           } catch { /* private mode */ }
         } else if (r.status === 409) {
           // Admin already exists — try login
-          const lr = await fetch("/api/v1/auth/login", {
+          const lr = await fetch(`${API_BASE}/auth/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ username, password: pwd }),
@@ -774,7 +781,7 @@ const SLIDES = [
       } catch { /* best effort */ }
       // Save backup config
       try {
-        await fetch("/api/v1/admin/backup/config", {
+        await fetch(`${API_BASE}/admin/backup/config`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -818,11 +825,11 @@ export function openSetupWizard(opts = {}) {
     <div class="setup-progress"><div class="setup-progress-bar" id="setup-progress"></div></div>
     <div class="setup-slide-area" id="setup-slide-area"></div>
     <div class="setup-footer">
-      <button class="setup-btn setup-btn-skip" id="setup-skip">Skip all</button>
-      <button class="setup-btn setup-btn-ghost" id="setup-back" style="visibility:hidden">← Back</button>
+      <button class="setup-btn setup-btn-skip" id="setup-skip">Saltar todo</button>
+      <button class="setup-btn setup-btn-ghost" id="setup-back" style="visibility:hidden">← Atrás</button>
       <div class="setup-dots" id="setup-dots"></div>
-      <button class="setup-btn setup-btn-primary" id="setup-next">Next →</button>
-      <button class="setup-btn setup-btn-ghost" id="setup-finish" style="display:none">Finish</button>
+      <button class="setup-btn setup-btn-primary" id="setup-next">Siguiente →</button>
+      <button class="setup-btn setup-btn-ghost" id="setup-finish" style="display:none">Finalizar</button>
     </div>
   `;
   document.body.appendChild(wiz);
@@ -880,15 +887,29 @@ export function openSetupWizard(opts = {}) {
     }
   });
   btnSkip.addEventListener("click", () => {
-    if (confirm("Skip the setup wizard? You can re-open it from Settings.")) {
+    if (confirm("¿Saltar el asistente de configuración? Puedes abrirlo más tarde desde Ajustes.")) {
       btnFinish.click();
     }
   });
 
   // Keyboard navigation
   const onKey = (e) => {
+    // v2.27.1: don't hijack Enter/Esc when the user is typing in an input or
+    // textarea — that breaks form submission (login screen, password fields,
+    // AI provider form). Only navigate with arrow keys + global Enter when
+    // focus is OUTSIDE an editable element.
+    const t = e.target;
+    const isEditable =
+      t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable);
+    if (isEditable) {
+      // Allow Esc to cancel even inside an input
+      if (e.key === "Escape") {
+        if (confirm("¿Salir del asistente? Puedes abrirlo más tarde desde Ajustes.")) btnSkip.click();
+      }
+      return;
+    }
     if (e.key === "Escape") {
-      if (confirm("Exit setup? You can resume later from Settings.")) btnSkip.click();
+      if (confirm("¿Salir del asistente? Puedes abrirlo más tarde desde Ajustes.")) btnSkip.click();
     } else if (e.key === "ArrowRight" || e.key === "Enter") {
       if (wiz._setupIndex < SLIDES.length - 1) btnNext.click();
       else btnFinish.click();

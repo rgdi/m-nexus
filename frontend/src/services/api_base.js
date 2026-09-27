@@ -25,8 +25,12 @@ export function detectApiBase() {
   if (typeof location !== "undefined" && (location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
     return `http://${location.hostname}:${DEFAULT_PORT}`;
   }
-  if (typeof location !== "undefined") {
-    return `${location.protocol}//${location.host}`;
+  // v2.27.1: when frontend is served from a LAN/Tailscale hostname, the backend
+  // is usually on the same host but port 4500 (not the frontend port 8080).
+  // Returning `${location.protocol}//${location.host}` would resolve to the
+  // frontend origin and api.health() would 404 → frontend shows offline pill.
+  if (typeof location !== "undefined" && location.hostname) {
+    return `${location.protocol}//${location.hostname}:${DEFAULT_PORT}`;
   }
   return `http://localhost:${DEFAULT_PORT}`;
 }
