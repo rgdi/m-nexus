@@ -14,17 +14,19 @@ export function detectApiBase() {
   if (typeof window !== "undefined" && window.MNEXUS_BACKEND_URL) {
     return String(window.MNEXUS_BACKEND_URL).replace(/\/$/, "");
   }
+  // v2.27.1: prefer env-configurable default; falls back to :4100 for legacy installs.
+  const DEFAULT_PORT = (typeof window !== "undefined" && window.MNEXUS_BACKEND_PORT) || 4500;
   const isCapacitor =
     typeof window !== "undefined" &&
     (window.Capacitor || (location.protocol === "https:" && location.hostname === "localhost" && location.port === ""));
   if (isCapacitor) {
-    return "http://10.0.2.2:4100";
+    return `http://10.0.2.2:${DEFAULT_PORT}`;
   }
   if (typeof location !== "undefined" && (location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
-    return `http://${location.hostname}:4100`;
+    return `http://${location.hostname}:${DEFAULT_PORT}`;
   }
   if (typeof location !== "undefined") {
     return `${location.protocol}//${location.host}`;
   }
-  return "http://localhost:4100";
+  return `http://localhost:${DEFAULT_PORT}`;
 }
