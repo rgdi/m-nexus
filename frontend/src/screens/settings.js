@@ -284,6 +284,24 @@ export async function renderSettings(root) {
           <span class="name">Cerrar sesión</span>
         </button>
       </section>
+
+      <section class="settings-section">
+        <h2>Help / Tour guiado</h2>
+        <p class="muted">Recorre todas las pantallas con explicaciones paso a paso.</p>
+        <button class="settings-option" id="start-tour-btn">
+          <span class="ico">🎓</span>
+          <span class="name">Iniciar tour guiado</span>
+          <span class="muted small">Pantalla por pantalla · 10 pasos</span>
+        </button>
+        <button class="settings-option" id="reset-tour-btn">
+          <span class="ico">🔄</span>
+          <span class="name">Volver a hacer el tour al iniciar sesión</span>
+          <span class="muted small">Resetea la marca mnexus.tour.completed</span>
+        </button>
+        <p class="muted small" style="margin-top: 8px;">
+          También puedes pulsar <kbd>?</kbd> en cualquier pantalla para abrir el tour.
+        </p>
+      </section>
     </div>
   `;
 
@@ -518,6 +536,22 @@ export async function renderSettings(root) {
       auth.clearTokens();
       location.hash = "#/login";
       location.reload();
+    });
+  }
+
+  // v2.34.0: tour buttons
+  const startTourBtn = root.querySelector("#start-tour-btn");
+  if (startTourBtn) {
+    startTourBtn.addEventListener("click", async () => {
+      const { startTour } = await import("../widgets/tour.js");
+      startTour();
+    });
+  }
+  const resetTourBtn = root.querySelector("#reset-tour-btn");
+  if (resetTourBtn) {
+    resetTourBtn.addEventListener("click", () => {
+      try { localStorage.removeItem("mnexus.tour.completed"); } catch {}
+      alert("✓ Tour se mostrará en el próximo inicio de sesión (o pulsa ?).");
     });
   }
 }

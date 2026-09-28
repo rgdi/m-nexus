@@ -1,0 +1,218 @@
+/* ============================================================
+ * popups.css — Styles for slash-command popups (v2.34.0).
+ *
+ * Each popup has its own scope; base layout comes from
+ * floating_window.css.
+ * ============================================================ */
+
+/* === Flashcard popup === */
+.flashcard-popup-body,
+.occlusion-popup-body,
+.self-test-popup-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+}
+
+.flashcard-popup-fields,
+.occlusion-popup-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.flashcard-popup-row,
+.occlusion-popup-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.flashcard-popup-row > span,
+.occlusion-popup-row > span {
+  color: var(--fg-muted, #888);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.flashcard-popup-row textarea,
+.flashcard-popup-row input,
+.occlusion-popup-row textarea,
+.occlusion-popup-row input,
+.occlusion-popup-row select {
+  font-family: var(--font);
+  font-size: 13px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: white;
+  color: var(--fg, #1a1a1a);
+  resize: vertical;
+}
+
+.flashcard-popup-hint,
+.occlusion-popup-hint {
+  font-size: 12px;
+  padding: 8px 10px;
+  background: rgba(124, 77, 255, 0.06);
+  border-left: 3px solid var(--accent, #7c4dff);
+  border-radius: 4px;
+  color: var(--fg-muted, #555);
+}
+
+.flashcard-popup-actions,
+.occlusion-popup-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: auto;
+}
+
+.flashcard-popup-btn,
+.occlusion-popup-btn {
+  padding: 8px 14px;
+  border-radius: 5px;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-family: var(--font);
+}
+
+.flashcard-popup-btn--secondary,
+.occlusion-popup-btn--secondary {
+  background: transparent;
+  color: var(--fg, #1a1a1a);
+}
+
+.flashcard-popup-btn--primary,
+.occlusion-popup-btn--primary {
+  background: var(--accent, #7c4dff);
+  color: white;
+  border-color: var(--accent, #7c4dff);
+}
+
+.flashcard-popup-status,
+.occlusion-popup-status {
+  font-size: 12px;
+  color: var(--fg-muted, #888);
+  text-align: right;
+}
+
+/* === Self-test popup === */
+.self-test-progress {
+  font-size: 12px;
+  color: var(--fg-muted, #888);
+  text-align: center;
+  font-family: var(--font-mono);
+}
+
+.self-test-card-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 8px;
+  text-align: center;
+  min-height: 160px;
+}
+
+.self-test-front {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--fg, #1a1a1a);
+  margin-bottom: 16px;
+}
+
+.self-test-back {
+  font-size: 14px;
+  color: var(--fg-muted, #555);
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+  max-height: 200px;
+  overflow: auto;
+}
+
+.self-test-empty {
+  color: var(--fg-muted, #888);
+  font-size: 14px;
+}
+
+.self-test-empty code {
+  background: rgba(124, 77, 255, 0.12);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+}
+
+.self-test-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.self-test-btn {
+  padding: 8px 14px;
+  border-radius: 5px;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-family: var(--font);
+}
+
+.self-test-btn--secondary {
+  background: transparent;
+  color: var(--fg, #1a1a1a);
+}
+
+.self-test-btn--primary {
+  background: var(--accent, #7c4dff);
+  color: white;
+  border-color: var(--accent, #7c4dff);
+}
+
+.self-test-btn[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.self-test-grading {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  background: rgba(124, 77, 255, 0.04);
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.self-test-grading > span {
+  color: var(--fg-muted, #888);
+  margin-right: 4px;
+}
+
+.self-test-grade {
+  padding: 6px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: white;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.self-test-grade:hover {
+  background: rgba(124, 77, 255, 0.08);
+}
+
+.self-test-status {
+  font-size: 12px;
+  color: var(--fg-muted, #888);
+  text-align: center;
+  font-family: var(--font-mono);
+}

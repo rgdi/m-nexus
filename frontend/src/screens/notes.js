@@ -19,6 +19,7 @@ import { extractTags, renderTagsCloud, injectTagsInline, getActiveTag } from "..
 import { renderAttachmentsGrid, addAttachment } from "../widgets/file_attachments.js";
 import { mountAITutor, setAIContext } from "../widgets/ai_tutor.js";
 import { mountFlashcardSlash } from "../widgets/flashcard_slash.js";
+import { mountSlashRouter } from "../widgets/slash_router.js";
 import { icon as svgIcon } from "../widgets/icons.js";
 import { trackField, applyRemoteUpdate } from "../services/field_history.js";
 
@@ -401,6 +402,9 @@ async function renderNotebook(root, id) {
   setAIContext({ note, subject: note.subject });
   // v2.0.3: /flashcards slash command popup en el text-layer
   mountFlashcardSlash(root, id, note);
+
+  // v2.34.0: slash router for /f /occlusion /test → floating popups.
+  mountSlashRouter({ noteId: id, note });
 
   // v2.0.1: attachments bar (image/pdf/glb con preview + occlusion)
   const attBar = document.createElement("div");

@@ -1,0 +1,230 @@
+/* ============================================================
+ * tour.css — Guided tour styles.
+ * ============================================================ */
+
+.tour-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 17, 21, 0.55);
+  z-index: 2900;
+  pointer-events: auto;
+}
+
+.tour-highlight {
+  position: relative;
+  z-index: 2999 !important;
+  box-shadow: 0 0 0 4px rgba(124, 77, 255, 0.85),
+              0 0 0 9999px rgba(15, 17, 21, 0.55) !important;
+  border-radius: 8px;
+}
+
+.tour-popover {
+  position: fixed;
+  width: 380px;
+  max-width: calc(100vw - 32px);
+  background: var(--bg-elevated, #fff);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.35);
+  z-index: 3000;
+  font-family: var(--font);
+  color: var(--fg, #1a1a1a);
+  animation: tour-pop-in 0.25s ease-out;
+}
+
+@keyframes tour-pop-in {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.tour-pop-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(124, 77, 255, 0.08), rgba(124, 77, 255, 0.02));
+}
+
+.tour-step-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-muted, #888);
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(124, 77, 255, 0.12);
+}
+
+.tour-title {
+  flex: 1;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.tour-close {
+  width: 24px;
+  height: 24px;
+  border: 0;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--fg-muted, #888);
+  font-size: 14px;
+}
+
+.tour-close:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--fg, #1a1a1a);
+}
+
+.tour-body {
+  padding: 14px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--fg, #1a1a1a);
+}
+
+.tour-footer {
+  display: flex;
+  gap: 8px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.tour-btn {
+  font-family: var(--font);
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--fg, #1a1a1a);
+  cursor: pointer;
+}
+
+.tour-btn--primary {
+  background: var(--accent, #7c4dff);
+  color: white;
+  border-color: var(--accent, #7c4dff);
+  margin-left: auto;
+}
+
+.tour-btn--ghost {
+  background: transparent;
+  color: var(--fg-muted, #888);
+}
+
+.tour-btn[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.tour-popover--bottom {
+  border-radius: 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .tour-scrim {
+    background: rgba(0, 0, 0, 0.7);
+  }
+  .tour-popover {
+    background: var(--bg-elevated, #1a1d24);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* ============================================================
+ * Cluster mode modal + banner (v2.34.0).
+ * ============================================================ */
+
+.cluster-mode-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(124, 77, 255, 0.06);
+  border: 1px solid rgba(124, 77, 255, 0.2);
+  border-radius: 8px;
+  margin: 0 0 14px;
+}
+
+.cluster-info-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: white;
+  color: var(--accent, #7c4dff);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cluster-info-btn:hover {
+  background: var(--accent, #7c4dff);
+  color: white;
+}
+
+.node-mode-modal {
+  font-family: var(--font);
+  font-size: 14px;
+}
+
+.node-mode-modal > p.muted {
+  margin: 0 0 14px;
+}
+
+.node-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.node-mode-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.node-mode-card h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg, #1a1a1a);
+}
+
+.node-mode-card p {
+  margin: 0 0 6px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.node-mode-card p.muted.small {
+  font-size: 11px;
+}
+
+.node-mode-diagram {
+  margin-top: 18px;
+  padding: 14px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 8px;
+}
+
+.node-mode-diagram h4 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg, #1a1a1a);
+}
+
+.node-mode-diagram svg {
+  display: block;
+  margin: 0 auto;
+}
