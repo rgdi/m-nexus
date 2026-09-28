@@ -20,10 +20,18 @@
  *     connectivity returns, even if the tab was closed.
  * ============================================================ */
 
-const VERSION = "v2.36.0";
+const VERSION = "v2.36.2";
 const SHELL_CACHE = `mnexus-shell-${VERSION}`;
 const RUNTIME_CACHE = `mnexus-runtime-${VERSION}`;
 const SYNC_TAG = "mnexus-outbox-sync";
+
+/**
+ * sw-precache.js is generated (scripts/gen-sw-precache.py) and lists every
+ * module under src/. It is imported here so the install step can precache
+ * the whole app — without it, an offline cold start only gets the shell
+ * HTML and then dies on the first missing ES-module import.
+ */
+importScripts("/sw-precache.js");
 
 /** Files that MUST be present for the app to boot. */
 const SHELL = [
@@ -52,14 +60,22 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     (async () => {
       const cache = await caches.open(SHELL_CACHE);
-      // Add one-by-one: a single 404 rejects the whole addAll().
-      await Promise.all(
-        SHELL.map((url) =>
-          cache.add(new Request(url, { cache: "reload" })).catch(() => {
-            /* a missing optional shell file must not abort the install */
-          }),
-        ),
-      );
+      const targets = [...SHELL, ...(self.MODULES || [])];
+      // Dedupe: main.js and the CSS files appear in both lists.
+      const seen = new Set();
+      const unique = targets.filter((u) => (seen.has(u) ? false : (seen.add(u), true)));
+      // Add in small batches so one 404 cannot reject the whole install,
+      // and so a slow module cannot serialise 130 requests.
+      const BATCH = 12;
+      for (let i = 0; i < unique.length; i += BATCH) {
+        await Promise.all(
+          unique.slice(i, i + BATCH).map((url) =>
+            cache.add(new Request(url, { cache: "reload" })).catch(() => {
+              /* a missing optional file must not abort the install */
+            }),
+          ),
+        );
+      }
       await self.skipWaiting();
     })(),
   );

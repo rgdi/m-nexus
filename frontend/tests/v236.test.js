@@ -212,3 +212,46 @@ describe("v2.36.0 — drag-gap exercise", () => {
     expect(css).toMatch(/@keyframes m-slot-pop/);
   });
 });
+
+describe("v2.36.1 — precache manifest stays in sync with the source tree", () => {
+  const { readdirSync, statSync } = require("node:fs");
+
+  it("sw-precache.js lists every module under frontend/src", () => {
+    const src = read("sw-precache.js");
+    const listed = new Set(
+      [...src.matchAll(/"\.\/([^"]+)"/g)].map((m) => m[1]),
+    );
+    expect(listed.size).toBeGreaterThan(80);
+
+    // Walk the tree and assert nothing is missing.
+    // process.cwd() is frontend/ when vitest runs.
+    const walk = (dir, acc = []) => {
+      for (const name of readdirSync(dir)) {
+        const full = join(dir, name);
+        if (statSync(full).isDirectory()) walk(full, acc);
+        else if (name.endsWith(".js") || name.endsWith(".css")) {
+          // Normalise to forward slashes, relative to frontend/.
+          const rel = full.slice(full.indexOf("frontend") + "frontend/".length);
+          acc.push(rel.split("\\").join("/"));
+        }
+      }
+      return acc;
+    };
+    const onDisk = walk(join(process.cwd(), "src"));
+    const missing = onDisk.filter((f) => !listed.has(f));
+    expect(missing, "regenerate with python3 scripts/gen-sw-precache.py").toEqual([]);
+  });
+
+  it("sw.js importScripts the precache manifest", () => {
+    const sw = read("sw.js");
+    expect(sw).toMatch(/importScripts\("\/sw-precache\.js"\)/);
+    expect(sw).toMatch(/self\.MODULES/);
+  });
+
+  it("the generator script exists and is documented", () => {
+    const p = join(process.cwd(), "../scripts/gen-sw-precache.py");
+    expect(existsSync(p)).toBe(true);
+    const py = read("../scripts/gen-sw-precache.py");
+    expect(py).toMatch(/sw-precache\.js/);
+  });
+});
