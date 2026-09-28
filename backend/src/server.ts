@@ -234,6 +234,10 @@ await app.register(multiBoardRoutes);
   const { registerProgressRoutes } = await import("./routes/progress.js");
   registerProgressRoutes(app);
 
+  // v2.36.0: answer grading (typed answers with LLM, multiple choice)
+  const { registerGradingRoutes } = await import("./routes/grading.js");
+  registerGradingRoutes(app);
+
   // v0.62.8: /api/v1/ai/tutor is registered by aiRoutes (./routes/ai.ts).
   // Removed the inline handler to avoid duplicate-route registration error.
   console.log("DEBUG: tutor route registered via aiRoutes");

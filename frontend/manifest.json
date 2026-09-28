@@ -1,12 +1,79 @@
 {
-  "name": "M-NEXUS — Education Service",
+  "id": "/",
+  "name": "M-NEXUS — Education OS",
   "short_name": "M-NEXUS",
-  "description": "Notebook, calendar, subjects and AI tutor for medical students.",
-  "start_url": "/",
+  "description": "Notebook, calendar, flashcards, OCR and AI tutor. Works offline, syncs across devices.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#0f1115",
-  "theme_color": "#0f1115",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#0b0b12",
+  "theme_color": "#0b0b12",
+  "categories": ["education", "productivity", "utilities"],
+  "lang": "es",
+  "dir": "ltr",
+  "prefer_related_applications": false,
   "icons": [
-    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Estudiar flashcards",
+      "short_name": "Estudiar",
+      "description": "Abre una sesión de repaso con las tarjetas pendientes",
+      "url": "/#/study?source=shortcut",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Ver progreso",
+      "short_name": "Progreso",
+      "description": "Heatmap de actividad y gráficas de retención",
+      "url": "/#/progress?source=shortcut",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Nota nueva",
+      "short_name": "Nueva nota",
+      "description": "Crear una nota en blanco",
+      "url": "/#/notes?new=1&source=shortcut",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Tutor IA",
+      "short_name": "IA",
+      "description": "Pregunta a la IA con el contexto de tu vault",
+      "url": "/#/ai?source=shortcut",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
   ]
 }

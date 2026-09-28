@@ -190,6 +190,10 @@ async function bootstrap() {
   // Mount directly (notif_bell uses appendChild, not innerHTML, to preserve
   // existing children like the #app mount).
   mountNotificationBell(document.body);
+  // v2.36.0: PWA (service worker, install prompt, background sync).
+  import("./services/pwa.js")
+    .then((m) => m.registerPwa())
+    .catch(() => {});
   // v2.35.0: mobile bottom tab bar (visible ≤ 820px via CSS)
   mountBottomTabbar(document.body);
   // v2.35.0: study tab badge = due card count

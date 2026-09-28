@@ -28,7 +28,7 @@ import { logOp } from "../utils/log.js";
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
 
-export type CardType = "basic" | "cloze" | "enumerate" | "image_occlusion" | "multiple_choice";
+export type CardType = "basic" | "cloze" | "enumerate" | "image_occlusion" | "multiple_choice" | "typed_answer" | "drag_gap";
 
 export type CardState = "new" | "learning" | "relearning" | "review";
 

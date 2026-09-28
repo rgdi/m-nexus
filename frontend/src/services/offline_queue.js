@@ -135,33 +135,63 @@ export function autoDrainOnOnline(deviceId, apiBase, authToken) {
   autoDrainOnOnline._wired = true;
   autoDrainOnOnline._ctx = { deviceId, apiBase, authToken };
 
-  let draining = false;
   const tryDrain = async () => {
-    if (draining) return;
-    if (typeof navigator !== "undefined" && !navigator.onLine) return;
-    draining = true;
-    try {
-      const count = await size();
-      if (count === 0) return;
-      const r = await replay(deviceId, apiBase, authToken);
-      console.log("[offline_queue] auto-drain:", r);
-    } catch (e) {
-      console.warn("[offline_queue] auto-drain failed:", e);
-    } finally {
-      draining = false;
-    }
+    if (typeof navigator !== "undefined" && !navigator.onLine) return null;
+    const n = await size();
+    if (n === 0) return null;
+    const r = await replay(deviceId, apiBase, authToken);
+    console.log("[offline_queue] auto-drain:", r);
+    // Let the page (and the SW) know the queue changed.
+    window.dispatchEvent(new CustomEvent("mnexus-outbox-changed", { detail: { remaining: 0 } }));
+    return r;
   };
 
-  window.addEventListener("online", tryDrain);
+  autoDrainOnOnline._tryDrain = tryDrain;
+  autoDrainOnOnline._draining = false;
+
+  window.addEventListener("online", () => {
+    if (autoDrainOnOnline._draining) return;
+    autoDrainOnOnline._draining = true;
+    tryDrain()
+      .catch((e) => console.warn("[offline_queue] auto-drain failed:", e))
+      .finally(() => { autoDrainOnOnline._draining = false; });
+  });
   // Also try once at wire-up in case network restored before listener attached.
   setTimeout(tryDrain, 1500);
 
   // Poll every 30s as a safety net (handles flaky mobile where 'online'
   // event sometimes doesn't fire). Cheap because we early-return when
   // the queue is empty.
-  autoDrainOnOnline._interval = setInterval(tryDrain, 30000);
+  autoDrainOnOnline._interval = setInterval(() => {
+    if (autoDrainOnOnline._draining) return;
+    autoDrainOnOnline._draining = true;
+    tryDrain()
+      .catch((e) => console.warn("[offline_queue] auto-drain failed:", e))
+      .finally(() => { autoDrainOnOnline._draining = false; });
+  }, 30000);
 
   return Promise.resolve();
+}
+
+/**
+ * drainNow — force a replay pass right now.
+ *
+ * v2.36.0 — Called by the service worker when Background Sync fires
+ * after connectivity returns (even if the tab was closed). Falls back
+ * to the context captured by autoDrainOnOnline.
+ */
+export async function drainNow() {
+  const ctx = autoDrainOnOnline._ctx;
+  if (!ctx) {
+    console.warn("[offline_queue] drainNow called before autoDrainOnOnline");
+    return null;
+  }
+  const n = await size();
+  if (n === 0) return null;
+  const r = await replay(ctx.deviceId, ctx.apiBase, ctx.authToken);
+  console.log("[offline_queue] drainNow:", r);
+  window.dispatchEvent(new CustomEvent("mnexus-outbox-changed", { detail: { remaining: 0 } }));
+  return r;
 }
 
 /** Cancel the auto-drain polling + event listener. Mostly for tests. */

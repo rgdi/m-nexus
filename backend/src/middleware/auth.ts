@@ -62,6 +62,8 @@ export const authMiddleware: (req: FastifyRequest, reply: FastifyReply) => Promi
     "/api/v1/progress/series",
     "/api/v1/progress/retention",
     "/api/v1/progress/breakdown",
+    "/api/v1/grade/typed",     // v2.36.0: deterministic grader, no user data
+    "/api/v1/grade/mcq",       // v2.36.0: re-reads the card server-side
     "/api/v1/cross-verify",
     "/api/v1/recordings",
     "/api/v1/sync",
