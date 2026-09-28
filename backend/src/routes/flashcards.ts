@@ -80,6 +80,10 @@ export interface Flashcard {
   // v2.27.0 — multiple choice payload (only used when cardType === "multiple_choice")
   options?: string[];
   correctIndex?: number;
+  // v2.35.0 — append-only review log. Powers the GitHub heatmap and
+  // progress charts. Optional; cards created before v2.35.0 lack it and
+  // fall back to FSRS counters (reps / lapses / lastReview).
+  reviewHistory?: Array<{ t: number; rating: number }>;
   // legacy
   createdAt: number;
   updatedAt: number;
@@ -114,6 +118,8 @@ export function backfillFlashcard(c: any): Flashcard {
     elaborations: c.elaborations ?? [],
     relatedTo: c.relatedTo ?? [],
     interleaveGroup: c.interleaveGroup ?? null,
+    // v2.35.0 — review log (powers the GitHub heatmap + progress charts)
+    reviewHistory: Array.isArray(c.reviewHistory) ? c.reviewHistory : undefined,
     createdAt: c.createdAt ?? Date.now(),
     updatedAt: c.updatedAt ?? Date.now(),
   };
@@ -548,6 +554,51 @@ export async function flashcardsRoutes(app: FastifyInstance): Promise<void> {
     if (!ok) throw E.val("EC-FC-003", "Flashcard no encontrada", { context: { id: req.params.id }, statusCode: 404 });
     return { deleted: true };
   });
+
+  // v2.35.0 — record a review: updates FSRS counters AND appends to the
+  // review log that powers the GitHub heatmap + progress charts.
+  // Body: { rating: 1..4 }
+  app.post<{ Params: { id: string }; Body: { rating?: number } }>(
+    "/flashcards/:id/review",
+    async (req) => {
+      const rating = req.body?.rating;
+      if (!rating || rating < 1 || rating > 4) {
+        throw E.val("EC-FC-004", "rating must be 1..4", {
+          context: { rating: rating ?? null },
+          statusCode: 400,
+        });
+      }
+      const card = await svc.get(req.params.id);
+      if (!card) throw E.val("EC-FC-002", "Flashcard no encontrada", { context: { id: req.params.id }, statusCode: 404 });
+
+      const now = Date.now();
+      const prev = card.fsrs ?? defaultFsrsState();
+      // Minimal interval model mirroring the classic SM-2-ish ladder,
+      // used only for the heatmap's daily counts (the real FSRS-7 state
+      // is recomputed client-side / by /fsrs/review when available).
+      const ladder = [0, 1, 6, 15, 22]; // minutes for rating 1..4, in days-ish
+      const nextStability = Math.max(
+        (prev.stability ?? 0) * (rating >= 3 ? 1.6 : rating === 2 ? 1.2 : 0.4),
+        0.5,
+      );
+      const patched = await svc.update(req.params.id, {
+        fsrs: {
+          ...prev,
+          state: rating === 1 ? "relearning" : "review",
+          stability: nextStability,
+          lastReview: now,
+          due: now + ladder[rating - 1] * 86400000,
+          reps: (prev.reps ?? 0) + 1,
+          lapses: (prev.lapses ?? 0) + (rating === 1 ? 1 : 0),
+        },
+        reviewHistory: [
+          ...(card.reviewHistory ?? []).filter((h) => typeof h?.t === "number"),
+          { t: now, rating },
+        ],
+      });
+      return { card: patched, logged: true };
+    },
+  );
 
   // v1.5.1: extraer desde body de nota
   app.post<{ Params: { id: string } }>("/notes/:id/extract-flashcards", async (req) => {

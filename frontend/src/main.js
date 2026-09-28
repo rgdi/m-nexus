@@ -31,6 +31,9 @@ import { renderJournal } from "./screens/journal.js";
 import { renderPdfScreen } from "./screens/pdf.js";
 import { renderKgScreen } from "./screens/kg.js";
 import { renderV232Screen } from "./screens/v232.js";
+import { renderStudy } from "./screens/study.js";
+import { renderProgress } from "./screens/progress.js";
+import { mountBottomTabbar } from "./widgets/bottom_tabbar.js";
 import { renderLogin } from "./screens/login.js";
 import { renderCluster } from "./screens/cluster.js";
 import { mountPeerIndicator } from "./widgets/peer_indicator.js";
@@ -61,6 +64,9 @@ const ROUTES = {
   pdf: renderPdfScreen,
   kg: renderKgScreen,
   v232: renderV232Screen,
+  // v2.35.0: mobile-first Study + Progress screens
+  study: renderStudy,
+  progress: renderProgress,
 };
 
 const app = document.getElementById("app");
@@ -184,6 +190,19 @@ async function bootstrap() {
   // Mount directly (notif_bell uses appendChild, not innerHTML, to preserve
   // existing children like the #app mount).
   mountNotificationBell(document.body);
+  // v2.35.0: mobile bottom tab bar (visible ≤ 820px via CSS)
+  mountBottomTabbar(document.body);
+  // v2.35.0: study tab badge = due card count
+  import("./widgets/bottom_tabbar.js").then(async (m) => {
+    try {
+      const { detectApiBase } = await import("./services/api_base.js");
+      const r = await fetch(`${detectApiBase()}/api/v1/flashcards`);
+      const j = r.ok ? await r.json() : { cards: [] };
+      const now = Date.now();
+      const due = (j.cards || []).filter((c) => (c.fsrs?.due ?? 0) <= now).length;
+      m.setStudyBadge(due);
+    } catch {}
+  }).catch(() => {});
   // v2.0.2: AI tutor FAB
   mountAITutor();
   // v2.0.6: E2E sync via WebSocket

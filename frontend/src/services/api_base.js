@@ -6,6 +6,9 @@
 //
 // Priority:
 //   1. window.MNEXUS_BACKEND_URL (runtime override)
+//   1b. localStorage["mnexus.backend.url"] (persisted runtime override,
+//       written by the capture scripts / dev tooling so a page reload
+//       keeps pointing at the dev backend instead of the default port)
 //   2. Capacitor (Android emulator: 10.0.2.2, or user override)
 //   3. Web localhost dev (http://localhost:4100)
 //   4. Web production (same origin)
@@ -13,6 +16,12 @@
 export function detectApiBase() {
   if (typeof window !== "undefined" && window.MNEXUS_BACKEND_URL) {
     return String(window.MNEXUS_BACKEND_URL).replace(/\/$/, "");
+  }
+  if (typeof localStorage !== "undefined") {
+    try {
+      const persisted = localStorage.getItem("mnexus.backend.url");
+      if (persisted) return persisted.replace(/\/$/, "");
+    } catch { /* private mode / disabled storage */ }
   }
   const isCapacitor =
     typeof window !== "undefined" &&

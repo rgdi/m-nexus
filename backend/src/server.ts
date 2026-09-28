@@ -230,6 +230,10 @@ await app.register(multiBoardRoutes);
   await app.register(studyPlannerRoutes, { prefix: "/api/v1" });
   await app.register(occlusionRoutes, { prefix: "/api/v1" });
 
+  // v2.35.0: progress analytics (GitHub heatmap + charts for mobile)
+  const { registerProgressRoutes } = await import("./routes/progress.js");
+  registerProgressRoutes(app);
+
   // v0.62.8: /api/v1/ai/tutor is registered by aiRoutes (./routes/ai.ts).
   // Removed the inline handler to avoid duplicate-route registration error.
   console.log("DEBUG: tutor route registered via aiRoutes");
