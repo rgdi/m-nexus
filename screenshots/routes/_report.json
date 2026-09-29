@@ -1,0 +1,161 @@
+{
+  "capturedAt": "2026-09-29T12:37:44.049Z",
+  "viewport": "phone 414x896",
+  "web": "http://localhost:8080",
+  "routes": [
+    {
+      "route": "overview",
+      "status": "ok",
+      "bodyLen": 3805,
+      "redirected": null,
+      "errors": []
+    },
+    {
+      "route": "calendar",
+      "status": "ok",
+      "bodyLen": 2300,
+      "redirected": null,
+      "errors": []
+    },
+    {
+      "route": "subjects",
+      "status": "ok",
+      "bodyLen": 1272,
+      "redirected": null,
+      "errors": []
+    },
+    {
+      "route": "notes",
+      "status": "ok",
+      "bodyLen": 3131,
+      "redirected": null,
+      "errors": []
+    },
+    {
+      "route": "todos",
+      "status": "ok",
+      "bodyLen": 13355,
+      "redirected": null,
+      "errors": []
+    },
+    {
+      "route": "capture",
+      "status": "ok",
+      "bodyLen": 5225,
+      "redirected": null,
+      "errors": []
+    },
+    {
+      "route": "rag",
+      "status": "ok",
+      "bodyLen": 1350,
+      "redirected": null,
+      "errors": []
+    },
+    {
+      "route": "ai",
+      "status": "ok",
+      "bodyLen": 1305,
+      "redirected": null,
+      "errors": []
+    },
+    {
+      "route": "settings",
+      "status": "ok",
+      "bodyLen": 11863,
+      "redirected": null,
+      "errors": []
+    },
+    {
+      "route": "login",
+      "status": "ok",
+      "bodyLen": 12210,
+      "redirected": null,
+      "errors": []
+    },
+    {
+      "route": "diagnostic",
+      "status": "ok",
+      "bodyLen": 967,
+      "redirected": null,
+      "errors": []
+    },
+    {
+      "route": "approvals",
+      "status": "ok",
+      "bodyLen": 2716,
+      "redirected": null,
+      "errors": []
+    },
+    {
+      "route": "simulator",
+      "status": "ok",
+      "bodyLen": 1168,
+      "redirected": null,
+      "errors": []
+    },
+    {
+      "route": "fsrs-sim",
+      "status": "ok",
+      "bodyLen": 1562,
+      "redirected": null,
+      "errors": []
+    },
+    {
+      "route": "occlusion",
+      "status": "ok",
+      "bodyLen": 1357,
+      "redirected": null,
+      "errors": []
+    },
+    {
+      "route": "cluster",
+      "status": "ok",
+      "bodyLen": 1728,
+      "redirected": null,
+      "errors": []
+    },
+    {
+      "route": "journal",
+      "status": "ok",
+      "bodyLen": 16008,
+      "redirected": null,
+      "errors": []
+    },
+    {
+      "route": "pdf",
+      "status": "ok",
+      "bodyLen": 1000,
+      "redirected": null,
+      "errors": []
+    },
+    {
+      "route": "kg",
+      "status": "ok",
+      "bodyLen": 1268,
+      "redirected": null,
+      "errors": []
+    },
+    {
+      "route": "v232",
+      "status": "ok",
+      "bodyLen": 10447,
+      "redirected": null,
+      "errors": []
+    },
+    {
+      "route": "study",
+      "status": "ok",
+      "bodyLen": 1042,
+      "redirected": null,
+      "errors": []
+    },
+    {
+      "route": "progress",
+      "status": "ok",
+      "bodyLen": 58362,
+      "redirected": null,
+      "errors": []
+    }
+  ]
+}

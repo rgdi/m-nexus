@@ -4,6 +4,9 @@
  * ============================================================ */
 
 import { dataSource } from "../services/dataSource.js";
+import { detectApiBase } from "../services/api_base.js";
+import { authHeaders } from "../services/auth.js";
+const BASE = detectApiBase();
 import { i18n } from "../services/i18n.js";
 import { openCrossVerifyPanel } from "../widgets/cross_verify_panel.js";
 import { openExamWizard } from "../widgets/exam_runner.js";
@@ -161,7 +164,7 @@ export async function renderOverview(root) {
   const examBtn = root.querySelector("#exam-btn");
   if (examBtn) {
     examBtn.addEventListener("click", async () => {
-      const cards = await fetch("http://localhost:4100/api/v1/flashcards").then((r) => r.ok ? r.json() : { cards: [] });
+      const cards = await fetch(`${BASE}/api/v1/flashcards`, { headers: authHeaders() }).then((r) => r.ok ? r.json() : { cards: [] });
       const allCards = cards.cards || [];
       // gather approved occlusion cards
       const occCards = [];
@@ -212,7 +215,7 @@ export async function renderOverview(root) {
     const { openSyllabusDashboard } = await import("../widgets/syllabus_dashboard.js");
     const subjects = await dataSource.subjects.list().catch(() => []);
     const notes = await dataSource.notes.list().catch(() => []);
-    const cards = await fetch("http://localhost:4100/api/v1/flashcards").then((r) => r.ok ? r.json() : { cards: [] }).then((x) => x.cards || []).catch(() => []);
+    const cards = await fetch(`${BASE}/api/v1/flashcards`, { headers: authHeaders() }).then((r) => r.ok ? r.json() : { cards: [] }).then((x) => x.cards || []).catch(() => []);
     openSyllabusDashboard(sylHost, { subjects, notes, cards, occCards: [] });
   }
 }

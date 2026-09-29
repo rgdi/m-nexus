@@ -2,7 +2,57 @@
 
 > Historial completo de versiones. Stack actual: **TypeScript backend (Fastify) + Vanilla JS+CSS frontend**. Sin Flutter. Sin colaboración (rejected).
 >
-> **Totales actuales**: 1645 tests automatizados (1147 backend + 498 frontend), bundle **2.032 MB / 100 archivos** (crossed 100-file milestone), **0 errores TypeScript** (`tsc --noEmit` clean), **a11y 0 errores** (axe-core).
+> **Totales actuales (v2.38.0)**: **2011 tests automatizados** (1338 backend + 673 frontend) en 147 ficheros, **0 errores TypeScript**, **22/22 rutas** verificadas por barrido automático.
+
+---
+
+## v2.38.0 (2026-09-29) — Captura rápida · RAG por carpeta · IA en popup
+
+Cierra la lista de pendientes que llevaba tres releases anotada.
+
+### Añadido
+
+- **Captura rápida** (`#/capture`): texto libre → tareas, compras, hábitos y
+  gastos, con fechas resueltas y tipo asignado. Parser determinista con
+  refuerzo opcional de LLM; cada fila declara si la hizo una regla o un
+  modelo. FAB flotante en móvil.
+- **RAG con scoping por carpeta** (`#/rag`): el índice vive en el servidor,
+  la carpeta es un filtro duro y no un peso, y cada respuesta viene con las
+  citas. Arquitectura de 3 fases (estrategia → fan-out → síntesis) tomada de
+  open-notebook.
+- **RRF** (Reciprocal Rank Fusion) y **tope de chunks por documento**,
+  adaptados de SurfSense.
+- **AI companion en popup** (`Ctrl/Cmd+K`): conversación con historial, en la
+  ventana flotante de v2.34.0, sin cambio de ruta. Los subqueries se generan
+  con el historial completo —tomado de Khoj— para que "¿Y el tratamiento?"
+  resuelva la referencia.
+- **Fallback web opcional**, apagado por defecto y etiquetado. Un resultado
+  web nunca se presenta como cita.
+- **Barrido de capturas por ruta** (`scripts/capture_routes.cjs`): recorre
+  las 22 rutas, registra errores de consola y 404, y sale con código 1 si
+  algo falla. 22/22 limpias.
+- **Docs**: `docs/README.md` como índice, `v2.38.md`, `TESTING.md`,
+  `SCREENSHOTS.md`.
+
+### Corregido
+
+Cuatro cosas rotas que ninguna otra comprobación había visto:
+
+- **`deviceRoutes` registrado sin prefijo** — el frontend llama
+  `/api/v1/devices/register` en cada arranque y recibía 404. Todo lo
+  multi-dispositivo llevaba tiempo sin servidor al que registrarse. Al
+  arreglarlo saltó un conflicto de Fastify: `dashboard.ts` ya declaraba
+  `GET /api/v1/devices` y las dos versiones habían divergido. Se unificó.
+- **La campana llamaba a un prefijo invertido** (`smart-notifications` vs
+  `notifications-smart`) y a dos endpoints que nunca existieron. La campana
+  "pulida" de v2.34.1 mostraba cero para siempre.
+- **El backend escucha en 4000 y el frontend pedía 4100**, con once
+  ficheros que tenían el puerto hardcodeado, incluido el cliente
+  WebSocket, cuyo socket nunca se conectó.
+- **401 donde debía ser 403** en `requireAdmin`: un usuario no-admin
+  disparaba un refresco de token innecesario al abrir Ajustes, y si fallaba
+  la app lo echaba al login.
+
 
 ---
 

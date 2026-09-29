@@ -10,22 +10,14 @@ import { safeCallAsync } from "../utils/safeCall.js";
 import { logOp } from "../utils/log.js";
 
 export async function dashboardRoutes(app: FastifyInstance): Promise<void> {
-  // GET /api/v1/devices
-  app.get("/api/v1/devices", async (req, reply) => {
-    const r = await safeCallAsync({
-      component: "auth",
-      code: "EC-AUTH-030",
-      message: "get devices failed",
-      context: { deviceId: req.auth?.sub },
-      op: async () => {
-        const devices = getRegisteredDevices();
-        logOp("auth", "list devices", true, { count: devices.length });
-        return { count: devices.length, devices };
-      },
-    });
-    if (!r.success || !r.value) throw r.error!;
-    return r.value;
-  });
+  // v2.38.0: GET /api/v1/devices used to be declared here AND in
+  // routes/devices.ts. Registering deviceRoutes under the /api/v1 prefix
+  // (which the frontend has always called) made Fastify refuse to boot
+  // with "Method 'GET' already declared for route '/api/v1/devices'",
+  // and the two versions had drifted — this one wrapped the result in
+  // safeCall, the other returned the raw list. The one in
+  // routes/devices.ts is the canonical one; this duplicate is removed
+  // so there is a single source of truth.
 
   // GET /api/v1/stats
   app.get("/api/v1/stats", async (req, reply) => {

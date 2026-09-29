@@ -4,6 +4,9 @@
  * ============================================================ */
 
 import { dataSource } from "../services/dataSource.js";
+import { detectApiBase } from "../services/api_base.js";
+import { authHeaders } from "../services/auth.js";
+const BASE = detectApiBase();
 import { i18n } from "../services/i18n.js";
 import { api } from "../services/api.js";
 import { applyPressureCurve, tiltAlpha, getPressureConfig } from "../services/stylus.js";
@@ -65,7 +68,7 @@ export async function renderNotes(root) {
   const cached = await dataSource.notes.get(state.selectedId).catch(() => null);
   if (!cached) {
     try {
-      const r = await fetch(`http://localhost:4100/api/v1/notes/${state.selectedId}`);
+      const r = await fetch(`${BASE}/api/v1/notes/${state.selectedId}`, { headers: authHeaders() });
       if (r.ok) {
         const note = await r.json();
         // cachear en localStorage para próximas veces
@@ -442,7 +445,7 @@ async function renderNotebook(root, id) {
     let justCreated = { created: [], skipped: 0 };
     if (hasInline) {
       try {
-        const r = await fetch(`http://localhost:4100/api/v1/notes/${id}/extract-flashcards`, { method: "POST" });
+        const r = await fetch(`${BASE}/api/v1/notes/${id}/extract-flashcards`, { method: "POST", headers: authHeaders() });
         if (r.ok) justCreated = await r.json();
       } catch {}
     }
@@ -547,7 +550,7 @@ function openDefinitionPopupFromText(note) {
 
 async function aiQuizFromNote(noteId) {
   // v1.6.1: genera 5 preguntas a partir de las flashcards existentes
-  const r = await fetch(`http://localhost:4100/api/v1/flashcards/filter?noteId=${noteId}`);
+  const r = await fetch(`${BASE}/api/v1/flashcards/filter?noteId=${noteId}`, { headers: authHeaders() });
   const all = r.ok ? await r.json() : { cards: [] };
   const cards = all.cards || [];
   if (cards.length === 0) {
@@ -694,7 +697,7 @@ function showDefinition(wrap, word) {
  * ============================================================ */
 async function mountMiniAudioPlayer(root, recId, startSec, bookRef, note) {
   // obtener metadata de la grabación
-  const r = await fetch("http://localhost:4100/api/v1/recordings");
+  const r = await fetch("${BASE}/api/v1/recordings");
   const all = r.ok ? (await r.json()).recordings || [] : [];
   const rec = all.find((x) => x.id === recId);
   if (!rec) return;
@@ -1008,7 +1011,7 @@ function setupCanvas(root, noteId, pageIdx, strokes, pages) {
     }
     if (flat.length < 5) return;
     try {
-      const r = await fetch("http://localhost:4100/api/v1/handwriting/recognize", {
+      const r = await fetch("${BASE}/api/v1/handwriting/recognize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ strokes: flat }),
@@ -1094,7 +1097,7 @@ ${escapeHtml(body) || i18n.t("notes.overviewEmpty")}
  * Llama al backend y refresca el panel con las tarjetas creadas.
  * ============================================================ */
 async function extractFlashcardsFromNote(noteId) {
-  const r = await fetch(`http://localhost:4100/api/v1/notes/${noteId}/extract-flashcards`, { method: "POST" });
+  const r = await fetch(`${BASE}/api/v1/notes/${noteId}/extract-flashcards`, { method: "POST", headers: authHeaders() });
   if (!r.ok) { alert(`Error: ${r.status}`); return; }
   const data = await r.json();
   showFlashcardsPanel(noteId, data);
@@ -1107,7 +1110,7 @@ async function showFlashcardsPanel(noteId, justCreated) {
   document.querySelectorAll(".fc-panel").forEach((p) => p.remove());
   let cards = [];
   try {
-    const r = await fetch(`http://localhost:4100/api/v1/flashcards/filter?noteId=${noteId}`);
+    const r = await fetch(`${BASE}/api/v1/flashcards/filter?noteId=${noteId}`, { headers: authHeaders() });
     if (r.ok) {
       const all = await r.json();
       cards = all.cards || [];
@@ -1173,7 +1176,7 @@ async function showFlashcardsPanel(noteId, justCreated) {
   panel.querySelector("#add-card").addEventListener("click", () => openCardEditor(noteId, null));
   panel.querySelector("#study-cards").addEventListener("click", async () => {
     // v1.7.0: re-fetch latest cards before opening session
-    const fresh = await fetch(`http://localhost:4100/api/v1/flashcards/filter?noteId=${noteId}`).then((r) => r.ok ? r.json() : { cards: [] });
+    const fresh = await fetch(`${BASE}/api/v1/flashcards/filter?noteId=${noteId}`, { headers: authHeaders() }).then((r) => r.ok ? r.json() : { cards: [] });
     const list = fresh.cards || [];
     if (list.length === 0) { alert(i18n.t("notes.noFlashcards")); return; }
     close();
@@ -1184,7 +1187,7 @@ async function showFlashcardsPanel(noteId, justCreated) {
 async function deleteCard(noteId, id) {
   if (!id.startsWith("local-")) {
     try {
-      await fetch(`http://localhost:4100/api/v1/flashcards/${id}`, { method: "DELETE" });
+      await fetch(`${BASE}/api/v1/flashcards/${id}`, { method: "DELETE" });
     } catch {}
   }
   showFlashcardsPanel(noteId, { created: [], skipped: 0 });
@@ -1197,9 +1200,9 @@ function openFlashcardEditor(noteId, note) {
 /* v1.5.1 — editor de flashcard individual (front/back + asignatura) */
 async function openCardEditor(noteId, card, noteCtx) {
   document.querySelectorAll(".fc-editor").forEach((p) => p.remove());
-  const subjects = await fetch("http://localhost:4100/api/v1/subjects").then((r) => r.json());
+  const subjects = await fetch("${BASE}/api/v1/subjects").then((r) => r.json());
   const subjectOpts = (subjects.subjects || []).map((s) => `<option value="${escapeHtml(s.id)}" ${card?.subject === s.id ? "selected" : ""}>${escapeHtml(s.name)}</option>`).join("");
-  const note = noteCtx || (await fetch(`http://localhost:4100/api/v1/notes/${noteId}`).then((r) => r.json()));
+  const note = noteCtx || (await fetch(`${BASE}/api/v1/notes/${noteId}`, { headers: authHeaders() }).then((r) => r.json()));
   const editor = document.createElement("div");
   editor.className = "fc-editor scrim";
   editor.innerHTML = `
@@ -1239,7 +1242,7 @@ async function openCardEditor(noteId, card, noteCtx) {
       sourceNoteId: noteId,
       sourceExcerpt: (front + "::" + back).slice(0, 80),
     };
-    const url = card ? `http://localhost:4100/api/v1/flashcards/${card.id}` : `http://localhost:4100/api/v1/flashcards`;
+    const url = card ? `${BASE}/api/v1/flashcards/${card.id}` : `${BASE}/api/v1/flashcards`;
     const method = card ? "PATCH" : "POST";
     const r = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
     if (!r.ok) { alert(`Error: ${r.status}`); return; }

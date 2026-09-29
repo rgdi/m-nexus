@@ -1,10 +1,11 @@
 # M-NEXUS — Features Index
 
-> **v2.32.1** — Educational OS for any career · self-hosted · multi-device · accessible.
+> **v2.38.0** — Educational OS for any career · self-hosted · multi-device · accessible.
 >
 > Stack: TypeScript (Fastify) backend + Vanilla JS+CSS frontend. **Zero frameworks.**
 >
-> 100 files en el bundle, **1645 tests automatizados** (1147 backend + 498 frontend).
+> **2011 tests automatizados** (1338 backend + 673 frontend) en 147 ficheros,
+> 0 errores TypeScript, 22/22 rutas verificadas por barrido automático.
 
 ---
 

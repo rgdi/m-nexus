@@ -6,6 +6,8 @@
  * (lwwMerge o tombstone) y dispara un evento 'sync:incoming'.
  * ============================================================ */
 
+import { detectApiBase } from "./api_base.js";
+const BASE = detectApiBase();
 import { lwwMerge, lwwRead, lwwWrite, tombstone, getVector, getTombstones } from "./crdt.js";
 
 const CLIENT_ID_KEY = "mnexus.sync.clientId";
@@ -27,7 +29,12 @@ export function connectSync() {
   if (ws && ws.readyState !== WebSocket.CLOSED) return ws;
   const proto = location.protocol === "https:" ? "wss:" : "ws:";
   const host = location.hostname;
-  const url = `${proto}//${host}:4100/ws/sync`;
+  // v2.38.0: derived from the API base so the socket and the REST calls
+  // cannot drift apart. It was hardcoded to :4100 while the server
+  // listens on :4000, so the sync socket never connected.
+  let apiHost = "localhost:4000";
+  try { apiHost = new URL(BASE).host; } catch { /* keep default */ }
+  const url = `${proto}//${apiHost}/ws/sync`;
   try {
     ws = new WebSocket(url);
   } catch (e) {
@@ -144,7 +151,7 @@ export function publishChange(type, op, resourceId, data = null) {
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify(msg));
   }
-  fetch("http://localhost:4100/api/v1/sync/publish", {
+  fetch(`${BASE}/api/v1/sync/publish`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(msg),

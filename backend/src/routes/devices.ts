@@ -32,9 +32,16 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
     return { ok: true, device: d };
   });
 
-  // List all devices (used by admin dashboard; non-public in production).
+  // List all devices.
+  //
+  // v2.38.0: this returned `{ ok, devices }` while a duplicate
+  // GET /api/v1/devices in dashboard.ts returned `{ count, devices }`
+  // wrapped in safeCall. The two had drifted for a long time and only
+  // one of them could be registered under the /api/v1 prefix, so the
+  // admin dashboard lost the `count` it reads. The richer shape wins.
   app.get("/devices", async () => {
-    return { ok: true, devices: getRegisteredDevices() };
+    const devices = getRegisteredDevices();
+    return { ok: true, count: devices.length, devices };
   });
 
   // Get one device.

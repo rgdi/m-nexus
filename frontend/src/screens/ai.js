@@ -96,6 +96,11 @@ async function sendAIPrompt(prompt) {
 }
 
 export async function renderAI(root) {
+  // v2.38.0: this screen used to own the whole conversation. The
+  // companion popup does now, and a full route change is the wrong
+  // shape for "ask me something" — you want the notes behind you.
+  const openCompanion = () => document.dispatchEvent(new CustomEvent("mnexus:open-ai"));
+  setTimeout(openCompanion, 120);
   const ctx = getContext();
   const actions = getQuickActions(ctx);
   const ctxLabel = ctx.note?.title

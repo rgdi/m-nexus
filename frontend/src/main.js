@@ -26,7 +26,9 @@ import { renderSubjects } from "./screens/subjects.js";
 import { renderNotes } from "./screens/notes.js";
 import { renderTodos } from "./screens/todos.js";
 import { renderCapture } from "./screens/capture.js";
+import { renderRag } from "./screens/rag.js";
 import { mountCaptureFab } from "./widgets/capture_fab.js";
+import { openAiCompanion } from "./widgets/ai_companion.js";
 import { renderAI } from "./screens/ai.js";
 import { renderSettings } from "./screens/settings.js";
 import { renderJournal } from "./screens/journal.js";
@@ -55,6 +57,8 @@ const ROUTES = {
   todos: renderTodos,
   // v2.38.0: quick capture (tasks / shopping / habits / expenses)
   capture: renderCapture,
+  // v2.38.0: folder-scoped Q&A with citations
+  rag: renderRag,
   ai: renderAI,
   settings: renderSettings,
   login: renderLogin,
@@ -294,6 +298,17 @@ async function bootstrap() {
     .catch(() => {});
   // v2.38.0: capture FAB (mobile only; desktop has the dock entry)
   mountCaptureFab();
+
+  // v2.38.0 — the AI companion opens as a popup from anywhere, the same
+  // floating-window machinery the slash commands use. Ctrl/Cmd+K is the
+  // shortcut; `?` is already taken by the v2.34.0 tour.
+  window.addEventListener("keydown", (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+      e.preventDefault();
+      openAiCompanion();
+    }
+  });
+  document.addEventListener("mnexus:open-ai", () => openAiCompanion());
   // v2.35.0: mobile bottom tab bar (visible ≤ 820px via CSS)
   mountBottomTabbar(document.body);
   // v2.35.0: study tab badge = due card count

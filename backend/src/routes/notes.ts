@@ -11,6 +11,8 @@ import { FastifyInstance } from "fastify";
 import { randomUUID } from "node:crypto";
 import { E } from "../utils/errorCodes.js";
 import { logOp } from "../utils/log.js";
+// v2.38.0: notes feed the folder RAG index, so a write invalidates it.
+import { invalidateIndex as invalidateRagIndex } from "../services/folderRag.js";
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
 
@@ -135,6 +137,11 @@ export class NotesService {
     if (!this.cache) return;
     await fs.mkdir(join(process.cwd(), "data"), { recursive: true });
     await fs.writeFile(DATA_FILE, JSON.stringify(this.cache, null, 2), "utf-8");
+    invalidateRagIndex();
+    // v2.38.0: the folder RAG index reads notes.json and folders.json
+    // from disk, so a write here makes it stale. Rebuilding is lazy —
+    // only the next ask pays for it.
+    invalidateRagIndex();
   }
 }
 

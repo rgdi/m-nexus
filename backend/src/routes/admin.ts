@@ -16,8 +16,18 @@ function requireAdmin(req: any, reply: any): boolean {
   // env-var check so test environments can still exercise admin routes.
   const lanOk = process.env.LAN_AUTH_BYPASS === "true";
   if (lanOk) return true; // LAN bypass short-circuits everything
-  if (!req.auth || (req.auth.scope !== "admin" && !req.auth.isLanBypass)) {
-    reply.status(401).send({ error: "Admin auth required", code: "EC-AUTH-130" });
+  // v2.38.0: 401 → 403. "Unauthorized" means "your token is bad", and
+  // services/api.js reacts to a 401 by refreshing the token — so a
+  // perfectly valid non-admin token was sent through a refresh it did
+  // not need, and if that refresh failed the app logged the user out.
+  // Opening Settings bounced to #/login for the same reason.
+  // 403 says "you are who you say you are, and the answer is still no".
+  if (!req.auth) {
+    reply.status(401).send({ error: "Authentication required", code: "EC-AUTH-130" });
+    return false;
+  }
+  if (req.auth.scope !== "admin" && !req.auth.isLanBypass) {
+    reply.status(403).send({ error: "Admin scope required", code: "EC-AUTH-131" });
     return false;
   }
   return true;

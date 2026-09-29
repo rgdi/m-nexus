@@ -1,8 +1,8 @@
 # M-NEXUS — Education OS for any career
 
-> **v2.32.1** — OCR/Handwriting · Multi-board SR · Smart Notifications · UI cleanup ·
-> Single-command installer · SHA-256 verified · systemd / Docker Compose /
-> auto-upgrade · multi-server with auto-discovery · Accessible from day one.
+> **v2.38.0** — Captura rápida en texto libre · RAG con scoping por carpeta y
+> citas · IA en popup con conversación · PWA instalable y funcional offline ·
+> FSRS-7 real · heatmap con datos de verdad.
 
 M-NEXUS is a self-hosted education tracker. It is **not** limited to medical school:
 templates ship for engineering, law, business, nursing, veterinary and any custom
@@ -25,6 +25,11 @@ run from a Raspberry Pi or scale across Kubernetes — same code, no rebuild.
 | [docs/CLOUDFLARE_TUNNEL.md](docs/CLOUDFLARE_TUNNEL.md) | Expose your self-hosted instance without port forwarding. |
 | [docs/ERROR_CODES.md](docs/ERROR_CODES.md) | Catalogue of `EC-XXX-NNN` codes the API returns. |
 | [docs/LOGGING.md](docs/LOGGING.md) | Structured logs, log levels, audit, redaction. |
+| [docs/TESTING.md](docs/TESTING.md) | How to run the suites, what is excluded and why. |
+| [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md) | The per-route screenshot sweep and what counts as a defect. |
+| [docs/v2.38.md](docs/v2.38.md) | Quick capture, folder-scoped RAG, the AI companion popup. |
+| [docs/v2.37.md](docs/v2.37.md) | The audit release: 13 defects, 4 of them P0. |
+| [docs/v2.36.md](docs/v2.36.md) | The PWA that actually works, AI grading, drag-gap. |
 
 ---
 

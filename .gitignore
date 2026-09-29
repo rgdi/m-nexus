@@ -105,3 +105,4 @@ backend/vault/
 # v2.37.0: runtime artefacts de test/servidor
 backend/data/diagnostics/
 backend/data/pdf-occlusions.json
+backend/data/ocr-cache.json

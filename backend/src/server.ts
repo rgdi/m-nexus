@@ -196,7 +196,11 @@ export async function buildServer(): Promise<any> {
   await app.register(audioRoutes);
   await app.register(llmRoutes);
   await app.register(dashboardRoutes);
-  await app.register(deviceRoutes);
+  // v2.38.0: registered WITHOUT a prefix, so the real paths were
+  // /devices/register, /devices/:id/… while the frontend calls
+  // /api/v1/devices/register (services/device_id.js) — a 404 on every
+  // boot, and every multi-device feature downstream with it.
+  await app.register(deviceRoutes, { prefix: "/api/v1" });
   await app.register(pdfRoutes);
   // v2.2.0 W1: re-enable orphan routes that were disabled since v0.62.8 SIGSEGV workaround.
   // Node 22 + Fastify 5 don't have the original SIGSEGV, safe to register.
@@ -237,6 +241,10 @@ await app.register(multiBoardRoutes);
   // v2.36.0: answer grading (typed answers with LLM, multiple choice)
   const { registerGradingRoutes } = await import("./routes/grading.js");
   registerGradingRoutes(app);
+
+  // v2.38.0 — folder-scoped RAG with citations.
+  const { registerFolderRagRoutes } = await import("./routes/folderRag.js");
+  registerFolderRagRoutes(app);
 
   // v0.62.8: /api/v1/ai/tutor is registered by aiRoutes (./routes/ai.ts).
   // Removed the inline handler to avoid duplicate-route registration error.
