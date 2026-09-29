@@ -177,3 +177,30 @@ describe("v2.38.1 — the theme attribute wins over the OS preference", () => {
     expect(darkAttr[1].toLowerCase()).toBe(darkMedia[1].toLowerCase());
   });
 });
+
+describe("v2.38.2 — a full-screen overlay does not outlive its route", () => {
+  // The study session and the floating windows are appended to <body>,
+  // not to #app, so replacing app.innerHTML on a route change never
+  // reached them. Start a review, tap another tab, and a full-screen
+  // sheet stayed on top with no way back — the app looked frozen.
+  const main = read("src/main.js");
+  const cards = read("src/widgets/study_cards.js");
+
+  it("the router announces a route change", () => {
+    expect(main).toMatch(/dispatchEvent\(new CustomEvent\("mnexus:route"/);
+  });
+
+  it("the study session listens for it and closes", () => {
+    expect(cards).toMatch(/addEventListener\("mnexus:route", close\)/);
+    expect(cards).toMatch(/removeEventListener\("mnexus:route", close\)/);
+  });
+
+  it("closing twice is safe", () => {
+    // The router event and the Escape key can both fire.
+    expect(cards).toMatch(/if \(closed\) return;/);
+  });
+
+  it("floating windows are closed on the same signal", () => {
+    expect(main).toMatch(/closeAllFloatingWindows/);
+  });
+});

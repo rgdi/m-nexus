@@ -471,12 +471,21 @@ export function openStudySession({ cards = [], onRate, onClose, onRateError, onS
   if (showBtn) showBtn.addEventListener("click", flip);
 
   // ---- Close ----
+  let closed = false;
   function close() {
+    if (closed) return;
+    closed = true;
     scrim.remove();
     sheet.remove();
     document.removeEventListener("keydown", onKey);
+    window.removeEventListener("mnexus:route", close);
     if (onClose) onClose();
   }
+  // v2.38.2: the sheet is appended to <body>, not to #app, so a route
+  // change — which replaces app.innerHTML — never reached it. Start a
+  // review, tap another tab, and a full-screen sheet stayed on top with
+  // no way back. The router announces itself and the sheet listens.
+  window.addEventListener("mnexus:route", close);
   function onKey(e) { if (e.key === "Escape") close(); }
   document.addEventListener("keydown", onKey);
   sheet.querySelector("[data-study-close]")?.addEventListener("click", close);

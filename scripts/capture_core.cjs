@@ -231,24 +231,32 @@ const FIGURE =
   await settle(page);
   // The library only lists PDFs it has been told about, so dropping a
   // file in data/pdfs is not enough — drive the real file picker.
+  const pdfErrs = [];
+  page.on('console', (m) => { if (m.type() === 'error') pdfErrs.push(m.text().slice(0, 140)); });
+  page.on('pageerror', (e) => pdfErrs.push('PAGEERROR ' + String(e).slice(0, 140)));
   const pdfPath = path.join(pdfDir, 'ciclo-cardiaco.pdf');
-  const chooser = page.waitForEvent('filechooser', { timeout: 6000 }).catch(() => null);
-  await page.evaluate(() => {
-    const b = [...document.querySelectorAll('button')].find((x) => /Abrir PDF local/i.test(x.textContent || ''));
-    b?.click();
-    if (!b) document.querySelector('input[type=file]')?.click();
-  });
+  const before = await page.evaluate(() => ({
+    button: !!document.querySelector('[data-action="open-local"]'),
+    hash: location.hash,
+    heading: (document.querySelector('h1')?.textContent || '').trim(),
+  }));
+  console.log('   pdf: ', JSON.stringify(before));
+  const chooser = page.waitForEvent('filechooser', { timeout: 8000 }).catch(() => null);
+  await page.evaluate(() => document.querySelector('[data-action="open-local"]')?.click());
   const fileChooser = await chooser;
+  console.log('   selector de archivos:', fileChooser ? 'se abrió' : 'NO se abrió');
   if (fileChooser) {
     await fileChooser.setFiles(pdfPath);
-    await page.waitForTimeout(4500);
+    await page.waitForTimeout(5000);
   }
+  console.log('   consola:', JSON.stringify(pdfErrs.slice(0, 4)));
+  await page.screenshot({ path: path.join(OUT, '_pdf-debug.png') });
   const pdf2 = await page.evaluate(() => {
     const canvas = document.querySelector('canvas');
-    const t = document.body.innerText;
+    const errs = [...document.querySelectorAll('[class*=error], [data-error]')].map((e) => (e.textContent || '').trim().slice(0, 80));
     return {
-      ok: !!canvas || /ciclo-cardiaco/i.test(t),
-      why: canvas ? 'página renderizada en canvas' : 'biblioteca sin el PDF abierto',
+      ok: !!canvas,
+      why: canvas ? 'página renderizada en canvas' : 'sin canvas · ' + JSON.stringify({ errs: errs.slice(0, 2), body: document.body.innerText.slice(0, 120) }),
     };
   });
   await shot('03-pdf', pdf2.ok, pdf2.why);

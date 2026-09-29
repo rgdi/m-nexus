@@ -145,6 +145,15 @@ async function render() {
   // v2.38.2: la barra se monta antes del contenido para que Reserve su
   // espacio desde el primer píxel y no haya un salto al pintar.
   mountAppbar(route);
+  // v2.38.2: tell anything mounted on <body> — a study session, a
+  // floating window — that the route changed. They live outside #app, so
+  // replacing its innerHTML does not tear them down.
+  window.dispatchEvent(new CustomEvent("mnexus:route", { detail: { route } }));
+  // Same problem, same fix: a floating window opened from one screen
+  // stayed over the next one.
+  import("./widgets/floating_window.js")
+    .then((m) => m.closeAllFloatingWindows?.())
+    .catch(() => {});
   app.innerHTML = `<div class="screen"><div class="empty">${i18n.t("common.loading")}</div></div>`;
   try {
     const fn = ROUTES[route];

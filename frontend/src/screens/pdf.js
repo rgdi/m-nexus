@@ -87,17 +87,27 @@ export async function renderPdfScreen(host) {
 
   host.querySelector('[data-action="refresh"]').addEventListener("click", refresh);
   host.querySelector('[data-action="open-local"]').addEventListener("click", () => {
+    // v2.38.2: the input used to be created detached and clicked without
+    // ever entering the document. Chrome does not reliably open a file
+    // chooser for a detached input — the button simply did nothing on
+    // some builds. It is attached, hidden, and removed once used.
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "application/pdf";
+    input.style.cssText = "position:fixed;left:-9999px;width:1px;height:1px;opacity:0";
+    input.setAttribute("aria-hidden", "true");
     input.addEventListener("change", () => {
       const file = input.files?.[0];
+      input.remove();
       if (!file) return;
       const url = URL.createObjectURL(file);
       openPdfViewer({ pdfUrl: url, title: file.name });
       refresh();
     });
+    document.body.appendChild(input);
     input.click();
+    // If the chooser is dismissed, the element would otherwise linger.
+    window.addEventListener("focus", () => setTimeout(() => input.remove(), 1000), { once: true });
   });
 
   await refresh();

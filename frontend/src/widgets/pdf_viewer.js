@@ -23,22 +23,29 @@ let pdfjsPromise = null;
 /** Lazy-load pdf.js from CDN; ensures single-flight */
 function loadPdfJs() {
   if (pdfjsPromise) return pdfjsPromise;
-  pdfjsPromise = new Promise((resolve, reject) => {
-    if (window.pdfjsLib) return resolve(window.pdfjsLib);
-    const script = document.createElement("script");
-    script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.mjs";
-    script.type = "module";
-    script.onload = () => {
-      // pdfjs-dist ESM export attached differently; fallback to UMD if needed
-      if (window.pdfjsLib) return resolve(window.pdfjsLib);
-      const umd = document.createElement("script");
-      umd.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.js";
-      umd.onload = () => resolve(window.pdfjsLib);
-      umd.onerror = reject;
-      document.head.appendChild(umd);
-    };
-    script.onerror = reject;
-    document.head.appendChild(script);
+  // v2.38.2: this loaded pdf.min.mjs with a <script type="module"> tag and
+  // then looked for `window.pdfjsLib`. An ES module never puts anything
+  // on window — it exports bindings — so the check always failed, the
+  // code fell through to a UMD build that does not exist at that
+  // version (404), and the viewer rejected. The PDF viewer has therefore
+  // never loaded, on any device, online or not. Import the module for
+  // real and return its namespace.
+  pdfjsPromise = (async () => {
+    if (window.pdfjsLib) return window.pdfjsLib;
+    const mod = await import("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.mjs");
+    if (mod && mod.getDocument) {
+      // A worker is required; pdf.js warns loudly without one.
+      if (mod.GlobalWorkerOptions) {
+        mod.GlobalWorkerOptions.workerSrc =
+          "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.mjs";
+      }
+      return mod;
+    }
+    throw new Error("pdf.js cargó pero no exporta getDocument");
+  })().catch((e) => {
+    // Let the next attempt retry instead of caching the failure.
+    pdfjsPromise = null;
+    throw e;
   });
   return pdfjsPromise;
 }
@@ -91,7 +98,12 @@ export async function openPdfViewer({ pdfUrl, title = "Visor PDF", onChange = ()
     ],
   });
 
-  const root = modal.body.querySelector(".pdf-viewer");
+  // v2.38.2: makeModal returns { root, scrim, close, getValue } — there
+  // is no `body`. `modal.body.querySelector` threw "cannot read
+  // properties of undefined", so the viewer died at the first line after
+  // opening and no PDF ever rendered, on any device.
+  const root = modal.root.querySelector(".pdf-viewer");
+  if (!root) throw new Error("el modal no contiene el visor");
   const pagesHost = root.querySelector("[data-pdf-pages]");
   const listEl = root.querySelector("[data-highlight-list]");
   const statEl = root.querySelector("[data-stat]");
@@ -107,8 +119,10 @@ export async function openPdfViewer({ pdfUrl, title = "Visor PDF", onChange = ()
   // ===== PDF rendering =====
   try {
     const pdfjs = await loadPdfJs();
+    // Same version and same module flavour as the library itself: the
+    // .js worker at this version is a 404.
     pdfjs.GlobalWorkerOptions.workerSrc =
-      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js";
+      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.mjs";
     pdfDoc = await pdfjs.getDocument(pdfUrl).promise;
     await renderPages();
   } catch (e) {
