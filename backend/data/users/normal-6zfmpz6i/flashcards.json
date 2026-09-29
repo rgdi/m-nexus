@@ -1,0 +1,359 @@
+[
+  {
+    "id": "fc-76d6a4fb-f549-4f79-ae01-43200ad7df77",
+    "front": "¿Qué gen causa la fibrosis quística?",
+    "back": "CFTR, en el cromosoma 7",
+    "subject": "gen",
+    "tags": [],
+    "sourceNoteId": "",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 3.126201556554962,
+      "difficulty": 3.9349,
+      "state": "review",
+      "reps": 4,
+      "lapses": 0,
+      "lastReview": 1790722713954,
+      "due": 1790992817768,
+      "retrievability": 1,
+      "sched": {
+        "elapsedDays": 0,
+        "targetRetention": 0.9
+      }
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "reviewHistory": [
+      {
+        "t": 1790722713921,
+        "rating": 2,
+        "r": 1
+      },
+      {
+        "t": 1790722713930,
+        "rating": 3,
+        "r": 1
+      },
+      {
+        "t": 1790722713945,
+        "rating": 3,
+        "r": 1
+      },
+      {
+        "t": 1790722713954,
+        "rating": 4,
+        "r": 1
+      }
+    ],
+    "createdAt": 1790722713904,
+    "updatedAt": 1790722713954
+  },
+  {
+    "id": "fc-45887f4a-cf46-4867-8c9f-3326ae4eff2f",
+    "front": "¿Cuáles son las dos leyes de Mendel?",
+    "back": "Segregación y distribución independiente",
+    "subject": "gen",
+    "tags": [],
+    "sourceNoteId": "",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 3.1262012586383316,
+      "difficulty": 3.9349,
+      "state": "review",
+      "reps": 4,
+      "lapses": 0,
+      "lastReview": 1790722713999,
+      "due": 1790992817788,
+      "retrievability": 1,
+      "sched": {
+        "elapsedDays": 0,
+        "targetRetention": 0.9
+      }
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "reviewHistory": [
+      {
+        "t": 1790722713972,
+        "rating": 2,
+        "r": 1
+      },
+      {
+        "t": 1790722713981,
+        "rating": 3,
+        "r": 1
+      },
+      {
+        "t": 1790722713991,
+        "rating": 3,
+        "r": 1
+      },
+      {
+        "t": 1790722713999,
+        "rating": 4,
+        "r": 1
+      }
+    ],
+    "createdAt": 1790722713963,
+    "updatedAt": 1790722713999
+  },
+  {
+    "id": "fc-52bdb0ef-974f-4307-a186-afcf8d29997c",
+    "front": "¿Qué es una sustitución puntual?",
+    "back": "Cambio de un único nucleótido",
+    "subject": "gen",
+    "tags": [],
+    "sourceNoteId": "",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 3.126201883953542,
+      "difficulty": 3.9349,
+      "state": "review",
+      "reps": 4,
+      "lapses": 0,
+      "lastReview": 1790722714049,
+      "due": 1790992817892,
+      "retrievability": 1,
+      "sched": {
+        "elapsedDays": 0,
+        "targetRetention": 0.9
+      }
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "reviewHistory": [
+      {
+        "t": 1790722714017,
+        "rating": 2,
+        "r": 1
+      },
+      {
+        "t": 1790722714026,
+        "rating": 3,
+        "r": 1
+      },
+      {
+        "t": 1790722714035,
+        "rating": 3,
+        "r": 1
+      },
+      {
+        "t": 1790722714049,
+        "rating": 4,
+        "r": 1
+      }
+    ],
+    "createdAt": 1790722714008,
+    "updatedAt": 1790722714049
+  },
+  {
+    "id": "fc-07f77177-50f4-4e2d-83ef-f3dee0c498eb",
+    "front": "¿Cuántas fases tiene el ciclo cardíaco?",
+    "back": "Sístole y diástole",
+    "subject": "car",
+    "tags": [],
+    "sourceNoteId": "",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 3.1262014815752894,
+      "difficulty": 3.9349,
+      "state": "review",
+      "reps": 4,
+      "lapses": 0,
+      "lastReview": 1790722714100,
+      "due": 1790992817908,
+      "retrievability": 1,
+      "sched": {
+        "elapsedDays": 0,
+        "targetRetention": 0.9
+      }
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "reviewHistory": [
+      {
+        "t": 1790722714069,
+        "rating": 2,
+        "r": 1
+      },
+      {
+        "t": 1790722714078,
+        "rating": 3,
+        "r": 1
+      },
+      {
+        "t": 1790722714091,
+        "rating": 3,
+        "r": 1
+      },
+      {
+        "t": 1790722714100,
+        "rating": 4,
+        "r": 1
+      }
+    ],
+    "createdAt": 1790722714059,
+    "updatedAt": 1790722714100
+  },
+  {
+    "id": "fc-f647f2e8-c1fd-42cb-ac43-d0fc20bb0c9b",
+    "front": "¿Qué es la aorta?",
+    "back": "La mayor arteria del cuerpo",
+    "subject": "car",
+    "tags": [],
+    "sourceNoteId": "",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 3.1262013691058392,
+      "difficulty": 3.9349,
+      "state": "review",
+      "reps": 4,
+      "lapses": 0,
+      "lastReview": 1790722714145,
+      "due": 1790992817943,
+      "retrievability": 1,
+      "sched": {
+        "elapsedDays": 0,
+        "targetRetention": 0.9
+      }
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "reviewHistory": [
+      {
+        "t": 1790722714117,
+        "rating": 2,
+        "r": 1
+      },
+      {
+        "t": 1790722714126,
+        "rating": 3,
+        "r": 1
+      },
+      {
+        "t": 1790722714136,
+        "rating": 3,
+        "r": 1
+      },
+      {
+        "t": 1790722714145,
+        "rating": 4,
+        "r": 1
+      }
+    ],
+    "createdAt": 1790722714109,
+    "updatedAt": 1790722714145
+  },
+  {
+    "id": "fc-2102523e-20b4-467c-97a6-0ee2bdcd5caf",
+    "front": "¿Qué forma un enlace iónico?",
+    "back": "Metales con no metales, por transferencia electrónica",
+    "subject": "qui",
+    "tags": [],
+    "sourceNoteId": "",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 3.1262013691058392,
+      "difficulty": 3.9349,
+      "state": "review",
+      "reps": 4,
+      "lapses": 0,
+      "lastReview": 1790722714194,
+      "due": 1790992817992,
+      "retrievability": 1,
+      "sched": {
+        "elapsedDays": 0,
+        "targetRetention": 0.9
+      }
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "reviewHistory": [
+      {
+        "t": 1790722714166,
+        "rating": 2,
+        "r": 1
+      },
+      {
+        "t": 1790722714175,
+        "rating": 3,
+        "r": 1
+      },
+      {
+        "t": 1790722714185,
+        "rating": 3,
+        "r": 1
+      },
+      {
+        "t": 1790722714194,
+        "rating": 4,
+        "r": 1
+      }
+    ],
+    "createdAt": 1790722714153,
+    "updatedAt": 1790722714194
+  },
+  {
+    "id": "fc-60f718bc-8899-4c49-b21b-29bb6d23559d",
+    "front": "¿Rango normal de pH en sangre?",
+    "back": "7.35 a 7.45",
+    "subject": "qui",
+    "tags": [],
+    "sourceNoteId": "",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 3.1262012586383316,
+      "difficulty": 3.9349,
+      "state": "review",
+      "reps": 4,
+      "lapses": 0,
+      "lastReview": 1790722714240,
+      "due": 1790992818029,
+      "retrievability": 1,
+      "sched": {
+        "elapsedDays": 0,
+        "targetRetention": 0.9
+      }
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "reviewHistory": [
+      {
+        "t": 1790722714213,
+        "rating": 2,
+        "r": 1
+      },
+      {
+        "t": 1790722714222,
+        "rating": 3,
+        "r": 1
+      },
+      {
+        "t": 1790722714232,
+        "rating": 3,
+        "r": 1
+      },
+      {
+        "t": 1790722714240,
+        "rating": 4,
+        "r": 1
+      }
+    ],
+    "createdAt": 1790722714203,
+    "updatedAt": 1790722714240
+  }
+]

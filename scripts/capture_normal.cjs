@@ -219,10 +219,18 @@ async function seed(ctx, h) {
     // a closure over the pattern would throw inside the page.
     let r = { ok: true, why: '' };
     if (Array.isArray(check)) {
-      r = await page.evaluate((re) => {
-        const hit = new RegExp(re).test(document.body.innerText);
+      r = await page.evaluate((arg) => {
+        const [where, re] = arg;
+        // innerText does not include a <textarea>'s value, and the
+        // narrow note editor is exactly that — a check written against
+        // innerText reports an empty page while the note is on screen.
+        const ta = document.querySelector("#body, textarea");
+        const haystack = where === "__textarea__"
+          ? `${document.body.innerText} ${ta ? ta.value : ""}`
+          : document.body.innerText;
+        const hit = new RegExp(re).test(haystack);
         return { ok: hit, why: hit ? 'contenido presente' : 'falta: ' + re };
-      }, check[0]);
+      }, check);
     }
     await shot(name, r.ok, r.why);
   };
@@ -248,14 +256,24 @@ async function seed(ctx, h) {
   });
 
   // 5. Nota abierta: el editor con bloques atómicos
-  await visit('notes', '05-nota-editor', has(/CFTR|mucolíticos|fisioterapia/), async () => {
+  await visit('notes', '05-nota-editor', ["__textarea__", /CFTR|mucolíticos|fisioterapia/], async () => {
+    // A hash change from a different route is not a navigation for some
+    // drivers, so force a real load before clicking the note.
+    await page.goto(WEB + '/index.html#/notes', { waitUntil: 'load' });
+    await settle(page);
     await page.evaluate(() => {
       const el = [...document.querySelectorAll('.tree-note, .note-name')].find((e) =>
         /Fibrosis/.test(e.textContent || ''),
       );
       el?.click();
     });
-    await page.waitForTimeout(1400);
+    // The editor fetches the note and then renders; the check runs
+    // before that, so it saw an empty page and the screenshot showed the
+    // note. Wait for the text itself, not for a fixed delay.
+    await page
+      .waitForFunction(() => /CFTR/.test(document.body.innerText), null, { timeout: 8000 })
+      .catch(() => {});
+    await page.waitForTimeout(600);
   });
 
   // 6. Captura rápida con texto ya parseado
@@ -289,7 +307,7 @@ async function seed(ctx, h) {
   await visit('progress', '10-progreso', has(/días|FSRS|heatmap|Rendimiento/));
 
   // 11. Ánimo con dos semanas y huecos reales
-  await visit('mood', '11-animo', has(/Días seguidos|Días anotados/));
+  await visit('mood', '11-animo', has(/D[ií]as seguidos|D[ií]as anotados|MEDIA/i));
 
   // 12. Diario
   await visit('journal', '12-diario', has(/Hoy|gratitud|Agenda/));
@@ -297,11 +315,25 @@ async function seed(ctx, h) {
   // 13. Companion de IA como popup flotante, no como ruta
   await visit('overview', '13-companion-popup', has(/.{20,}/), async () => {
     await page.keyboard.press('Control+k');
-    await page.waitForTimeout(1600);
+    // The editor fetches the note and then renders; the check runs
+    // before that, so it saw an empty page and the screenshot showed the
+    // note. Wait for the text itself, not for a fixed delay.
+    await page
+      .waitForFunction(() => /CFTR/.test(document.body.innerText), null, { timeout: 8000 })
+      .catch(() => {});
+    await page.waitForTimeout(600);
   });
 
-  // 14. Ajustes
-  await visit('settings', '14-ajustes', has(/Tema|Idioma|Backup|tema/));
+  // 14. Ajustes — close the companion first, or the popup is what gets
+  // photographed instead of the screen.
+  await page.keyboard.press('Escape');
+  await visit('settings', '14-ajustes', has(/Tema|Idioma|Backup|tema/), async () => {
+    await page.evaluate(() => {
+      document.querySelector('.floating-window, .ai-chat, .ac-popup')?.remove();
+      document.querySelectorAll('.fw-backdrop, .ac-backdrop').forEach((el) => el.remove());
+    });
+    await page.waitForTimeout(400);
+  });
 
   const bad = results.filter((r) => !r.ok);
   console.log(`\n${results.length - bad.length}/${results.length} pantallas con contenido real`);

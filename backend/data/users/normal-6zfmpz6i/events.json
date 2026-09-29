@@ -1,0 +1,74 @@
+[
+  {
+    "title": "Repaso de genética",
+    "prof": "Dra. Ferrer",
+    "room": "Aula 3",
+    "type": "",
+    "subject": "Estudio",
+    "start": 1790704800000,
+    "end": 1790710200000,
+    "id": "evt-a38144ee-076c-4e53-aa3a-d66f14ffef67",
+    "createdAt": 1790722714250,
+    "updatedAt": 1790722714250
+  },
+  {
+    "title": "Repaso de química",
+    "prof": "Prof. Ruiz",
+    "room": "Lab 1",
+    "type": "",
+    "subject": "Estudio",
+    "start": 1790713800000,
+    "end": 1790717400000,
+    "id": "evt-f18474f4-313e-4033-bda7-d12694a5e0d1",
+    "createdAt": 1790722714257,
+    "updatedAt": 1790722714257
+  },
+  {
+    "title": "Entrega práctica de química",
+    "prof": "Prof. Ruiz",
+    "room": "Aula 3",
+    "type": "",
+    "subject": "Estudio",
+    "start": 1790762400000,
+    "end": 1790765100000,
+    "id": "evt-c992f77a-17db-405a-b432-c4b2085e3b4e",
+    "createdAt": 1790722714267,
+    "updatedAt": 1790722714267
+  },
+  {
+    "title": "Clínica de cardiología",
+    "prof": "Dr. Mena",
+    "room": "Hospital",
+    "type": "",
+    "subject": "Estudio",
+    "start": 1790872200000,
+    "end": 1790879400000,
+    "id": "evt-56a0a254-7248-4fc5-9646-b5b992459ec5",
+    "createdAt": 1790722714286,
+    "updatedAt": 1790722714286
+  },
+  {
+    "title": "Seminario de Mendel",
+    "prof": "Dra. Ferrer",
+    "room": "Aula 1",
+    "type": "",
+    "subject": "Estudio",
+    "start": 1790942400000,
+    "end": 1790946000000,
+    "id": "evt-e2edd8b7-c41c-457e-aad4-4a5ea4283584",
+    "createdAt": 1790722714295,
+    "updatedAt": 1790722714295
+  },
+  {
+    "title": "Examen de química",
+    "prof": "Prof. Ruiz",
+    "room": "Aula 2",
+    "type": "",
+    "subject": "Estudio",
+    "start": 1791018000000,
+    "end": 1791025200000,
+    "id": "evt-6719d0af-0791-4209-a444-6ea211c47b98",
+    "createdAt": 1790722714304,
+    "updatedAt": 1790722714304
+  }
+]

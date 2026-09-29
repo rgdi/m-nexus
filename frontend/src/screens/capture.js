@@ -110,9 +110,10 @@ function paint(host) {
         placeholder="comprar pan mañana, llamar al dentista el viernes"
         aria-label="Texto a capturar"></textarea>
       <div class="cap-input-actions">
-        <label class="cap-llm-toggle">
+        <label class="m-switch-toggle">
           <input type="checkbox" data-cap-llm>
-          <span>con IA</span>
+          <span class="m-switch-track" aria-hidden="true"><span class="m-switch-knob"></span></span>
+          <span class="m-switch-label">con IA</span>
         </label>
         ${voiceSupport() ? `
           <button class="cap-mic" data-cap-mic

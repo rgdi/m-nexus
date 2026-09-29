@@ -16,11 +16,19 @@ import { authHeaders } from "../services/auth.js";
 import { showToast } from "../widgets/toast.js";
 
 const BASE = detectApiBase();
+
+/** Note titles are user text and end up inside an attribute. */
+function escapeHtml(v) {
+  return String(v ?? "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c]));
+}
 const LS_SCOPE = "mnexus.rag.scope";
 
 let folders = [];
 let scope = localStorage.getItem(LS_SCOPE) || "";
 let meta = null;
+let noteTitles = [];
 let last = null;
 
 function esc(s) {
@@ -44,7 +52,15 @@ export async function renderRag(root) {
   paint(host);
 
   try {
-    const r = await fetch(`${BASE}/api/v1/rag/folders`, { headers: authHeaders() });
+    // The starter prompts need note *titles*; /rag/folders only returns
+    // per-folder counts. Same round trip, one extra request.
+    const [r, nr] = await Promise.all([
+      fetch(`${BASE}/api/v1/rag/folders`, { headers: authHeaders() }),
+      fetch(`${BASE}/api/v1/notes`, { headers: authHeaders() }),
+    ]);
+    if (nr.ok) {
+      try { noteTitles = (await nr.json()).notes || []; } catch { noteTitles = []; }
+    }
     if (r.ok) {
       meta = await r.json();
       folders = meta.folders ?? [];
@@ -78,7 +94,8 @@ function paint(host) {
       <div class="rag-ask-row">
         <label class="rag-llm">
           <input type="checkbox" data-rag-llm>
-          <span>Responder con IA</span>
+          <span class="m-switch-track" aria-hidden="true"><span class="m-switch-knob"></span></span>
+          <span class="m-switch-label">Responder con IA</span>
         </label>
         <button class="m-btn" type="submit">Preguntar</button>
       </div>
@@ -89,9 +106,46 @@ function paint(host) {
     </button>
 
     <div data-rag-result></div>
+
+    <!-- v2.38.2: three quarters of this screen used to be empty until a
+         question was asked. Showing what is actually in the library
+         turns it from a form into something you can start from. -->
+    <div class="rag-starters" data-rag-starters>
+      <h2 class="m-section-label">Prueba con</h2>
+      <div class="rag-starters-list"></div>
+    </div>
   `;
   wire(host);
+  renderStarters(host);
   if (last) renderResult(host, last);
+}
+
+/**
+ * Starter prompts drawn from what is actually in the library.
+ *
+ * A generic "¿Qué es la fotosíntesis?" on a screen whose whole promise
+ * is "the answer only uses what is in here" is a bad first impression.
+ * These come from the caller's own note titles.
+ */
+function renderStarters(host) {
+  const box = host.querySelector("[data-rag-starters]");
+  if (!box) return;
+  const list = box.querySelector(".rag-starters-list");
+  const chips = noteTitles.filter((n) => !n.isJournal).slice(0, 3);
+  if (!chips.length) { box.remove(); return; }
+  list.innerHTML = chips.map((n) => {
+    const t = String(n.title || "").trim();
+    if (!t) return "";
+    return `<button type="button" class="rag-starter" data-rag-starter="${escapeHtml(t)}">${escapeHtml(t)}</button>`;
+  }).join("");
+  list.querySelectorAll("[data-rag-starter]").forEach((b) => {
+    b.addEventListener("click", () => {
+      const input = host.querySelector("[data-rag-input]");
+      if (!input) return;
+      input.value = b.getAttribute("data-rag-starter");
+      input.focus();
+    });
+  });
 }
 
 function wire(host) {

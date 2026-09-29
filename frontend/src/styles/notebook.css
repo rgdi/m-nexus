@@ -793,11 +793,25 @@
   }
 }
 
-/* v2.12.0: hide narrow textarea when canvas is mounted */
-.notebook-narrow .doc-textarea[style*="display: none"],
-.notebook-narrow .canvas-wrap + .doc-textarea {
+/* v2.38.2: the textarea is hidden only when a canvas was actually
+ * mounted. The old rule also hid it by sibling order, which took the
+ * text away from every note that has no strokes — the common case. */
+.notebook-narrow .doc-textarea[style*="display: none"] {
   display: none !important;
 }
+.notebook-narrow .doc-textarea {
+  width: 100%;
+  min-height: 46vh;
+  padding: 16px 4px;
+  background: transparent;
+  border: 0;
+  color: var(--fg, #e8e8f0);
+  font-size: 16px; /* iOS zooms below this */
+  line-height: 1.6;
+  resize: none;
+  font-family: inherit;
+}
+.notebook-narrow .doc-textarea:focus { outline: none; }
 
 /* v2.12.0: hide text-layer in narrow (mobile uses canvas only) */
 .notebook-narrow .text-layer {

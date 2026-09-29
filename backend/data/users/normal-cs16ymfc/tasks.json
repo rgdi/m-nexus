@@ -1,0 +1,57 @@
+[
+  {
+    "text": "comprar leche desnatada el viernes a las 18:00",
+    "done": false,
+    "due": null,
+    "priority": 0,
+    "subject": "",
+    "kind": "shopping",
+    "id": "task-b814db2e-3741-4807-b896-f576f2cb2f82",
+    "createdAt": 1790721752274,
+    "updatedAt": 1790721752274
+  },
+  {
+    "text": "estudiar el ciclo cardíaco mañana a las 20:00",
+    "done": false,
+    "due": null,
+    "priority": 0,
+    "subject": "",
+    "kind": "task",
+    "id": "task-99239e79-2f11-44e7-b3af-51c5825ac9bc",
+    "createdAt": 1790721752281,
+    "updatedAt": 1790721752281
+  },
+  {
+    "text": "llamar a Laura sobre las prácticas el jueves a las 11:00",
+    "done": false,
+    "due": null,
+    "priority": 0,
+    "subject": "",
+    "kind": "task",
+    "id": "task-eb40ef28-3f30-462e-b680-d2e442587298",
+    "createdAt": 1790721752292,
+    "updatedAt": 1790721752292
+  },
+  {
+    "text": "beber 2 litros de agua todos los días",
+    "done": false,
+    "due": null,
+    "priority": 0,
+    "subject": "",
+    "kind": "habit",
+    "id": "task-28a5b8cb-633b-4e8b-8957-c4312071a58b",
+    "createdAt": 1790721752301,
+    "updatedAt": 1790721752301
+  },
+  {
+    "text": "gastar 12.50 en café con Nacho ayer a las 17:00",
+    "done": false,
+    "due": null,
+    "priority": 0,
+    "subject": "",
+    "kind": "expense",
+    "id": "task-54e3e0cf-990f-4409-8fa8-905a7eea53fa",
+    "createdAt": 1790721752310,
+    "updatedAt": 1790721752310
+  }
+]

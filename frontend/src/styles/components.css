@@ -2219,7 +2219,11 @@ body.hide-ui .dock, body.hide-ui .lang-switcher, body.hide-ui .top-toolbar { dis
   min-height: calc(100vh - var(--s-9));
 }
 @media (max-width: 720px) {
-  .journal-screen { grid-template-columns: 1fr; }
+  /* v2.38.2: `1fr` is `minmax(auto, 1fr)`, so a wide child stretches the
+   * track past the viewport — the journal was 724px wide inside a 414px
+   * phone and every block ran off the right edge. minmax(0, …) lets the
+   * track actually shrink. */
+  .journal-screen { grid-template-columns: minmax(0, 1fr); }
   .journal-sidebar { order: 2; }
 }
 .journal-sidebar {
@@ -2244,7 +2248,12 @@ body.hide-ui .dock, body.hide-ui .lang-switcher, body.hide-ui .top-toolbar { dis
 .streak-num { font-size: 32px; font-weight: 800; }
 .streak-meta { display: flex; gap: var(--s-3); font-size: 12px; color: var(--fg-muted); align-items: baseline; }
 .mood-spark { width: 100%; height: 60px; }
-.heatmap-grid { display: grid; grid-template-columns: repeat(15, 1fr); gap: 3px; margin-bottom: var(--s-2); }
+/* v2.38.2: 15 columns of 1fr resolve to minmax(auto, 1fr) per track, so
+ * a cell with a large min-content width pushed the whole grid to 725px
+ * and the page scrolled sideways. minmax(0, …) lets the tracks shrink;
+ * the cell keeps its square through aspect-ratio. */
+.heatmap-grid { display: grid; grid-template-columns: repeat(15, minmax(0, 1fr)); gap: 3px; margin-bottom: var(--s-2); }
+.heatmap-grid .heat-cell { min-width: 0; }
 .heat-cell { aspect-ratio: 1/1; border-radius: 3px; transition: transform 0.1s; }
 .heat-cell:hover { transform: scale(1.2); outline: 2px solid var(--accent); }
 .recent-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: var(--s-1); }
@@ -2255,6 +2264,25 @@ body.hide-ui .dock, body.hide-ui .lang-switcher, body.hide-ui .top-toolbar { dis
 .journal-main { display: flex; flex-direction: column; gap: var(--s-4); }
 .journal-head { display: flex; gap: var(--s-4); align-items: center; flex-wrap: wrap; }
 .journal-head .h-title { margin: 0; }
+
+/* v2.38.2: on a phone the full date ("martes, 29 de septiembre de 2026")
+ * ran to four lines at heading size and the view switcher wrapped into
+ * the middle of it. The date is context, not a hero — the app bar above
+ * already names the screen. */
+@media (max-width: 720px) {
+  .journal-head { gap: var(--s-3); row-gap: var(--s-3); }
+  .journal-head .h-title {
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: -.01em;
+    line-height: 1.25;
+  }
+  .journal-head .head-left { flex: 1 1 100%; order: 1; }
+  .journal-head .view-switcher { order: 2; }
+  .journal-head .head-right { order: 3; margin-left: auto; }
+  .view-switcher .tab { padding: 8px 14px; }
+  .head-right .btn { min-height: 40px; }
+}
 .head-left { flex: 1; min-width: 0; }
 .head-right { display: flex; gap: var(--s-2); }
 .view-switcher { display: inline-flex; background: var(--bg-elevated, #f3f4f6); padding: 3px; border-radius: 999px; gap: 2px; }

@@ -1,0 +1,41 @@
+[
+  {
+    "name": "Genética",
+    "icon": "G",
+    "color": "var(--subj-blue)",
+    "grade": null,
+    "performance": 0,
+    "prof": "",
+    "next": "",
+    "id": "sub-69f69c96-99cf-4b56-b200-d5f4724b07dd",
+    "order": 0,
+    "createdAt": 1790722614779,
+    "updatedAt": 1790722614779
+  },
+  {
+    "name": "Cardiología",
+    "icon": "C",
+    "color": "var(--subj-blue)",
+    "grade": null,
+    "performance": 0,
+    "prof": "",
+    "next": "",
+    "id": "sub-07d49dc3-082e-460e-ad35-e420495ee8e9",
+    "order": 1,
+    "createdAt": 1790722614786,
+    "updatedAt": 1790722614786
+  },
+  {
+    "name": "Química",
+    "icon": "Q",
+    "color": "var(--subj-blue)",
+    "grade": null,
+    "performance": 0,
+    "prof": "",
+    "next": "",
+    "id": "sub-02f31d6f-af7c-452c-bcbc-b5f45a92a68e",
+    "order": 2,
+    "createdAt": 1790722614796,
+    "updatedAt": 1790722614796
+  }
+]

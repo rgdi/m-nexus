@@ -1,0 +1,29 @@
+[
+  {
+    "id": "folder-a582de8a-967a-4354-927b-8feb6bfbb0d6",
+    "name": "Genética",
+    "parentId": null,
+    "color": "var(--subj-blue)",
+    "icon": "folder",
+    "createdAt": 1790722650118,
+    "updatedAt": 1790722650118
+  },
+  {
+    "id": "folder-7e5445b1-afad-4815-a449-78755e482b7b",
+    "name": "Cardiología",
+    "parentId": null,
+    "color": "var(--subj-blue)",
+    "icon": "folder",
+    "createdAt": 1790722650173,
+    "updatedAt": 1790722650173
+  },
+  {
+    "id": "folder-33f6d711-88b5-4611-9f47-b83ce26f380d",
+    "name": "Química",
+    "parentId": null,
+    "color": "var(--subj-blue)",
+    "icon": "folder",
+    "createdAt": 1790722650213,
+    "updatedAt": 1790722650213
+  }
+]

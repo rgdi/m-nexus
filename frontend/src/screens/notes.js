@@ -1400,6 +1400,12 @@ function renderNotebookWideHTML(note, pages) {
 }
 
 function renderNotebookNarrowHTML(note) {
+  // v2.38.2: the narrow editor was canvas-only, so a note that has text
+  // and no strokes — which is how the capture, the generator and the API
+  // all create notes — opened as a blank page. The canvas is for
+  // handwriting; a text note has to be shown as text.
+  const strokes = (note.pages || []).reduce((n, p) => n + (p?.strokes?.length || 0), 0);
+  const ink = strokes > 0;
   return `
     <div class="screen notebook-narrow" data-layout="narrow">
       <header class="screen-header">
@@ -1414,10 +1420,10 @@ function renderNotebookNarrowHTML(note) {
       </header>
 
       <div class="narrow-doc">
-        <div class="canvas-wrap" id="canvas-wrap">
+        ${ink ? `<div class="canvas-wrap" id="canvas-wrap">
           <canvas id="canvas"></canvas>
-        </div>
-        <textarea class="doc-textarea" id="body" placeholder="Write your note…" style="display:none;">${escapeHtml(note.body || "")}</textarea>
+        </div>` : ""}
+        <textarea class="doc-textarea" id="body" placeholder="${i18n.t("notes.writeNote") || "Escribe tu nota…"}"${ink ? ' style="display:none;"' : ""}>${escapeHtml(note.body || "")}</textarea>
         <div class="narrow-actions">
           <button class="btn" id="open-ai">✦ ${i18n.t("ai.open") || "Open AI"}</button>
           <button class="btn" id="export-pdf">📄 PDF</button>

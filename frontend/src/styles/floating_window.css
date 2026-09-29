@@ -21,6 +21,22 @@
   min-height: 220px;
 }
 
+/* v2.38.2: on a phone the window opened at its desktop width and ran off
+ * the right edge, with the scope picker and the input cut in half. It is
+ * pinned to the viewport instead, with a gutter. */
+@media (max-width: 720px) {
+  .floating-window {
+    min-width: 0;
+    width: auto !important;
+    max-width: calc(100vw - 24px);
+    left: 12px !important;
+    right: 12px;
+    top: auto !important;
+    bottom: 12px;
+  }
+  .floating-window * { max-width: 100%; }
+}
+
 .floating-window-header {
   display: flex;
   align-items: center;
