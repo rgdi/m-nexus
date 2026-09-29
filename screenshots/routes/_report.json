@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-09-29T12:37:44.049Z",
+  "capturedAt": "2026-09-29T12:54:28.419Z",
   "viewport": "phone 414x896",
   "web": "http://localhost:8080",
   "routes": [
@@ -13,7 +13,7 @@
     {
       "route": "calendar",
       "status": "ok",
-      "bodyLen": 2300,
+      "bodyLen": 2314,
       "redirected": null,
       "errors": []
     },
@@ -111,14 +111,14 @@
     {
       "route": "cluster",
       "status": "ok",
-      "bodyLen": 1728,
+      "bodyLen": 1729,
       "redirected": null,
       "errors": []
     },
     {
       "route": "journal",
       "status": "ok",
-      "bodyLen": 16008,
+      "bodyLen": 15453,
       "redirected": null,
       "errors": []
     },
