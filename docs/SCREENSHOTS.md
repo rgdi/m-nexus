@@ -95,12 +95,21 @@ hacen nada — eso necesita los scripts de flujo, y solo hay tres.
 | `screenshots/drag-occlusion.png` | Dos fichas arrastradas sobre la figura con eventos táctiles reales vía CDP. Las máscaras quedan `is-filled is-correct` y las fichas usadas se atenúan. Los tres botones caben a 414 px. |
 | `screenshots/routes/*.png` | 24/24 rutas limpias, incluidas las dos nuevas. Reporte en `screenshots/routes/_report.json`. |
 
-Cómo reproducir:
+Todas las de v2.38.1 en un solo comando:
 
 ```bash
-node scripts/capture_v238_drag.cjs   # arrastre sobre la imagen
-node scripts/capture_routes.cjs      # barrido de las 24 rutas
+node scripts/capture_v2381.cjs   # siembra material real y captura las 7 pantallas
+node scripts/capture_routes.cjs  # barrido de las 24 rutas
+node scripts/capture_v238_drag.cjs  # sólo el arrastre sobre la imagen
 ```
+
+`capture_v2381.cjs` no se limita a fotografiar: comprueba el DOM antes de
+cada captura, y dos de esas comprobaciones nacieron de defectos reales.
+"carpeta tras repintar" detecta que el selector de `#/generate` se
+reseteaba; el contraste panel/texto detecta que el árbol de notas salía
+con títulos blancos sobre panel blanco. El mapa mental además comprueba
+que no se cuele contenido de otra carpeta — eso es lo que delató el
+fallo del selector.
 
 El script de arrastre no se limita a hacer una captura: después de arrastrar
 comprueba en el DOM que las máscaras quedaron marcadas, y avisa si no.
