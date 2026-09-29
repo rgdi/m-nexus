@@ -111,19 +111,29 @@ async function seed(ctx, h) {
     }
   }
 
-  // Agenda de la semana
-  const day = (n) => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
-  for (const [d, title, hour, min] of [
-    [0, 'Repaso de genética', 18, 0],
-    [1, 'Entrega práctica de química', 10, 0],
-    [2, 'Clínica de cardiología', 16, 30],
-    [3, 'Seminario de Mendel', 12, 0],
-    [4, 'Examen de química', 9, 0],
+  // Agenda de la semana.
+  // The endpoint takes epoch `start`/`end`, not `date` + `startTime` —
+  // the first version of this seed used the calendar form and every
+  // event silently 400'd, which is why the agenda kept rendering empty.
+  const at = (dayOffset, hour, min) => {
+    const d = new Date();
+    d.setDate(d.getDate() + dayOffset);
+    d.setHours(hour, min, 0, 0);
+    return d.getTime();
+  };
+  for (const [d, title, hour, min, len, prof, room] of [
+    [0, 'Repaso de genética', 18, 0, 90, 'Dra. Ferrer', 'Aula 3'],
+    [0, 'Repaso de química', 20, 30, 60, 'Prof. Ruiz', 'Lab 1'],
+    [1, 'Entrega práctica de química', 10, 0, 45, 'Prof. Ruiz', 'Aula 3'],
+    [2, 'Clínica de cardiología', 16, 30, 120, 'Dr. Mena', 'Hospital'],
+    [3, 'Seminario de Mendel', 12, 0, 60, 'Dra. Ferrer', 'Aula 1'],
+    [4, 'Examen de química', 9, 0, 120, 'Prof. Ruiz', 'Aula 2'],
   ]) {
+    const start = at(d, hour, min);
     await ctx.request
       .post(API + '/api/v1/events', {
         headers: h,
-        data: { title, date: day(d), startTime: `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`, subject: 'Estudio' },
+        data: { title, start, end: start + len * 60000, subject: 'Estudio', prof, room },
       })
       .catch(() => {});
   }

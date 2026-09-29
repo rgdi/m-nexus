@@ -29,15 +29,41 @@
 }
 
 /* v1.2.0: compress hour rows on small landscape phones */
+/* v2.38.2: on a phone the day grid is 24 rows tall — about 1340px, so
+ * the page scrolled past every event to reach the evening. Bound it and
+ * scroll inside it; the times column and the events grid share the
+ * container, so they stay aligned. */
+@media (max-width: 720px) {
+  .calendar {
+    max-height: 62vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    background: var(--m-bg, var(--bg-elevated));
+    border-color: var(--m-hairline, var(--border));
+  }
+  .cal-time { padding-top: 4px; }
+  /* The drag-to-create affordance is a mouse gesture and its label was
+   * still English on a Spanish screen. The gesture stays; the floating
+   * instruction does not. */
+  .cal-drag-hint { display: none; }
+  .cal-events { touch-action: pan-y; }
+}
+
 @media (orientation: landscape) and (max-height: 500px) {
   .cal-time { height: 50px; padding: 2px 6px 0 0; }
   .cal-grid-line { height: 50px !important; }
 }
 
 .cal-events { position: relative; }
+/* v2.38.2: these are now absolutely-positioned rules behind the events
+ * rather than flow children of the times column, which is what doubled
+ * that column's height and threw the hour labels out of alignment. */
 .cal-grid-line {
-  height: 80px;
-  border-bottom: 1px dashed var(--border);
+  position: absolute;
+  left: 0; right: 0;
+  height: 0;
+  border-bottom: 1px solid var(--border);
+  pointer-events: none;
 }
 
 .cal-event {

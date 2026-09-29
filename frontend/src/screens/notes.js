@@ -139,9 +139,11 @@ async function renderNotesList(root) {
         </div>`;
       }
       for (const n of childrenNotes) {
-        html += `<div class="tree-note" data-id="${n.id}" data-depth="${depth}" data-title="${escapeHtml(n.title)}">
-          <span class="note-bullet">·</span>
-          <span class="note-name">${escapeHtml(n.title)}</span>
+        // v2.38.2: mark journals so the row can be styled apart from the
+        // user's own notes, and give the row its tap target.
+        html += `<div class="tree-note${n.isJournal ? " is-journal" : ""}" data-id="${n.id}" data-depth="${depth}" data-title="${escapeHtml(n.title)}" role="button" tabindex="0">
+          <span class="note-bullet" aria-hidden="true"></span>
+          <span class="note-name">${escapeHtml(n.isJournal ? (n.title || "Diario").replace(/^[^\s]+\s*/, "") : n.title)}</span>
         </div>`;
       }
       return html;

@@ -59,16 +59,39 @@ function renderDay(events) {
   const dayEnd = dayStart + 24 * HOUR;
 
   const today = events.filter(e => e.start >= dayStart && e.start < dayEnd).sort((a, b) => a.start - b.start);
+  // v2.38.2: each hour used to emit TWO children — the label and the
+  // rule — into the same single-column track, so the times column was
+  // twice as tall as the grid and every label landed 112px from the last
+  // instead of 56. Labels go in the times column; the rules become
+  // absolutely-positioned lines behind the events.
+  // Both the rules and the event blocks are positioned against the row
+  // height, so read it once and use it for every axis.
+  const ROW_H = (() => {
+    const probe = document.querySelector(".cal-time");
+    return probe ? probe.getBoundingClientRect().height || 56 : 56;
+  })();
   const hours = Array.from({ length: 17 }, (_, i) => 6 + i);
-  const rows = hours.map(h => `
-    <div class="cal-time">${PAD(h)}:00</div>
-    <div class="cal-grid-line" data-h="${h}"></div>
-  `).join("");
+  const rows = hours.map((h) => `<div class="cal-time">${PAD(h)}:00</div>`).join("");
+  const rules = hours.map((h) => `<div class="cal-grid-line" data-h="${h}" style="top:${(h - 6) * ROW_H}px"></div>`).join("");
+
+  // v2.38.2: positions were computed against a hardcoded 80px row while
+  // the mobile grid renders 56px rows, so every event landed about 30%
+  // too low and every block was taller than its duration. One constant,
+  // read from the DOM, for both axes.
+  // The rules are zero-height now, so read the row height off a time
+  // label instead of off the line.
+  const ROW = (() => {
+    const probe = document.querySelector(".cal-time");
+    return probe ? probe.getBoundingClientRect().height || 56 : 56;
+  })();
 
   const blocks = today.map(e => {
-    const top = ((e.start - dayStart) / HOUR - 6) * 80;
+    const top = ((e.start - dayStart) / HOUR - 6) * ROW;
     const dur = Math.max(60, (e.end - e.start) / 60000);
-    const h = (dur / 60) * 80;
+    // Room for time + title + place. A 60-minute block at 56px rows is
+    // 52px tall and clipped the third line; a calendar that crops its
+    // own text is worse than one that rounds a short event up.
+    const h = Math.max(76, (dur / 60) * ROW - 4);
     return `
       <div class="cal-event" data-id="${e.id}"
            style="top:${top}px;height:${h}px;border-left-color:${COLOR_FOR[e.subject] || COLOR_FOR.default}"
@@ -82,12 +105,20 @@ function renderDay(events) {
 
   const now = new Date();
   const sameDay = now.toDateString() === date.toDateString();
-  const nowTop = sameDay ? ((now.getHours() + now.getMinutes() / 60) - 6) * 80 : -100;
+  // The row height differs between the 80px desktop grid and the 56px
+  // mobile one, so reading it from the DOM is the only way "now" lands
+  // on the right line instead of drifting a third of the way down.
+  const rowH = (() => {
+    const probe = document.querySelector(".cal-time");
+    return probe ? probe.getBoundingClientRect().height || 56 : 56;
+  })();
+  const nowTop = sameDay ? ((now.getHours() + now.getMinutes() / 60) - 6) * rowH : -100;
 
   return `
     <div class="calendar">
       <div class="cal-times">${rows}</div>
       <div class="cal-events" id="cal-events" style="position:relative">
+        ${rules}
         ${blocks}
         ${nowTop >= 0 ? `<div class="cal-now" style="top:${nowTop}px"></div>` : ""}
         <div class="cal-drag-hint">Drag to create event</div>
@@ -153,6 +184,28 @@ function attachDayHandlers(root) {
   // v1.9.2: drag-to-create event on day timeline
   const events = root.querySelector("#cal-events");
   if (events) attachDragCreate(events);
+
+  // v2.38.2: open where the day actually is.
+  //
+  // The grid starts at 00:00, so a phone opened on an evening class
+  // showed four empty hours and no events. Land on the first event, or
+  // on the current hour when there is nothing booked — never on an
+  // empty 06:00.
+  if (events && !root.querySelector("[data-cal-scrolled]")) {
+    root.setAttribute("data-cal-scrolled", "1");
+    const first = events.querySelector(".cal-event");
+    const hourPx = () => {
+      const h = root.querySelector(".cal-grid-line");
+      return h ? h.getBoundingClientRect().height : 56;
+    };
+    const target = first
+      ? first.getBoundingClientRect().top - events.getBoundingClientRect().top - 12
+      : Math.max(0, (new Date().getHours() - 1) * hourPx());
+    if (target > hourPx()) {
+      const scroller = events.closest(".calendar");
+      if (scroller && scroller.scrollTo) scroller.scrollTop = target;
+    }
+  }
 }
 
 function attachDragCreate(eventsContainer) {

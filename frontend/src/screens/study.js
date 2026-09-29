@@ -23,6 +23,13 @@ import { detectApiBase } from "../services/api_base.js";
 import { authHeaders } from "../services/auth.js";
 import { showToast } from "../widgets/toast.js";
 
+/** Escape before interpolating: card fronts are user text. */
+function escapeHtml(s) {
+  return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c]));
+}
+
 const BASE = detectApiBase();
 
 /** Cards are due when they have no schedule or their due date has passed. */
@@ -89,6 +96,30 @@ export async function renderStudy(root) {
     <p class="m-muted" style="font-size:13px;text-align:center;margin-top:14px">
       Desliza ← para "de nuevo" · → para "fácil" · toca para ver la respuesta
     </p>
+
+    <!-- v2.38.2: the bottom half of the screen used to be empty until you
+         pressed the button. Showing what is queued turns a landing page
+         with a dead CTA into something you can judge before committing. -->
+    <div class="study-queue">
+      <h2 class="m-section-label">En la cola${due < cards.length ? ` · ${cards.length - due} sin vencer` : ""}</h2>
+      ${cards.length === 0
+        ? `<p class="m-muted study-queue-empty">Aún no hay tarjetas. Crea una desde una nota, o importá un mazo.</p>`
+        : `<ul class="study-queue-list">
+            ${cards.slice(0, 6).map((c) => {
+              // The same predicate the counters use. Reading c.due here
+              // marked every new card as due — the header said 0 and
+              // every row below it said otherwise.
+              const isDueCard = isDue(c, Date.now());
+              const subject = c.subject || c.tags?.[0] || "";
+              return `<li class="study-queue-row${isDueCard ? " is-due" : ""}">
+                  <span class="study-queue-dot" aria-hidden="true"></span>
+                  <span class="study-queue-front">${escapeHtml(c.front || "—")}</span>
+                  ${subject ? `<span class="study-queue-tag">${escapeHtml(subject)}</span>` : ""}
+                </li>`;
+            }).join("")}
+           </ul>
+           ${cards.length > 6 ? `<p class="m-muted study-queue-more">y ${cards.length - 6} más</p>` : ""}`}
+    </div>
   `;
 
   const startBtn = host.querySelector("[data-study-start]");
