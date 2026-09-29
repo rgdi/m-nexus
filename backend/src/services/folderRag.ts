@@ -32,6 +32,7 @@
 import { generateCompletion } from "./aiProviders.js";
 import { logOp } from "../utils/log.js";
 import { readFile } from "node:fs/promises";
+import { currentSubject, invalidate } from "./userStore.js";
 import { join } from "node:path";
 
 /**
@@ -376,9 +377,14 @@ async function readJson<T>(file: string, fallback: T): Promise<T> {
 
 export async function buildIndex(force = false): Promise<FolderRagIndex> {
   if (cache && !force) return cache;
-  const [notesRaw, foldersRaw] = await Promise.all([
-    readJson<any>("notes.json", []),
-    readJson<any>("folders.json", []),
+  const [notesRaw, foldersRaw]: [any, any] = await Promise.all([
+    // v2.38.1: per-user store. A folder RAG index built from the global
+    // file would answer with other people's notes.
+    import("./userStore.js").then((m) => m.readCollection<any[]>(m.currentSubject(), "notes.json", [])),
+    // v2.38.1: folders go through the same per-user store. Reading notes
+    // one way and folders the other would scope a search by one user's
+    // tree against another user's files.
+    import("./userStore.js").then((m) => m.readCollection<any[]>(m.currentSubject(), "folders.json", [])),
   ]);
   const notes: NoteLike[] = Array.isArray(notesRaw) ? notesRaw : notesRaw?.notes ?? [];
   const folders: FolderLike[] = Array.isArray(foldersRaw) ? foldersRaw : foldersRaw?.folders ?? [];
@@ -397,6 +403,13 @@ export async function buildIndex(force = false): Promise<FolderRagIndex> {
 
 export function invalidateIndex(): void {
   cache = null;
+  // The store caches too, and it is synchronous while this function is
+  // not. Leaving a stale copy behind means "delete the data directory,
+  // reindex" keeps answering from memory — which is exactly the test
+  // that caught it.
+  const sub = currentSubject();
+  invalidate(sub, "notes.json");
+  invalidate(sub, "folders.json");
 }
 
 /* ------------------------------------------------------------------ *

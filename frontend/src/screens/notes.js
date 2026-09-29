@@ -6,6 +6,10 @@
 import { dataSource } from "../services/dataSource.js";
 import { detectApiBase } from "../services/api_base.js";
 import { authHeaders } from "../services/auth.js";
+// v2.38.1: notes sync per block, so two devices editing different
+// paragraphs do not overwrite each other.
+import { reconcile, applyRemote, deleteBlock, isBlockDeleted } from "../services/noteCrdt.js";
+import { getDeviceId } from "../services/device_id.js";
 const BASE = detectApiBase();
 import { i18n } from "../services/i18n.js";
 import { api } from "../services/api.js";
@@ -68,6 +72,10 @@ export async function renderNotes(root) {
   const cached = await dataSource.notes.get(state.selectedId).catch(() => null);
   if (!cached) {
     try {
+      // v2.38.1: the CRDT holds the merged text, which may differ from
+      // what the server last stored if another device wrote since.
+      const rec = reconcile(note, getDeviceId());
+      if (rec.changed.length) note = { ...note, blocks: rec.blocks.map((b) => ({ ...b, text: b.text })) };
       const r = await fetch(`${BASE}/api/v1/notes/${state.selectedId}`, { headers: authHeaders() });
       if (r.ok) {
         const note = await r.json();

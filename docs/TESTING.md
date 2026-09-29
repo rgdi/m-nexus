@@ -115,3 +115,34 @@ El paso 1 va primero a propósito: hay un test que falla si
 `sw-precache.js` está desactualizado respecto a `frontend/src`, y ver ese
 fallo en la suite es más barato que descubrirlo en un dispositivo sin
 conexión.
+
+---
+
+## v2.38.1 — ficheros de test nuevos
+
+| Fichero | Tests | Qué fija |
+|---------|-------|----------|
+| `backend/tests/v238store.test.ts` | 23 | Aislamiento del almacén, sanitización del sujeto (nada de traversal), migración del fichero global exactamente una vez, y que la caché es por sujeto. |
+| `backend/tests/v238storehttp.test.ts` | 10 | Lo mismo pero sobre el stack HTTP real, con dos tokens: lista, lectura por id, edición, borrado, tarjetas, tareas, carpetas y seis peticiones intercaladas en vuelo a la vez. |
+| `backend/tests/v238res.test.ts` | 28 | Generador de recursos, incluido el caso en que un resumen real se titulaba con un mensaje de "no encontré nada". |
+| `frontend/tests/v238crdt.test.js` | 19 | CRDT: inserciones, borrados, fusión, tombstones y reconciliación. |
+| `frontend/tests/v238dragoc.test.js` | 19 | Arrastre sobre imagen, **incluido un montaje real contra jsdom** y un guard que comprueba que toda variable de módulo asignada está declarada. |
+| `frontend/tests/v238feat.test.js` | 20 | `#/generate`, `#/mood` y la voz: sin métricas inventadas, endpoints reales, aviso de nube, el caret se guarda antes del resultado. |
+
+### Nota sobre los tests y el almacén
+
+A partir de v2.38.1 los datos se particionan por usuario, así que un test
+que siembra `data/notes.json` a mano siembra algo que ya nadie lee. Las
+fixtures van por `writeCollection()`.
+
+Y al revés: un test no debe poder **migrar** el `data/` real del repositorio.
+Por eso la adopción del fichero global está desactivada bajo vitest y hay
+que pedirla explícitamente con `allowAdoption(true)`.
+
+### Nota sobre identidad
+
+El sujeto del JWT es el dispositivo registrado. Un helper de test que
+registraba un dispositivo nuevo en cada llamada convertía cada petición en
+un usuario distinto, así que una nota creada en una llamada no se veía en la
+siguiente. `tests/v2331.test.ts` ahora cachea un token por fichero, que es
+lo que parece una sesión real.

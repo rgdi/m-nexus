@@ -85,3 +85,22 @@ Machine-readable, para comparar dos runs o diff en un PR.
 El barrido detecta rutas que **no renderizan o que piden endpoints
 inexistentes**. No detecta una ruta que renderiza pero whose botones no
 hacen nada — eso necesita los scripts de flujo, y solo hay tres.
+
+## v2.38.1
+
+| Captura | Qué demuestra |
+|---------|---------------|
+| `screenshots/mood-tracker.png` | `#/mood` con datos reales: 7 días de racha, media 3.6, 23 % de cobertura, gráfico con los 7 puntos y la leyenda legible (el FAB ya no la tapa). |
+| `screenshots/generate-output.png` | `#/generate` genera desde una carpeta real y titula con el nombre de la carpeta, no con un mensaje de error. Sin modelo configurado dice `[mock AI] … Configure a real provider`, que es la verdad. |
+| `screenshots/drag-occlusion.png` | Dos fichas arrastradas sobre la figura con eventos táctiles reales vía CDP. Las máscaras quedan `is-filled is-correct` y las fichas usadas se atenúan. Los tres botones caben a 414 px. |
+| `screenshots/routes/*.png` | 24/24 rutas limpias, incluidas las dos nuevas. Reporte en `screenshots/routes/_report.json`. |
+
+Cómo reproducir:
+
+```bash
+node scripts/capture_v238_drag.cjs   # arrastre sobre la imagen
+node scripts/capture_routes.cjs      # barrido de las 24 rutas
+```
+
+El script de arrastre no se limita a hacer una captura: después de arrastrar
+comprueba en el DOM que las máscaras quedaron marcadas, y avisa si no.

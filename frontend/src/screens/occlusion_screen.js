@@ -4,6 +4,7 @@
  * Lets user upload an image, draw masks, save + queue for approval.
  * ============================================================ */
 
+import { mountDragOcclusion } from "../widgets/drag_occlusion.js";
 import { i18n } from "../services/i18n.js";
 import { api } from "../services/api.js";
 import { escapeHtml } from "../services/safe.js";
@@ -137,4 +138,41 @@ export async function renderOcclusionScreen(root) {
     });
     overlay.querySelector("#occ-close").addEventListener("click", () => overlay.remove());
   }
+}
+
+/**
+ * v2.38.1 — drag an answer onto a masked region of the figure.
+ *
+ * Image occlusion normally fixes a mask's label when the mask is drawn,
+ * which only works if whoever drew it already knew the answer. This is
+ * the other direction: the figure is already masked, the answers are
+ * already written down, and the exercise is deciding which answer belongs
+ * under which region.
+ *
+ * `isCorrect` is the study logic and it lives here rather than in the
+ * widget — the widget only knows where things were dropped.
+ */
+export function mountOcclusionDragExercise(host, { imageUrl, occlusions, chips, subject }) {
+  return mountDragOcclusion({
+    host,
+    imageUrl,
+    occlusions,
+    chips,
+    alt: "Figura con zonas enmascaradas",
+    // Normalise accents and case so "Corazón" matches "corazon".
+    isCorrect: (chipText, occ) => {
+      const norm = (s) =>
+        String(s ?? "")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .trim();
+      return norm(chipText) === norm(occ.label) && !!occ.label;
+    },
+    onComplete: (r) => {
+      console.info("[occlusion-drag] result", {
+        correct: r.correctCount, filled: r.filledCount, ms: r.durationMs,
+      });
+    },
+  });
 }

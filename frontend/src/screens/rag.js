@@ -84,6 +84,10 @@ function paint(host) {
       </div>
     </form>
 
+    <button class="rag-gen" data-rag-gen>
+      Generar material con esto →
+    </button>
+
     <div data-rag-result></div>
   `;
   wire(host);
@@ -95,6 +99,13 @@ function wire(host) {
   sel?.addEventListener("change", () => {
     scope = sel.value;
     try { localStorage.setItem(LS_SCOPE, scope); } catch {}
+  });
+
+  // v2.38.1: generation starts from the same scope, so a question that
+  // surfaced the right passages can become study material in one tap.
+  host.querySelector("[data-rag-gen]")?.addEventListener("click", () => {
+    const q = host.querySelector("[data-rag-input]")?.value.trim();
+    location.hash = `#/generate`;
   });
 
   host.querySelector("[data-rag-form]")?.addEventListener("submit", async (e) => {

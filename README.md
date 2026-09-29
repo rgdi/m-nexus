@@ -1,6 +1,8 @@
 # M-NEXUS — Education OS for any career
 
-> **v2.38.0** — Captura rápida en texto libre · RAG con scoping por carpeta y
+> **v2.38.1** — Store por usuario (el almacén era global) · CRDT de notas ·
+> generar resumen/tarjetas/quiz/mapa mental · arrastre sobre imagen · voz ·
+> registro de ánimo. Antes: captura rápida · RAG con scoping por carpeta y
 > citas · IA en popup con conversación · PWA instalable y funcional offline ·
 > FSRS-7 real · heatmap con datos de verdad.
 

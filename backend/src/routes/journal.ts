@@ -25,34 +25,25 @@ import {
 const NOTES_FILE = join(process.cwd(), "data", "notes.json");
 const TEMPLATES_FILE = join(process.cwd(), "data", "journal-templates.json");
 
+/**
+ * Journal entries are notes, so they go through the notes service.
+ *
+ * This used to be a second reader/writer for data/notes.json with its
+ * own mtime cache. Two independent caches over one file is how a write
+ * from one is lost by the other, and after v2.38.1 it is also how a
+ * journal would end up in the wrong user's partition: the notes service
+ * writes to data/users/<sub>/, and this gateway was still reading the
+ * global path and would not find the note it had just created.
+ */
 class NotesGateway {
-  private cache: Note[] | null = null;
-  private mtime: number | null = null;
-
   private async load(): Promise<Note[]> {
-    try {
-      const stat = await fs.stat(NOTES_FILE);
-      if (this.cache && this.mtime === stat.mtimeMs) return this.cache;
-      const buf = await fs.readFile(NOTES_FILE, "utf-8");
-      this.cache = JSON.parse(buf);
-      this.mtime = stat.mtimeMs;
-      return this.cache!;
-    } catch {
-      this.cache = [];
-      this.mtime = null;
-      await fs.mkdir(join(process.cwd(), "data"), { recursive: true });
-      await fs.writeFile(NOTES_FILE, "[]");
-      return this.cache;
-    }
+    const { notesServiceInstance } = await import("./notes.js");
+    return notesServiceInstance.all() as unknown as Note[];
   }
 
   private async save(): Promise<void> {
-    if (!this.cache) return;
-    await fs.writeFile(NOTES_FILE, JSON.stringify(this.cache, null, 2));
-    try {
-      const stat = await fs.stat(NOTES_FILE);
-      this.mtime = stat.mtimeMs;
-    } catch {}
+    const { notesServiceInstance } = await import("./notes.js");
+    await notesServiceInstance.saveAll();
   }
 
   async all(): Promise<Note[]> { return this.load(); }

@@ -32,6 +32,9 @@ const STRINGS = {
   "dock.pdf":                { en: "PDF",      es: "PDF",       pt: "PDF"     },
   "dock.kg":                 { en: "Graph",    es: "Grafo",     pt: "Grafo"   },
   "dock.cluster":            { en: "Cluster",  es: "Cluster",   pt: "Cluster" },
+  // v2.38.1
+  "dock.generate":           { en: "Generate", es: "Generar",   pt: "Gerar"   },
+  "dock.mood":               { en: "Mood",     es: "Ánimo",     pt: "Humor"   },
   "drawer.advanced":         { en: "Advanced", es: "Avanzado",  pt: "Avançado" },
 
   // ============================================================

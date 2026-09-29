@@ -27,6 +27,8 @@ import { renderNotes } from "./screens/notes.js";
 import { renderTodos } from "./screens/todos.js";
 import { renderCapture } from "./screens/capture.js";
 import { renderRag } from "./screens/rag.js";
+import { renderGenerate } from "./screens/generate.js";
+import { renderMood } from "./screens/mood.js";
 import { mountCaptureFab } from "./widgets/capture_fab.js";
 import { openAiCompanion } from "./widgets/ai_companion.js";
 import { renderAI } from "./screens/ai.js";
@@ -59,6 +61,10 @@ const ROUTES = {
   capture: renderCapture,
   // v2.38.0: folder-scoped Q&A with citations
   rag: renderRag,
+  // v2.38.1: generate study material from a folder
+  generate: renderGenerate,
+  // v2.38.1: mood tracker as its own screen
+  mood: renderMood,
   ai: renderAI,
   settings: renderSettings,
   login: renderLogin,
@@ -492,6 +498,11 @@ function openAppDrawer() {
     { hash: "#/pdf",      i18n: "dock.pdf",      icon: "📄" },
     { hash: "#/kg",       i18n: "dock.kg",       icon: "🕸️" },
     { hash: "#/cluster",  i18n: "dock.cluster",  icon: "🛰️" },
+    // v2.38.1: two more destinations, kept out of the dock so the
+    // bottom bar stays thumb-sized. Both are reachable in one tap
+    // from here.
+    { hash: "#/generate", i18n: "dock.generate", icon: "✨" },
+    { hash: "#/mood",     i18n: "dock.mood",     icon: "💚" },
   ];
 
   const scrim = document.createElement("div");

@@ -6,6 +6,8 @@ import { randomUUID } from "node:crypto";
 import { E } from "../utils/errorCodes.js";
 import { logOp } from "../utils/log.js";
 import { extractTasks } from "../services/taskExtractor.js";
+// v2.38.1: the capture inbox is per user.
+import { readCollection, writeCollection, currentSubject } from "../services/userStore.js";
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
 
@@ -77,19 +79,16 @@ function currentStreak(days: string[] | undefined): number {
 }
 
 export class TasksService {
-  private cache: Task[] | null = null;
+  /** Per subject — the capture inbox is about as personal as it gets. */
+  private cache = new Map<string, Task[]>();
 
   async all(): Promise<Task[]> {
-    if (this.cache) return this.cache;
-    try {
-      const buf = await fs.readFile(DATA_FILE, "utf-8");
-      this.cache = JSON.parse(buf);
-      return this.cache!;
-    } catch {
-      this.cache = [];
-      await this.save();
-      return this.cache;
-    }
+    const sub = currentSubject();
+    const hit = this.cache.get(sub);
+    if (hit) return hit;
+    const list = await readCollection<Task[]>(sub, "tasks.json", []);
+    this.cache.set(sub, list);
+    return list;
   }
 
   async get(id: string): Promise<Task | undefined> {
@@ -100,7 +99,8 @@ export class TasksService {
     const list = await this.all();
     const t: Task = { ...input, id: `task-${randomUUID()}`, createdAt: Date.now(), updatedAt: Date.now() };
     list.push(t);
-    await this.save();
+    this.cache.set(currentSubject(), list);
+    await this.save(list);
     return t;
   }
   async update(id: string, patch: Partial<Task>): Promise<Task | null> {
@@ -108,7 +108,8 @@ export class TasksService {
     const i = list.findIndex((t) => t.id === id);
     if (i < 0) return null;
     list[i] = { ...list[i], ...patch, updatedAt: Date.now() };
-    await this.save();
+    this.cache.set(currentSubject(), list);
+    await this.save(list);
     return list[i];
   }
 
@@ -116,15 +117,16 @@ export class TasksService {
     const list = await this.all();
     const next = list.filter((t) => t.id !== id);
     if (next.length === list.length) return false;
-    this.cache = next;
-    await this.save();
+    this.cache.set(currentSubject(), next);
+    await this.save(next);
     return true;
   }
 
-  private async save(): Promise<void> {
-    if (!this.cache) return;
-    await fs.mkdir(join(process.cwd(), "data"), { recursive: true });
-    await fs.writeFile(DATA_FILE, JSON.stringify(this.cache, null, 2), "utf-8");
+  private async save(list?: Task[]): Promise<void> {
+    const sub = currentSubject();
+    const value = list ?? this.cache.get(sub);
+    if (!value) return;
+    await writeCollection(sub, "tasks.json", value);
   }
 }
 

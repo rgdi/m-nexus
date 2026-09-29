@@ -14,6 +14,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import { buildApp } from "../src/server.js";
 import { __resetGradingBuckets } from "../src/routes/grading.js";
+import { join } from "node:path";
 
 let app: Awaited<ReturnType<typeof buildApp>>;
 let token = "";

@@ -39,6 +39,7 @@ import { wsRoutes } from "./routes/ws.js";
 import { audioRoutes } from "./routes/audio.js";
 import { llmRoutes } from "./routes/llm.js";
 import { authMiddleware } from "./middleware/auth.js";
+import { runWithSubject, subjectFor } from "./services/userStore.js";
 import { cloudflareAccessMiddleware, isCloudflareAccessEnabled } from "./middleware/cloudflareAccess.js";
 import { dashboardRoutes } from "./routes/dashboard.js";
 import { deviceRoutes } from "./routes/devices.js";
@@ -93,6 +94,25 @@ export async function buildServer(): Promise<any> {
     { parseAs: "buffer" },
     (_req, body, done) => done(null, body)
   );
+
+  // v2.38.1 — run each route handler inside the caller's subject scope,
+  // so the data services can tell users apart without every handler
+  // threading a parameter through. Registered before any route plugin
+  // below, because onRoute only sees routes added after it.
+  //
+  // Wrapping the handler rather than setting the scope from a
+  // preHandler: `enterWith()` inside a hook does not survive to the
+  // handler (the hook body runs in its own async context), and a
+  // module-level "current user" would be the exact race this feature
+  // exists to prevent. Here we have the request at call time, so each
+  // call gets its own `run()` child scope.
+  app.addHook("onRoute", (routeOptions) => {
+    const inner = routeOptions.handler;
+    if (typeof inner !== "function") return;
+    (routeOptions as any).handler = function (this: any, request: any, reply: any) {
+      return runWithSubject(subjectFor(request?.auth), () => inner.call(this, request, reply));
+    };
+  });
 
   // CORS
   const { corsOriginCallback, getAllowedOrigins } = await import("./utils/corsPolicy.js");
@@ -155,6 +175,26 @@ export async function buildServer(): Promise<any> {
 
   // v2.1.4: register auth middleware globally so all routes get checked
   app.addHook("preHandler", authMiddleware);
+
+  // v2.38.1 — run each route handler inside the caller's subject scope,
+  // so the data services can tell users apart without every handler
+  // threading a parameter through.
+  //
+  // Wrapping the handler rather than setting the scope from a hook:
+  // `als.enterWith()` inside a preHandler does not survive to the
+  // handler — the hook body runs in its own async context — and a
+  // module-level "current user" would be the exact race this feature
+  // exists to prevent. `onRoute` is the one place that sees both the
+  // route and, at call time, the request, so the wrapper reads the
+  // subject from the request and `run()`s a fresh child scope per call.
+  app.addHook("onRoute", (routeOptions) => {
+    const inner = routeOptions.handler;
+    if (typeof inner !== "function") return;
+    (routeOptions as any).handler = function (this: any, request: any, reply: any) {
+      return runWithSubject(subjectFor(request?.auth), () => inner.call(this, request, reply));
+    };
+  });
+
   // v2.11.0: Cloudflare Access middleware — if header present, verify JWT
   // (with 5-min in-memory cache). No-op when header absent (local dev).
   if (isCloudflareAccessEnabled()) {
@@ -245,6 +285,10 @@ await app.register(multiBoardRoutes);
   // v2.38.0 — folder-scoped RAG with citations.
   const { registerFolderRagRoutes } = await import("./routes/folderRag.js");
   registerFolderRagRoutes(app);
+
+  // v2.38.1 — study material generated from a folder.
+  const { registerResourceRoutes } = await import("./routes/resources.js");
+  registerResourceRoutes(app);
 
   // v0.62.8: /api/v1/ai/tutor is registered by aiRoutes (./routes/ai.ts).
   // Removed the inline handler to avoid duplicate-route registration error.

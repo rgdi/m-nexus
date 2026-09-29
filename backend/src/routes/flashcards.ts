@@ -22,6 +22,7 @@
 //   }
 
 import { FastifyInstance } from "fastify";
+import { readCollection, writeCollection, currentSubject } from "../services/userStore.js";
 import { randomUUID } from "node:crypto";
 import { E } from "../utils/errorCodes.js";
 import { logOp } from "../utils/log.js";
@@ -143,37 +144,23 @@ function inferCardType(front: string, back: string): CardType {
 const DATA_FILE = join(process.cwd(), "data", "flashcards.json");
 
 class FlashcardsService {
-  private cache: Flashcard[] | null = null;
-  /** mtime usado para invalidación cache. La cache stale = reload. */
-  private cacheMtime: number | null = null;
+  /** Per subject, and the mtime is kept per subject too. */
+  private cache = new Map<string, Flashcard[]>();
+  private cacheMtime = new Map<string, number | null>();
 
   /** Test-only: invalidar la cache in-memory. */
-  __resetCache() { this.cache = null; this.cacheMtime = null; }
+  __resetCache() { this.cache.clear(); this.cacheMtime.clear(); }
 
   async all(): Promise<Flashcard[]> {
-    // v2.24.0: detectamos que el mtime del archivo avanzó y reléemos.
-    // Es la manera limpia de evitar cache stale en tests sin afectar performance.
-    try {
-      const stat = await fs.stat(DATA_FILE);
-      const mtime = stat.mtimeMs;
-      if (this.cache && this.cacheMtime === mtime) return this.cache;
-      this.cacheMtime = mtime;
-    } catch {
-      // file missing — fall through to read+create
-    }
-    try {
-      const buf = await fs.readFile(DATA_FILE, "utf-8");
-      const parsed = JSON.parse(buf) as any[];
-      this.cache = parsed.map(backfillFlashcard);
-      // Si hicimos backfill, persistimos para no repetirlo
-      await this.save();
-      return this.cache;
-    } catch {
-      this.cache = [];
-      this.cacheMtime = null;
-      await this.save();
-      return this.cache;
-    }
+    const sub = currentSubject();
+    const hit = this.cache.get(sub);
+    if (hit) return hit;
+    const parsed = await readCollection<any[]>(sub, "flashcards.json", []);
+    const list = parsed.map(backfillFlashcard);
+    this.cache.set(sub, list);
+    // Si hicimos backfill, persistimos para no repetirlo
+    await this.save(list);
+    return list;
   }
 
   async get(id: string): Promise<Flashcard | undefined> {
@@ -189,7 +176,8 @@ class FlashcardsService {
       updatedAt: Date.now(),
     });
     list.push(c);
-    await this.save();
+    this.cache.set(currentSubject(), list);
+    await this.save(list);
     return c;
   }
 
@@ -198,7 +186,8 @@ class FlashcardsService {
     const i = list.findIndex((c) => c.id === id);
     if (i < 0) return null;
     list[i] = { ...list[i], ...patch, id: list[i].id, updatedAt: Date.now() };
-    await this.save();
+    this.cache.set(currentSubject(), list);
+    await this.save(list);
     return list[i];
   }
 
@@ -206,8 +195,8 @@ class FlashcardsService {
     const list = await this.all();
     const next = list.filter((c) => c.id !== id);
     if (next.length === list.length) return false;
-    this.cache = next;
-    await this.save();
+    this.cache.set(currentSubject(), next);
+    await this.save(next);
     return true;
   }
 
@@ -217,19 +206,16 @@ class FlashcardsService {
     const i = list.findIndex((c) => c.id === id);
     if (i < 0) return null;
     list[i] = { ...list[i], relatedTo: relatedIds, updatedAt: Date.now() };
-    await this.save();
+    this.cache.set(currentSubject(), list);
+    await this.save(list);
     return list[i];
   }
 
-  private async save(): Promise<void> {
-    if (!this.cache) return;
-    await fs.mkdir(join(process.cwd(), "data"), { recursive: true });
-    await fs.writeFile(DATA_FILE, JSON.stringify(this.cache, null, 2), "utf-8");
-    // Invalidar mtime cache for next read
-    try {
-      const stat = await fs.stat(DATA_FILE);
-      this.cacheMtime = stat.mtimeMs;
-    } catch {}
+  private async save(list?: Flashcard[]): Promise<void> {
+    const sub = currentSubject();
+    const value = list ?? this.cache.get(sub);
+    if (!value) return;
+    await writeCollection(sub, "flashcards.json", value);
   }
 }
 
@@ -622,14 +608,10 @@ export async function flashcardsRoutes(app: FastifyInstance): Promise<void> {
 
   // v1.5.1: extraer desde body de nota
   app.post<{ Params: { id: string } }>("/notes/:id/extract-flashcards", async (req) => {
-    const { getNote } = await import("./notes.js").catch(() => ({} as any));
-    // Import lazy: usar servicio directo
-    const notesPath = join(process.cwd(), "data", "notes.json");
-    let note: any = null;
-    try {
-      const list = JSON.parse(await fs.readFile(notesPath, "utf-8"));
-      note = list.find((n: any) => n.id === req.params.id);
-    } catch {}
+    // v2.38.1: through the service, not off disk. Notes are per user
+    // now, so a raw read of data/notes.json returns nothing at all.
+    const { notesServiceInstance } = await import("./notes.js");
+    const note: any = await notesServiceInstance.get(req.params.id);
     if (!note) throw E.val("EC-FC-004", "Note no encontrada", { context: { id: req.params.id }, statusCode: 404 });
     const out = await extractFlashcards(note);
     logOp("flashcards", "extract", true, { noteId: note.id, created: out.created.length, skipped: out.skipped });
@@ -640,12 +622,8 @@ export async function flashcardsRoutes(app: FastifyInstance): Promise<void> {
   // No crea flashcards directamente; el usuario debe aprobar en /approvals.
   app.post<{ Params: { id: string } }>("/notes/:id/extract-as-candidates", async (req) => {
     const { addCandidate } = await import("../services/generationApprovals.js");
-    const notesPath = join(process.cwd(), "data", "notes.json");
-    let note: any = null;
-    try {
-      const list = JSON.parse(await fs.readFile(notesPath, "utf-8"));
-      note = list.find((n: any) => n.id === req.params.id);
-    } catch {}
+    const { notesServiceInstance } = await import("./notes.js");
+    const note: any = await notesServiceInstance.get(req.params.id);
     if (!note) throw E.val("EC-FC-004", "Note no encontrada", { context: { id: req.params.id }, statusCode: 404 });
 
     const re = /\{\{c1::([^}]+?)\}\}/g;

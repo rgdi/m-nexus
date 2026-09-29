@@ -13,6 +13,9 @@ import { E } from "../utils/errorCodes.js";
 import { logOp } from "../utils/log.js";
 // v2.38.0: notes feed the folder RAG index, so a write invalidates it.
 import { invalidateIndex as invalidateRagIndex } from "../services/folderRag.js";
+// v2.38.1: notes and folders are per user. One shared notes.json meant
+// every authenticated user saw every note.
+import { readCollection, writeCollection, currentSubject } from "../services/userStore.js";
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
 
@@ -78,19 +81,24 @@ export interface PrintConfig {
 const DATA_FILE = join(process.cwd(), "data", "notes.json");
 
 export class NotesService {
-  private cache: Note[] | null = null;
+  /** Per subject. One shared array would bleed across users the moment
+   *  two requests overlapped. */
+  private cache = new Map<string, Note[]>();
 
   async all(): Promise<Note[]> {
-    if (this.cache) return this.cache;
-    try {
-      const buf = await fs.readFile(DATA_FILE, "utf-8");
-      this.cache = JSON.parse(buf);
-      return this.cache!;
-    } catch {
-      this.cache = [];
-      await this.save();
-      return this.cache;
-    }
+    const sub = currentSubject();
+    const hit = this.cache.get(sub);
+    if (hit) return hit;
+    const list = await readCollection<Note[]>(sub, "notes.json", []);
+    this.cache.set(sub, list);
+    return list;
+  }
+
+  /** Persist the in-memory list for the current subject. Exposed for
+   *  the journal gateway, which mutates notes in place. */
+  async saveAll(): Promise<void> {
+    const list = this.cache.get(currentSubject());
+    if (list) await this.save(list);
   }
 
   async get(id: string): Promise<Note | undefined> {
@@ -111,7 +119,8 @@ export class NotesService {
       updatedAt: Date.now(),
     };
     list.push(n);
-    await this.save();
+    this.cache.set(currentSubject(), list);
+    await this.save(list);
     return n;
   }
 
@@ -120,7 +129,8 @@ export class NotesService {
     const i = list.findIndex((n) => n.id === id);
     if (i < 0) return null;
     list[i] = { ...list[i], ...patch, id: list[i].id, updatedAt: Date.now() };
-    await this.save();
+    this.cache.set(currentSubject(), list);
+    await this.save(list);
     return list[i];
   }
 
@@ -128,15 +138,16 @@ export class NotesService {
     const list = await this.all();
     const next = list.filter((n) => n.id !== id);
     if (next.length === list.length) return false;
-    this.cache = next;
-    await this.save();
+    this.cache.set(currentSubject(), next);
+    await this.save(next);
     return true;
   }
 
-  private async save(): Promise<void> {
-    if (!this.cache) return;
-    await fs.mkdir(join(process.cwd(), "data"), { recursive: true });
-    await fs.writeFile(DATA_FILE, JSON.stringify(this.cache, null, 2), "utf-8");
+  private async save(list?: Note[]): Promise<void> {
+    const sub = currentSubject();
+    const value = list ?? this.cache.get(sub);
+    if (!value) return;
+    await writeCollection(sub, "notes.json", value);
     invalidateRagIndex();
     // v2.38.0: the folder RAG index reads notes.json and folders.json
     // from disk, so a write here makes it stale. Rebuilding is lazy —
@@ -151,19 +162,16 @@ export class NotesService {
 const FOLDERS_FILE = join(process.cwd(), "data", "folders.json");
 
 class FoldersService {
-  private cache: NoteFolder[] | null = null;
+  /** Per subject, same reason as NotesService. */
+  private cache = new Map<string, NoteFolder[]>();
 
   async all(): Promise<NoteFolder[]> {
-    if (this.cache) return this.cache;
-    try {
-      const buf = await fs.readFile(FOLDERS_FILE, "utf-8");
-      this.cache = JSON.parse(buf);
-      return this.cache!;
-    } catch {
-      this.cache = [];
-      await this.save();
-      return this.cache;
-    }
+    const sub = currentSubject();
+    const hit = this.cache.get(sub);
+    if (hit) return hit;
+    const list = await readCollection<NoteFolder[]>(sub, "folders.json", []);
+    this.cache.set(sub, list);
+    return list;
   }
 
   async get(id: string): Promise<NoteFolder | undefined> {
@@ -182,7 +190,8 @@ class FoldersService {
       updatedAt: Date.now(),
     };
     list.push(f);
-    await this.save();
+    this.cache.set(currentSubject(), list);
+    await this.save(list);
     return f;
   }
 
@@ -191,7 +200,8 @@ class FoldersService {
     const i = list.findIndex((f) => f.id === id);
     if (i < 0) return null;
     list[i] = { ...list[i], ...patch, id: list[i].id, updatedAt: Date.now() };
-    await this.save();
+    this.cache.set(currentSubject(), list);
+    await this.save(list);
     return list[i];
   }
 
@@ -199,18 +209,18 @@ class FoldersService {
     const list = await this.all();
     const next = list.filter((f) => f.id !== id);
     if (next.length === list.length) return false;
-    // Move child folders + notes to root (parentId = null, folderId = null).
-    const remaining = this.cache!;
-    for (const f of remaining) if (f.parentId === id) f.parentId = null;
-    this.cache = next;
-    await this.save();
+    // Move child folders to root (parentId = null).
+    for (const f of next) if (f.parentId === id) f.parentId = null;
+    this.cache.set(currentSubject(), next);
+    await this.save(next);
     return true;
   }
 
-  private async save(): Promise<void> {
-    if (!this.cache) return;
-    await fs.mkdir(join(process.cwd(), "data"), { recursive: true });
-    await fs.writeFile(FOLDERS_FILE, JSON.stringify(this.cache, null, 2), "utf-8");
+  private async save(list?: NoteFolder[]): Promise<void> {
+    const sub = currentSubject();
+    const value = list ?? this.cache.get(sub);
+    if (!value) return;
+    await writeCollection(sub, "folders.json", value);
   }
 }
 

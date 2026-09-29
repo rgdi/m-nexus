@@ -1619,3 +1619,220 @@
 .rag-cite-body strong { font-size: 14.5px; }
 .rag-cite-body em { font-size: 11.5px; color: var(--m-muted); font-style: normal; }
 .rag-cite-snip { font-size: 13px; color: var(--m-muted); line-height: 1.45; }
+
+/* ============================================================
+ * Generate study material — v2.38.1 (screens/generate.js)
+ * ============================================================ */
+/* The capture FAB is fixed bottom-right; without clearance the
+ * generated material scrolls underneath it and the last line of a
+ * summary is unreadable. */
+.gen-result { padding-bottom: 72px; }
+.gen-lbl { display: block; font-size: 12px; color: var(--m-muted, #9a9ab0); margin-bottom: 5px; }
+.gen-scope, .gen-topic-in {
+  width: 100%; min-height: 48px; padding: 0 12px;
+  border-radius: 12px; border: 1.5px solid var(--m-hairline, rgba(255,255,255,.1));
+  background: var(--m-surface-1, #131322); color: var(--m-text, #f2f2f7); font-size: 15px;
+}
+.gen-folder, .gen-topic { margin-bottom: 12px; }
+
+.gen-kinds { display: flex; flex-direction: column; gap: 7px; margin-bottom: 14px; }
+.gen-kind {
+  display: flex; align-items: center; gap: 11px; text-align: left;
+  min-height: 56px; padding: 10px 13px;
+  border-radius: 13px; border: 1.5px solid var(--m-hairline, rgba(255,255,255,.1));
+  background: transparent; color: inherit; cursor: pointer;
+}
+.gen-kind.is-active { border-color: var(--m-primary, #7c5cff); background: rgba(124,92,255,0.1); }
+.gen-kind-icon { font-size: 20px; flex-shrink: 0; }
+.gen-kind-body { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.gen-kind-body strong { font-size: 14.5px; }
+.gen-kind-body em { font-style: normal; font-size: 12px; color: var(--m-muted, #9a9ab0); }
+.gen-go { min-height: 50px; margin-bottom: 16px; }
+
+.gen-loading { padding: 26px 14px; text-align: center; color: var(--m-muted, #9a9ab0); font-size: 14px; }
+.gen-loading--err { color: #ff8098; }
+.gen-result-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.gen-result-head h3 { margin: 0; font-size: 19px; font-weight: 800; }
+.gen-count { font-size: 12px; color: var(--m-muted, #9a9ab0); }
+.gen-warn { padding: 9px 12px; border-radius: 10px; background: rgba(255,149,0,0.14); color: #ffa53d; font-size: 12.5px; margin-bottom: 12px; }
+.gen-note { padding: 9px 12px; border-radius: 10px; background: rgba(255,255,255,0.05); color: var(--m-muted, #9a9ab0); font-size: 12.5px; margin-bottom: 12px; }
+.gen-none { color: var(--m-muted, #9a9ab0); font-size: 13.5px; }
+
+.gen-section { margin-bottom: 16px; }
+.gen-section h4 { margin: 0 0 7px; font-size: 15px; font-weight: 800; }
+.gen-prose { font-size: 14.5px; line-height: 1.6; color: var(--m-text, #f2f2f7); }
+.gen-prose p { margin: 0 0 8px; }
+.gen-cites { display: inline-flex; gap: 4px; margin-top: 4px; }
+.gen-cite {
+  font-size: 11px; font-weight: 800; color: #a78bfa;
+  background: rgba(124,92,255,0.16); padding: 1px 6px; border-radius: 5px; text-decoration: none;
+}
+
+.gen-card {
+  padding: 12px 14px; border-radius: 13px; margin-bottom: 9px;
+  background: var(--m-surface-1, #131322); border: 1px solid var(--m-hairline, rgba(255,255,255,.08));
+}
+.gen-card-f { font-size: 14.5px; font-weight: 700; display: flex; gap: 8px; }
+.gen-card-b { font-size: 13.5px; color: var(--m-muted, #9a9ab0); margin-top: 5px; padding-left: 26px; }
+.gen-n {
+  flex-shrink: 0; width: 18px; height: 18px; border-radius: 5px;
+  background: rgba(124,92,255,0.2); color: #a78bfa;
+  display: grid; place-items: center; font-size: 10.5px; font-weight: 800;
+}
+
+.gen-q { padding: 13px 14px; border-radius: 13px; margin-bottom: 10px; background: var(--m-surface-1, #131322); }
+.gen-q-head { font-size: 14.5px; font-weight: 700; display: flex; gap: 8px; }
+.gen-q-opts { list-style: none; margin: 9px 0 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+.gen-q-opt {
+  display: flex; align-items: center; gap: 8px; font-size: 13.5px;
+  padding: 7px 10px; border-radius: 9px; background: rgba(255,255,255,0.04);
+}
+.gen-q-opt.is-key { background: rgba(29,125,84,0.2); color: #6ee7b7; }
+.gen-q-opt span { font-weight: 800; opacity: .7; }
+.gen-q-why { font-size: 12.5px; color: var(--m-muted, #9a9ab0); margin: 8px 0 0; }
+
+.gen-mm-node { padding: 12px 14px; border-radius: 13px; margin-bottom: 10px; background: var(--m-surface-1, #131322); }
+.gen-mm-node h4 { margin: 0 0 7px; font-size: 14px; color: #a78bfa; }
+.gen-mm-node ul { margin: 0; padding-left: 17px; font-size: 13.5px; line-height: 1.55; }
+
+.gen-sources { margin: 18px 0 14px; font-size: 13px; color: var(--m-muted, #9a9ab0); }
+.gen-sources summary { min-height: 40px; display: flex; align-items: center; cursor: pointer; }
+.gen-sources ul { margin: 0; padding-left: 17px; }
+.gen-sources li { margin-bottom: 6px; }
+.gen-sources a { color: #a78bfa; }
+.gen-sources em { display: block; font-style: normal; font-size: 11.5px; opacity: .75; }
+.rag-gen {
+  width: 100%; min-height: 46px; margin-bottom: 16px;
+  border-radius: 12px; border: 1px dashed var(--m-hairline, rgba(255,255,255,.16));
+  background: transparent; color: var(--m-muted, #9a9ab0);
+  font-size: 13.5px; font-weight: 700; cursor: pointer;
+}
+
+/* ============================================================
+ * Drag an answer onto a masked region — v2.38.1
+ * (widgets/drag_occlusion.js)
+ * ============================================================ */
+.do-stage { position: relative; display: block; margin-bottom: 14px; user-select: none; }
+.do-img { display: block; width: 100%; height: auto; border-radius: 13px; }
+.do-masks { position: absolute; inset: 0; pointer-events: none; }
+.do-mask {
+  position: absolute;
+  pointer-events: auto;
+  border: 2px dashed rgba(124, 92, 255, 0.75);
+  border-radius: 7px;
+  background: rgba(124, 92, 255, 0.26);
+  cursor: pointer;
+  display: grid; place-items: center;
+  padding: 2px; min-width: 24px; min-height: 24px;
+  transition: background 150ms, border-color 150ms;
+}
+.do-mask.is-hot { background: rgba(124, 92, 255, 0.5); border-color: #a78bfa; }
+.do-mask.is-filled { border-style: solid; background: rgba(255, 255, 255, 0.12); }
+.do-mask.is-correct { border-color: var(--m-ok, #1d7d54); background: rgba(29, 125, 84, 0.35); }
+.do-mask.is-wrong { border-color: var(--m-danger, #ff4d6d); background: rgba(255, 77, 109, 0.28); }
+.do-mask-label {
+  font-size: 10.5px; font-weight: 800; line-height: 1.15;
+  color: #fff; text-align: center; pointer-events: none;
+  overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+
+.do-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 14px; }
+.do-chip {
+  min-height: 44px; padding: 8px 14px;
+  border-radius: 12px; border: 1.5px solid var(--m-hairline, rgba(255,255,255,.12));
+  background: var(--m-surface-1, #131322); color: var(--m-text, #f2f2f7);
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  touch-action: none; user-select: none; -webkit-user-select: none;
+  transition: border-color 140ms, background 140ms, opacity 140ms;
+}
+.do-chip.is-selected { border-color: var(--m-primary, #7c5cff); background: rgba(124, 92, 255, 0.16); }
+.do-chip.is-used { opacity: 0.28; cursor: default; }
+.do-chip.is-dragging { opacity: 0.3; }
+.do-ghost {
+  position: fixed; top: 0; left: 0; z-index: 10000;
+  pointer-events: none; padding: 8px 14px; border-radius: 12px;
+  background: var(--m-primary, #7c5cff); color: #fff;
+  font-size: 14px; font-weight: 700; box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+}
+
+.do-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.do-actions .m-btn { flex: 1 1 44%; min-height: 46px; }
+/* "Continuar →" is the longest label and the row is three buttons
+ * wide. Without wrapping it ran off a 414px screen and the primary
+ * action was unreachable. */
+.do-actions .m-btn:last-child:nth-child(odd) { flex-basis: 100%; }
+.do-feedback { font-size: 14px; }
+.do-score {
+  padding: 11px 14px; border-radius: 12px;
+  background: rgba(255, 149, 0, 0.14); color: #ffa53d;
+}
+.do-score.is-full { background: rgba(29, 125, 84, 0.18); color: #6ee7b7; }
+.do-score strong { font-size: 17px; margin-right: 6px; }
+.do-score-rest { opacity: .75; font-size: 12.5px; }
+.cap-mic {
+  width: 44px; height: 44px; flex-shrink: 0;
+  border-radius: 12px; border: 1px solid var(--m-hairline, rgba(255,255,255,.12));
+  background: transparent; font-size: 17px; cursor: pointer;
+}
+.cap-mic.is-live {
+  background: var(--m-danger, #ff4d6d); border-color: var(--m-danger, #ff4d6d);
+  animation: cap-mic-pulse 1.3s ease-in-out infinite;
+}
+@keyframes cap-mic-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 77, 109, 0.5); }
+  50%      { box-shadow: 0 0 0 8px rgba(255, 77, 109, 0); }
+}
+
+/* ============================================================
+ * Mood tracker — v2.38.1 (screens/mood.js)
+ * ============================================================ */
+.mood-today { margin-bottom: 18px; }
+.mood-today h2 { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--m-muted, #9a9ab0); margin: 0 0 9px; }
+.mood-faces { display: flex; gap: 6px; }
+.mood-face {
+  flex: 1; min-height: 68px; padding: 8px 4px;
+  border-radius: 14px; border: 1.5px solid var(--m-hairline, rgba(255,255,255,.1));
+  background: transparent; color: inherit; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  transition: border-color 150ms, background 150ms, transform 150ms;
+}
+.mood-face:active { transform: scale(0.94); }
+.mood-face.is-on { border-color: var(--m-primary, #7c5cff); background: rgba(124,92,255,0.14); }
+.mood-face-emoji { font-size: 25px; line-height: 1; }
+.mood-face-lbl { font-size: 9.5px; color: var(--m-muted, #9a9ab0); text-align: center; line-height: 1.15; }
+.mood-today-note { font-size: 13px; color: var(--m-muted, #9a9ab0); margin: 10px 0 0; }
+
+.mood-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+
+.mood-ranges { display: flex; gap: 6px; margin-bottom: 12px; }
+.mood-range {
+  flex: 1; min-height: 38px; border-radius: 10px;
+  border: 1px solid var(--m-hairline, rgba(255,255,255,.1));
+  background: transparent; color: var(--m-muted, #9a9ab0);
+  font-size: 12.5px; font-weight: 700; cursor: pointer;
+}
+.mood-range.is-on { border-color: var(--m-primary, #7c5cff); color: var(--m-text, #f2f2f7); background: rgba(124,92,255,0.12); }
+
+.mood-chart {
+  border-radius: 14px; padding: 14px 12px; margin-bottom: 10px;
+  background: var(--m-surface-1, #131322); border: 1px solid var(--m-hairline, rgba(255,255,255,.08));
+}
+.mood-svg { width: 100%; height: 128px; display: block; }
+.mood-empty { font-size: 13.5px; text-align: center; padding: 18px 0; margin: 0; }
+
+.mood-legend { display: flex; align-items: center; gap: 12px; font-size: 11.5px; color: var(--m-muted, #9a9ab0); margin-bottom: 18px; }
+/* The capture FAB is fixed at the bottom-right and was landing on top
+ * of the legend's right-hand text ("0% de días con registro"), which is
+ * the one number on this screen worth reading. Clear it. */
+.mood-legend { padding-right: 68px; flex-wrap: wrap; }
+.mood-legend-item { display: inline-flex; align-items: center; gap: 4px; }
+.mood-legend-item i { width: 9px; height: 9px; border-radius: 3px; display: inline-block; }
+.mood-legend-spacer { flex: 1; }
+
+.mood-clear { height: 64px; }
+.mood-list-h { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--m-muted, #9a9ab0); margin: 0 0 9px; }
+.mood-list { display: flex; flex-direction: column; gap: 5px; }
+.mood-list-row { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; background: var(--m-surface-1, #131322); font-size: 13.5px; }
+.mood-list-emoji { font-size: 18px; }
+.mood-list-date { color: var(--m-muted, #9a9ab0); font-size: 12.5px; }
+.mood-list-label { margin-left: auto; color: var(--m-muted, #9a9ab0); font-size: 12.5px; }

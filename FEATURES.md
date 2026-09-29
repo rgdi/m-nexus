@@ -1,11 +1,11 @@
 # M-NEXUS — Features Index
 
-> **v2.38.0** — Educational OS for any career · self-hosted · multi-device · accessible.
+> **v2.38.1** — Educational OS for any career · self-hosted · multi-device · accessible.
 >
 > Stack: TypeScript (Fastify) backend + Vanilla JS+CSS frontend. **Zero frameworks.**
 >
-> **2011 tests automatizados** (1338 backend + 673 frontend) en 147 ficheros,
-> 0 errores TypeScript, 22/22 rutas verificadas por barrido automático.
+> **2126 tests automatizados** (1398 backend + 728 frontend),
+> 0 errores TypeScript, 24/24 rutas verificadas por barrido automático.
 
 ---
 
@@ -44,6 +44,20 @@ Accesible via hamburger FAB (bottom-left). Contiene items menos usados:
 | 📄 | PDF | `#/pdf` | Visor con anotaciones, image occlusion, sync CRDT |
 | 🕸️ | Graph | `#/kg` | Knowledge Graph standalone (canvas force-directed) |
 | 🛰️ | Cluster | `#/cluster` | P2P multi-server cluster admin |
+| ✨ | Generate | `#/generate` | Resumen, tarjetas, quiz y mapa mental desde una carpeta, con citas · v2.38.1 |
+| 💚 | Mood | `#/mood` | Registro de ánimo 1–5 con racha, media, cobertura y gráfico · v2.38.1 |
+
+---
+
+## Almacenamiento y sincronización
+
+| Feature | Qué hace | Desde |
+|---------|----------|-------|
+| **Store por usuario** | Notas, carpetas, tarjetas, tareas y diario viven en `data/users/<sub>/`. El sujeto del JWT (el dispositivo registrado) es la identidad. El fichero global previo lo adopta un solo usuario y el original queda como `.migrated`. | v2.38.1 |
+| **CRDT de notas** | Secuencia por carácter con tombstones. Dos dispositivos editando párrafos distintos ya no se pisan. Los borrados ganan sobre réplicas obsoletas. | v2.38.1 |
+| **Image occlusion con arrastre** | Las respuestas se arrastran sobre la figura con el dedo, el ratón o el lápiz. Coordenadas normalizadas, hit-testing y alternativa accesible tocar-ficha → tocar-máscara. | v2.38.1 |
+| **Dictado por voz** | Reconocimiento continuo en la captura, con aviso cuando el audio se envía a la nube. Solo se muestra donde el navegador puede transcribir. | v2.38.1 |
+| **Generación de recursos** | Resumen por secciones, tarjetas, quiz y mapa mental determinista, fundados en *chunks* con carpetero y con citas a la fuente. | v2.38.1 |
 
 ---
 

@@ -19,6 +19,7 @@ import { detectApiBase } from "../services/api_base.js";
 import { authHeaders } from "../services/auth.js";
 import { i18n } from "../services/i18n.js";
 import { showToast } from "../widgets/toast.js";
+import { voiceSupport, isCloudBacked, startDictation, stopDictation, isListening } from "../services/voice.js";
 
 const BASE = detectApiBase();
 
@@ -113,6 +114,12 @@ function paint(host) {
           <input type="checkbox" data-cap-llm>
           <span>con IA</span>
         </label>
+        ${voiceSupport() ? `
+          <button class="cap-mic" data-cap-mic
+                  title="${isCloudBacked()
+                    ? "Dictado por voz. En Chrome el audio se envía al servicio de reconhecimento de Google."
+                    : "Dictado por voz. Se procesa en el dispositivo."}"
+                  aria-label="Dictar por voz">🎙</button>` : ""}
         <button class="m-btn cap-parse" data-cap-parse>Extraer</button>
       </div>
     </div>
@@ -188,6 +195,34 @@ function wire(host) {
       btn.disabled = false;
       btn.textContent = "Extraer";
     }
+  });
+
+  // v2.38.1 — dictation. The button only exists where the browser can
+  // actually transcribe, so there is nothing to disable or explain.
+  const mic = host.querySelector("[data-cap-mic]");
+  mic?.addEventListener("click", (e) => {
+    e.preventDefault();
+    if (isListening()) {
+      stopDictation();
+      return;
+    }
+    startDictation(input, {
+      onStart: () => {
+        mic.classList.add("is-live");
+        mic.textContent = "⏹";
+        mic.setAttribute("aria-label", "Detener dictado");
+      },
+      onEnd: () => {
+        mic.classList.remove("is-live");
+        mic.textContent = "🎙";
+        mic.setAttribute("aria-label", "Dictar por voz");
+      },
+      onError: (msg) => {
+        showToast(msg, "error");
+        mic.classList.remove("is-live");
+        mic.textContent = "🎙";
+      },
+    });
   });
 
   // Ctrl/Cmd+Enter saves without reaching for the button.

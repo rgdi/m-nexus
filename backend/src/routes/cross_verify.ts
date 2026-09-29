@@ -32,7 +32,10 @@ export interface GapItem {
 
 async function loadNotes(): Promise<NoteRec[]> {
   try {
-    return JSON.parse(await fs.readFile(join(process.cwd(), "data", "notes.json"), "utf-8"));
+    // v2.38.1: per-user store. A raw read of data/notes.json would see
+    // nothing now that each user has their own file.
+    const { notesServiceInstance } = await import("./notes.js");
+    return notesServiceInstance.all();
   } catch { return []; }
 }
 

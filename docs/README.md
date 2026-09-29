@@ -1,6 +1,6 @@
 # M-NEXUS — Documentación
 
-> Última versión documentada: **v2.38.0** · 2026-09-29
+> Última versión documentada: **v2.38.1** · 2026-09-29
 > Este es el índice. Si algo aquí no coincide con el código, el código
 > gana y esto es un bug: abrirlo.
 
@@ -51,6 +51,7 @@ Cada una documenta lo que se rompió antes, no solo lo que se añadió.
 
 | Versión | Tema |
 |---|---|
+| [v2.38.1.md](v2.38.1.md) | Store por usuario (aislamiento real + migración) · CRDT de notas · generar resumen/tarjetas/quiz/mapa mental · arrastre sobre imagen · voz · registro de ánimo |
 | [v2.38.md](v2.38.md) | Captura rápida (texto libre → tareas/compras/hábitos/gastos) · RAG con scoping por carpeta · companion de IA en popup |
 | [v2.37.md](v2.37.md) | Corrección de auditoría: 13 defectos, 4 P0. El FSRS-7 que no era FSRS-7, el heatmap que no guardaba nada, cuatro endpoints que filtraban datos. |
 | [v2.36.md](v2.36.md) | PWA real (el service worker llevaba 20 versiones roto), grading por IA, drag-gap, logging estructurado. |

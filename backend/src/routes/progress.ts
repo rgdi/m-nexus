@@ -114,8 +114,11 @@ async function loadData(): Promise<{ cards: CardRow[]; notes: NoteRow[] }> {
     return { cards: cache.cards, notes: cache.notes };
   }
   const [cards, notes] = await Promise.all([
-    readFile(join(DATA, "flashcards.json"), "utf-8").then((s) => JSON.parse(s)).catch(() => []),
-    readFile(join(DATA, "notes.json"), "utf-8").then((s) => JSON.parse(s)).catch(() => []),
+    // v2.38.1: per-user store, same reason as notes below.
+    import("../services/userStore.js").then((m) => m.readCollection(m.currentSubject(), "flashcards.json", [])),
+    // v2.38.1: per-user store — the progress screen must aggregate only
+    // the caller's own reviews, not the whole instance's.
+    import("../services/userStore.js").then((m) => m.readCollection(m.currentSubject(), "notes.json", [])),
   ]);
   const normCards = (Array.isArray(cards) ? cards : []).filter(
     (c: unknown): c is CardRow => !!c && typeof c === "object",

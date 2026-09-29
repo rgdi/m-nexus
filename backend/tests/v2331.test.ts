@@ -13,7 +13,22 @@ afterAll(async () => {
   try { await app.close(); } catch {}
 });
 
+// v2.38.1: the data store is partitioned by the JWT subject, and the
+// subject IS the registered device. Minting a fresh device per call made
+// every request a different user, so a note created in one call was
+// invisible in the next — which is the partition working, not a bug.
+// One device per file is what a real session looks like.
+let cachedToken: string | null = null;
+
 async function authedReq(method: string, url: string, body?: unknown) {
+  if (cachedToken) {
+    return app.inject({
+      method,
+      url,
+      headers: { authorization: `Bearer ${cachedToken}` },
+      payload: body,
+    });
+  }
   const username = `pp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const reg = await app.inject({
     method: "POST",
@@ -27,6 +42,7 @@ async function authedReq(method: string, url: string, body?: unknown) {
     },
   });
   const { accessToken } = reg.json();
+  cachedToken = accessToken;
   return app.inject({
     method,
     url,

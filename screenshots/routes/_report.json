@@ -1,12 +1,12 @@
 {
-  "capturedAt": "2026-09-29T12:54:28.419Z",
+  "capturedAt": "2026-09-29T17:08:17.883Z",
   "viewport": "phone 414x896",
   "web": "http://localhost:8080",
   "routes": [
     {
       "route": "overview",
       "status": "ok",
-      "bodyLen": 3805,
+      "bodyLen": 3168,
       "redirected": null,
       "errors": []
     },
@@ -27,28 +27,42 @@
     {
       "route": "notes",
       "status": "ok",
-      "bodyLen": 3131,
+      "bodyLen": 983,
       "redirected": null,
       "errors": []
     },
     {
       "route": "todos",
       "status": "ok",
-      "bodyLen": 13355,
+      "bodyLen": 745,
       "redirected": null,
       "errors": []
     },
     {
       "route": "capture",
       "status": "ok",
-      "bodyLen": 5225,
+      "bodyLen": 2380,
       "redirected": null,
       "errors": []
     },
     {
       "route": "rag",
       "status": "ok",
-      "bodyLen": 1350,
+      "bodyLen": 1314,
+      "redirected": null,
+      "errors": []
+    },
+    {
+      "route": "generate",
+      "status": "ok",
+      "bodyLen": 2167,
+      "redirected": null,
+      "errors": []
+    },
+    {
+      "route": "mood",
+      "status": "ok",
+      "bodyLen": 5664,
       "redirected": null,
       "errors": []
     },
@@ -69,7 +83,7 @@
     {
       "route": "login",
       "status": "ok",
-      "bodyLen": 12210,
+      "bodyLen": 12207,
       "redirected": null,
       "errors": []
     },
@@ -83,7 +97,7 @@
     {
       "route": "approvals",
       "status": "ok",
-      "bodyLen": 2716,
+      "bodyLen": 485,
       "redirected": null,
       "errors": []
     },
@@ -111,7 +125,7 @@
     {
       "route": "cluster",
       "status": "ok",
-      "bodyLen": 1729,
+      "bodyLen": 1727,
       "redirected": null,
       "errors": []
     },
@@ -146,14 +160,14 @@
     {
       "route": "study",
       "status": "ok",
-      "bodyLen": 1042,
+      "bodyLen": 1051,
       "redirected": null,
       "errors": []
     },
     {
       "route": "progress",
       "status": "ok",
-      "bodyLen": 58362,
+      "bodyLen": 57131,
       "redirected": null,
       "errors": []
     }

@@ -2,7 +2,49 @@
 
 > Historial completo de versiones. Stack actual: **TypeScript backend (Fastify) + Vanilla JS+CSS frontend**. Sin Flutter. Sin colaboración (rejected).
 >
-> **Totales actuales (v2.38.0)**: **2011 tests automatizados** (1338 backend + 673 frontend) en 147 ficheros, **0 errores TypeScript**, **22/22 rutas** verificadas por barrido automático.
+> **Totales actuales (v2.38.1)**: **2126 tests automatizados** (1398 backend + 728 frontend), **0 errores TypeScript**, **24/24 rutas** verificadas por barrido automático.
+
+---
+
+## v2.38.1 (2026-09-29) — Store por usuario · CRDT · recursos de estudio
+
+### Corregido
+
+- **El almacén era global.** `notes.json` y `flashcards.json` eran un único
+  fichero para todos: dos usuarios autenticados recibían las mismas notas.
+  v2.37.0 exigía token, pero un token no cambia *qué* notas se devuelven.
+  Ahora los datos viven en `data/users/<sub>/`, la migración del fichero
+  global la adopta un solo usuario y el ámbito de request es un
+  `AsyncLocalStorage` — no una variable de módulo, que es la carrera que
+  esta función existe para evitar.
+- **Ocho rutas leían el fichero global a mano** y se quedaron viendo nada:
+  extracción de tarjetas, cross-verify, heatmap de progreso, índice RAG y
+  el `NotesGateway` del diario, que era además un *segundo* store con su
+  propia caché. Todas pasan por el servicio.
+- **`drops` sin declarar** en el widget de arrastre: los módulos ES son
+  strict, así que el ejercicio lanzaba `ReferenceError` al montarse. Los 16
+  tests unitarios lo cubrían y ninguno lo montaba.
+- **"No encontré nada en tus notas"** como título de un resumen generado con
+  tres pasajes, cuando el campo de tema se dejaba vacío.
+- **"Continuar →" se salía de la pantalla** a 414 px: tres botones no caben.
+- El FAB de captura tapaba la leyenda del ánimo y el resultado generado.
+
+### Añadido
+
+- **CRDT de notas** por carácter con tombstones, reconciliado al abrir.
+- **`#/generate`**: resumen, tarjetas, quiz y mapa mental desde una carpeta,
+  con citas y "Guardar como nota". El mapa mental es determinista.
+- **Arrastre de respuestas sobre la imagen** con Pointer Events.
+- **Dictado por voz** en la captura, con aviso cuando va a la nube.
+- **`#/mood`**: registro de ánimo de 5 puntos con racha, media y cobertura.
+
+### Cambiado
+
+- La adopción del fichero global queda **desactivada en tests**: una
+  ejecución de test no es un despliegue, y llegó a renombrar el
+  `notes.json` real del repositorio.
+
+Detalle completo en [`docs/v2.38.1.md`](docs/v2.38.1.md).
 
 ---
 

@@ -162,15 +162,19 @@ afterEach(async () => {
 import { afterEach } from "vitest";
 
 async function seed() {
-  await fs.writeFile(join(dir, "data", "folders.json"), JSON.stringify([
+  // v2.38.1: the RAG index reads through the per-user store, so the
+  // fixture has to be seeded there too — writing data/notes.json by
+  // hand would now seed nothing the index can see.
+  const { writeCollection } = await import("../src/services/userStore.js");
+  await writeCollection("default", "folders.json", [
     { id: "gen", name: "Genética", parentId: null, color: "", icon: "", createdAt: 0, updatedAt: 0 },
     { id: "qui", name: "Química", parentId: null, color: "", icon: "", createdAt: 0, updatedAt: 0 },
-  ]));
-  await fs.writeFile(join(dir, "data", "notes.json"), JSON.stringify([
+  ]);
+  await writeCollection("default", "notes.json", [
     { id: "n1", title: "Fibrosis quística", body: "La fibrosis quística se debe a una mutación en el gen CFTR.", subject: "gen", tags: [], pages: [], folderId: "gen", createdAt: 0, updatedAt: 0 },
     { id: "n2", title: "Herencia", body: "La herencia mendeliana sigue las leyes de Mendel.", subject: "gen", tags: [], pages: [], folderId: "gen", createdAt: 0, updatedAt: 0 },
     { id: "n3", title: "Enlace iónico", body: "El enlace iónico transfiere electrones entre átomos.", subject: "qui", tags: [], pages: [], folderId: "qui", createdAt: 0, updatedAt: 0 },
-  ]));
+  ]);
   invalidateIndex();
 }
 
