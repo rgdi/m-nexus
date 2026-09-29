@@ -395,5 +395,35 @@
     "platform": "web",
     "registeredAt": 1790703375294,
     "lastSeenAt": 1790703375294
+  },
+  {
+    "deviceId": "normal-a48x2wic",
+    "deviceName": "normal-capture",
+    "platform": "web",
+    "registeredAt": 1790706839261,
+    "lastSeenAt": 1790706839261,
+    "lastAccessTokenId": "97ee57915ebc585f6ae1287968bf4429"
+  },
+  {
+    "deviceId": "7bb1ce2e-4052-41f5-94ee-03e02bf79531",
+    "deviceName": "Linux x86_64",
+    "platform": "web",
+    "registeredAt": 1790706842112,
+    "lastSeenAt": 1790706842112
+  },
+  {
+    "deviceId": "normal-q56zhmf7",
+    "deviceName": "normal-capture",
+    "platform": "web",
+    "registeredAt": 1790707110356,
+    "lastSeenAt": 1790707110356,
+    "lastAccessTokenId": "4102e74fd086efd63cfea094c97dfc87"
+  },
+  {
+    "deviceId": "cbc40eb3-c63d-4c19-9b79-643af12391aa",
+    "deviceName": "Linux x86_64",
+    "platform": "web",
+    "registeredAt": 1790707113358,
+    "lastSeenAt": 1790707113358
   }
 ]

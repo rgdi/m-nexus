@@ -22,6 +22,11 @@ const STRINGS = {
   "dock.overview":           { en: "Overview", es: "Resumen",   pt: "Visão geral" },
   "dock.calendar":           { en: "Calendar", es: "Calendario",pt: "Calendário" },
   "dock.subjects":           { en: "Subjects", es: "Asignaturas",pt: "Disciplinas" },
+  // v2.38.2: the mobile tab bar pointed its i18n field at the literal
+  // string "Study"/"Progress", so those two tabs were the only ones in
+  // the app that never translated.
+  "dock.study":             { en: "Study",   es: "Estudiar",  pt: "Estudar"  },
+  "dock.progress":          { en: "Progress",es: "Progreso",  pt: "Progresso"},
   "dock.notes":              { en: "Notes",    es: "Notas",     pt: "Notas" },
   "dock.todos":              { en: "To-dos",   es: "Tareas",    pt: "Tarefas" },
   "dock.tutor":              { en: "AI",       es: "IA",        pt: "IA" },

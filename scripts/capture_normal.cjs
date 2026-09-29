@@ -27,6 +27,8 @@ const auth = (tok) => function (a) {
   localStorage.setItem('mnexus.auth.refresh', a);
   localStorage.setItem('mnexus.backend.url', 'http://localhost:4000');
   localStorage.setItem('mnexus.theme', 'dark');
+  // Spanish, so the screenshots read the way a Spanish user sees them.
+  localStorage.setItem('mnexus.lang', 'es');
 };
 
 async function settle(page) {

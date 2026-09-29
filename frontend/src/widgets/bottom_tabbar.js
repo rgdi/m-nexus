@@ -24,8 +24,8 @@ const ICONS = {
 const TABS = [
   { id: "home", hash: "#/overview", label: "Inicio", i18n: "dock.overview", icon: "home" },
   { id: "notes", hash: "#/notes", label: "Notas", i18n: "dock.notes", icon: "notes" },
-  { id: "study", hash: "#/study", label: "Estudiar", i18n: "Study", icon: "study" },
-  { id: "stats", hash: "#/progress", label: "Progreso", i18n: "Progress", icon: "stats" },
+  { id: "study", hash: "#/study", label: "Estudiar", i18n: "dock.study", icon: "study" },
+  { id: "stats", hash: "#/progress", label: "Progreso", i18n: "dock.progress", icon: "stats" },
   { id: "you", hash: "#/settings", label: "Tú", i18n: "dock.settings", icon: "you" },
 ];
 
