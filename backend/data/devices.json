@@ -516,5 +516,125 @@
     "platform": "web",
     "registeredAt": 1790721507475,
     "lastSeenAt": 1790721507475
+  },
+  {
+    "deviceId": "core-07hv55k3",
+    "deviceName": "core-capture",
+    "platform": "web",
+    "registeredAt": 1790723392125,
+    "lastSeenAt": 1790723392125,
+    "lastAccessTokenId": "bef0c0e92915f1e2da264ab6cbe4fe3e"
+  },
+  {
+    "deviceId": "fc5d7ba5-f500-4a81-8903-287eb1f09354",
+    "deviceName": "Linux x86_64",
+    "platform": "web",
+    "registeredAt": 1790723393878,
+    "lastSeenAt": 1790723393878
+  },
+  {
+    "deviceId": "core-uk1wzt0p",
+    "deviceName": "core-capture",
+    "platform": "web",
+    "registeredAt": 1790723467943,
+    "lastSeenAt": 1790723467943,
+    "lastAccessTokenId": "2ff1f72cef44c54c5a146b20c6a80b6d"
+  },
+  {
+    "deviceId": "de49b171-735f-4aab-81af-c083a9064b67",
+    "deviceName": "Linux x86_64",
+    "platform": "web",
+    "registeredAt": 1790723469578,
+    "lastSeenAt": 1790723469578
+  },
+  {
+    "deviceId": "core-yjq4z82y",
+    "deviceName": "core-capture",
+    "platform": "web",
+    "registeredAt": 1790723561333,
+    "lastSeenAt": 1790723561333,
+    "lastAccessTokenId": "3cd33fb4488300e716870e5eb42432ba"
+  },
+  {
+    "deviceId": "618655df-612f-48d6-8794-5d46e2220670",
+    "deviceName": "Linux x86_64",
+    "platform": "web",
+    "registeredAt": 1790723562921,
+    "lastSeenAt": 1790723583236
+  },
+  {
+    "deviceId": "core-ua3pocie",
+    "deviceName": "core-capture",
+    "platform": "web",
+    "registeredAt": 1790723655853,
+    "lastSeenAt": 1790723655853,
+    "lastAccessTokenId": "6aba1d053e30ec9cc8702e1dbd5dd593"
+  },
+  {
+    "deviceId": "d7d15a51-a974-4747-9c62-452aa772d7bd",
+    "deviceName": "Linux x86_64",
+    "platform": "web",
+    "registeredAt": 1790723657535,
+    "lastSeenAt": 1790723687860
+  },
+  {
+    "deviceId": "core-ozzoeh6s",
+    "deviceName": "core-capture",
+    "platform": "web",
+    "registeredAt": 1790723757019,
+    "lastSeenAt": 1790723757019,
+    "lastAccessTokenId": "052a71c6ec9fcbe4efc2aed64bb5a023"
+  },
+  {
+    "deviceId": "1c6d16f3-2445-4fc9-a336-9ce568635e56",
+    "deviceName": "Linux x86_64",
+    "platform": "web",
+    "registeredAt": 1790723758644,
+    "lastSeenAt": 1790723793456
+  },
+  {
+    "deviceId": "core-2qxj9w63",
+    "deviceName": "core-capture",
+    "platform": "web",
+    "registeredAt": 1790723937952,
+    "lastSeenAt": 1790723937952,
+    "lastAccessTokenId": "32aae89cc50a55c1e137b2bd024ba995"
+  },
+  {
+    "deviceId": "5796ef2e-cd8a-4414-b6c5-d6ebead343ab",
+    "deviceName": "Linux x86_64",
+    "platform": "web",
+    "registeredAt": 1790723939639,
+    "lastSeenAt": 1790723974556
+  },
+  {
+    "deviceId": "core-nqeiemys",
+    "deviceName": "core-capture",
+    "platform": "web",
+    "registeredAt": 1790724005131,
+    "lastSeenAt": 1790724005131,
+    "lastAccessTokenId": "5bd31fbf4ab43701451b65bffc4d525b"
+  },
+  {
+    "deviceId": "a6122035-725b-406c-805c-5a5e9d56714c",
+    "deviceName": "Linux x86_64",
+    "platform": "web",
+    "registeredAt": 1790724006732,
+    "lastSeenAt": 1790724041730
+  },
+  {
+    "deviceId": "core-59ems7ei",
+    "deviceName": "core-capture",
+    "platform": "web",
+    "registeredAt": 1790724078386,
+    "lastSeenAt": 1790724078386,
+    "lastAccessTokenId": "1f984454de7585f0aed0efd1a3dd8451"
+  },
+  {
+    "deviceId": "7c9d56a6-2660-4218-87f4-4edcd5d9ebad",
+    "deviceName": "Linux x86_64",
+    "platform": "web",
+    "registeredAt": 1790724080214,
+    "lastSeenAt": 1790724113578
   }
 ]

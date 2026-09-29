@@ -1,0 +1,11 @@
+[
+  {
+    "id": "folder-1cc93e3b-6e83-44b8-b3f9-a16d95cf958a",
+    "name": "Cardiología",
+    "parentId": null,
+    "color": "var(--subj-blue)",
+    "icon": "folder",
+    "createdAt": 1790724005161,
+    "updatedAt": 1790724005161
+  }
+]

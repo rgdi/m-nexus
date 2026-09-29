@@ -1,0 +1,297 @@
+[
+  {
+    "id": "fc-29798ace-c8c0-4ef9-9b73-de0100eb39bf",
+    "front": "¿Cuántas fases tiene el ciclo cardíaco?",
+    "back": "Dos: sístole y diástole",
+    "subject": "cardio",
+    "tags": [
+      "cardio",
+      "basico"
+    ],
+    "sourceNoteId": "",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 3.1262024751511532,
+      "difficulty": 3.9349,
+      "state": "review",
+      "reps": 5,
+      "lapses": 0,
+      "lastReview": 1790723392274,
+      "due": 1790993496168,
+      "retrievability": 1,
+      "sched": {
+        "elapsedDays": 0,
+        "targetRetention": 0.9
+      }
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "reviewHistory": [
+      {
+        "t": 1790723392221,
+        "rating": 2,
+        "r": 1
+      },
+      {
+        "t": 1790723392234,
+        "rating": 3,
+        "r": 1
+      },
+      {
+        "t": 1790723392247,
+        "rating": 3,
+        "r": 1
+      },
+      {
+        "t": 1790723392259,
+        "rating": 4,
+        "r": 1
+      },
+      {
+        "t": 1790723392274,
+        "rating": 3,
+        "r": 1
+      }
+    ],
+    "createdAt": 1790723392205,
+    "updatedAt": 1790723392274
+  },
+  {
+    "id": "fc-c818b81a-88f8-43b3-bb69-f7aa9c2de202",
+    "front": "¿Qué ocurre durante la sístole ventricular?",
+    "back": "Expulsa sangre hacia la aorta y la arteria pulmonar",
+    "subject": "cardio",
+    "tags": [
+      "cardio",
+      "basico"
+    ],
+    "sourceNoteId": "",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 3.126201958512019,
+      "difficulty": 3.9349,
+      "state": "review",
+      "reps": 5,
+      "lapses": 0,
+      "lastReview": 1790723392367,
+      "due": 1790993496216,
+      "retrievability": 1,
+      "sched": {
+        "elapsedDays": 0,
+        "targetRetention": 0.9
+      }
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "reviewHistory": [
+      {
+        "t": 1790723392316,
+        "rating": 2,
+        "r": 1
+      },
+      {
+        "t": 1790723392336,
+        "rating": 3,
+        "r": 1
+      },
+      {
+        "t": 1790723392347,
+        "rating": 3,
+        "r": 1
+      },
+      {
+        "t": 1790723392357,
+        "rating": 4,
+        "r": 1
+      },
+      {
+        "t": 1790723392367,
+        "rating": 3,
+        "r": 1
+      }
+    ],
+    "createdAt": 1790723392295,
+    "updatedAt": 1790723392367
+  },
+  {
+    "id": "fc-2b775c3b-c1d5-4236-bdd0-db4ef5d91810",
+    "front": "¿Cuál es la mayor arteria del cuerpo?",
+    "back": "La aorta",
+    "subject": "cardio",
+    "tags": [
+      "cardio",
+      "basico"
+    ],
+    "sourceNoteId": "",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 3.1262041721833835,
+      "difficulty": 3.9349,
+      "state": "review",
+      "reps": 5,
+      "lapses": 0,
+      "lastReview": 1790723392499,
+      "due": 1790993496539,
+      "retrievability": 1,
+      "sched": {
+        "elapsedDays": 0,
+        "targetRetention": 0.9
+      }
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "reviewHistory": [
+      {
+        "t": 1790723392406,
+        "rating": 2,
+        "r": 1
+      },
+      {
+        "t": 1790723392418,
+        "rating": 3,
+        "r": 1
+      },
+      {
+        "t": 1790723392438,
+        "rating": 3,
+        "r": 1
+      },
+      {
+        "t": 1790723392449,
+        "rating": 4,
+        "r": 1
+      },
+      {
+        "t": 1790723392499,
+        "rating": 3,
+        "r": 1
+      }
+    ],
+    "createdAt": 1790723392381,
+    "updatedAt": 1790723392499
+  },
+  {
+    "id": "fc-85a279f8-4741-4ec1-b6ea-bc6b11cc1654",
+    "front": "¿Qué estructura absorbe el pico de presión sistólico?",
+    "back": "La elasticidad de la aorta",
+    "subject": "cardio",
+    "tags": [
+      "cardio",
+      "cloze"
+    ],
+    "sourceNoteId": "",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 3.1262021151264223,
+      "difficulty": 3.9349,
+      "state": "review",
+      "reps": 5,
+      "lapses": 0,
+      "lastReview": 1790723392587,
+      "due": 1790993496450,
+      "retrievability": 1,
+      "sched": {
+        "elapsedDays": 0,
+        "targetRetention": 0.9
+      }
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "reviewHistory": [
+      {
+        "t": 1790723392524,
+        "rating": 2,
+        "r": 1
+      },
+      {
+        "t": 1790723392552,
+        "rating": 3,
+        "r": 1
+      },
+      {
+        "t": 1790723392566,
+        "rating": 3,
+        "r": 1
+      },
+      {
+        "t": 1790723392576,
+        "rating": 4,
+        "r": 1
+      },
+      {
+        "t": 1790723392587,
+        "rating": 3,
+        "r": 1
+      }
+    ],
+    "createdAt": 1790723392513,
+    "updatedAt": 1790723392587
+  },
+  {
+    "id": "fc-55ecc36b-7902-41e6-977c-35ec0e6d54fc",
+    "front": "¿Qué devuelven las venas?",
+    "back": "La sangre al corazón",
+    "subject": "cardio",
+    "tags": [
+      "cardio",
+      "basico"
+    ],
+    "sourceNoteId": "",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 3.1262019873448548,
+      "difficulty": 3.9349,
+      "state": "review",
+      "reps": 5,
+      "lapses": 0,
+      "lastReview": 1790723392650,
+      "due": 1790993496502,
+      "retrievability": 1,
+      "sched": {
+        "elapsedDays": 0,
+        "targetRetention": 0.9
+      }
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "reviewHistory": [
+      {
+        "t": 1790723392607,
+        "rating": 2,
+        "r": 1
+      },
+      {
+        "t": 1790723392620,
+        "rating": 3,
+        "r": 1
+      },
+      {
+        "t": 1790723392630,
+        "rating": 3,
+        "r": 1
+      },
+      {
+        "t": 1790723392641,
+        "rating": 4,
+        "r": 1
+      },
+      {
+        "t": 1790723392650,
+        "rating": 3,
+        "r": 1
+      }
+    ],
+    "createdAt": 1790723392597,
+    "updatedAt": 1790723392650
+  }
+]

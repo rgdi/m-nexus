@@ -1912,7 +1912,10 @@ a.gen-cite { min-height: 0; }
  * the single source of the screen's name; the header keeps only what
  * the bar cannot know — the date, a warning chip, a count. */
 @media (max-width: 720px) {
-  .screen-header .h-title { display: none; }
+  /* Match any heading, not only .h-title — the PDF screen uses a bare
+   * <h1> and was printing the screen's name twice like the others. */
+  .screen-header .h-title,
+  .screen-header h1 { display: none; }
   /* …except in the note editor, where the title *is* the note and
    * nothing else names it. v2.38.2: the rule above hid it there too
    * and the editor opened with no title at all. */
@@ -2225,3 +2228,21 @@ a.gen-cite { min-height: 0; }
 }
 .rag-starter:active { border-color: var(--m-hairline-strong); color: var(--m-ink); }
 .rag-llm { font-size: 13.5px; color: var(--m-ink-2); }
+
+
+/* v2.38.2: .screen-subtitle had no rule at all — it rendered as
+ * unstyled text and ran off the right edge. */
+.screen-subtitle {
+  /* A flex item will not shrink below its content's min-content width
+   * unless it is told to — which is why the text ran off the edge
+   * instead of wrapping. */
+  min-width: 0;
+  flex: 1 1 100%;
+  margin: 0 0 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--m-ink-3);
+  /* Long by nature, so it has to wrap rather than clip. */
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
