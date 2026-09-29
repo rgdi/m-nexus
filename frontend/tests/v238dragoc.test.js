@@ -162,3 +162,35 @@ describe("v2.38.1 — the widget actually mounts", () => {
     expect([...assigned].filter((n) => !declared.has(n) && !skip.has(n))).toEqual([]);
   });
 });
+
+describe("v2.38.2 — picking something up has to look like picking it up", () => {
+  const m = read("src/styles/mobile.css");
+
+  it("the drag ghost is lifted, not just moved", () => {
+    // It was a flat pill at the same size and angle as the chip it
+    // replaced, so starting a drag looked like nothing happening.
+    expect(m).toMatch(/\.do-ghost \{/);
+    expect(m).toMatch(/animation: do-ghost-in/);
+    expect(m).toMatch(/0 14px 34px/);
+  });
+
+  it("the source chip leaves a hole, not a fade", () => {
+    expect(m).toMatch(/\.do-chip\.is-dragging \{[^}]*border-style: dashed/s);
+  });
+
+  it("the drop target is unmistakable under a thumb", () => {
+    expect(m).toMatch(/\.do-mask\.is-hot \{/);
+    expect(m).toMatch(/animation: do-mask-pulse/);
+  });
+
+  it("the floating chrome has elevation", () => {
+    // The app bar had no shadow at all, so content under it looked
+    // pasted behind rather than beneath.
+    expect(m).toMatch(/\.m-appbar \{[^}]*box-shadow/s);
+    expect(m).toMatch(/\.mn-capture-fab \{[^}]*box-shadow/s);
+  });
+
+  it("and the FAB drift respects reduced motion", () => {
+    expect(m).toMatch(/@media \(prefers-reduced-motion: no-preference\)/);
+  });
+});
