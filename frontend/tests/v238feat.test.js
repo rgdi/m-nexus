@@ -103,3 +103,77 @@ describe("v2.38.1 — CRDT wired into the editor", () => {
     expect(notes).toMatch(/getDeviceId\(\)/);
   });
 });
+
+describe("v2.38.1 — the folder selector is not decorative", () => {
+  // Regression: paint() rewrites host.innerHTML, so the <select> came
+  // back as "Toda la biblioteca". Choosing a folder and then tapping a
+  // format sent folderId: null, and the whole library came back under
+  // the heading of a folder nobody had picked. The control looked alive
+  // and did nothing — the one thing the UI rules forbid.
+  it("keeps the chosen folder in state, not only in the DOM", () => {
+    expect(gen).toMatch(/let folderId = ""/);
+    expect(gen).toMatch(/querySelector\("\[data-gen-scope\]"\)\?\.addEventListener\("change"/);
+  });
+
+  it("restores it when the screen repaints", () => {
+    expect(gen).toMatch(/f\.id === folderId \? "selected" : ""/);
+  });
+
+  it("sends the stored folder, not whatever the repaint left behind", () => {
+    expect(gen).toMatch(/folderId: folderId \|\| null/);
+    expect(gen).not.toMatch(/folderId: host\.querySelector\("\[data-gen-scope\]"\)/);
+  });
+
+  it("keeps the topic for the same reason", () => {
+    expect(gen).toMatch(/let topic = ""/);
+    expect(gen).toMatch(/querySelector\("\[data-gen-topic\]"\)\?\.addEventListener\("input"/);
+  });
+});
+
+describe("v2.38.1 — citation chips are references, not buttons", () => {
+  // Regression: the blanket `a[href] { min-height: 44px }` WCAG rule
+  // stretched an 11px citation into a 44px box under its own text.
+  it("opts citations out of the touch-target minimum", () => {
+    const st = read("src/styles/mobile.css");
+    expect(st).toMatch(/a\.gen-cite \{ min-height: 0; \}/);
+  });
+
+  it("keeps the rule itself for real controls", () => {
+    const st = read("src/styles/mobile.css");
+    expect(st).toMatch(/button, a\[href\], \[role="button"\] \{\s*min-height: 44px;/);
+  });
+});
+
+describe("v2.38.1 — the theme attribute wins over the OS preference", () => {
+  // Regression: components.css re-declared --bg-sunken on :root with a
+  // light value and only swapped it under prefers-color-scheme, so
+  // choosing "dark" in Settings on a light-preference device left the
+  // notes panel light while the text stayed light-theme white — note
+  // titles invisible on a white background.
+  const comp = read("src/styles/components.css");
+
+  it("defines a dark override for the explicit attribute", () => {
+    expect(comp).toMatch(/\[data-theme="dark"\] \{\s*--bg-sunken: #1f2126;/);
+    expect(comp).toMatch(/\[data-theme="light"\] \{\s*--bg-sunken: #f4f5f7;/);
+  });
+
+  it("keeps the media query for auto", () => {
+    expect(comp).toMatch(/@media \(prefers-color-scheme: dark\)/);
+  });
+
+  it("defines a dark value under the attribute, not just under the media query", () => {
+    // Note: components.css (#1f2126) and tokens.css (#14171c) already
+    // carried different dark values before this fix — that divergence
+    // predates the release and is not what broke the screen. What broke
+    // it was the attribute being ignored entirely, so the assertion is
+    // behavioural: the dark value must exist for [data-theme="dark"].
+    // Both branches of "auto" and the explicit attribute must land on
+    // the same dark surface, or switching theme changes the colour.
+    const region = comp.slice(comp.indexOf("Background states for drag-and-drop"), comp.indexOf("v2.23.3"));
+    const darkAttr = region.match(/\[data-theme="dark"\] \{\s*--bg-sunken:\s*(#[0-9a-f]+)/i);
+    const darkMedia = region.match(/prefers-color-scheme: dark\) \{\s*:root \{\s*--bg-sunken:\s*(#[0-9a-f]+)/i);
+    expect(darkAttr).not.toBeNull();
+    expect(darkMedia).not.toBeNull();
+    expect(darkAttr[1].toLowerCase()).toBe(darkMedia[1].toLowerCase());
+  });
+});

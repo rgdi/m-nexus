@@ -1,0 +1,26 @@
+[
+ {
+  "citesH": 44,
+  "citesDisplay": "inline-flex",
+  "citesAlign": "normal",
+  "parent": "gen-mm-node",
+  "parentDisplay": "block",
+  "parentDir": "row",
+  "chipH": 44,
+  "chipAlign": "auto",
+  "chipStretch": "normal",
+  "parentH": 116
+ },
+ {
+  "citesH": 44,
+  "citesDisplay": "inline-flex",
+  "citesAlign": "normal",
+  "parent": "gen-mm-node",
+  "parentDisplay": "block",
+  "parentDir": "row",
+  "chipH": 44,
+  "chipAlign": "auto",
+  "chipStretch": "normal",
+  "parentH": 116
+ }
+]

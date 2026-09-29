@@ -1,0 +1,33 @@
+{
+ "theme": null,
+ "imgs": [],
+ "nImg": 0,
+ "titles": [
+  {
+   "c": "dpr-2x tier-phone orient-portr",
+   "t": "📁+\n          + New note\n        \n      "
+  },
+  {
+   "c": "app screen-notes",
+   "t": "📁+\n          + New note\n        \n      "
+  },
+  {
+   "c": "screen notes-with-sidebar",
+   "t": "📁+\n          + New note\n        \n      "
+  },
+  {
+   "c": "notes-tree",
+   "t": "📁+\n          + New note\n        \n      "
+  },
+  {
+   "c": "tree-note",
+   "t": "·\n          Fibrosis quística"
+  },
+  {
+   "c": "note-bullet",
+   "t": "·"
+  }
+ ],
+ "bodyTxt": "📁+\n+ New note\n·\nFibrosis quística\n·\nHerencia mendeliana\n·\nCromosomas\nNotes\nNo tags yet. Add #your-tag to note bodies.\n3 notes\nSelect from sidebar →\n≡\nOverview\nNotes\nStudy\nProgress"
+}
+errores: 0 []

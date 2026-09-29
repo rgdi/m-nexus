@@ -29,6 +29,25 @@
 - **"Continuar →" se salía de la pantalla** a 414 px: tres botones no caben.
 - El FAB de captura tapaba la leyenda del ánimo y el resultado generado.
 
+### Corregido tras el despliegue
+
+Tres defects que sólo aparecieron al photographing la aplicación real:
+
+- **El selector de carpeta de `#/generate` no hacía nada.** `paint()`
+  reescribe `innerHTML`, así que el `<select>` volvía a "Toda la
+  biblioteca": elegir carpeta y tocar un formato enviaba
+  `folderId: null`, y devolvía toda la biblioteca bajo el título de una
+  carpeta que nadie había pedido. Un control que parecía vivo y no lo
+  estaba. La elección vive ahora en estado de módulo, no en el DOM.
+- **Notas invisibles con tema oscuro explícito.** `components.css`
+  redefinía `--bg-sunken` en `:root` con valor claro y sólo lo cambiaba
+  bajo `prefers-color-scheme`, ignorando `data-theme`. Con el tema
+  oscuro elegido en un dispositivo de preferencia clara, los títulos
+  quedaban blancos sobre panel blanco.
+- **Citas estiradas a 44px.** La regla global `a[href] { min-height:
+  44px }` de WCAG se aplicaba a las referencias `[1]`, que son texto
+  dentro de una frase, no un control.
+
 ### Añadido
 
 - **CRDT de notas** por carácter con tombstones, reconciliado al abrir.

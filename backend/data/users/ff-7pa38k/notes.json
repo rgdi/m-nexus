@@ -1,0 +1,34 @@
+[
+  {
+    "id": "note-4629c8b5-7a48-4591-b9e4-37560e79b53b",
+    "title": "Fibrosis",
+    "body": "La fibrosis quistica se debe al gen CFTR.",
+    "subject": "",
+    "tags": [],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "folderId": "folder-adb3cc86-e87c-4d1f-b260-6e8c1579b30b",
+    "createdAt": 1790702929303,
+    "updatedAt": 1790702929303
+  },
+  {
+    "id": "note-26c00105-3ea9-43d3-a61f-e79a91e4772f",
+    "title": "Ciclo",
+    "body": "El ciclo cardiaco tiene sístole y diastole.",
+    "subject": "",
+    "tags": [],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "folderId": "folder-5f00de3d-0854-494c-ada7-6f392a5269de",
+    "createdAt": 1790702929314,
+    "updatedAt": 1790702929314
+  }
+]

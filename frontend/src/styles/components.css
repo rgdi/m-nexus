@@ -1969,7 +1969,15 @@ body.hide-ui .dock, body.hide-ui .lang-switcher, body.hide-ui .top-toolbar { dis
 }
 .template-card .btn { flex-shrink: 0; }
 
-/* v2.23.0: Background states for drag-and-drop */
+/* v2.23.0: Background states for drag-and-drop.
+ *
+ * This block used to set a light palette on :root and only swap it
+ * under prefers-color-scheme. It therefore ignored the explicit theme
+ * attribute: choosing "dark" in Settings on a device that reports a
+ * light OS preference left --bg-sunken light while the text colours
+ * stayed dark-theme values — white note titles on a white panel, in the
+ * notes tree. Mirrored from tokens.css so the attribute wins, with the
+ * media query only for "auto". */
 :root {
   --bg-sunken: #f4f5f7;
   --bg-elevated: #ffffff;
@@ -1979,6 +1987,14 @@ body.hide-ui .dock, body.hide-ui .lang-switcher, body.hide-ui .top-toolbar { dis
     --bg-sunken: #1f2126;
     --bg-elevated: #2b2d33;
   }
+}
+[data-theme="dark"] {
+  --bg-sunken: #1f2126;
+  --bg-elevated: #2b2d33;
+}
+[data-theme="light"] {
+  --bg-sunken: #f4f5f7;
+  --bg-elevated: #ffffff;
 }
 
 /* ============================================================

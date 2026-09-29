@@ -1,0 +1,20 @@
+[
+  {
+    "id": "folder-c72e2f3b-aa8d-4761-b0b1-31e81652d090",
+    "name": "Genética",
+    "parentId": null,
+    "color": "var(--subj-blue)",
+    "icon": "folder",
+    "createdAt": 1790702463779,
+    "updatedAt": 1790702463779
+  },
+  {
+    "id": "folder-914ce6c3-f63c-4df9-a95a-cd3cb10d333a",
+    "name": "Cardiología",
+    "parentId": null,
+    "color": "var(--subj-blue)",
+    "icon": "folder",
+    "createdAt": 1790702463878,
+    "updatedAt": 1790702463878
+  }
+]

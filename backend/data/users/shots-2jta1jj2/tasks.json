@@ -1,0 +1,35 @@
+[
+  {
+    "text": "comprar leche el viernes a las 18:00 urgente",
+    "done": false,
+    "due": null,
+    "priority": 0,
+    "subject": "",
+    "kind": "shopping",
+    "id": "task-a87442ec-b117-4b30-9acb-a48902c49e5a",
+    "createdAt": 1790702287389,
+    "updatedAt": 1790702287389
+  },
+  {
+    "text": "estudiar el ciclo cardiaco mañana a las 20:00",
+    "done": false,
+    "due": null,
+    "priority": 0,
+    "subject": "",
+    "kind": "task",
+    "id": "task-5463b2aa-10b2-4b60-9899-12d9c9f4d407",
+    "createdAt": 1790702287401,
+    "updatedAt": 1790702287401
+  },
+  {
+    "text": "beber 2 litros de agua todos los días",
+    "done": false,
+    "due": null,
+    "priority": 0,
+    "subject": "",
+    "kind": "habit",
+    "id": "task-7624ee82-6f81-4977-9b86-fa5a6afa8eaa",
+    "createdAt": 1790702287414,
+    "updatedAt": 1790702287414
+  }
+]

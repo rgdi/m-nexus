@@ -24,6 +24,17 @@ const KINDS = [
 
 let folders = [];
 let result = null;
+/**
+ * The chosen folder and topic, kept outside the DOM.
+ *
+ * paint() rewrites host.innerHTML, which rebuilt the <select> with
+ * "Toda la biblioteca" selected. Picking a folder and then tapping a
+ * format — or generating — silently sent folderId: null, so the whole
+ * library came back under the heading of a folder the user had not asked
+ * for. The control looked like it worked and did nothing.
+ */
+let folderId = "";
+let topic = "";
 let kind = "summary";
 let busy = false;
 
@@ -62,7 +73,7 @@ function paint(host) {
       <label class="gen-lbl" for="gen-folder-sel">Carpeta</label>
       <select class="gen-scope" id="gen-folder-sel" data-gen-scope>
         <option value="">Toda la biblioteca</option>
-        ${folders.map((f) => `<option value="${esc(f.id)}">${esc(f.path)} (${f.chunks})</option>`).join("")}
+        ${folders.map((f) => `<option value="${esc(f.id)}" ${f.id === folderId ? "selected" : ""}>${esc(f.path)} (${f.chunks})</option>`).join("")}
       </select>
     </div>
 
@@ -95,6 +106,17 @@ function wire(host) {
   host.querySelectorAll("[data-gen-kind]").forEach((b) =>
     b.addEventListener("click", () => { kind = b.dataset.genKind; paint(host); }));
 
+  // Read the controls into module state on every repaint, so what the
+  // user picked survives the innerHTML rewrite that follows.
+  host.querySelector("[data-gen-scope]")?.addEventListener("change", (e) => {
+    folderId = e.target.value;
+  });
+  host.querySelector("[data-gen-topic]")?.addEventListener("input", (e) => {
+    topic = e.target.value;
+  });
+  // And put them back into the freshly-painted controls.
+  if (topic) { const ti = host.querySelector("[data-gen-topic]"); if (ti) ti.value = topic; }
+
   host.querySelector("[data-gen-run]")?.addEventListener("click", () => run(host));
   host.querySelector("[data-gen-out]")?.addEventListener("click", (e) => {
     const a = e.target.closest("[data-gen-save]");
@@ -119,8 +141,8 @@ async function run(host) {
       headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify({
         kind,
-        folderId: host.querySelector("[data-gen-scope]")?.value || null,
-        topic: host.querySelector("[data-gen-topic]")?.value || "",
+        folderId: folderId || null,
+        topic,
         // The mind map is deterministic; asking the other three for an
         // answer without a model would just be a slower way to say so.
         useLlm: kind === "mindmap" ? false : true,
@@ -250,7 +272,7 @@ async function saveAsNotes(host, k) {
       body: JSON.stringify({
         title: d.title || "Generado",
         body: text,
-        folderId: host.querySelector("[data-gen-scope]")?.value || null,
+        folderId: folderId || null,
       }),
     });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);

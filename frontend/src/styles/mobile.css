@@ -1666,7 +1666,15 @@
 .gen-cite {
   font-size: 11px; font-weight: 800; color: #a78bfa;
   background: rgba(124,92,255,0.16); padding: 1px 6px; border-radius: 5px; text-decoration: none;
+  /* The blanket `a[href] { min-height: 44px }` WCAG rule is right for
+   * standalone controls and wrong here: a citation is a reference sitting
+   * inside a sentence, and the 44px minimum stretched it into a tall box
+   * under its own text. The link keeps its row and its tap target. */
+  display: inline-flex; align-items: center;
 }
+/* `a.gen-cite` rather than `.gen-cite`: the blanket `a[href]` rule has
+ * specificity (0,1,1) and a bare class loses to it. */
+a.gen-cite { min-height: 0; }
 
 .gen-card {
   padding: 12px 14px; border-radius: 13px; margin-bottom: 9px;
@@ -1755,6 +1763,10 @@
   font-size: 14px; font-weight: 700; box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
 }
 
+/* The capture FAB is fixed bottom-right. Without clearance the action
+ * row of an occlusion exercise sits underneath it and "Comprobar" — the
+ * button that scores the whole thing — becomes unpressable. */
+.do-host { padding-bottom: 76px; }
 .do-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
 .do-actions .m-btn { flex: 1 1 44%; min-height: 46px; }
 /* "Continuar →" is the longest label and the row is three buttons

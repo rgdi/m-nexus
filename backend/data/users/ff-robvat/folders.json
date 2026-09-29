@@ -1,0 +1,20 @@
+[
+  {
+    "id": "folder-1b714912-3040-4102-a040-126f3bdf28bf",
+    "name": "Genetica",
+    "parentId": null,
+    "color": "var(--subj-blue)",
+    "icon": "folder",
+    "createdAt": 1790702760285,
+    "updatedAt": 1790702760285
+  },
+  {
+    "id": "folder-1edb1f41-e090-4298-8ad3-884c55a8a93c",
+    "name": "Cardiologia",
+    "parentId": null,
+    "color": "var(--subj-blue)",
+    "icon": "folder",
+    "createdAt": 1790702760305,
+    "updatedAt": 1790702760305
+  }
+]

@@ -1,0 +1,101 @@
+[
+  {
+    "title": "Submit politics-econ essay",
+    "text": "Submit politics-econ essay",
+    "subject": "pol",
+    "due": 1789516740000,
+    "priority": 2,
+    "done": false,
+    "id": "task-80e47329-7c06-4911-a890-d9fbf6943393",
+    "createdAt": 1789651888652,
+    "updatedAt": 1789651888652
+  },
+  {
+    "title": "Read chapter 7 — Biology",
+    "text": "Read chapter 7 — Biology",
+    "subject": "bio",
+    "due": 1789585140000,
+    "priority": 1,
+    "done": false,
+    "id": "task-97320be8-3106-489c-9559-4b96f33c6eb8",
+    "createdAt": 1789651888657,
+    "updatedAt": 1789651888657
+  },
+  {
+    "title": "Chemistry lab report",
+    "text": "Chemistry lab report",
+    "subject": "che",
+    "due": 1789775940000,
+    "priority": 2,
+    "done": false,
+    "id": "task-833160bf-5564-491d-b266-694276ed5456",
+    "createdAt": 1789651888662,
+    "updatedAt": 1789651888662
+  },
+  {
+    "title": "Practice integrals (set 3)",
+    "text": "Practice integrals (set 3)",
+    "subject": "math",
+    "due": 1789426740000,
+    "priority": 1,
+    "done": false,
+    "id": "task-b734b24f-c914-4a4d-9f0a-d4d289376e4d",
+    "createdAt": 1789651888667,
+    "updatedAt": 1789651888667
+  },
+  {
+    "title": "Buy lab coat",
+    "text": "Buy lab coat",
+    "subject": "che",
+    "due": 1789207200000,
+    "priority": 0,
+    "done": true,
+    "id": "task-7507a846-2edd-4477-be00-9ce4e4e305d1",
+    "createdAt": 1789651888674,
+    "updatedAt": 1789651888674
+  },
+  {
+    "title": "Email professor about Referat",
+    "text": "Email professor about Referat",
+    "subject": "deu",
+    "due": 1789482600000,
+    "priority": 1,
+    "done": true,
+    "id": "task-a7c7f31b-4407-4ebb-a479-8df5f25a648d",
+    "createdAt": 1789651888680,
+    "updatedAt": 1789651888680
+  },
+  {
+    "text": "comprar leche el viernes a las 18:00 urgente",
+    "done": false,
+    "due": null,
+    "priority": 0,
+    "subject": "",
+    "kind": "shopping",
+    "id": "task-ab5fbc13-e2f9-4916-b1ff-f7da9140728f",
+    "createdAt": 1790702393542,
+    "updatedAt": 1790702393542
+  },
+  {
+    "text": "estudiar el ciclo cardiaco mañana a las 20:00",
+    "done": false,
+    "due": null,
+    "priority": 0,
+    "subject": "",
+    "kind": "task",
+    "id": "task-59249d73-d718-48a8-abb3-ac625e05fe9b",
+    "createdAt": 1790702393555,
+    "updatedAt": 1790702393555
+  },
+  {
+    "text": "beber 2 litros de agua todos los días",
+    "done": false,
+    "due": null,
+    "priority": 0,
+    "subject": "",
+    "kind": "habit",
+    "id": "task-9bc9a63a-000c-41d0-aa6a-e132d28feb1f",
+    "createdAt": 1790702393564,
+    "updatedAt": 1790702393564
+  }
+]
