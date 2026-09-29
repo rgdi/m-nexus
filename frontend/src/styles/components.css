@@ -4183,3 +4183,198 @@ body.hide-ui .dock, body.hide-ui .lang-switcher, body.hide-ui .top-toolbar { dis
   .v232-btn-primary, .ocr-btn-primary, .mb-btn, .sn-btn,
   .ocr-toast, .mb-toast, .sn-toast { transition: none; }
 }
+
+/* ============================================================
+ * widgets/toast.js — v2.37.0 shared transient message.
+ * Replaces four per-widget copies (.fsrs-toast, .kg-toast, …).
+ * ============================================================ */
+.mn-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--m-safe-b, 0px) + 88px);
+  z-index: 9999;
+  transform: translate(-50%, 12px);
+  max-width: min(92vw, 420px);
+  padding: 12px 18px;
+  border-radius: 14px;
+  background: var(--m-surface-2, #1b1b2e);
+  color: var(--m-text, #f2f2f7);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+.mn-toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+.mn-toast.is-error {
+  background: var(--m-danger, #ff4d6d);
+  color: #fff;
+}
+
+/* ============================================================
+ * PWA install / update banner — v2.37.0.
+ * Driven by main.js mountPwaUi(), fed by services/pwa.js events.
+ * ============================================================ */
+.mn-pwa-banner {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(var(--m-safe-b, 0px) + 92px);
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: var(--m-surface-2, #1b1b2e);
+  border: 1px solid var(--m-border, rgba(255, 255, 255, 0.08));
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  animation: mn-pwa-in 240ms ease both;
+}
+@media (min-width: 821px) {
+  .mn-pwa-banner { left: auto; right: 20px; max-width: 420px; bottom: 20px; }
+}
+.mn-pwa-banner-txt {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.mn-pwa-banner-txt strong { font-size: 14px; color: var(--m-text, #f2f2f7); }
+.mn-pwa-banner-txt span { font-size: 12.5px; color: var(--m-muted, #9a9ab0); }
+.mn-pwa-banner-acts { display: flex; gap: 8px; flex-shrink: 0; }
+.mn-pwa-btn {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 11px;
+  border: none;
+  background: var(--m-primary, #7c5cff);
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.mn-pwa-btn--ghost {
+  background: transparent;
+  color: var(--m-muted, #9a9ab0);
+  border: 1px solid var(--m-border, rgba(255, 255, 255, 0.12));
+}
+@keyframes mn-pwa-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Mood trends readout — v2.37.0 (replaces the "próximamente" copy). */
+.mood-meta {
+  display: flex;
+  gap: 14px;
+  align-items: baseline;
+  font-size: 12.5px;
+  color: var(--m-muted, #9a9ab0);
+  margin-bottom: 8px;
+}
+.mood-meta strong { color: var(--m-text, #f2f2f7); font-size: 14px; }
+.mood-trends circle { cursor: pointer; }
+.mood-readout { margin-top: 10px; min-height: 1.4em; font-size: 13px; }
+
+/* ============================================================
+ * drag_gap — pointer drag (v2.37.0).
+ * Replaces HTML5 drag events, which never fire on touch screens.
+ * ============================================================ */
+.m-drag-chip { touch-action: none; user-select: none; -webkit-user-select: none; }
+.m-drag-chip.is-dragging { opacity: 0.35; }
+.dg-ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 10000;
+  pointer-events: none;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: var(--m-primary, #7c5cff);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.4);
+  opacity: 0.95;
+}
+.m-drag-gap-slot.is-over {
+  outline: 2px dashed var(--m-primary, #7c5cff);
+  outline-offset: 2px;
+  background: rgba(124, 92, 255, 0.14);
+}
+body.dg-scrolling { user-select: none; }
+
+/* ============================================================
+ * Study card types — v2.37.0.
+ * multiple_choice and typed_answer had backends and contracts in
+ * v2.36.0 but no renderer, so neither was answerable.
+ * ============================================================ */
+.m-mcq { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
+.m-mcq-opt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 10px 14px;
+  border-radius: 13px;
+  border: 1.5px solid var(--m-border, rgba(255, 255, 255, 0.1));
+  background: var(--m-surface-1, #131322);
+  color: var(--m-text, #f2f2f7);
+  font-size: 15px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 140ms, background 140ms;
+}
+.m-mcq-opt.is-picked { border-color: var(--m-primary, #7c5cff); }
+.m-mcq-opt.is-right { border-color: var(--m-ok, #1d7d54); background: rgba(29, 125, 84, 0.16); }
+.m-mcq-opt.is-wrong { border-color: var(--m-danger, #ff4d6d); background: rgba(255, 77, 109, 0.14); }
+.m-mcq-key {
+  flex-shrink: 0;
+  width: 26px; height: 26px;
+  display: grid; place-items: center;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 12.5px; font-weight: 800;
+}
+.m-mcq-txt { flex: 1; min-width: 0; }
+
+.m-mcq-verdict, .m-typed-verdict {
+  display: flex; flex-direction: column; gap: 4px;
+  margin-top: 10px; padding: 11px 14px;
+  border-radius: 12px;
+  font-size: 13.5px; line-height: 1.4;
+}
+.m-mcq-verdict.is-ok, .m-typed-verdict.is-ok { background: rgba(29, 125, 84, 0.16); }
+.m-mcq-verdict.is-bad, .m-typed-verdict.is-bad { background: rgba(255, 77, 109, 0.14); }
+.m-mcq-verdict.is-error, .m-typed-verdict.is-error { background: rgba(255, 149, 0, 0.16); }
+
+.m-typed-input {
+  width: 100%;
+  min-height: 88px;
+  margin: 12px 0 8px;
+  padding: 12px 14px;
+  border-radius: 13px;
+  border: 1.5px solid var(--m-border, rgba(255, 255, 255, 0.1));
+  background: var(--m-surface-1, #131322);
+  color: var(--m-text, #f2f2f7);
+  font-size: 16px; /* 16px keeps iOS from zooming on focus */
+  line-height: 1.45;
+  resize: vertical;
+}
+.m-typed-input:focus { outline: none; border-color: var(--m-primary, #7c5cff); }
+.m-graded-by {
+  display: inline-block;
+  margin-left: 6px; padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--m-primary, #7c5cff);
+  color: #fff; font-size: 11px; font-weight: 700;
+}
+.m-typed-fb, .m-typed-expected, .m-typed-missed { color: var(--m-muted, #9a9ab0); font-size: 12.5px; }

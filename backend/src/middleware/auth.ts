@@ -51,8 +51,13 @@ export const authMiddleware: (req: FastifyRequest, reply: FastifyReply) => Promi
     // v2.1.4: legacy routes that the frontend uses without auth yet.
     // Tests rely on these being public too. Real auth should be enabled
     // once the frontend ships Bearer token in api.js.
-    "/api/v1/flashcards",
-    "/api/v1/notes",
+    //
+    // v2.37.0: removed "/api/v1/flashcards" and "/api/v1/notes" from this
+    // list. Both return the entire store — every card with its answer
+    // key, every note body — to any anonymous caller. services/api.js has
+    // attached the Bearer token since v2.6.0, so the app does not need
+    // the exemption. Screens still doing a bare fetch for these are
+    // listed in docs/v2.37.md and must move to api.js.
     "/api/v1/subjects",
     "/api/v1/events",
     "/api/v1/tasks",
@@ -83,7 +88,11 @@ export const authMiddleware: (req: FastifyRequest, reply: FastifyReply) => Promi
     // v2.3.0-B: folders CRUD — frontend usa sin Bearer (offline-first).
     "/api/v1/folders",
     // v2.6.0: flashcards CRUD — used by side panel Cards tab.
-    "/api/v1/flashcards",
+    // v2.37.0: REMOVED. A second copy of this entry lived further down the
+    // list and re-granted the exemption after the first one was taken
+    // out, so GET /api/v1/flashcards kept answering anonymous callers
+    // with every correctIndex in the store. The `notes` equivalent had
+    // only one entry and was genuinely closed.
     // v2.8.0: study planner + image occlusion (used offline-first by side panel + scheduler)
     "/api/v1/study",
     "/api/v1/occlusion",
@@ -128,7 +137,38 @@ export const authMiddleware: (req: FastifyRequest, reply: FastifyReply) => Promi
     "/api/v1/boards",
   ];
   const isPublic = PUBLIC_PATHS.some((p) => req.url === p || req.url.startsWith(p + "?") || req.url.startsWith(p + "/"));
-  if (isPublic) return;
+  if (isPublic) {
+    // v2.37.0 — optional auth on public paths.
+    //
+    // Returning here used to leave `req.auth` undefined for every public
+    // route, which made it impossible for a public endpoint to offer a
+    // richer response to a signed-in caller. POST /api/v1/grade/mcq needs
+    // exactly that: the inline-options preview works for anyone, but
+    // looking a card up by id is limited to the owner.
+    //
+    // If a token is present, verify it and populate req.auth. If it is
+    // absent, malformed or expired, fall through as anonymous rather
+    // than rejecting — the route's own gate decides what that means.
+    if (req.headers.authorization) {
+      try {
+        const optMatch = req.headers.authorization.match(/^Bearer\s+(.+)$/i);
+        if (optMatch) {
+          const v = await safeCallAsync({
+            component: "auth",
+            code: "EC-AUTH-003",
+            message: "JWT verification failed",
+            op: () => Promise.resolve(verifyAccessToken(optMatch[1])),
+          });
+          if (v.success && v.value) {
+            (req as any).auth = v.value;
+          }
+        }
+      } catch {
+        // Anonymous is a valid state for a public route.
+      }
+    }
+    return;
+  }
 
   // v2.6.0: LAN bypass — skip auth for requests from local network.
   if (process.env.LAN_AUTH_BYPASS === "true" && isLanIp(req.ip)) {

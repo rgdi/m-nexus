@@ -54,7 +54,6 @@ export function mountNotificationBell(host) {
           </div>
           <div class="notif-header-actions">
             <button class="notif-icon-btn" data-refresh type="button" aria-label="Refrescar" title="Refrescar">↻</button>
-            <button class="notif-icon-btn" data-config type="button" aria-label="Configurar" title="Configurar">⚙</button>
           </div>
         </header>
         <div class="notif-list" data-list role="list">
@@ -97,7 +96,6 @@ export function mountNotificationBell(host) {
   const refreshBtn = host.querySelector("[data-refresh]");
   const generateBtn = host.querySelector("[data-generate]");
   const markAllBtn = host.querySelector("[data-mark-all]");
-  const configBtn = host.querySelector("[data-config]");
   const countChip = host.querySelector("[data-count-chip]");
 
   let open = false;
@@ -217,11 +215,6 @@ export function mountNotificationBell(host) {
     await fetchList();
     await fetchCount();
     setTimeout(() => refreshBtn.classList.remove("notif-icon-btn--spinning"), 600);
-  });
-
-  configBtn.addEventListener("click", async (e) => {
-    e.stopPropagation();
-    showToast("⚙ Configuración de notificaciones — próximamente");
   });
 
   markAllBtn.addEventListener("click", async (e) => {

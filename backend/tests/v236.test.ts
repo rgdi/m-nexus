@@ -98,6 +98,8 @@ describe("v2.36.0 — grading: multiple choice", () => {
 
 describe("v2.36.0 — grading HTTP routes", () => {
   it("POST /api/v1/grade/typed works without auth", async () => {
+    // v2.37.0: the deterministic path stays open (pure string math, no
+    // user data, no provider cost). The LLM path no longer does.
     const r = await app.inject({
       method: "POST", url: "/api/v1/grade/typed",
       payload: { userAnswer: "120 mmHg", expected: "120 mmHg", useLlm: false },
@@ -123,12 +125,15 @@ describe("v2.36.0 — grading HTTP routes", () => {
     expect(r.json().correct).toBe(true);
   });
 
-  it("POST /api/v1/grade/mcq rejects unknown cardId", async () => {
+  it("POST /api/v1/grade/mcq rejects an anonymous cardId lookup", async () => {
+    // v2.37.0: reading a card by id discloses its options and answer key,
+    // so an unauthenticated caller is turned away before the store is
+    // read. The existence check now lives behind auth.
     const r = await app.inject({
       method: "POST", url: "/api/v1/grade/mcq",
       payload: { cardId: "does-not-exist", chosenIndex: 0 },
     });
-    expect(r.json().code).toBe("EC-GRADE-002");
+    expect(r.json().code).toBe("EC-GRADE-007");
   });
 });
 

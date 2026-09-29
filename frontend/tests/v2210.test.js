@@ -54,13 +54,19 @@ describe("v2.21.0 — offline_queue autoDrainOnOnline", () => {
   it("wires navigator online event + safety poll", () => {
     const src = readFileSync(SRC("frontend/src/services/offline_queue.js"), "utf-8");
     expect(src).toMatch(/window\.addEventListener\("online"/);
-    expect(src).toMatch(/setInterval\(tryDrain/);
+    // The poll body is an arrow that re-checks the drain guard rather
+    // than a bare `setInterval(tryDrain, …)`, so concurrent triggers from
+    // the online event and the timer cannot overlap. The test used to
+    // assert the old unguarded shape.
+    expect(src).toMatch(/setInterval\(\(\) =>/);
     expect(src).toMatch(/30000/); // 30s poll
   });
 
   it("serializes drains (only one at a time)", () => {
     const src = readFileSync(SRC("frontend/src/services/offline_queue.js"), "utf-8");
-    expect(src).toMatch(/if \(draining\) return/);
+    // The guard lives on autoDrainOnOnline._draining, not a local
+    // `draining` variable.
+    expect(src).toMatch(/if \(autoDrainOnOnline\._draining\) return/);
   });
 
   it("skips drain when navigator.onLine is false", () => {

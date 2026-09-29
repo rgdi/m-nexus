@@ -61,3 +61,17 @@ export const auth = {
     return !!this.getRefreshToken();
   },
 };
+
+/**
+ * v2.37.0 — Authorization header for hand-rolled `fetch` calls.
+ *
+ * Most screens go through `services/api.js`, which already attaches the
+ * token. The mobile screens (study, progress) were written with bare
+ * `fetch` and shipped with no header at all, so once the backend
+ * required auth on those routes they would have started 401-ing. Central
+ * helper so the next bare `fetch` is a copy-paste instead of a bug.
+ */
+export function authHeaders(extra = {}) {
+  const token = auth.getAccessToken();
+  return token ? { ...extra, Authorization: `Bearer ${token}` } : { ...extra };
+}

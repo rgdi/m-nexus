@@ -146,7 +146,11 @@ describe("v2.35.0 — study cards", () => {
     expect(src).toMatch(/Difícil/);
     expect(src).toMatch(/Bien/);
     expect(src).toMatch(/Fácil/);
-    expect(src).toMatch(/<10m/);
+    // v2.37.0: the interval labels are no longer a hardcoded table
+    // ("<10m", "6d", "15d", "22d"). They are derived from the card's own
+    // FSRS stability, because the scheduler now returns real intervals.
+    expect(src).toMatch(/function intervalHint/);
+    expect(src).toMatch(/10 min/);
     expect(src).toMatch(/22d/);
   });
 

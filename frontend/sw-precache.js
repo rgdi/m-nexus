@@ -122,6 +122,7 @@ const MODULES = [
   "./src/widgets/syllabus_dashboard.js",
   "./src/widgets/tags_cloud.js",
   "./src/widgets/three_d_viewer.js",
+  "./src/widgets/toast.js",
   "./src/widgets/top_toolbar.js",
   "./src/widgets/tour.js",
 ];

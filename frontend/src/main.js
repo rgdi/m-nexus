@@ -149,6 +149,99 @@ function escapeHtml(s) {
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
+/* ===== PWA UI (v2.37.0) =====
+ * Wires the service-worker events to something the user can act on.
+ * Until now services/pwa.js emitted "installable", "update-available"
+ * and "installed" into a Set that nobody was subscribed to, so the
+ * whole module ran headless. */
+function mountPwaUi(pwa) {
+  if (!pwa?.onPwaEvent) return;
+
+  pwa.onPwaEvent((evt) => {
+    if (evt.type === "installable" && evt.installable) {
+      // Chrome fired beforeinstallprompt and we held on to the event.
+      offerInstallBanner(pwa);
+    } else if (evt.type === "installable" && evt.manual === "ios") {
+      offerManualInstallHint();
+    } else if (evt.type === "update-available") {
+      offerUpdateBanner(pwa);
+    } else if (evt.type === "installed") {
+      dismissBanner("mn-pwa-banner");
+      try { localStorage.setItem("mnexus.pwa.installed", "1"); } catch {}
+    }
+  });
+}
+
+function dismissBanner(id) {
+  document.getElementById(id)?.remove();
+}
+
+function offerInstallBanner(pwa) {
+  if (document.getElementById("mn-pwa-banner")) return;
+  try {
+    if (localStorage.getItem("mnexus.pwa.dismissedInstall") === "1") return;
+  } catch {}
+
+  const el = document.createElement("div");
+  el.id = "mn-pwa-banner";
+  el.className = "mn-pwa-banner";
+  el.innerHTML = `
+    <div class="mn-pwa-banner-txt">
+      <strong>Instalar M-NEXUS</strong>
+      <span>Se abre como app y funciona sin conexión.</span>
+    </div>
+    <div class="mn-pwa-banner-acts">
+      <button class="mn-pwa-btn mn-pwa-btn--ghost" data-mn-pwa-later>Ahora no</button>
+      <button class="mn-pwa-btn" data-mn-pwa-install>Instalar</button>
+    </div>`;
+  document.body.appendChild(el);
+
+  el.querySelector("[data-mn-pwa-install]")?.addEventListener("click", async () => {
+    const ok = await pwa.promptInstall();
+    if (ok) dismissBanner("mn-pwa-banner");
+  });
+  el.querySelector("[data-mn-pwa-later]")?.addEventListener("click", () => {
+    try { localStorage.setItem("mnexus.pwa.dismissedInstall", "1"); } catch {}
+    dismissBanner("mn-pwa-banner");
+  });
+}
+
+function offerManualInstallHint() {
+  if (document.getElementById("mn-pwa-banner")) return;
+  const el = document.createElement("div");
+  el.id = "mn-pwa-banner";
+  el.className = "mn-pwa-banner";
+  el.innerHTML = `
+    <div class="mn-pwa-banner-txt">
+      <strong>Añadir a pantalla de inicio</strong>
+      <span>Comparte → «Añadir a pantalla de inicio».</span>
+    </div>
+    <div class="mn-pwa-banner-acts">
+      <button class="mn-pwa-btn mn-pwa-btn--ghost" data-mn-pwa-later>Entendido</button>
+    </div>`;
+  document.body.appendChild(el);
+  el.querySelector("[data-mn-pwa-later]")?.addEventListener("click", () => dismissBanner("mn-pwa-banner"));
+}
+
+function offerUpdateBanner(pwa) {
+  if (document.getElementById("mn-pwa-banner")) return;
+  const el = document.createElement("div");
+  el.id = "mn-pwa-banner";
+  el.className = "mn-pwa-banner";
+  el.innerHTML = `
+    <div class="mn-pwa-banner-txt">
+      <strong>Actualización disponible</strong>
+      <span>Recarga para usar la versión nueva.</span>
+    </div>
+    <div class="mn-pwa-banner-acts">
+      <button class="mn-pwa-btn mn-pwa-btn--ghost" data-mn-pwa-later>Luego</button>
+      <button class="mn-pwa-btn" data-mn-pwa-reload>Recargar</button>
+    </div>`;
+  document.body.appendChild(el);
+  el.querySelector("[data-mn-pwa-reload]")?.addEventListener("click", () => pwa.applyUpdate());
+  el.querySelector("[data-mn-pwa-later]")?.addEventListener("click", () => dismissBanner("mn-pwa-banner"));
+}
+
 window.addEventListener("hashchange", render);
 
 /* ===== Bootstrap ===== */
@@ -193,17 +286,27 @@ async function bootstrap() {
   // v2.36.0: PWA (service worker, install prompt, background sync).
   import("./services/pwa.js")
     .then((m) => m.registerPwa())
+    .then((m) => mountPwaUi(m))
     .catch(() => {});
   // v2.35.0: mobile bottom tab bar (visible ≤ 820px via CSS)
   mountBottomTabbar(document.body);
   // v2.35.0: study tab badge = due card count
   import("./widgets/bottom_tabbar.js").then(async (m) => {
     try {
-      const { detectApiBase } = await import("./services/api_base.js");
-      const r = await fetch(`${detectApiBase()}/api/v1/flashcards`);
+      const [{ detectApiBase }, { authHeaders }] = await Promise.all([
+        import("./services/api_base.js"),
+        import("./services/auth.js"),
+      ]);
+      // v2.37.0: was a bare fetch, so it 401'd once /api/v1/flashcards
+      // stopped being a public route and the badge silently showed 0.
+      const r = await fetch(`${detectApiBase()}/api/v1/flashcards`, { headers: authHeaders() });
       const j = r.ok ? await r.json() : { cards: [] };
       const now = Date.now();
-      const due = (j.cards || []).filter((c) => (c.fsrs?.due ?? 0) <= now).length;
+      const due = (j.cards || []).filter((c) => {
+        const f = c?.fsrs;
+        if (!f || f.state === "new") return true;
+        return typeof f.due !== "number" || f.due <= now;
+      }).length;
       m.setStudyBadge(due);
     } catch {}
   }).catch(() => {});

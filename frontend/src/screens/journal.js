@@ -520,22 +520,66 @@ function waitFor(modal) {
 }
 
 function openMoodTrendsModal() {
+  const MOOD_LABEL = { 1: "Muy bajo", 2: "Bajo", 3: "Normal", 4: "Bueno", 5: "Muy bueno" };
+  const pts = cache.mood.map((e, i) => ({
+    e,
+    x: (i / Math.max(1, cache.mood.length - 1)) * 100,
+    y: e.mood ? 100 - ((e.mood - 1) / 4) * 100 : 100,
+  }));
+  const logged = cache.mood.filter((e) => e.mood).length;
+  const avg = logged
+    ? (cache.mood.reduce((s, e) => s + (e.mood || 0), 0) / logged).toFixed(1)
+    : null;
+
   const m = makeModal({
     title: "Tendencia de ánimo (30 días)",
     body: `
-      <svg viewBox="0 0 100 100" class="mood-trends">
-        <polyline points="${cache.mood.map((e, i) => `${(i / Math.max(1, cache.mood.length - 1)) * 100},${e.mood ? 100 - ((e.mood - 1) / 4) * 100 : 100}`).join(" ")}" fill="none" stroke="var(--accent)" stroke-width="2"/>
-        ${cache.mood.map((e, i) => {
-          const x = (i / Math.max(1, cache.mood.length - 1)) * 100;
-          const y = e.mood ? 100 - ((e.mood - 1) / 4) * 100 : 100;
-          return `<circle cx="${x}" cy="${y}" r="1.2" fill="${e.mood ? moodColorOf(e.mood) : "var(--border)"}"/>`;
-        }).join("")}
+      <div class="mood-meta">
+        <span><strong>${logged}</strong> de ${cache.mood.length} días</span>
+        ${avg !== null ? `<span>media <strong>${avg}</strong>/5</span>` : `<span>sin datos aún</span>`}
+      </div>
+      <svg viewBox="0 0 100 100" class="mood-trends" data-mood-svg>
+        <polyline points="${pts.map((p) => `${p.x},${p.y}`).join(" ")}" fill="none" stroke="var(--accent)" stroke-width="2"/>
+        ${pts.map((p, i) => `
+          <circle cx="${p.x}" cy="${p.y}" r="1.2" fill="${p.e.mood ? moodColorOf(p.e.mood) : "var(--border)"}"
+                  data-mood-i="${i}"/>`).join("")}
       </svg>
-      <p class="muted small">Cada punto es un día. Hover (próximamente) para detalles.</p>
+      <p class="mood-readout muted small" data-mood-readout>Pasa el dedo por un punto para ver el día.</p>
     `,
     actions: [{ label: "Cerrar", kind: "ghost", value: false }],
   });
   document.body.appendChild(m.root);
+
+  // v2.37.0: this used to say "Hover (próximamente) para detalles" and
+  // nothing else. The dates are already in cache.mood, so the readout is
+  // wired up rather than promised. Pointer events so it works with a
+  // finger as well as a mouse.
+  const readout = m.root.querySelector("[data-mood-readout]");
+  const show = (i) => {
+    const p = pts[i];
+    if (!p || !readout) return;
+    const date = p.e.date ? new Date(p.e.date).toLocaleDateString("es", { day: "numeric", month: "short" }) : "—";
+    readout.textContent = p.e.mood
+      ? `${date} · ${MOOD_LABEL[p.e.mood] || p.e.mood}/5`
+      : `${date} · sin registro`;
+  };
+  m.root.querySelectorAll("[data-mood-i]").forEach((c) => {
+    const i = Number(c.dataset.moodI);
+    c.addEventListener("pointerenter", () => show(i));
+    c.addEventListener("pointerdown", () => show(i));
+  });
+  m.root.querySelector("[data-mood-svg]")?.addEventListener("pointermove", (ev) => {
+    const svg = ev.currentTarget;
+    const r = svg.getBoundingClientRect();
+    const x = ((ev.clientX - r.left) / r.width) * 100;
+    let best = 0;
+    let bestD = Infinity;
+    pts.forEach((p, i) => {
+      const d = Math.abs(p.x - x);
+      if (d < bestD) { bestD = d; best = i; }
+    });
+    show(best);
+  });
 }
 
 function moodColorOf(s) {

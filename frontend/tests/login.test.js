@@ -21,8 +21,8 @@ describe("login screen", () => {
     await renderLogin();
     const form = document.getElementById("login-form");
     expect(form).toBeTruthy();
-    expect(form.querySelector('input[name="username"]')).toBeTruthy();
-    expect(form.querySelector('input[name="password"]')).toBeTruthy();
+    expect(form.querySelector('#mn-user')).toBeTruthy();
+    expect(form.querySelector('#mn-pass')).toBeTruthy();
     expect(form.querySelector('button[type="submit"]')).toBeTruthy();
   });
 
@@ -41,8 +41,8 @@ describe("login screen", () => {
     });
     await renderLogin();
     const form = document.getElementById("login-form");
-    form.querySelector('input[name="username"]').value = "admin";
-    form.querySelector('input[name="password"]').value = "TestPass1234!";
+    form.querySelector('#mn-user').value = "admin";
+    form.querySelector('#mn-pass').value = "TestPass1234!";
     form.dispatchEvent(new Event("submit", { cancelable: true }));
     await new Promise((r) => setTimeout(r, 50));
     expect(global.fetch).toHaveBeenCalledWith(
@@ -59,8 +59,8 @@ describe("login screen", () => {
     });
     await renderLogin();
     const form = document.getElementById("login-form");
-    form.querySelector('input[name="username"]').value = "admin";
-    form.querySelector('input[name="password"]').value = "wrong";
+    form.querySelector('#mn-user').value = "admin";
+    form.querySelector('#mn-pass').value = "wrong";
     form.dispatchEvent(new Event("submit", { cancelable: true }));
     await new Promise((r) => setTimeout(r, 100));
     const errBox = document.getElementById("login-error");
@@ -76,8 +76,8 @@ describe("login screen", () => {
     });
     await renderLogin();
     const form = document.getElementById("login-form");
-    form.querySelector('input[name="username"]').value = "admin";
-    form.querySelector('input[name="password"]').value = "wrong";
+    form.querySelector('#mn-user').value = "admin";
+    form.querySelector('#mn-pass').value = "wrong";
     form.dispatchEvent(new Event("submit", { cancelable: true }));
     await new Promise((r) => setTimeout(r, 100));
     const errBox = document.getElementById("login-error");
@@ -93,8 +93,8 @@ describe("login screen", () => {
     });
     await renderLogin();
     const form = document.getElementById("login-form");
-    form.querySelector('input[name="username"]').value = "admin";
-    form.querySelector('input[name="password"]').value = "wrong";
+    form.querySelector('#mn-user').value = "admin";
+    form.querySelector('#mn-pass').value = "wrong";
     form.dispatchEvent(new Event("submit", { cancelable: true }));
     await new Promise((r) => setTimeout(r, 100));
     const errBox = document.getElementById("login-error");
@@ -106,8 +106,8 @@ describe("login screen", () => {
     global.fetch.mockRejectedValueOnce(new Error("NetworkError"));
     await renderLogin();
     const form = document.getElementById("login-form");
-    form.querySelector('input[name="username"]').value = "admin";
-    form.querySelector('input[name="password"]').value = "x";
+    form.querySelector('#mn-user').value = "admin";
+    form.querySelector('#mn-pass').value = "x";
     form.dispatchEvent(new Event("submit", { cancelable: true }));
     await new Promise((r) => setTimeout(r, 100));
     const errBox = document.getElementById("login-error");

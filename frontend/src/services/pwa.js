@@ -79,6 +79,7 @@ export async function requestBackgroundSync() {
 
 /** Call once from main.js bootstrap. */
 export async function registerPwa() {
+  installPromptListener();
   if (!("serviceWorker" in navigator)) {
     logger.info("service workers unsupported; running without offline cache");
     return null;
@@ -135,6 +136,52 @@ export async function registerPwa() {
   } catch (e) {
     logger.warn("service worker registration failed", e);
     return null;
+  }
+}
+
+/* ============================================================
+ * installPromptListener
+ *
+ * v2.37.0. This file shipped in v2.36.0 with `deferredPrompt`,
+ * `isInstallable()` and `promptInstall()` — and no listener ever
+ * assigned to `deferredPrompt`. `isInstallable()` therefore returned
+ * false forever and `promptInstall()` returned false on its first
+ * line, so any "Install app" button built on these could never do
+ * anything. Chrome fires `beforeinstallprompt` once, shortly after
+ * load; miss it and the app is not installable for that session.
+ *
+ * The listener also has to swallow the event, or Chrome shows its
+ * default mini-infobar and never fires the event again.
+ *
+ * Idempotent: safe to call from anywhere, only binds once.
+ * ============================================================ */
+let promptListenerBound = false;
+
+export function installPromptListener() {
+  if (promptListenerBound || typeof window === "undefined") return;
+  promptListenerBound = true;
+
+  window.addEventListener("beforeinstallprompt", (e) => {
+    // Keep the event object — it holds prompt()/userChoice.
+    e.preventDefault();
+    deferredPrompt = e;
+    logger.info("install prompt captured");
+    emit("installable", { installable: true });
+  });
+
+  window.addEventListener("appinstalled", () => {
+    deferredPrompt = null;
+    logger.info("app installed");
+    emit("installed", { standalone: true });
+  });
+
+  // iOS Safari never fires beforeinstallprompt; there the only route
+  // is Share → Add to Home Screen. Report the platform so the UI can
+  // show instructions instead of a button that would do nothing.
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent || "");
+  const safari = /^((?!chrome|android|crios|fxios).)*safari/i.test(navigator.userAgent || "");
+  if (isIos && safari && !isStandalone()) {
+    emit("installable", { installable: false, manual: "ios" });
   }
 }
 

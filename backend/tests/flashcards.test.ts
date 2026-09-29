@@ -5,13 +5,17 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { buildServer } from "../src/server.js";
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
+import { registerDevice, type TestAuth } from "./helpers/auth.js";
 
 let app: Awaited<ReturnType<typeof buildServer>>;
+// v2.37.0: notes + flashcards are no longer public routes.
+let auth: TestAuth;
 const DATA_FILE = join(process.cwd(), "data", "flashcards.json");
 
 beforeAll(async () => {
   try { await fs.unlink(DATA_FILE); } catch {}
   app = await buildServer();
+  auth = await registerDevice(app);
   await app.ready();
 });
 
@@ -22,7 +26,7 @@ afterAll(async () => {
 
 describe("Flashcards CRUD v1.5.1", () => {
   it("GET /api/v1/flashcards returns empty list initially", async () => {
-    const res = await app.inject({ method: "GET", url: "/api/v1/flashcards" });
+    const res = await app.inject({ method: "GET", url: "/api/v1/flashcards", headers: auth.headers });
     expect(res.statusCode).toBe(200);
     const body = res.json();
     expect(body.cards).toEqual([]);
@@ -32,7 +36,7 @@ describe("Flashcards CRUD v1.5.1", () => {
   it("POST /api/v1/flashcards creates a card", async () => {
     const res = await app.inject({
       method: "POST",
-      url: "/api/v1/flashcards",
+      url: "/api/v1/flashcards", headers: auth.headers,
       payload: { front: "Capital de Francia", back: "París", subject: "math", tags: ["geo"] },
     });
     expect(res.statusCode).toBe(201);
@@ -43,7 +47,7 @@ describe("Flashcards CRUD v1.5.1", () => {
   });
 
   it("GET /api/v1/flashcards/filter?subject=math filters by subject", async () => {
-    const res = await app.inject({ method: "GET", url: "/api/v1/flashcards/filter?subject=math" });
+    const res = await app.inject({ method: "GET", url: "/api/v1/flashcards/filter?subject=math", headers: auth.headers });
     expect(res.statusCode).toBe(200);
     const body = res.json();
     expect(body.total).toBeGreaterThan(0);
@@ -53,13 +57,13 @@ describe("Flashcards CRUD v1.5.1", () => {
   it("PATCH /api/v1/flashcards/:id updates front/back", async () => {
     const created = await app.inject({
       method: "POST",
-      url: "/api/v1/flashcards",
+      url: "/api/v1/flashcards", headers: auth.headers,
       payload: { front: "q1", back: "a1", subject: "bio" },
     });
     const id = created.json().id;
     const upd = await app.inject({
       method: "PATCH",
-      url: `/api/v1/flashcards/${id}`,
+      url: `/api/v1/flashcards/${id}`, headers: auth.headers,
       payload: { back: "a1-updated" },
     });
     expect(upd.statusCode).toBe(200);
@@ -69,7 +73,7 @@ describe("Flashcards CRUD v1.5.1", () => {
   it("POST /api/v1/notes/:id/extract-flashcards parses {{c1::...::...}} and assigns subject+tags", async () => {
     const note = await app.inject({
       method: "POST",
-      url: "/api/v1/notes",
+      url: "/api/v1/notes", headers: auth.headers,
       payload: {
         title: "Algebra",
         subject: "math",
@@ -80,7 +84,7 @@ describe("Flashcards CRUD v1.5.1", () => {
     const noteId = note.json().id;
     const ext = await app.inject({
       method: "POST",
-      url: `/api/v1/notes/${noteId}/extract-flashcards`,
+      url: `/api/v1/notes/${noteId}/extract-flashcards`, headers: auth.headers,
     });
     expect(ext.statusCode).toBe(200);
     const out = ext.json();
@@ -96,13 +100,13 @@ describe("Flashcards CRUD v1.5.1", () => {
   it("extract-flashcards is idempotent: second call skips already-extracted", async () => {
     const note = await app.inject({
       method: "POST",
-      url: "/api/v1/notes",
+      url: "/api/v1/notes", headers: auth.headers,
       payload: { title: "X", subject: "bio", body: "{{c1::A::B}}" },
     });
     const noteId = note.json().id;
-    const r1 = await app.inject({ method: "POST", url: `/api/v1/notes/${noteId}/extract-flashcards` });
+    const r1 = await app.inject({ method: "POST", url: `/api/v1/notes/${noteId}/extract-flashcards`, headers: auth.headers });
     expect(r1.json().created.length).toBe(1);
-    const r2 = await app.inject({ method: "POST", url: `/api/v1/notes/${noteId}/extract-flashcards` });
+    const r2 = await app.inject({ method: "POST", url: `/api/v1/notes/${noteId}/extract-flashcards`, headers: auth.headers });
     expect(r2.json().created.length).toBe(0);
     expect(r2.json().skipped).toBe(1);
   });
@@ -110,14 +114,14 @@ describe("Flashcards CRUD v1.5.1", () => {
   it("DELETE /api/v1/flashcards/:id removes", async () => {
     const created = await app.inject({
       method: "POST",
-      url: "/api/v1/flashcards",
+      url: "/api/v1/flashcards", headers: auth.headers,
       payload: { front: "to-delete", back: "x" },
     });
     const id = created.json().id;
-    const del = await app.inject({ method: "DELETE", url: `/api/v1/flashcards/${id}` });
+    const del = await app.inject({ method: "DELETE", url: `/api/v1/flashcards/${id}`, headers: auth.headers });
     expect(del.statusCode).toBe(200);
     expect(del.json().deleted).toBe(true);
-    const get = await app.inject({ method: "GET", url: `/api/v1/flashcards/${id}` });
+    const get = await app.inject({ method: "GET", url: `/api/v1/flashcards/${id}`, headers: auth.headers });
     expect(get.statusCode).toBe(404);
   });
 });

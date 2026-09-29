@@ -90,6 +90,10 @@ export interface ReviewEvent {
 const DAY = 24 * 60 * 60 * 1000;
 const DEFAULT_DIFFICULTY = 5.0;
 const DEFAULT_STABILITY = 0.5;
+/** FSRS S_MIN. Below this a card is not worth scheduling. */
+const S_MIN_STABILITY = 0.01;
+/** Anki-compatible upper bound on the scheduling horizon (100 years). */
+const MAX_INTERVAL_DAYS = 36500;
 
 /** Retrievability: probability of recall at time t (days).
  *  Formula (FSRS-6/7):
@@ -130,42 +134,105 @@ function updateDifficulty(d: number, r: number, w: number[]): number {
   return clamp(next, 1, 10);
 }
 
-/** Internal: stability update for "review" state with successful rating (>=3).
- *  Guard: elapsed=0 → the (elapsed^(-w16)) factor blows up. Use 1 day as a floor
- *  (mirrors how ts-fsrs handles brand-new reviews where elapsed_days=0).
+/** Internal: stability update for "review" state with a successful rating
+ *  (Hard/Good/Easy, i.e. rating >= 3).
+ *
+ *  Reference formula (FSRS-5.5):
+ *
+ *    S' = S · ( 1 + e^{w8} · (11 − D) · S^{−w9}
+ *                   · (e^{w10·(1 − R)} − 1)
+ *                   · hard_penalty · easy_bonus )
+ *
+ *    hard_penalty = w[15] if rating == 2 else 1
+ *    easy_bonus   = w[16] if rating == 4 else 1
+ *
+ *  ── v2.37.0 bug fix ──────────────────────────────────────────────
+ *  This function previously read:
+ *
+ *    S' = S · ( 1 + e^{w8} · (11 − D) · S^{−w9}
+ *                   · (e^{(1 − rating)·w10} − 1)
+ *                   · (w[15] · elapsed^{−w16} + 1) )
+ *
+ *  Two compounding errors:
+ *    1. It substituted the **rating** for **R (retrievability)**. R is a
+ *       probability in [0,1]; the rating is 1..5. Feeding rating 3 in
+ *       gives e^{−2·w10} − 1 ≈ −0.86 instead of e^{w10·(1−R)} − 1 ∈ [−1,0]
+ *       with a much smaller magnitude.
+ *    2. It multiplied that by the FSRS-4 decay term (w[15]·t^{−w16}+1)
+ *       instead of the FSRS-5 rating penalties.
+ *
+ *  Together those made the increment ≈ −22 against a +1, so *every*
+ *  successful review on a review-state card produced a negative
+ *  stability. `Math.max(0.01, newS)` then silently pinned it to 0.01,
+ *  which is why nothing ever failed loudly: the card looked scheduled,
+ *  but its interval collapsed to a fraction of a day and the user was
+ *  asked to review it again within minutes, forever.
+ *
+ *  The bug was invisible for 7 releases because POST /flashcards/:id/review
+ *  used a hardcoded day ladder instead of calling this module at all.
+ *  It surfaced the moment v2.37.0 wired the real scheduler in.
  */
-function nextStabilityReview(card: Fsrs7Card, r: number, w: number[]): number {
+function nextStabilityReview(card: Fsrs7Card, rating: number, r: number, w: number[]): number {
   const d = card.difficulty;
   const s = card.stability;
-  const e = Math.max(1, card.elapsed);
-  const newS = s * (1 + Math.exp(w[8]) *
-    (11 - d) *
-    Math.pow(s, -w[9]) *
-    (Math.exp((1 - r) * w[10]) - 1) *
-    (w[15] * Math.pow(e, -w[16]) + 1));
-  return Math.max(0.01, newS);
+  const hardPenalty = rating === 2 ? w[15] : 1;
+  const easyBonus = rating === 4 ? w[16] : 1;
+  // R is a probability; clamp so a bad elapsed value cannot invert the sign.
+  const R = Math.max(0, Math.min(1, r));
+  const newS =
+    s *
+    (1 +
+      Math.exp(w[8]) *
+      (11 - d) *
+      Math.pow(s, -w[9]) *
+      (Math.exp(w[10] * (1 - R)) - 1) *
+      hardPenalty *
+      easyBonus);
+  // A successful review must never reduce stability.
+  return Math.max(s, newS);
 }
 
-/** Internal: stability update for a lapse (rating < 3). FSRS-7 extension: applies
- *  the post-lapse recovery boost from w[18] when the review was successful and
- *  there was a recent lapse.
+/** Internal: stability update after a lapse (rating < 3 on a review card).
+ *
+ *  Reference formula (FSRS-5.5):
+ *
+ *    S' = min( w11 · D^{−w12} · ((S + 1)^{w13} − 1) · e^{w14·(1 − R)},
+ *              S / e^{w17 · w18} )
+ *
+ *  The `min` is what keeps a lapse from *increasing* stability. The
+ *  previous implementation had no such cap and multiplied in a
+ *  w[17] "forgetting curve stretch" that the reference places outside
+ *  the whole product.
  */
 function nextStabilityLapse(card: Fsrs7Card, r: number, w: number[]): number {
   const d = card.difficulty;
   const s = card.stability;
-  const newS = (w[11] * Math.pow(d, -w[12]) *
+  const R = Math.max(0, Math.min(1, r));
+  const nextS =
+    w[11] *
+    Math.pow(d, -w[12]) *
     (Math.pow(s + 1, w[13]) - 1) *
-    Math.exp((1 - r) * w[14])) * w[17]; // w[17] = forgetting curve stretch
-  return Math.max(0.01, newS);
+    Math.exp(w[14] * (1 - R));
+  // Post-lapse stability can never exceed the pre-lapse stability.
+  const capped = Math.min(nextS, s / Math.exp(w[17] * w[18]));
+  return Math.max(S_MIN_STABILITY, capped);
 }
 
-/** Internal: stability update for "learning" / "relearning" state. */
+/** Internal: initial stability for a card entering the learning phase.
+ *
+ *  v2.37.0: previously a hardcoded {0.5, 1.5, 3.0, 5.0} table, ignoring
+ *  w[0..3] — which are exactly the initial-stability parameters. Those
+ *  weights were therefore dead weight too, and per-user calibration
+ *  could not move a new card's starting point at all.
+ *
+ *    S0(G) = w[G − 1]
+ */
 function nextStabilityLearning(card: Fsrs7Card, r: number, w: number[]): number {
-  // Hard-coded per state machine, not personalized.
-  if (r < 3) return 0.5;
-  if (r === 3) return 1.5;
-  if (r === 4) return 3.0;
-  return 5.0; // Perfect
+  const idx = Math.max(0, Math.min(3, Math.round(r) - 1));
+  const s0 = w[idx];
+  // A "Again" during learning must not grow stability.
+  if (r < 3) return Math.min(card.stability || s0, s0);
+  return s0;
 }
 
 /** Compute next schedule for a card after a review. */
@@ -173,6 +240,8 @@ export function next(card: Fsrs7Card, rating: Rating, options: {
   now?: number;
   w?: number[];
   applyPostLapseBoost?: boolean;
+  /** Desired recall probability at review time. v2.37.0: was hardcoded 0.9. */
+  targetRetention?: number;
 } = {}): Fsrs7Schedule {
   const w = options.w ?? DEFAULT_W;
   const now = options.now ?? Date.now();
@@ -182,6 +251,10 @@ export function next(card: Fsrs7Card, rating: Rating, options: {
   next.reps = card.reps + 1;
   next.elapsed = 0;
   next.lastReview = now;
+
+  // R at the moment of review. The success and lapse formulas both key
+  // off this, not off the rating. v2.37.0: see nextStabilityReview.
+  const rAtReview = retrievability(card, card.elapsed, w);
 
   if (card.state === "new") {
     next.state = r >= 3 ? "learning" : "learning";
@@ -198,12 +271,19 @@ export function next(card: Fsrs7Card, rating: Rating, options: {
     next.difficulty = updateDifficulty(card.difficulty, r, w);
   } else {
     // review / lapsed
-    if (r < 3) {
+    //
+    // v2.37.0: the branch used to be `r < 3`, which sent "Hard" (2) down
+    // the failure path. In FSRS only "Again" (1) is a lapse; "Hard" is a
+    // successful recall carrying the w[15] penalty. Because Hard never
+    // reached nextStabilityReview, that penalty was unreachable code and
+    // rating a card "Difícil" dropped its stability by ~97% instead of
+    // growing it slightly slower than "Bien".
+    if (r === 1) {
       next.lapses = card.lapses + 1;
-      next.stability = nextStabilityLapse(card, r, w);
+      next.stability = nextStabilityLapse(card, rAtReview, w);
       next.state = "relearning";
     } else {
-      let newS = nextStabilityReview(card, r, w);
+      let newS = nextStabilityReview(card, r, rAtReview, w);
       // v2.30.0 — post-lapse recovery boost: if the previous review was a lapse
       // and the user nailed this one, add a small stability bonus.
       if (options.applyPostLapseBoost && card.lapses > 0 && r >= 4) {
@@ -216,13 +296,19 @@ export function next(card: Fsrs7Card, rating: Rating, options: {
   }
 
   // Compute next interval (in days).
-  const targetR = 0.9; // default target retention
+  // v2.37.0: was a hardcoded 0.9, so a per-user target retention was
+  // persisted but had no effect on the schedule.
+  const targetR = Math.max(0.7, Math.min(0.99, options.targetRetention ?? 0.9));
   let interval: number;
   if (next.state === "relearning" || next.state === "learning") {
     interval = 0.005; // ~7 minutes
   } else {
     interval = optimalInterval(next, targetR, w);
   }
+  // Anki caps intervals at 100 years. Without a cap, a card reviewed
+  // exactly at its due date every time grows geometrically and ends up
+  // scheduled centuries out — which reads to the user as "lost".
+  interval = Math.min(interval, MAX_INTERVAL_DAYS);
   next.due = now + Math.round(interval * DAY);
   const rAtDue = retrievability(next, interval, w);
 

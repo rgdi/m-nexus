@@ -94,7 +94,7 @@ export function openDragGap(opts = {}) {
         ${state.chips.map((c) => `
           <button type="button" class="m-drag-chip${c.used ? " is-used" : ""}${selectedChip === c.id ? " is-selected" : ""}"
                   data-chip="${c.id}" role="option" aria-selected="${selectedChip === c.id}"
-                  draggable="true" ${c.used ? "disabled" : ""}>${esc(c.text)}</button>
+                  ${c.used ? "disabled" : ""}>${esc(c.text)}</button>
         `).join("")}
       </div>
 
@@ -115,6 +115,14 @@ export function openDragGap(opts = {}) {
   }
 
   let selectedChip = null;
+  // v2.37.0: pointer-drag bookkeeping. `dragState` is the in-flight drag,
+  // `ghost` the floating chip, `hotGapId` the gap currently under the
+  // pointer, and `dragJustEnded` suppresses the synthetic click that
+  // follows a pointerup on a chip we just dragged.
+  let dragState = null;
+  let ghost = null;
+  let hotGapId = null;
+  let dragJustEnded = false;
 
   function renderSentence() {
     let i = 0;
@@ -131,44 +139,128 @@ export function openDragGap(opts = {}) {
   }
 
   function wire() {
-    // --- chips: click to select, dragstart to drag ---
+    // --- chips: tap to select, pointer-drag to drag ---
+    //
+    // v2.37.0: this used HTML5 drag events (draggable / dragstart /
+    // dragover / drop). The file header claimed "Pointer Events", but
+    // HTML5 drag-and-drop does not fire on touch screens — on Android
+    // and ChromeOS the drag simply never started and the only working
+    // path was tap-chip-then-tap-gap. Rewritten on Pointer Events so
+    // mouse, finger and stylus share one code path, while keeping the
+    // tap-tap route intact for accessibility.
     body.querySelectorAll("[data-chip]").forEach((el) => {
       const id = el.dataset.chip;
+
       el.addEventListener("click", () => {
+        if (dragJustEnded) { dragJustEnded = false; return; }
         selectedChip = selectedChip === id ? null : id;
         paint();
       });
-      el.addEventListener("dragstart", (e) => {
-        e.dataTransfer.setData("text/plain", id);
-        e.dataTransfer.effectAllowed = "move";
-        el.classList.add("is-dragging");
+
+      el.addEventListener("pointerdown", (e) => {
+        if (e.pointerType === "mouse" && e.button !== 0) return;
+        // Long-press threshold: a tap should still select, not drag.
+        dragState = {
+          chipId: id,
+          el,
+          pointerId: e.pointerId,
+          startX: e.clientX,
+          startY: e.clientY,
+          active: false,
+        };
+        el.setPointerCapture?.(e.pointerId);
       });
-      el.addEventListener("dragend", () => el.classList.remove("is-dragging"));
+
+      el.addEventListener("pointermove", (e) => {
+        if (!dragState || dragState.pointerId !== e.pointerId) return;
+        const dx = e.clientX - dragState.startX;
+        const dy = e.clientY - dragState.startY;
+        if (!dragState.active) {
+          if (Math.hypot(dx, dy) < 8) return; // still a tap
+          dragState.active = true;
+          dragState.el.classList.add("is-dragging");
+          // Auto-scroll if the user drags toward an edge.
+          document.body.classList.add("dg-scrolling");
+        }
+        e.preventDefault();
+        moveGhost(e.clientX, e.clientY);
+        highlightGapUnder(e.clientX, e.clientY);
+      });
+
+      const end = (e) => {
+        if (!dragState || dragState.pointerId !== e.pointerId) return;
+        const wasActive = dragState.active;
+        const chipId = dragState.chipId;
+        dragState.el.classList.remove("is-dragging");
+        document.body.classList.remove("dg-scrolling");
+        clearGapHighlight();
+        removeGhost();
+        dragState = null;
+        if (!wasActive) return; // it was a tap; let click handle it
+        dragJustEnded = true;
+        const gapId = gapUnder(e.clientX, e.clientY);
+        if (gapId) place(chipId, gapId);
+      };
+      el.addEventListener("pointerup", end);
+      el.addEventListener("pointercancel", end);
     });
 
-    // --- gaps: click to place the selected chip, drop target ---
+    // --- gaps: tap to place the selected chip ---
     body.querySelectorAll("[data-gap]").forEach((el) => {
-      const gapId = el.dataset.gap;
       el.addEventListener("click", () => {
-        if (selectedChip) place(selectedChip, gapId);
-      });
-      el.addEventListener("dragover", (e) => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = "move";
-        el.classList.add("is-over");
-      });
-      el.addEventListener("dragleave", () => el.classList.remove("is-over"));
-      el.addEventListener("drop", (e) => {
-        e.preventDefault();
-        el.classList.remove("is-over");
-        const chipId = e.dataTransfer.getData("text/plain");
-        if (chipId) place(chipId, gapId);
+        if (selectedChip) place(selectedChip, el.dataset.gap);
       });
     });
 
     body.querySelector('[data-dg="reset"]')?.addEventListener("click", reset);
     body.querySelector('[data-dg="check"]')?.addEventListener("click", check);
     body.querySelector('[data-dg="finish"]')?.addEventListener("click", finish);
+  }
+
+  /* ---- pointer-drag helpers ---- */
+
+  function ensureGhost() {
+    if (ghost) return ghost;
+    ghost = document.createElement("div");
+    ghost.className = "dg-ghost";
+    document.body.appendChild(ghost);
+    return ghost;
+  }
+
+  function moveGhost(x, y) {
+    if (!dragState) return;
+    const chip = state.chips.find((c) => c.id === dragState.chipId);
+    const g = ensureGhost();
+    g.textContent = chip?.text ?? "";
+    g.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;
+  }
+
+  function removeGhost() {
+    ghost?.remove();
+    ghost = null;
+  }
+
+  /** Which gap is under this viewport point? */
+  function gapUnder(x, y) {
+    const el = document.elementFromPoint(x, y);
+    return el?.closest?.("[data-gap]")?.dataset.gap ?? null;
+  }
+
+  function highlightGapUnder(x, y) {
+    const id = gapUnder(x, y);
+    if (id === hotGapId) return;
+    clearGapHighlight();
+    if (id) {
+      hotGapId = id;
+      body.querySelector(`[data-gap="${CSS.escape(id)}"]`)?.classList.add("is-over");
+    }
+  }
+
+  function clearGapHighlight() {
+    if (hotGapId) {
+      body.querySelector(`[data-gap="${CSS.escape(hotGapId)}"]`)?.classList.remove("is-over");
+    }
+    hotGapId = null;
   }
 
   function place(chipId, gapId) {

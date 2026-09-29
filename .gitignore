@@ -98,3 +98,10 @@ frontend/android-snippets/
 backend/data/cluster-peers.json
 backend/data/cluster-peers.json
 *.nfs*
+
+# v2.37.0: local vault material (keys) — must never be committed
+backend/vault/
+
+# v2.37.0: runtime artefacts de test/servidor
+backend/data/diagnostics/
+backend/data/pdf-occlusions.json

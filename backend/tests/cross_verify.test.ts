@@ -4,8 +4,11 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { buildServer } from "../src/server.js";
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
+import { registerDevice, type TestAuth } from "./helpers/auth.js";
 
 let app: Awaited<ReturnType<typeof buildServer>>;
+// v2.37.0: notes + flashcards are no longer public routes.
+let auth: TestAuth;
 const REC_FILE = join(process.cwd(), "data", "recordings.json");
 const NOTE_FILE = join(process.cwd(), "data", "notes.json");
 
@@ -13,6 +16,7 @@ beforeAll(async () => {
   try { await fs.unlink(REC_FILE); } catch {}
   try { await fs.unlink(NOTE_FILE); } catch {}
   app = await buildServer();
+  auth = await registerDevice(app);
   await app.ready();
 });
 
@@ -23,7 +27,7 @@ afterAll(async () => {
 
 describe("Cross-verify v1.5.6", () => {
   it("GET /api/v1/cross-verify devuelve coverage 100% sin grabaciones", async () => {
-    const res = await app.inject({ method: "GET", url: "/api/v1/cross-verify" });
+    const res = await app.inject({ method: "GET", url: "/api/v1/cross-verify", headers: auth.headers });
     expect(res.statusCode).toBe(200);
     const body = res.json();
     expect(body.coveragePct).toBe(100);
@@ -34,7 +38,7 @@ describe("Cross-verify v1.5.6", () => {
     // 1. crear nota en math
     const note = await app.inject({
       method: "POST",
-      url: "/api/v1/notes",
+      url: "/api/v1/notes", headers: auth.headers,
       payload: { title: "Math", subject: "math", body: "x" },
     });
     expect(note.statusCode).toBe(201);
@@ -48,7 +52,7 @@ describe("Cross-verify v1.5.6", () => {
     expect(rec.statusCode).toBe(201);
 
     // 3. cross-verify subject=physics
-    const cv = await app.inject({ method: "GET", url: "/api/v1/cross-verify?subject=physics" });
+    const cv = await app.inject({ method: "GET", url: "/api/v1/cross-verify?subject=physics", headers: auth.headers });
     const body = cv.json();
     expect(body.totalRecordings).toBe(1);
     const missing = body.gaps.find((g: any) => g.type === "missing-notes");
@@ -64,7 +68,7 @@ describe("Cross-verify v1.5.6", () => {
     expect(create.statusCode).toBe(201);
     const id = create.json().id;
 
-    const list = await app.inject({ method: "GET", url: "/api/v1/recordings" });
+    const list = await app.inject({ method: "GET", url: "/api/v1/recordings", headers: auth.headers });
     expect(list.statusCode).toBe(200);
     const all = list.json();
     expect(all.recordings.find((r: any) => r.id === id)).toBeTruthy();
@@ -78,9 +82,9 @@ describe("Cross-verify v1.5.6", () => {
       payload: { subject: "x", subjectName: "X", durationSec: 1 },
     });
     const id = c.json().id;
-    const del = await app.inject({ method: "DELETE", url: `/api/v1/recordings/${id}` });
+    const del = await app.inject({ method: "DELETE", url: `/api/v1/recordings/${id}`, headers: auth.headers });
     expect(del.statusCode).toBe(200);
-    const get = await app.inject({ method: "GET", url: `/api/v1/recordings` });
+    const get = await app.inject({ method: "GET", url: `/api/v1/recordings`, headers: auth.headers });
     expect(get.json().recordings.find((r: any) => r.id === id)).toBeUndefined();
   });
 
@@ -96,7 +100,7 @@ describe("Cross-verify v1.5.6", () => {
     // Crear nota con @book/ref 90 segundos después
     const note = await app.inject({
       method: "POST",
-      url: "/api/v1/notes",
+      url: "/api/v1/notes", headers: auth.headers,
       payload: {
         title: "Don Quixote",
         subject: "lit",
@@ -105,7 +109,7 @@ describe("Cross-verify v1.5.6", () => {
       },
     });
     expect(note.statusCode).toBe(201);
-    const cv = await app.inject({ method: "GET", url: "/api/v1/cross-verify?subject=lit" });
+    const cv = await app.inject({ method: "GET", url: "/api/v1/cross-verify?subject=lit", headers: auth.headers });
     const body = cv.json();
     const bookRefs = body.gaps.filter((g: any) => g.type === "book-ref");
     expect(bookRefs.length).toBe(2);

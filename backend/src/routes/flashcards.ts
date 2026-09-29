@@ -25,6 +25,7 @@ import { FastifyInstance } from "fastify";
 import { randomUUID } from "node:crypto";
 import { E } from "../utils/errorCodes.js";
 import { logOp } from "../utils/log.js";
+import { scheduleReview, DEFAULT_TARGET_RETENTION } from "../services/reviewScheduler.js";
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
 
@@ -83,7 +84,9 @@ export interface Flashcard {
   // v2.35.0 — append-only review log. Powers the GitHub heatmap and
   // progress charts. Optional; cards created before v2.35.0 lack it and
   // fall back to FSRS counters (reps / lapses / lastReview).
-  reviewHistory?: Array<{ t: number; rating: number }>;
+  // v2.37.0 — `r` (retrievability before the review) is recorded so the
+  // retention figure on the progress screen is measured, not estimated.
+  reviewHistory?: Array<{ t: number; rating: number; r?: number }>;
   // legacy
   createdAt: number;
   updatedAt: number;
@@ -555,10 +558,17 @@ export async function flashcardsRoutes(app: FastifyInstance): Promise<void> {
     return { deleted: true };
   });
 
-  // v2.35.0 — record a review: updates FSRS counters AND appends to the
-  // review log that powers the GitHub heatmap + progress charts.
-  // Body: { rating: 1..4 }
-  app.post<{ Params: { id: string }; Body: { rating?: number } }>(
+  // v2.37.0 — record a review.
+  //
+  // v2.35.0 implemented this with a hardcoded 5-day ladder. It was not
+  // FSRS-7: no difficulty term, no retrievability, no weight vector. The
+  // UI said "FSRS-7" while this ran. v2.37.0 calls the real scheduler in
+  // services/reviewScheduler.ts, and additionally persists the
+  // retrievability at review time so the progress screen's retention
+  // figure is measured rather than estimated.
+  //
+  // Body: { rating: 1..4 }   (1 Again, 2 Hard, 3 Good, 4 Easy)
+  app.post<{ Params: { id: string }; Body: { rating?: number; targetRetention?: number } }>(
     "/flashcards/:id/review",
     async (req) => {
       const rating = req.body?.rating;
@@ -573,30 +583,40 @@ export async function flashcardsRoutes(app: FastifyInstance): Promise<void> {
 
       const now = Date.now();
       const prev = card.fsrs ?? defaultFsrsState();
-      // Minimal interval model mirroring the classic SM-2-ish ladder,
-      // used only for the heatmap's daily counts (the real FSRS-7 state
-      // is recomputed client-side / by /fsrs/review when available).
-      const ladder = [0, 1, 6, 15, 22]; // minutes for rating 1..4, in days-ish
-      const nextStability = Math.max(
-        (prev.stability ?? 0) * (rating >= 3 ? 1.6 : rating === 2 ? 1.2 : 0.4),
-        0.5,
-      );
+      const target = typeof req.body?.targetRetention === "number"
+        ? Math.min(0.99, Math.max(0.7, req.body.targetRetention))
+        : DEFAULT_TARGET_RETENTION;
+
+      const outcome = scheduleReview(prev, rating as 1 | 2 | 3 | 4, now, target);
+
       const patched = await svc.update(req.params.id, {
-        fsrs: {
-          ...prev,
-          state: rating === 1 ? "relearning" : "review",
-          stability: nextStability,
-          lastReview: now,
-          due: now + ladder[rating - 1] * 86400000,
-          reps: (prev.reps ?? 0) + 1,
-          lapses: (prev.lapses ?? 0) + (rating === 1 ? 1 : 0),
-        },
+        fsrs: { ...prev, ...outcome.fsrs },
         reviewHistory: [
           ...(card.reviewHistory ?? []).filter((h) => typeof h?.t === "number"),
-          { t: now, rating },
+          // `r` is the retrievability *before* this review, so the
+          // retention metric is not circular.
+          { t: now, rating, r: outcome.retrievability },
         ],
       });
-      return { card: patched, logged: true };
+
+      logOp("flashcard", "review", true, {
+        id: req.params.id,
+        rating,
+        isLapse: outcome.isLapse,
+        intervalDays: outcome.intervalDays,
+        retrievability: outcome.retrievability,
+        migrated: outcome.fsrs.sched?.migrated === true,
+      });
+
+      return {
+        card: patched,
+        logged: true,
+        // Surfaced so the study UI can show the real next interval
+        // instead of a hardcoded label.
+        nextIntervalDays: outcome.intervalDays,
+        retrievability: outcome.retrievability,
+        isLapse: outcome.isLapse,
+      };
     },
   );
 

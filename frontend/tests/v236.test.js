@@ -187,7 +187,9 @@ describe("v2.36.0 — drag-gap exercise", () => {
   it("supports both pointer (drag) and tap-then-tap (accessible) placement", () => {
     const src = read("src/widgets/drag_gap.js");
     expect(src).toMatch(/dragstart/);
-    expect(src).toMatch(/addEventListener\("drop"/);
+    // v2.37.0: HTML5 drag never fires on touch screens, so drag_gap was
+    // rewritten on Pointer Events. See tests/v237.test.js.
+    expect(src).toMatch(/addEventListener\("pointerup"/);
     expect(src).toMatch(/selectedChip/); // tap-to-select path
     expect(src).toMatch(/role="button"/);  // keyboard-reachable slots
   });
