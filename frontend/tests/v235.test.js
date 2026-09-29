@@ -16,7 +16,19 @@ describe("v2.35.0 — mobile.css design system", () => {
     expect(existsSync(path)).toBe(true);
     const css = read("src/styles/mobile.css");
     expect(css).toMatch(/--m-accent:\s*#8b5cf6/);
-    expect(css).toMatch(/--m-bg:\s*#0b0b12/);
+    // The ramp must be a real ladder, not three near-identical greys.
+    // v2.38.1 had #0b0b12 / #12121c / #171724 — steps of ~6/255, which on
+    // a phone reads as one flat field.
+    const lum = (hex) => {
+      const n = parseInt(hex.slice(1), 16);
+      return (((n >> 16) & 255) * 299 + ((n >> 8) & 255) * 587 + (n & 255) * 114) / 1000;
+    };
+    const bg = (css.match(/--m-bg:\s*(#[0-9a-f]{6})/i) || [])[1];
+    const card = (css.match(/--m-bg-card:\s*(#[0-9a-f]{6})/i) || [])[1];
+    const card2 = (css.match(/--m-bg-card-2:\s*(#[0-9a-f]{6})/i) || [])[1];
+    expect(bg).toMatch(/^#[0-9a-f]{6}$/i);
+    expect(lum(card) - lum(bg)).toBeGreaterThan(8);
+    expect(lum(card2) - lum(card)).toBeGreaterThan(4);
     expect(css).toMatch(/--m-shadow-lg/);
     expect(css).toMatch(/--m-r-lg/);
   });

@@ -571,20 +571,18 @@ export function exportApkg(input: ExportInput): ExportOutput {
  * Persist an imported deck to M-NEXUS flashcards.json file.
  * Caller is responsible for atomic write / backup.
  */
-export async function persistImported(cards: MxFlashcard[], file = join(process.cwd(), "data", "flashcards.json")): Promise<{ total: number; cards: MxFlashcard[] }> {
-  let existing: any[] = [];
-  try {
-    const buf = await fs.readFile(file, "utf-8");
-    existing = JSON.parse(buf);
-  } catch {
-    existing = [];
-  }
+export async function persistImported(cards: MxFlashcard[]): Promise<{ total: number; cards: MxFlashcard[] }> {
+  // v2.38.2: into the caller's own deck. The old signature took a file
+  // path defaulting to the global data/flashcards.json, so importing an
+  // .apkg wrote it where no user could read it back.
+  const { readCollection, writeCollection, currentSubject } = await import("./userStore.js");
+  const sub = currentSubject();
+  const existing = await readCollection<any[]>(sub, "flashcards.json", []);
   // De-dup by front/back signature
   const sig = (c: MxFlashcard) => `${c.front}::${c.back}`;
   const seen = new Set(existing.map(sig));
   const fresh = cards.filter((c) => !seen.has(sig(c)));
   const merged = [...existing, ...fresh];
-  await fs.mkdir(join(process.cwd(), "data"), { recursive: true });
-  await fs.writeFile(file, JSON.stringify(merged, null, 2));
+  await writeCollection(sub, "flashcards.json", merged);
   return { total: merged.length, cards: fresh };
 }

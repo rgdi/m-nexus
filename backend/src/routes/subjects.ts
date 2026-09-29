@@ -15,6 +15,7 @@ import { FastifyInstance } from "fastify";
 import { randomUUID } from "node:crypto";
 import { E } from "../utils/errorCodes.js";
 import { logOp } from "../utils/log.js";
+import { readCollection, writeCollection, currentSubject } from "../services/userStore.js";
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
 import { publishSync } from "./sync_v2.js";
@@ -33,23 +34,26 @@ export interface Subject {
   updatedAt: number;
 }
 
-const DATA_FILE = join(process.cwd(), "data", "subjects.json");
 
 export class SubjectsService {
-  private cache: Subject[] | null = null;
+  /**
+   * v2.38.2 — per user.
+   *
+   * v2.38.1 partitioned notes, folders, flashcards and tasks and left
+   * this one on the global file, so every device that ever registered
+   * shared one subject list: creating three subjects produced twelve on
+   * the next read. A Map keyed by subject, for the same reason as the
+   * others — one shared array bleeds across concurrent requests.
+   */
+  private cache = new Map<string, Subject[]>();
 
   async all(): Promise<Subject[]> {
-    if (this.cache) return this.cache;
-    try {
-      const buf = await fs.readFile(DATA_FILE, "utf-8");
-      const parsed = JSON.parse(buf);
-      this.cache = Array.isArray(parsed) ? parsed : [];
-      return this.cache!;
-    } catch {
-      this.cache = [];
-      await this.save();
-      return this.cache;
-    }
+    const sub = currentSubject();
+    const hit = this.cache.get(sub);
+    if (hit) return hit;
+    const list = await readCollection<Subject[]>(sub, "subjects.json", []);
+    this.cache.set(sub, list);
+    return list;
   }
 
   async get(id: string): Promise<Subject | undefined> {
@@ -67,7 +71,8 @@ export class SubjectsService {
       updatedAt: Date.now(),
     };
     list.push(s);
-    await this.save();
+    this.cache.set(currentSubject(), list);
+    await this.save(list);
     return s;
   }
 
@@ -85,8 +90,8 @@ export class SubjectsService {
     const before = list.length;
     const next = list.filter((s) => s.id !== id);
     if (next.length === before) return false;
-    this.cache = next;
-    await this.save();
+    this.cache.set(currentSubject(), next);
+    await this.save(next);
     return true;
   }
 
@@ -103,8 +108,8 @@ export class SubjectsService {
       createdAt: now,
       updatedAt: now,
     }));
-    this.cache = next;
-    await this.save();
+    this.cache.set(currentSubject(), next);
+    await this.save(next);
     return next;
   }
 
@@ -124,8 +129,8 @@ export class SubjectsService {
     for (const s of list) {
       if (!orderedIds.includes(s.id)) next.push({ ...s, order: next.length, updatedAt: Date.now() });
     }
-    this.cache = next;
-    await this.save();
+    this.cache.set(currentSubject(), next);
+    await this.save(next);
     return next;
   }
 
@@ -136,15 +141,16 @@ export class SubjectsService {
   async removeAll(): Promise<number> {
     const list = await this.all();
     const n = list.length;
-    this.cache = [];
-    await this.save();
+    this.cache.set(currentSubject(), []);
+    await this.save([]);
     return n;
   }
 
-  private async save(): Promise<void> {
-    if (!this.cache) return;
-    await fs.mkdir(join(process.cwd(), "data"), { recursive: true });
-    await fs.writeFile(DATA_FILE, JSON.stringify(this.cache, null, 2), "utf-8");
+  private async save(list?: Subject[]): Promise<void> {
+    const sub = currentSubject();
+    const value = list ?? this.cache.get(sub);
+    if (!value) return;
+    await writeCollection(sub, "subjects.json", value);
   }
 }
 

@@ -78,7 +78,6 @@ export interface PrintConfig {
   pageNumbering?: "arabic" | "roman" | "none"; // default: "arabic"
 }
 
-const DATA_FILE = join(process.cwd(), "data", "notes.json");
 
 export class NotesService {
   /** Per subject. One shared array would bleed across users the moment
@@ -159,7 +158,6 @@ export class NotesService {
 /* ============================================================
  * v2.3.0-B: Folders CRUD
  * ============================================================ */
-const FOLDERS_FILE = join(process.cwd(), "data", "folders.json");
 
 class FoldersService {
   /** Per subject, same reason as NotesService. */

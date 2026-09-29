@@ -29,8 +29,9 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { gradeTypedAnswer, gradeMultipleChoice } from "../services/grading.js";
 import { logOp } from "../utils/log.js";
+import { readCollection, currentSubject } from "../services/userStore.js";
 
-const DATA = join(process.cwd(), "data", "flashcards.json");
+// v2.38.2: the deck is per user; see userStore.
 
 /** Sliding window per caller key. Small, in-process, and bounded. */
 const buckets = new Map<string, { n: number; resetAt: number }>();
@@ -74,13 +75,9 @@ function isAuthed(req: FastifyRequest): boolean {
 }
 
 async function loadCards(): Promise<any[]> {
-  try {
-    const raw = await readFile(DATA, "utf-8");
-    const j = JSON.parse(raw);
-    return Array.isArray(j) ? j : [];
-  } catch {
-    return [];
-  }
+  // v2.38.2: per user. This read the global file, so after the per-user
+  // migration the grader graded against an empty deck.
+  return readCollection<any[]>(currentSubject(), "flashcards.json", []);
 }
 
 export function registerGradingRoutes(app: FastifyInstance): void {

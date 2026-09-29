@@ -112,37 +112,20 @@ export const studyPlannerRoutes: FastifyPluginAsync = async (app) => {
           { llmTimeoutMs: 3000, maxLlmTags: 3 },
         );
       } catch (e) { /* no-op if helper unavailable */ }
-      // Write directly to data/flashcards.json — the canonical flashcard store.
+      // v2.38.2: through the flashcards service, which is subject-scoped.
+      // This wrote the global file directly, so a card approved from the
+      // planner landed where no user could see it.
       try {
-        const fs = await import("node:fs/promises");
-        const path = await import("node:path");
-        const fp = path.resolve(process.cwd(), "data", "flashcards.json");
-        const raw = await fs.readFile(fp, "utf-8").catch(() => "[]");
-        const list: Record<string, unknown>[] = JSON.parse(raw);
-        const id = "fc-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
-        const payload = (updated.payload || {}) as {
-          front?: string; back?: string; subject?: string; tags?: string[];
-        };
-        const card = {
-          id,
-          front: updated.preview || payload.front || "",
-          back: updated.answer || payload.back || "",
-          subject: payload.subject || updated.topicId,
-          tags: payload.tags && payload.tags.length ? payload.tags : (autoTags.length ? autoTags : [updated.kind]),
+        const { flashcardsServiceInstance } = await import("./flashcards.js");
+        const payloadIn = (updated.payload || {}) as any;
+        createdFlashcard = await flashcardsServiceInstance.create({
+          front: updated.preview || payloadIn.front || "",
+          back: updated.answer || payloadIn.back || "",
+          subject: payloadIn.subject || updated.topicId,
+          tags: payloadIn.tags && payloadIn.tags.length ? payloadIn.tags : (autoTags.length ? autoTags : [updated.kind]),
           sourceNoteId: updated.sourceNoteId,
           sourceExcerpt: (updated.preview || "").slice(0, 80),
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-          state: "new",
-          stability: 1,
-          difficulty: 5,
-          due: Date.now(),
-          reps: 0,
-          lapses: 0,
-        };
-        list.push(card);
-        await fs.writeFile(fp, JSON.stringify(list, null, 2));
-        createdFlashcard = card;
+        } as any) as unknown as Record<string, unknown>;
       } catch (e) {
         console.warn("[decide] flashcard create failed:", e);
       }

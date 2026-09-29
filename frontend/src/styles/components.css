@@ -92,9 +92,16 @@
   gap: var(--s-2);
 }
 .subj-bubble .corner {
-  width: 36px;
-  height: 36px;
+  /* v2.38.2: the caller sets an inline background (the subject's colour
+   * token), which beat the per-colour classes — so the letter fell back
+   * to --bg, near-black on a saturated chip, and the chip itself was
+   * clipped by the row's overflow. */
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  margin-right: 2px;
   border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .10);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -102,8 +109,10 @@
   font-size: var(--fs-md);
   /* v2.22.0: text color comes from --fg-on-{subj-color} token so each
      subject color uses the right contrast pair (white vs near-black). */
-  color: var(--corner-fg, var(--bg));
+  color: var(--corner-fg, #fff);
   background: var(--corner-bg, var(--subj-gray));
+  font-size: 15px;
+  letter-spacing: 0;
   flex-shrink: 0;
 }
 /* v2.22.0: per-subject foreground (white on saturated, dark on pastel). */
@@ -435,17 +444,22 @@
 }
 
 /* ---------- Per-screen background blobs (v1.4.0) ---------- */
+/* v2.38.2: this was a blue gradient unique to the overview, so the
+ * blurred app bar above it — which samples the shared --m-bg — left a
+ * visible seam, and the rest of the app read as a different product.
+ * Depth comes from the surface ladder and the cards, not from one page
+ * wearing a different background. */
 .app.screen-overview {
-  background: linear-gradient(135deg, #f0f7fc 0%, #e8f1f8 100%);
+  background: var(--m-bg, var(--bg));
 }
 .app.screen-notes {
   background: var(--bg);
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .app.screen-overview { background: linear-gradient(135deg, #0a1a26 0%, #152838 100%); }
+  :root:not([data-theme="light"]) .app.screen-overview { background: var(--m-bg, var(--bg)); }
   :root:not([data-theme="light"]) .app.screen-notes { background: var(--bg); }
 }
-[data-theme="dark"] .app.screen-overview { background: linear-gradient(135deg, #0a1a26 0%, #152838 100%); }
+[data-theme="dark"] .app.screen-overview { background: var(--m-bg, var(--bg)); }
 [data-theme="dark"] .app.screen-notes { background: var(--bg); }
 body.no-bg .app.screen-notes { background: transparent; }
 /* v2.6.0 audit: removed yellow canary background that distracted from

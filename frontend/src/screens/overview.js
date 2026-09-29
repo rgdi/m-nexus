@@ -106,8 +106,8 @@ export async function renderOverview(root) {
           <div class="col gap-3">
             <a class="stat" href="#/journal" style="text-decoration:none;color:inherit;background:linear-gradient(135deg,rgba(124,77,255,0.10),rgba(34,180,255,0.06));border:1px solid rgba(124,77,255,0.20)">
               <div class="lbl">📓 Diario</div>
-              <div class="val" style="font-size:var(--fs-md);font-weight:600">Escribe tu entrada de hoy</div>
-              <div class="sub">Plantilla + mood + live queries</div>
+              <div class="val" style="font-size:var(--fs-md);font-weight:600">${i18n.t("overview.writeEntry")}</div>
+              <div class="sub">${i18n.t("overview.writeEntrySub")}</div>
             </a>
             <div class="stat">
               <div class="lbl">${i18n.t("overview.dueToday")}</div>

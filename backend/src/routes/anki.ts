@@ -19,7 +19,6 @@ import { join } from "node:path";
 import { exportApkg, importApkg, persistImported } from "../services/anki.js";
 import { E } from "../utils/errorCodes.js";
 
-const FLASHCARDS_FILE = join(process.cwd(), "data", "flashcards.json");
 
 export async function ankiRoutes(app: FastifyInstance): Promise<void> {
   /* ============================================================
@@ -86,11 +85,11 @@ export async function ankiRoutes(app: FastifyInstance): Promise<void> {
   app.post<{ Body: { deckName?: string; includeRevlog?: boolean; scope?: { subject?: string; tag?: string } } }>(
     "/anki/export",
     async (req, reply) => {
-      let list: any[] = [];
-      try {
-        const buf = await fs.readFile(FLASHCARDS_FILE, "utf-8");
-        list = JSON.parse(buf);
-      } catch {
+      // v2.38.2: the caller's own deck. This read the global file, so an
+      // export produced an empty .apkg for everyone.
+      const { readCollection, currentSubject } = await import("../services/userStore.js");
+      let list: any[] = await readCollection<any[]>(currentSubject(), "flashcards.json", []);
+      if (list.length === 0) {
         return reply.code(404).send({ error: "No flashcards to export" });
       }
       const scope = req.body?.scope;

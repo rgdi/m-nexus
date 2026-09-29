@@ -28,6 +28,7 @@ import { renderTodos } from "./screens/todos.js";
 import { renderCapture } from "./screens/capture.js";
 import { renderRag } from "./screens/rag.js";
 import { renderGenerate } from "./screens/generate.js";
+import { mountAppbar } from "./widgets/appbar.js";
 import { renderMood } from "./screens/mood.js";
 import { mountCaptureFab } from "./widgets/capture_fab.js";
 import { openAiCompanion } from "./widgets/ai_companion.js";
@@ -141,6 +142,9 @@ async function render() {
   // v2.4.0: also expose to global so AI screen can detect current context
   window.__mnexusActiveRoute = route;
   setActiveDock(route);
+  // v2.38.2: la barra se monta antes del contenido para que Reserve su
+  // espacio desde el primer píxel y no haya un salto al pintar.
+  mountAppbar(route);
   app.innerHTML = `<div class="screen"><div class="empty">${i18n.t("common.loading")}</div></div>`;
   try {
     const fn = ROUTES[route];

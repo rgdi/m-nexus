@@ -9,7 +9,9 @@ import { registerDevice, type TestAuth } from "./helpers/auth.js";
 let app: Awaited<ReturnType<typeof buildServer>>;
 // v2.37.0: notes + flashcards are no longer public routes.
 let auth: TestAuth;
-const REC_FILE = join(process.cwd(), "data", "recordings.json");
+// v2.38.2: recordings are per user, so the test clears the caller's
+// copy rather than a global path that no longer receives writes.
+const REC_FILE = join(process.cwd(), "data", "users", "default", "recordings.json");
 const NOTE_FILE = join(process.cwd(), "data", "notes.json");
 
 beforeAll(async () => {
@@ -46,7 +48,7 @@ describe("Cross-verify v1.5.6", () => {
     // 2. crear grabación en "physics" (sin notas)
     const rec = await app.inject({
       method: "POST",
-      url: "/api/v1/recordings",
+      url: "/api/v1/recordings", headers: auth.headers,
       payload: { subject: "physics", subjectName: "Physics", durationSec: 300, sizeBytes: 1000 },
     });
     expect(rec.statusCode).toBe(201);
@@ -62,7 +64,7 @@ describe("Cross-verify v1.5.6", () => {
   it("POST /api/v1/recordings persiste y GET /api/v1/recordings lista", async () => {
     const create = await app.inject({
       method: "POST",
-      url: "/api/v1/recordings",
+      url: "/api/v1/recordings", headers: auth.headers,
       payload: { subject: "math", subjectName: "Math", durationSec: 120, sizeBytes: 500, transcript: "test" },
     });
     expect(create.statusCode).toBe(201);
@@ -78,7 +80,7 @@ describe("Cross-verify v1.5.6", () => {
   it("DELETE /api/v1/recordings/:id elimina", async () => {
     const c = await app.inject({
       method: "POST",
-      url: "/api/v1/recordings",
+      url: "/api/v1/recordings", headers: auth.headers,
       payload: { subject: "x", subjectName: "X", durationSec: 1 },
     });
     const id = c.json().id;
@@ -93,7 +95,7 @@ describe("Cross-verify v1.5.6", () => {
     // Crear grabación
     const rec = await app.inject({
       method: "POST",
-      url: "/api/v1/recordings",
+      url: "/api/v1/recordings", headers: auth.headers,
       payload: { subject: "lit", subjectName: "Literature", durationSec: 600, createdAt: now },
     });
     expect(rec.statusCode).toBe(201);

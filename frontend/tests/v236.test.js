@@ -149,9 +149,13 @@ describe("v2.36.0 — manifest is installable", () => {
   });
 
   it("theme colour matches the mobile.css dark background", () => {
-    expect(m.theme_color).toBe("#0b0b12");
+    // Read the value rather than pinning a hex: v2.38.2 darkened --m-bg
+    // to widen the gap between the page and its cards, and a test that
+    // hardcoded the old literal failed on a change that was the point.
     const css = read("src/styles/mobile.css");
-    expect(css).toMatch(/--m-bg:\s*#0b0b12/);
+    const bg = (css.match(/--m-bg:\s*(#[0-9a-f]{6})/i) || [])[1];
+    expect(bg).toMatch(/^#[0-9a-f]{6}$/i);
+    expect(m.theme_color.toLowerCase()).toBe(bg.toLowerCase());
   });
 });
 
@@ -159,7 +163,10 @@ describe("v2.36.0 — index.html PWA meta", () => {
   const html = read("index.html");
   it("has apple-touch-icon", () => expect(html).toMatch(/apple-touch-icon/));
   it("has apple-mobile-web-app-capable", () => expect(html).toMatch(/apple-mobile-web-app-capable/));
-  it("theme-color matches the manifest", () => expect(html).toMatch(/name="theme-color" content="#0b0b12"/));
+  it("theme-color matches the manifest", () => {
+    const manifest = JSON.parse(readFileSync(join(process.cwd(), "manifest.json"), "utf-8"));
+    expect(html).toContain(`name="theme-color" content="${manifest.theme_color}"`);
+  });
 });
 
 describe("v2.36.0 — structured logging is available", () => {

@@ -37,14 +37,23 @@
   --m-accent-bright: #a78bfa;
   --m-accent-deep: #6d28d9;
 
-  /* Surfaces (dark-first) */
-  --m-bg: #0b0b12;
-  --m-bg-raised: #12121c;
-  --m-bg-card: #171724;
-  --m-bg-card-2: #1e1e2e;
-  --m-bg-sunken: #08080e;
-  --m-hairline: rgba(255, 255, 255, .08);
-  --m-hairline-strong: rgba(255, 255, 255, .14);
+  /* Surfaces (dark-first).
+   *
+   * v2.38.2: the old ladder ran #0b0b12 -> #12121c -> #171724 -> #1e1e2e,
+   * steps of about 6/255. On a phone that reads as a single flat grey
+   * field — every card looked like the page behind it and the UI felt
+   * unfinished. The steps below are wide enough to separate by eye, and
+   * cards carry a top highlight so they read as lit from above. */
+  --m-bg: #08080e;
+  --m-bg-raised: #101019;
+  --m-bg-card: #191926;
+  --m-bg-card-2: #222232;
+  --m-bg-card-3: #2b2b3d;
+  --m-bg-sunken: #050509;
+  --m-hairline: rgba(255, 255, 255, .09);
+  --m-hairline-strong: rgba(255, 255, 255, .16);
+  /* The lit edge that gives a dark card its thickness. */
+  --m-edge: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,0) 42%);
 
   /* Ink */
   --m-ink: #f4f4f8;
@@ -79,7 +88,7 @@
 
   /* Metrics */
   --m-tabbar-h: 62px;
-  --m-appbar-h: 56px;
+  --m-appbar-h: 52px;
 
   /* Type scale (mobile) */
   --m-t-display: clamp(34px, 10vw, 52px);
@@ -102,13 +111,17 @@
 
 /* Light mode only when the user explicitly picks it */
 :root[data-theme="light"] {
-  --m-bg: #f6f5fb;
+  --m-bg: #f4f3f9;
   --m-bg-raised: #ffffff;
   --m-bg-card: #ffffff;
-  --m-bg-card-2: #f1f0f8;
-  --m-bg-sunken: #eae9f2;
+  --m-bg-card-2: #f7f6fc;
+  --m-bg-card-3: #efedf7;
+  --m-bg-sunken: #e8e6f1;
   --m-hairline: rgba(20, 18, 40, .10);
   --m-hairline-strong: rgba(20, 18, 40, .18);
+  /* Light surfaces are lit from above by the shadow, not by an inner
+   * highlight — on white the same trick just looks like a smudge. */
+  --m-edge: none;
   --m-ink: #16141f;
   --m-ink-2: #4a4757;
   --m-ink-3: #6d6a7c;
@@ -151,7 +164,11 @@
   }
 
   .screen {
-    padding: calc(var(--m-safe-t) + var(--m-appbar-h) + 8px) 16px 24px;
+    /* v2.38.2: no top inset here. The app bar is already accounted for
+     * by .app; adding it again — as this rule did, with its own +8 —
+     * pushed every screen's content 116px down and left a band of empty
+     * background above the first line. */
+    padding: 0 16px 24px;
   }
 
   /* Desktop-only widgets hidden on mobile (they live in sheets instead) */
@@ -287,15 +304,48 @@
   position: fixed;
   top: 0; left: 0; right: 0;
   height: calc(var(--m-safe-t) + var(--m-appbar-h));
-  padding: var(--m-safe-t) calc(var(--m-safe-r) + 12px) 0 calc(var(--m-safe-l) + 12px);
+  padding: var(--m-safe-t) calc(var(--m-safe-r) + 10px) 0 calc(var(--m-safe-l) + 10px);
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: color-mix(in srgb, var(--m-bg) 82%, transparent);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  gap: 4px;
+  background: color-mix(in srgb, var(--m-bg) 72%, transparent);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  /* Translucent from the start: a bar that only appears on scroll makes
+   * the first screenful look like it is missing its header. */
+  border-bottom: 1px solid transparent;
   z-index: 880;
+  transition: border-color 200ms var(--m-ease), background 200ms var(--m-ease);
 }
+.m-appbar.is-scrolled { border-bottom-color: var(--m-hairline); }
+.m-appbar.is-hidden { display: none; }
+.m-appbar-title {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -.015em;
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--m-ink);
+}
+.m-appbar-spacer { flex: 0 0 auto; }
+.m-appbar-back {
+  flex: 0 0 auto;
+  width: 40px; height: 40px;
+  margin-left: -8px;
+  display: grid; place-items: center;
+  border: 0; border-radius: 50%;
+  background: transparent;
+  color: var(--m-accent);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.m-appbar-back:active { background: var(--m-bg-card-2); }
+/* The back chevron is a control, so it keeps its tap target. */
+.m-appbar-back[hidden] { display: none; }
 
 .m-appbar-title {
   flex: 1;
@@ -1848,3 +1898,60 @@ a.gen-cite { min-height: 0; }
 .mood-list-emoji { font-size: 18px; }
 .mood-list-date { color: var(--m-muted, #9a9ab0); font-size: 12.5px; }
 .mood-list-label { margin-left: auto; color: var(--m-muted, #9a9ab0); font-size: 12.5px; }
+
+
+/* ============================================================
+   v2.38.2 — chrome: the app bar owns the title
+   ============================================================ */
+
+/* Every screen used to print its own <h1> directly under the app bar,
+ * so the same word appeared twice in the first 100px. The bar is now
+ * the single source of the screen's name; the header keeps only what
+ * the bar cannot know — the date, a warning chip, a count. */
+@media (max-width: 720px) {
+  .screen-header .h-title { display: none; }
+  .screen-header {
+    align-items: center;
+    margin-bottom: var(--s-4);
+    min-height: 0;
+  }
+  .screen-header:empty { display: none; }
+
+  /* The overview's title row was only the title, so collapsing it left
+   * a gap. Pull the content up by the height it no longer uses. */
+  .screen-header .h-sub {
+    font-size: var(--m-t-sm);
+    color: var(--m-ink-3);
+    font-weight: 600;
+  }
+}
+
+/* The shared card. Three things were missing and together they are what
+ * made the UI look unfinished: a surface that separates from the page, a
+ * lit top edge, and a hairline. */
+.m-card {
+  background: var(--m-bg-card);
+  background-image: var(--m-edge);
+  border: 1px solid var(--m-hairline);
+  border-radius: var(--m-r);
+  box-shadow: var(--m-shadow-sm);
+}
+
+/* The section label. One treatment for all of them: small, quiet, and
+ * the same distance from the block it introduces. */
+.m-section-label {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .10em;
+  color: var(--m-ink-3);
+  margin: 0 0 10px;
+}
+
+
+/* v2.38.2 — the capture FAB is fixed, so every scrolling screen needs to
+ * end above it. Without this the last card on each screen is half
+ * covered and, on a phone, the thing you were aiming at. */
+@media (max-width: 720px) {
+  .app { padding-bottom: 84px; }
+}

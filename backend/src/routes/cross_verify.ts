@@ -41,7 +41,10 @@ async function loadNotes(): Promise<NoteRec[]> {
 
 async function loadRecs(): Promise<RecRec[]> {
   try {
-    return JSON.parse(await fs.readFile(join(process.cwd(), "data", "recordings.json"), "utf-8"));
+    // v2.38.2: per user. A raw read of the global file returns nothing
+    // now that recordings live under data/users/<sub>/.
+    const { readCollection, currentSubject } = await import("../services/userStore.js");
+    return readCollection<RecRec[]>(currentSubject(), "recordings.json", []);
   } catch { return []; }
 }
 

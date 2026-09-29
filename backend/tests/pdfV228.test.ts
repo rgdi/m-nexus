@@ -14,7 +14,8 @@ import {
 } from "../src/services/pdfAtomicCard.js";
 
 const DATA_DIR = join(process.cwd(), "data");
-const FLASHCARDS_FILE = join(DATA_DIR, "flashcards.json");
+// v2.38.2: the deck lives under the subject's directory.
+const FLASHCARDS_FILE = join(DATA_DIR, "users", "default", "flashcards.json");
 const HIGHLIGHTS_FILE = join(DATA_DIR, "pdf-highlights.json");
 
 /** Reset both stores + delete files for test isolation. */

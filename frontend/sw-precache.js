@@ -80,6 +80,7 @@ const MODULES = [
   "./src/widgets/ai_tutor.js",
   "./src/widgets/android_settings.js",
   "./src/widgets/anki_import.js",
+  "./src/widgets/appbar.js",
   "./src/widgets/audio_recorder.js",
   "./src/widgets/bottom_tabbar.js",
   "./src/widgets/capture_fab.js",

@@ -5,6 +5,7 @@ import { FastifyInstance } from "fastify";
 import { randomUUID } from "node:crypto";
 import { E } from "../utils/errorCodes.js";
 import { logOp } from "../utils/log.js";
+import { readCollection, writeCollection, currentSubject } from "../services/userStore.js";
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
 
@@ -18,22 +19,19 @@ export interface Recording {
   sizeBytes: number;
 }
 
-const DATA_FILE = join(process.cwd(), "data", "recordings.json");
 
 class RecordingsService {
-  private cache: Recording[] | null = null;
+  /** v2.38.2: per user — see SubjectsService. A recording is one of the
+   *  most personal things the app holds. */
+  private cache = new Map<string, Recording[]>();
 
   async all(): Promise<Recording[]> {
-    if (this.cache) return this.cache;
-    try {
-      const buf = await fs.readFile(DATA_FILE, "utf-8");
-      this.cache = JSON.parse(buf);
-      return this.cache!;
-    } catch {
-      this.cache = [];
-      await this.save();
-      return this.cache;
-    }
+    const sub = currentSubject();
+    const hit = this.cache.get(sub);
+    if (hit) return hit;
+    const list = await readCollection<Recording[]>(sub, "recordings.json", []);
+    this.cache.set(sub, list);
+    return list;
   }
 
   async create(input: Partial<Recording>): Promise<Recording> {
@@ -48,7 +46,8 @@ class RecordingsService {
       sizeBytes: input.sizeBytes ?? 0,
     };
     list.push(r);
-    await this.save();
+    this.cache.set(currentSubject(), list);
+    await this.save(list);
     return r;
   }
 
@@ -56,15 +55,16 @@ class RecordingsService {
     const list = await this.all();
     const next = list.filter((r) => r.id !== id);
     if (next.length === list.length) return false;
-    this.cache = next;
-    await this.save();
+    this.cache.set(currentSubject(), next);
+    await this.save(next);
     return true;
   }
 
-  private async save(): Promise<void> {
-    if (!this.cache) return;
-    await fs.mkdir(join(process.cwd(), "data"), { recursive: true });
-    await fs.writeFile(DATA_FILE, JSON.stringify(this.cache, null, 2), "utf-8");
+  private async save(list?: Recording[]): Promise<void> {
+    const sub = currentSubject();
+    const value = list ?? this.cache.get(sub);
+    if (!value) return;
+    await writeCollection(sub, "recordings.json", value);
   }
 }
 

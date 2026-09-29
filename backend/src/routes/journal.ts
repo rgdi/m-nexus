@@ -22,7 +22,6 @@ import {
   type Mood,
 } from "../services/dailyJournal.js";
 
-const NOTES_FILE = join(process.cwd(), "data", "notes.json");
 const TEMPLATES_FILE = join(process.cwd(), "data", "journal-templates.json");
 
 /**
@@ -323,8 +322,21 @@ async function readJson<T>(path: string, fallback: T): Promise<T> {
   }
 }
 
+/**
+ * v2.38.2 — read a collection for the *current* subject.
+ *
+ * The daily journal pulls cards, events and tasks to answer its "due
+ * today" blocks. Those readers were still pointed at the global files,
+ * which after the per-user migration contain nothing, so every live
+ * query in a journal entry silently resolved to empty.
+ */
+async function perUser(name: string): Promise<any[]> {
+  const { readCollection, currentSubject } = await import("../services/userStore.js");
+  return readCollection<any[]>(currentSubject(), name, []);
+}
+
 async function resolveCardsDue(): Promise<any[]> {
-  const cards = await readJson<any[]>(join(process.cwd(), "data", "flashcards.json"), []);
+  const cards = await perUser("flashcards.json");
   const now = Date.now();
   return cards
     .filter((c) => {
@@ -338,7 +350,7 @@ async function resolveCardsDue(): Promise<any[]> {
 }
 
 async function resolveEventsToday(): Promise<any[]> {
-  const events = await readJson<any[]>(join(process.cwd(), "data", "events.json"), []);
+  const events = await perUser("events.json");
   const start = new Date(); start.setHours(0, 0, 0, 0);
   const end = new Date(); end.setHours(23, 59, 59, 999);
   return events
@@ -347,12 +359,12 @@ async function resolveEventsToday(): Promise<any[]> {
 }
 
 async function resolveTasksOpen(): Promise<any[]> {
-  const tasks = await readJson<any[]>(join(process.cwd(), "data", "tasks.json"), []);
+  const tasks = await perUser("tasks.json");
   return tasks.filter((t) => !t.done).slice(0, 20);
 }
 
 async function resolveRecentNotes(limit: number): Promise<any[]> {
-  const notes = await readJson<any[]>(NOTES_FILE, []);
+  const notes = await perUser("notes.json");
   return notes
     .filter((n) => !n.isJournal)
     .sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0))
@@ -361,10 +373,10 @@ async function resolveRecentNotes(limit: number): Promise<any[]> {
 }
 
 async function resolveStudyStats(windowDays: number): Promise<any> {
-  const list = await readJson<any[]>(NOTES_FILE, []);
+  const list = await perUser("notes.json");
   const journals = list.filter((n) => n.isJournal && n.journalDate);
   const recent = journals.filter((n) => Date.now() - new Date(n.journalDate + "T12:00:00Z").getTime() < windowDays * 24 * 3600_000);
-  const cards = await readJson<any[]>(join(process.cwd(), "data", "flashcards.json"), []);
+  const cards = await perUser("flashcards.json");
   const studied = cards.filter((c) => (c.fsrs?.reps ?? 0) > 0);
   return {
     windowDays,

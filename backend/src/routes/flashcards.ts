@@ -141,7 +141,6 @@ function inferCardType(front: string, back: string): CardType {
   return "basic";
 }
 
-const DATA_FILE = join(process.cwd(), "data", "flashcards.json");
 
 class FlashcardsService {
   /** Per subject, and the mtime is kept per subject too. */
@@ -220,6 +219,10 @@ class FlashcardsService {
 }
 
 const svc = new FlashcardsService();
+// v2.38.2: exposed so other routes stop reaching for the global file
+// directly. Anything that writes flashcards goes through this instance,
+// and it is subject-scoped.
+export { svc as flashcardsServiceInstance };
 
 /**
  * extractFlashcards — dada una nota, extrae todas las `{{c1::front::back}}`

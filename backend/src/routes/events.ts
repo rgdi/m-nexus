@@ -5,6 +5,7 @@ import { FastifyInstance } from "fastify";
 import { randomUUID } from "node:crypto";
 import { E } from "../utils/errorCodes.js";
 import { logOp } from "../utils/log.js";
+import { readCollection, writeCollection, currentSubject } from "../services/userStore.js";
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
 
@@ -21,22 +22,19 @@ export interface CalendarEvent {
   updatedAt: number;
 }
 
-const DATA_FILE = join(process.cwd(), "data", "events.json");
 
 export class EventsService {
-  private cache: CalendarEvent[] | null = null;
+  /** v2.38.2: per user — see SubjectsService for why this was global and
+   *  why the cache is a Map. */
+  private cache = new Map<string, CalendarEvent[]>();
 
   async all(): Promise<CalendarEvent[]> {
-    if (this.cache) return this.cache;
-    try {
-      const buf = await fs.readFile(DATA_FILE, "utf-8");
-      this.cache = JSON.parse(buf);
-      return this.cache!;
-    } catch {
-      this.cache = [];
-      await this.save();
-      return this.cache;
-    }
+    const sub = currentSubject();
+    const hit = this.cache.get(sub);
+    if (hit) return hit;
+    const list = await readCollection<CalendarEvent[]>(sub, "events.json", []);
+    this.cache.set(sub, list);
+    return list;
   }
 
   async listBetween(from: number, to: number): Promise<CalendarEvent[]> {
@@ -51,7 +49,8 @@ export class EventsService {
     const list = await this.all();
     const e: CalendarEvent = { ...input, id: `evt-${randomUUID()}`, createdAt: Date.now(), updatedAt: Date.now() };
     list.push(e);
-    await this.save();
+    this.cache.set(currentSubject(), list);
+    await this.save(list);
     return e;
   }
 
@@ -68,15 +67,16 @@ export class EventsService {
     const list = await this.all();
     const next = list.filter((e) => e.id !== id);
     if (next.length === list.length) return false;
-    this.cache = next;
-    await this.save();
+    this.cache.set(currentSubject(), next);
+    await this.save(next);
     return true;
   }
 
-  private async save(): Promise<void> {
-    if (!this.cache) return;
-    await fs.mkdir(join(process.cwd(), "data"), { recursive: true });
-    await fs.writeFile(DATA_FILE, JSON.stringify(this.cache, null, 2), "utf-8");
+  private async save(list?: CalendarEvent[]): Promise<void> {
+    const sub = currentSubject();
+    const value = list ?? this.cache.get(sub);
+    if (!value) return;
+    await writeCollection(sub, "events.json", value);
   }
 }
 

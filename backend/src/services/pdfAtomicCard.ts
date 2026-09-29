@@ -31,7 +31,6 @@ import {
   type PdfHighlight,
 } from "./pdfAnnotationStorage.js";
 
-const FLASHCARDS_FILE = join(process.cwd(), "data", "flashcards.json");
 
 export interface AtomicCardResult {
   ok: true;
@@ -152,18 +151,16 @@ interface ExistingFlashcard {
   [k: string]: unknown;
 }
 
+// v2.38.2: the caller's own deck. A card made from a PDF highlight used
+// to be written to the global file, where the owner would never see it.
 async function readFlashcards(): Promise<ExistingFlashcard[]> {
-  try {
-    const buf = await fs.readFile(FLASHCARDS_FILE, "utf-8");
-    return JSON.parse(buf);
-  } catch {
-    return [];
-  }
+  const { readCollection, currentSubject } = await import("./userStore.js");
+  return readCollection<ExistingFlashcard[]>(currentSubject(), "flashcards.json", []);
 }
 
 async function writeFlashcards(list: ExistingFlashcard[]): Promise<void> {
-  await fs.mkdir(join(process.cwd(), "data"), { recursive: true });
-  await fs.writeFile(FLASHCARDS_FILE, JSON.stringify(list, null, 2));
+  const { writeCollection, currentSubject } = await import("./userStore.js");
+  await writeCollection(currentSubject(), "flashcards.json", list);
 }
 
 /* ============================================================

@@ -45,7 +45,6 @@ export interface Task {
 export type TaskKind = "task" | "habit" | "shopping" | "expense" | "event";
 export type HabitCadence = "daily" | "weekdays" | "weekly" | "custom";
 
-const DATA_FILE = join(process.cwd(), "data", "tasks.json");
 
 /** YYYY-MM-DD in local time, matching the journal's day key. */
 function journalDayKey(t: number = Date.now()): string {
