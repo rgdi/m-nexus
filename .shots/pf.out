@@ -1,3 +1,0 @@
-opciones: ["Toda la biblioteca=","Cardiologia (1)=folder-1edb1f41-e090-4298-8ad3-884c55a8a93c","Genetica (1)=folder-1b714912-3040-4102-a040-126f3bdf28bf"]
-seleccionado: {"v":"folder-1edb1f41-e090-4298-8ad3-884c55a8a93c","txt":"Cardiologia (1)"}
-peticiones enviadas: ["{\"kind\":\"mindmap\",\"folderId\":null,\"topic\":\"\",\"useLlm\":false}"]

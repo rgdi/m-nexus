@@ -106,3 +106,4 @@ backend/vault/
 backend/data/diagnostics/
 backend/data/pdf-occlusions.json
 backend/data/ocr-cache.json
+.shots/
