@@ -60,7 +60,9 @@ export const authMiddleware: (req: FastifyRequest, reply: FastifyReply) => Promi
     // listed in docs/v2.37.md and must move to api.js.
     "/api/v1/subjects",
     "/api/v1/events",
-    "/api/v1/tasks",
+    // v2.38.0: "/api/v1/tasks" REMOVED. It is the capture inbox — it now
+    // holds grocery lists, habits and expense entries, which is about as
+    // personal as this app gets.
     "/api/v1/print-defaults",   // v2.33.1: built-in defaults (no user data)
     "/api/v1/progress/heatmap", // v2.35.0: read-only progress analytics
     "/api/v1/progress/stats",

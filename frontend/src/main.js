@@ -25,6 +25,8 @@ import { renderCalendar } from "./screens/calendar.js";
 import { renderSubjects } from "./screens/subjects.js";
 import { renderNotes } from "./screens/notes.js";
 import { renderTodos } from "./screens/todos.js";
+import { renderCapture } from "./screens/capture.js";
+import { mountCaptureFab } from "./widgets/capture_fab.js";
 import { renderAI } from "./screens/ai.js";
 import { renderSettings } from "./screens/settings.js";
 import { renderJournal } from "./screens/journal.js";
@@ -51,6 +53,8 @@ const ROUTES = {
   subjects: renderSubjects,
   notes: renderNotes,
   todos: renderTodos,
+  // v2.38.0: quick capture (tasks / shopping / habits / expenses)
+  capture: renderCapture,
   ai: renderAI,
   settings: renderSettings,
   login: renderLogin,
@@ -288,6 +292,8 @@ async function bootstrap() {
     .then((m) => m.registerPwa())
     .then((m) => mountPwaUi(m))
     .catch(() => {});
+  // v2.38.0: capture FAB (mobile only; desktop has the dock entry)
+  mountCaptureFab();
   // v2.35.0: mobile bottom tab bar (visible ≤ 820px via CSS)
   mountBottomTabbar(document.body);
   // v2.35.0: study tab badge = due card count

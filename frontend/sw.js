@@ -20,7 +20,7 @@
  *     connectivity returns, even if the tab was closed.
  * ============================================================ */
 
-const VERSION = "v2.37.0";
+const VERSION = "v2.38.0";
 const SHELL_CACHE = `mnexus-shell-${VERSION}`;
 const RUNTIME_CACHE = `mnexus-runtime-${VERSION}`;
 const SYNC_TAG = "mnexus-outbox-sync";
