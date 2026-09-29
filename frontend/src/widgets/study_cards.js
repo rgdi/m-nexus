@@ -76,17 +76,23 @@ function renderCardFace(c) {
 
   if (type === "multiple_choice") {
     const opts = Array.isArray(c.options) ? c.options : [];
-    return `${hints}${subject}
-      <div class="m-study-q">${esc(c.front ?? c.q ?? "")}</div>
-      <div class="m-mcq" role="radiogroup" aria-label="Opciones">
-        ${opts.map((o, i) => `
-          <button type="button" class="m-mcq-opt" role="radio" aria-checked="false" data-mcq="${i}">
-            <span class="m-mcq-key">${String.fromCharCode(65 + i)}</span>
-            <span class="m-mcq-txt">${esc(o)}</span>
-          </button>`).join("")}
-      </div>
-      <div class="m-mcq-verdict" data-mcq-verdict hidden></div>
-      <div class="m-study-a">${esc(c.back ?? c.a ?? "")}</div>`;
+    // v2.37.0: a multiple-choice card with no options used to render as
+    // a bare question with nothing tappable — a dead end mid-session.
+    // Cards arrive from several generators and a partially-written one
+    // is common, so fall back to the plain template instead.
+    if (opts.length >= 2) {
+      return `${hints}${subject}
+        <div class="m-study-q">${esc(c.front ?? c.q ?? "")}</div>
+        <div class="m-mcq" role="radiogroup" aria-label="Opciones">
+          ${opts.map((o, i) => `
+            <button type="button" class="m-mcq-opt" role="radio" aria-checked="false" data-mcq="${i}">
+              <span class="m-mcq-key">${String.fromCharCode(65 + i)}</span>
+              <span class="m-mcq-txt">${esc(o)}</span>
+            </button>`).join("")}
+        </div>
+        <div class="m-mcq-verdict" data-mcq-verdict hidden></div>
+        <div class="m-study-a">${esc(c.back ?? c.a ?? "")}</div>`;
+    }
   }
 
   if (type === "typed_answer") {
@@ -481,23 +487,47 @@ export function openStudySession({ cards = [], onRate, onClose, onRateError, onS
 }
 
 /** Fetch due cards and open the session. */
+/**
+ * Fetch a session queue and open it.
+ *
+ * v2.37.0 — this function forwarded only `onRate` and `onClose`. It
+ * dropped `onRateError` and `onScheduled`, so the study screen's error
+ * toast and real-interval callback were wired to nothing.
+ *
+ * Its fallback fetch also had no Authorization header (a 401 since
+ * v2.37.0 closed `/api/v1/flashcards`) and mapped each card down to
+ * {id, front, back, subject} — discarding `cardType` and `options`, so
+ * every card fell back to the basic renderer and the multiple-choice and
+ * typed-answer UIs could never appear from this path.
+ */
 export async function startStudySession(opts = {}) {
   let cards = opts.cards;
-  if (!cards) {
+  if (!Array.isArray(cards) || cards.length === 0) {
     try {
-      const r = await fetch(`${BASE}/api/v1/flashcards`);
+      const { authHeaders } = await import("../services/auth.js");
+      const r = await fetch(`${BASE}/api/v1/flashcards`, { headers: authHeaders() });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const j = await r.json();
       const now = Date.now();
       cards = (j.cards || [])
-        .filter((c) => (c.fsrs?.due ?? 0) <= now)
+        .filter((c) => {
+          const f = c?.fsrs;
+          if (!f || f.state === "new") return true;
+          return typeof f.due !== "number" || f.due <= now;
+        })
         .slice(0, 40)
         .map((c) => ({
           id: c.id,
           front: c.front,
           back: c.back,
           subject: c.subject,
+          // v2.37.0: the renderer dispatches on cardType, and the MCQ
+          // grade call needs the id + options to round-trip.
+          cardType: c.cardType || "basic",
+          options: c.options,
+          fsrs: c.fsrs,
         }));
-    } catch {
+    } catch (e) {
       cards = [];
     }
   }
@@ -505,6 +535,8 @@ export async function startStudySession(opts = {}) {
     cards,
     onRate: opts.onRate,
     onClose: opts.onClose,
+    onRateError: opts.onRateError,
+    onScheduled: opts.onScheduled,
   });
 }
 

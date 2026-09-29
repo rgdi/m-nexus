@@ -919,7 +919,13 @@
  * ------------------------------------------------------------ */
 .m-study {
   position: relative;
-  height: min(50dvh, 390px);
+  /* v2.37.0: was a fixed `height: min(50dvh, 390px)` with every card
+   * absolutely positioned at `height: 100%`. A typed_answer card carries
+   * a textarea plus a button on top of the question, which is taller
+   * than 390px — so its content spilled out of the card and printed over
+   * the cards behind it, ghosting two questions on top of each other.
+   * The stack now sizes to its tallest card. */
+  min-height: min(56dvh, 440px);
   margin-bottom: 18px;
   touch-action: pan-y;
   perspective: 1200px;
@@ -928,7 +934,7 @@
 .m-study-card {
   position: absolute;
   top: 0; left: 0; right: 0;
-  height: 100%;
+  min-height: min(56dvh, 440px);
   background: var(--m-bg-card);
   border: 1px solid var(--m-hairline);
   border-radius: var(--m-r-lg);
@@ -949,9 +955,27 @@
   cursor: grabbing;
 }
 
-.m-study-card[data-behind="1"] { transform: scale(.93) translateY(18px); opacity: .62; z-index: 1; }
-.m-study-card[data-behind="2"] { transform: scale(.86) translateY(36px); opacity: .30; z-index: 0; }
-.m-study-card[data-behind="3"] { transform: scale(.79) translateY(54px); opacity: .12; z-index: -1; }
+/* v2.37.0: the top card had no z-index while the cards behind it had
+ * 1, 0 and -1. In a shared stacking context a positioned element with
+ * z-index:1 paints ABOVE one with z-index:auto, so data-behind="1" was
+ * drawn on top of the card the user was actually answering — two
+ * questions printed over each other and the text of both was legible.
+ * The stack is now explicitly ordered. */
+.m-study-card[data-behind="0"] { z-index: 10; }
+.m-study-card[data-behind="1"] { transform: scale(.95) translateY(16px); opacity: .55; z-index: 3; }
+.m-study-card[data-behind="2"] { transform: scale(.90) translateY(32px); opacity: .25; z-index: 2; }
+.m-study-card[data-behind="3"] { transform: scale(.85) translateY(48px); opacity: .10; z-index: 1; }
+
+/* v2.37.0: the cards behind the top one are decorative, but they were
+ * still hit-testable. Because they are scaled down and offset downward,
+ * they covered the lower half of the top card — including the "Comprobar"
+ * button of a typed_answer card and the rating row — so those controls
+ * silently swallowed every tap. Only the top card (data-behind="0")
+ * should receive pointer events. */
+.m-study-card:not([data-behind="0"]) {
+  pointer-events: none;
+  user-select: none;
+}
 
 .m-study-card.is-gone {
   transform: translateX(var(--fly, 140%)) rotate(var(--rot, 22deg));
@@ -1375,3 +1399,19 @@
 .m-drag-gap-actions { display: flex; gap: 8px; justify-content: flex-end; }
 .m-drag-gap-actions .m-btn { min-height: 44px; }
 .m-drag-gap-actions .m-btn[disabled] { opacity: .4; pointer-events: none; }
+
+/* ============================================================
+ * v2.37.0 — the card stack no longer clips its own content.
+ * A typed_answer card is taller than the old fixed 390px: the
+ * textarea and the "Comprobar" button spill out and print over the
+ * cards behind. The stack now sizes to its tallest child, and the
+ * inner regions scroll instead of overflowing.
+ * ============================================================ */
+.m-study-card > .m-study-q {
+  overflow-y: auto;
+  flex: 0 1 auto;
+  min-height: 0;
+}
+.m-study-card .m-typed-input { flex: 0 0 auto; }
+.m-study-card .m-mcq { flex: 0 1 auto; overflow-y: auto; min-height: 0; }
+.m-study-card .m-typed-check { flex: 0 0 auto; margin-top: 10px; }

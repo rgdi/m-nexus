@@ -75,9 +75,25 @@ export function mountHeatmap(host, opts = {}) {
     if (tip) { tip.remove(); tip = null; }
   }
 
-  fetch(`${BASE}/api/v1/progress/heatmap?weeks=${weeks}`)
-    .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-    .then((data) => render(data))
+  import("../services/auth.js")
+    .then((m) => m.authHeaders())
+    .catch(() => ({}))
+    .then((headers) =>
+      fetch(`${BASE}/api/v1/progress/heatmap?weeks=${weeks}`, { headers })
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+    )
+    .then((data) => {
+      render(data);
+      // v2.37.0: 53 weeks of 13px cells is ~700px wide, wider than a
+      // phone. The scroller starts at the left edge, which puts the last
+      // 20 weeks — including today, the one cell the user actually came
+      // to see — off-screen. Jump to the end once the content has laid
+      // out.
+      requestAnimationFrame(() => {
+        const sc = host.querySelector(".m-heat-scroll");
+        if (sc) sc.scrollLeft = sc.scrollWidth;
+      });
+    })
     .catch((e) => {
       grid.innerHTML = "";
       titleEl.textContent = "Sin datos de actividad";

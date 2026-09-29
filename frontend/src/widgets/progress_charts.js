@@ -12,6 +12,7 @@
  * ============================================================ */
 
 import { detectApiBase } from "../services/api_base.js";
+import { authHeaders } from "../services/auth.js";
 
 const BASE = detectApiBase();
 
@@ -71,7 +72,7 @@ export function mountLineChart(host, opts = {}) {
   const body = host.querySelector("[data-line-body]");
   const totalEl = host.querySelector("[data-line-total]");
 
-  fetch(`${BASE}/api/v1/progress/series?days=${days}`)
+  fetch(`${BASE}/api/v1/progress/series?days=${days}`, { headers: authHeaders() })
     .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
     .then((d) => render(d.points))
     .catch((e) => {
@@ -139,7 +140,7 @@ export function mountBarChart(host, opts = {}) {
   const body = host.querySelector("[data-bar-body]");
   const valEl = host.querySelector("[data-bar-val]");
 
-  fetch(`${BASE}/api/v1/progress/retention?weeks=${weeks}`)
+  fetch(`${BASE}/api/v1/progress/retention?weeks=${weeks}`, { headers: authHeaders() })
     .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
     .then((d) => render(d.points))
     .catch((e) => {
@@ -198,7 +199,7 @@ export function mountDonut(host, opts = {}) {
   `;
   const body = host.querySelector("[data-donut-body]");
 
-  fetch(`${BASE}/api/v1/progress/breakdown`)
+  fetch(`${BASE}/api/v1/progress/breakdown`, { headers: authHeaders() })
     .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
     .then((d) => render(d.slices || [], d.totalReviews || 0))
     .catch((e) => {

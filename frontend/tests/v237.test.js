@@ -244,6 +244,47 @@ describe("F9 — no placeholder UI left in the app", () => {
 });
 
 /* ------------------------------------------------------------------ *
+ * F10 — startStudySession silently dropped half its options
+ * ------------------------------------------------------------------ */
+describe("F10 — startStudySession forwards everything", () => {
+  it("passes the error callback through", () => {
+    // v2.37.0: only onRate and onClose were forwarded, so the study
+    // screen's "no se pudo guardar el repaso" toast was wired to nothing.
+    const fn = studyCards.slice(studyCards.indexOf("export async function startStudySession"));
+    expect(fn).toMatch(/onRateError: opts\.onRateError/);
+    expect(fn).toMatch(/onScheduled: opts\.onScheduled/);
+  });
+
+  it("sends auth on its fallback fetch", () => {
+    const fn = studyCards.slice(studyCards.indexOf("export async function startStudySession"));
+    expect(fn).toMatch(/authHeaders\(\)/);
+  });
+
+  it("keeps cardType and options so the renderer can dispatch", () => {
+    const fn = studyCards.slice(studyCards.indexOf("export async function startStudySession"));
+    expect(fn).toMatch(/cardType: c\.cardType/);
+    expect(fn).toMatch(/options: c\.options/);
+  });
+
+  it("the study screen also carries cardType through its refresh", () => {
+    expect(studyScreen).toMatch(/cardType: c\.cardType \|\| "basic"/);
+  });
+});
+
+/* ------------------------------------------------------------------ *
+ * F11 — the decorative cards behind the top one ate every tap
+ * ------------------------------------------------------------------ */
+describe("F11 — only the top card is hit-testable", () => {
+  it("cards behind the top one have pointer-events: none", () => {
+    // The stack offsets the cards downward, so data-behind="1" covered
+    // the lower half of the top card — the "Comprobar" button of a
+    // typed_answer card and the rating row were unclickable.
+    const css = read("src/styles/mobile.css");
+    expect(css).toMatch(/\.m-study-card:not\(\[data-behind="0"\]\)\s*\{[^}]*pointer-events: none/);
+  });
+});
+
+/* ------------------------------------------------------------------ *
  * Interval hints come from the card's own FSRS state
  * ------------------------------------------------------------------ */
 describe("interval hints are derived, not hardcoded", () => {

@@ -8,6 +8,7 @@
 import { mountHeatmap } from "../widgets/github_heatmap.js";
 import { mountLineChart, mountBarChart, mountDonut } from "../widgets/progress_charts.js";
 import { detectApiBase } from "../services/api_base.js";
+import { authHeaders } from "../services/auth.js";
 
 const BASE = detectApiBase();
 
@@ -35,12 +36,12 @@ export async function renderProgress(root) {
 
   // ---- Headline stats ----
   const streakEl = root.querySelector("[data-stat-streak]");
-  fetch(`${BASE}/api/v1/progress/heatmap?weeks=53`)
+  fetch(`${BASE}/api/v1/progress/heatmap?weeks=53`, { headers: authHeaders() })
     .then((r) => (r.ok ? r.json() : null))
     .then((h) => { if (h) streakEl.textContent = fmt(h.totals.currentStreak); })
     .catch(() => { streakEl.textContent = "0"; });
 
-  fetch(`${BASE}/api/v1/progress/stats`)
+  fetch(`${BASE}/api/v1/progress/stats`, { headers: authHeaders() })
     .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
     .then((s) => {
       root.querySelector("[data-stat-reviews]").textContent = fmt(s.reviewsTotal);

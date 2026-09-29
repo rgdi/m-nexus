@@ -97,13 +97,17 @@ export async function renderStudy(root) {
     startBtn.textContent = "Preparando…";
 
     // v2.37.0 — refresh so the queue is what is actually due right now,
-    // not whatever was on screen when the page loaded.
+    // not whatever was on screen when the page loaded. The map has to
+    // carry cardType/options through, or the renderer falls back to the
+    // basic template and the MCQ + typed UIs never appear.
     let queue = cards;
     try {
       const r = await fetch(`${BASE}/api/v1/flashcards`, { headers: authHeaders() });
       const j = await r.json();
       const now = Date.now();
-      const fresh = (j.cards || []).filter((c) => isDue(c, now));
+      const fresh = (j.cards || [])
+        .filter((c) => isDue(c, now))
+        .map((c) => ({ ...c, cardType: c.cardType || "basic" }));
       if (fresh.length) queue = fresh;
     } catch {}
 
