@@ -63,8 +63,53 @@ test o una captura. Lo demás está sin hacer o sin verificar, y se dice.
   3D en la app. Las imágenes se pueden adjuntar, pero el editor móvil
   no está revisited para ello.
 
-## C. Verificación que falta
+## D. Escritura a mano y dos dispositivos a la vez
 
+- [x] **D1. Trazo vectorial, no pixeles.** Hecho el 2026-10-01:
+  `services/ink.ts`, con presión, velocidad como sustituto cuando no la
+  hay, simplificación, borrador que parte el trazo y merge con
+  tombstones. 21/21. Falta la interfaz de dibujo.
+- [~] **D0. Lo que ya no hace falta decidir.** Modelo de tinta con presión
+  (Pointer Events: `pressure`, `tiltX/Y`, `pointerType`), almacenado
+  como vectores. Es la idea de rnote y se reimplementa aquí: **rnote es
+  GPL-3.0 y Rust+GTK4**, copiar su código pondría M-NEXUS en GPL y un
+  binario GTK no se embebe en un frontend JS. La arquitectura es libre;
+  el código no.
+- [ ] **D2. Anotar un PDF o una imagen** con lo de la tablet, al estilo
+  Docs: el trazo se ancla a la página, no a la pantalla, y se ve igual
+  en un móvil y en un portátil.
+- [ ] **D3. Dos dispositivos en la misma nota a la vez.** El móvil
+  enseñando un detalle, el portátil la nota entera, con lo que se
+  escriba en uno apareciendo en el otro.
+- [ ] **D4. Transporte en tiempo real.** Hoy la sincronización es por
+  sondeo. Hace falta push: WebSocket o SSE. El protocolo de empuje y
+  tirada ya está hecho y probado (push/pull/hash/presencia); lo que
+  falta es el transporte.
+- [ ] **D4bis. CUENTA DE USUARIO — BLOQUEANTE.** Este es el que impide
+  todo lo demás, y no estaba en la lista hasta ahora.
+  La identidad de la app es **el dispositivo registrado**: cada
+  registro es un subject distinto con su propio
+  `data/users/<sub>/`. No hay cuenta, ni correo, ni forma de vincular
+  dos dispositivos.
+  Consecuencia directa: **dos dispositivos son dos usuarios**, así que
+  hoy "la tablet y el portátil a la vez sobre la misma nota" es
+  literalmente imposible, y no por un bug: por el modelo de identidad.
+  Hasta que exista, D1 y D3 se pueden construir y probar pero no
+  ended entre dos máquinas. Es la pieza más grande de todo el bloque
+  D y hay que decidirla antes que las demás.
+- [ ] **D5. Conflictos.** Dos dispositivos offline cambian lo mismo y se
+  reconectan. Para el texto ya hay CRDT de secuencia con tombstones;
+  para la tinta no, y un trazo a la vez no es un conflicto de
+  caracteres. Hay que decidir y dejarlo escrito.
+- [ ] **D6. Presencia.** Ver qué dispositivo está editando ahora, para
+  no pelearse con uno mismo.
+
+## E. Verificación que falta
+
+- [ ] **C0. Nada de la escritura a mano está probado en un lápiz
+  real.** Un stylus de verdad tiene una curva de presión que un dedo no
+  tiene. El modelo está pensado para eso, pero simularlo no es lo
+  mismo.
 - [ ] **C1. Nada de esto se ha probado en Safari.** Todo el trabajo
   visual está verificado en Chromium, y el producto se usa en iPad.
 - [ ] **C2. El cruce `coverage` no se ha probado con PDFs reales de
@@ -89,3 +134,8 @@ test o una captura. Lo demás está sin hacer o sin verificar, y se dice.
 9. **B10 + B11** — interfaz. Al final a propósito: reorganizar antes de
    tener las cosas dentro sería dos veces el trabajo.
 10. **A2** — el PDF, cuando haya algo real que mostrar en él.
+
+El bloque D va aparte y es el más grande de todos: tinta, tiempo real y
+conflictos. Los tres juntos, porque por separado no sirven de nada —un
+trazos que no se sincroniza entre dispositivos es un doodle, y una
+sincronización sin conflictos es una forma de perder trabajo—.

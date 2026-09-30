@@ -313,6 +313,12 @@ await app.register(multiBoardRoutes);
   const { socraticRoutes } = await import("./routes/socratic.js");
   socraticRoutes(app);
 
+  // v2.38.11 — tinta vectorial con presión y su sincronización entre
+  // dispositivos. Trazos, no pixeles: por eso se ven igual en la tablet
+  // y en el portatil.
+  const { inkRoutes } = await import("./routes/ink.js");
+  inkRoutes(app);
+
   // v0.62.8: /api/v1/ai/tutor is registered by aiRoutes (./routes/ai.ts).
   // Removed the inline handler to avoid duplicate-route registration error.
   console.log("DEBUG: tutor route registered via aiRoutes");
