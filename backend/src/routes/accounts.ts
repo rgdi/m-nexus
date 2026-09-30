@@ -29,9 +29,10 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
-import { createHash, randomInt, timingSafeEqual } from "node:crypto";
+import { createHash, randomInt, timingSafeEqual, scryptSync, randomBytes } from "node:crypto";
 import { z } from "zod";
-import { currentSubject, accountOf, invalidateAccounts, sanitise } from "../services/userStore.js";
+import bcrypt from "bcryptjs";
+import { currentSubject, accountOf, invalidateAccounts, sanitise, revisionOf } from "../services/userStore.js";
 import { logOp } from "../utils/log.js";
 
 const DATA = () => join(process.cwd(), "data");
@@ -203,6 +204,105 @@ export async function accountRoutes(app: FastifyInstance): Promise<void> {
     return { account: inv.account, devices: account.devices, moved: true };
   });
 
+  /**
+   * v2.38.13 — login convencional: correo y contraseña.
+   *
+   * El código de invitación sirve para pasar un dispositivo al otro lado
+   * de una habitación, y no para volver dentro de un mes. Esto es lo de
+   * siempre: correo, contraseña, y entras con lo que tuvieras. Si la
+   * cuenta no existe se crea; si existe, este dispositivo se le une.
+   *
+   * El password va con scrypt y sal propia. bcrypt se reserva para lo
+   * que ya hay guardado, porque cambiar el algoritmo a medias deja
+   * cuentas a medio migrar y ninguna de las dos partes sabe cual vale.
+   */
+  const loginSchema = z.object({
+    email: z.string().email().max(160),
+    password: z.string().min(6).max(200),
+  });
+
+  app.post("/api/v1/accounts/login", async (req, reply) => {
+    const s = sub(req);
+    if (!s) return reply.code(401).send({ error: "unauthorized" });
+    const body = loginSchema.safeParse(req.body);
+    if (!body.success) {
+      // Mismo mensaje para correo malo y contraseña mala: si no, el
+      // endpoint sirve para averiguar qué correos existen.
+      return reply.code(401).send({ error: "bad_credentials", warning: "Correo o contraseña incorrectos." });
+    }
+
+    const email = body.data.email.trim().toLowerCase();
+    const hash = sha(email);
+    let creds: { email: string; salt: string; hash: string; account: string } | null = null;
+    try {
+      creds = JSON.parse(await fs.readFile(join(ACCOUNTS(), "_creds", `${hash}.json`), "utf-8"));
+    } catch {
+      creds = null;
+    }
+
+    if (!creds || !verifyPassword(body.data.password, creds)) {
+      return reply.code(401).send({ error: "bad_credentials", warning: "Correo o contraseña incorrectos." });
+    }
+
+    const account = await readAccount(creds.account);
+    if (!account) return reply.code(404).send({ error: "account_not_found" });
+
+    await migrateSubject(s, creds.account);
+    if (!account.devices.some((d) => d.subject === s)) {
+      account.devices.push({ subject: s, linkedAt: Date.now(), label: "Este dispositivo", platform: "web" });
+    }
+    await writeAccount(account);
+    await writeLink(s, creds.account);
+    invalidateAccounts();
+    await accountOf(s);
+
+    logOp("accounts", "login", true, { account: creds.account, subject: s, devices: account.devices.length });
+    return {
+      account: creds.account,
+      email,
+      label: account.label,
+      devices: account.devices,
+      revision: await revisionOf(s),
+    };
+  });
+
+  /** Crear la cuenta con correo y contraseña en un solo paso. */
+  app.post("/api/v1/accounts/register", async (req, reply) => {
+    const s = sub(req);
+    if (!s) return reply.code(401).send({ error: "unauthorized" });
+    const body = loginSchema.safeParse(req.body);
+    if (!body.success) return reply.code(400).send({ error: "bad_request", detail: body.error.issues });
+
+    const email = body.data.email.trim().toLowerCase();
+    const file = join(ACCOUNTS(), "_creds", `${sha(email)}.json`);
+    try {
+      await fs.access(file);
+      return reply.code(409).send({ error: "email_taken", warning: "Ese correo ya tiene cuenta. Entra con él." });
+    } catch {}
+
+    const id = "acc-" + randomInt(0x100000000).toString(36) + Date.now().toString(36);
+    const account: AccountFile = {
+      id, createdAt: Date.now(), label: email,
+      devices: [{ subject: s, linkedAt: Date.now(), label: "Este dispositivo", platform: "web" }],
+    };
+    await fs.mkdir(join(ACCOUNTS(), "_creds"), { recursive: true });
+    await fs.writeFile(file, JSON.stringify({ email, ...makePassword(body.data.password), account: id }), "utf-8");
+    await writeAccount(account);
+    await writeLink(s, id);
+    invalidateAccounts();
+    await migrateSubject(s, id);
+    await accountOf(s);
+    logOp("accounts", "register", true, { account: id, subject: s });
+    return { account: id, email, label: email, devices: account.devices, revision: await revisionOf(s) };
+  });
+
+  /** ¿Está mi copia al día? */
+  app.get("/api/v1/accounts/revision", async (req, reply) => {
+    const s = sub(req);
+    if (!s) return reply.code(401).send({ error: "unauthorized" });
+    return { revision: await revisionOf(s), account: (await accountOf(s)) || null };
+  });
+
   app.post("/api/v1/accounts/unlink", async (req, reply) => {
     const s = sub(req);
     if (!s) return reply.code(401).send({ error: "unauthorized" });
@@ -272,6 +372,30 @@ async function exists(p: string): Promise<boolean> {
   try {
     await fs.access(p);
     return true;
+  } catch {
+    return false;
+  }
+}
+
+// --- correo y contraseña ---------------------------------------------------
+
+const sha = (v: string) => createHash("sha256").update(v.trim().toLowerCase()).digest("hex").slice(0, 32);
+
+/**
+ * scrypt con sal propia. bcrypt queda para lo que ya hay guardado con
+ * bcrypt: cambiar el algoritmo a medias deja cuentas a medio migrar y
+ * ninguna de las dos partes sabe cual vale.
+ */
+function makePassword(password: string): { salt: string; hash: string } {
+  const salt = randomBytes(16).toString("hex");
+  return { salt, hash: scryptSync(password, salt, 64).toString("hex") };
+}
+
+function verifyPassword(password: string, creds: { salt: string; hash: string }): boolean {
+  try {
+    const got = scryptSync(password, creds.salt, 64);
+    const want = Buffer.from(creds.hash, "hex");
+    return got.length === want.length && timingSafeEqual(got, want);
   } catch {
     return false;
   }

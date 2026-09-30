@@ -81,10 +81,21 @@ test o una captura. Lo demás está sin hacer o sin verificar, y se dice.
 - [ ] **D3. Dos dispositivos en la misma nota a la vez.** El móvil
   enseñando un detalle, el portátil la nota entera, con lo que se
   escriba en uno apareciendo en el otro.
-- [ ] **D4. Transporte en tiempo real.** Hoy la sincronización es por
-  sondeo. Hace falta push: WebSocket o SSE. El protocolo de empuje y
-  tirada ya está hecho y probado (push/pull/hash/presencia); lo que
-  falta es el transporte.
+- [~] **D4. Transporte en tiempo real.** Hecho el 2026-10-01: SSE en
+  `GET /api/v1/stream`, con revisión en cada mensaje e historial para
+  lo perdido durante una desconexión. Verificado que un dispositivo se
+  entera de lo que escribe el otro sin recargar.
+  **Falta:** el cliente todavía no se suscribe. El canal existe y
+  funciona, pero hasta que el frontend lo escuche no cambia nada para
+  el usuario. Y la entrega de lo perdido al reconectar no está probada:
+  leer de un SSE que no termina cuelga el test.
+- [x] **D8. Login convencional.** Correo y contraseña, alta y entrada.
+  scrypt con sal propia; bcrypt se queda para lo que ya estaba guardado
+  con él, para no dejar cuentas a medio migrar.
+- [x] **D9. Una sola verdad entre dispositivos.** Un contador de
+  revisión que sube con cada escritura del store, y ambos dispositivos
+  leen el mismo. Antes el servidor iba bien y el cliente no se
+  enteraba: dos verdades en pantalla y nadie sabía cuál.
 - [x] **D4bis. CUENTA DE USUARIO.** Hecho el 2026-10-01.
   `data/accounts/<id>/` con un dispositivo enlazado por código de 8
   caracteres, 15 minutos de vida y un solo uso. Al crear la cuenta se

@@ -32,7 +32,7 @@
 // exactly what it was before.
 
 import { promises as fs } from "node:fs";
-import { join } from "node:path";
+import { join, dirname } from "node:path";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { logOp } from "../utils/log.js";
 
@@ -192,6 +192,39 @@ export function subjectFor(auth: { sub?: string } | null | undefined): string {
  * Cache, per subject
  * ------------------------------------------------------------------ */
 
+const REV_FILE = (id: string) => join(ACCOUNT_DIR(id), "revision.json");
+
+/**
+ * Un contador que sube con cada escritura. Es lo minimo para que un
+ * dispositivo sepa si lo que tiene en memoria es lo ultimo: no hace
+ * falta comparar contenido entero, basta con "¿mi numero es el de
+ * ahora?".
+ *
+ * Sin esto, dos dispositivos pueden mostrar dos verdades durante
+ * minutos, y el usuario no tiene por donde saber cual es la buena.
+ */
+export async function bumpRevision(sub: string): Promise<number> {
+  const account = await accountOf(sub);
+  const file = account ? REV_FILE(account) : join(USER_DIR_SYNC(sub), "revision.json");
+  let n = 0;
+  try {
+    n = JSON.parse(await fs.readFile(file, "utf-8")).rev ?? 0;
+  } catch {}
+  n += 1;
+  await fs.mkdir(dirname(file), { recursive: true });
+  await fs.writeFile(file, JSON.stringify({ rev: n, at: Date.now() }), "utf-8");
+  return n;
+}
+
+export async function revisionOf(sub: string): Promise<number> {
+  const account = await accountOf(sub);
+  const file = account ? REV_FILE(account) : join(USER_DIR_SYNC(sub), "revision.json");
+  try {
+    return JSON.parse(await fs.readFile(file, "utf-8")).rev ?? 0;
+  } catch {
+    return 0;
+  }
+}
 const caches = new Map<string, Map<string, unknown>>();
 
 /**
@@ -329,6 +362,17 @@ export async function writeCollection<T>(sub: string, name: string, value: T): P
   const dir = USER_DIR(sub);
   await fs.mkdir(dir, { recursive: true });
   await fs.writeFile(USER_FILE(sub, name), JSON.stringify(value, null, 2), "utf-8");
+  // v2.38.13 — toda escritura del store pasa por aqui, asi que es el
+  // unico sitio al que hay que colgarlo para que ningun camino se
+  // escape. Ademas avisa por el canal en tiempo real, que es lo que
+  // hace que el otro dispositivo recargue en vez de quedarse con una
+  // foto vieja.
+  const rev = await bumpRevision(sub);
+  const account = await accountOf(sub);
+  if (account) {
+    const { publish } = await import("./realtime.js");
+    publish({ account, revision: rev, collection: name, by: sub });
+  }
 }
 
 /* ------------------------------------------------------------------ *

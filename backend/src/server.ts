@@ -340,6 +340,11 @@ await app.register(multiBoardRoutes);
   const { accountRoutes } = await import("./routes/accounts.js");
   accountRoutes(app);
 
+  // v2.38.13 — el canal en tiempo real. Sin esto dos dispositivos
+  // muestran dos verdades durante minutos sin que nadie lo note.
+  const { streamRoutes } = await import("./routes/stream.js");
+  streamRoutes(app);
+
   // v0.62.8: /api/v1/ai/tutor is registered by aiRoutes (./routes/ai.ts).
   // Removed the inline handler to avoid duplicate-route registration error.
   console.log("DEBUG: tutor route registered via aiRoutes");
