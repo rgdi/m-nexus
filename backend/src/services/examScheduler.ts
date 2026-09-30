@@ -65,8 +65,13 @@ export function planStudy(
     ));
 
     const diag = diagnostics[exam.topicId];
-    const knowledgeRatio = diag?.knowledgeRatio ?? 0;
-    const desiredRetention = diag?.fsrsProfile.desiredRetention ?? cfg.targetRetention;
+    // v2.38.8 — Math.max(1, NaN) es NaN, no 1. Con un diagnóstico a
+    // medio construir —fsrsProfile sin desiredRetention— el
+    // sessionsCount salía NaN y TODAS las sesiones del plan acababan
+    // con duración NaN, sin error y sin un solo aviso. Un dato que no
+    // existe se cambia por un valor por defecto, nunca se propaga.
+    const knowledgeRatio = num(diag?.knowledgeRatio, 0);
+    const desiredRetention = clamp(num(diag?.fsrsProfile?.desiredRetention, cfg.targetRetention), 0.7, 0.98);
 
     // Total sessions needed = totalTopics × (1 - knowledgeRatio) × urgency
     const urgent = daysToExam <= 3;
@@ -95,14 +100,14 @@ export function planStudy(
       // —uno a dos días y otro a cuarenta— daban los dos 60 min/día
       // porque ambos topaban el tope, y el plan no podía decir cuál
       // tenía prioridad.
-      const totalSessions = dailyDist.reduce((a, b) => a + b, 0);
+      const totalSessions = num(dailyDist.reduce((a, b) => a + b, 0), 1);
       const share = shareOf(n, totalSessions);
       const durationMin = Math.max(
         n > 0 ? 5 : 0,
         Math.min(cfg.dailyMinutes, Math.round(cfg.dailyMinutes * share)),
       );
-      const cardsToReview = Math.ceil(n * (8 + 12 * (1 - knowledgeRatio)));
-      const newCardsToLearn = Math.ceil(n * (5 * (1 - knowledgeRatio)));
+      const cardsToReview = Math.max(0, Math.ceil(n * (8 + 12 * (1 - knowledgeRatio))));
+      const newCardsToLearn = Math.max(0, Math.ceil(n * (5 * (1 - knowledgeRatio))));
       const urgency = urgent ? (d === daysToExam - 1 ? "critical" : "high")
                     : d < 7 ? "normal" : "low";
 
@@ -119,7 +124,51 @@ export function planStudy(
     }
   }
 
-  return sessions;
+  // v2.38.8 — el tope diario era por sesión, no por día.
+  //
+  // El bucle es por examen, y el tope se aplicaba dentro. Con dos
+  // exámenes el mismo día —el caso normal en ineturnos— el usuario
+  // acababa con 120 min programados con dailyMinutes: 60. El test de
+  // carga lo vio al primer intento: 66 min en un día. El reparto se
+  // hace después de juntar todo, que es donde se puede ver el día
+  // completo, y si algo no cabe se dice en el motivo en vez de
+  // repartirse en silencio.
+  const byDay = new Map<string, StudySession[]>();
+  for (const s of sessions) {
+    const list = byDay.get(s.date) ?? [];
+    list.push(s);
+    byDay.set(s.date, list);
+  }
+  const out: StudySession[] = [];
+  for (const [date, list] of byDay) {
+    const before = list.reduce((a, s) => a + s.durationMin, 0);
+    if (before <= cfg.dailyMinutes) {
+      out.push(...list);
+      continue;
+    }
+    const k = cfg.dailyMinutes / before;
+    const short = before - cfg.dailyMinutes;
+    // Cuenta corriente: el tope es del DÍA entero, no de cada sesión.
+    // Con un presupuesto por sesión, la primera se llevaba el tope y la
+    // segunda lo repetía, y el día acababa en 65 con 60 de tope.
+    let left = cfg.dailyMinutes;
+    list.forEach((s, i) => {
+      // La prioridad se respeta: lo primero que hay en la lista es lo
+      // más urgente, y ese no se recorta más de la mitad.
+      const cut = i === 0 ? Math.max(0.5, k) : k;
+      const dur = Math.max(0, Math.min(Math.round(s.durationMin * cut), left));
+      left -= dur;
+      out.push({
+        ...s,
+        durationMin: dur,
+        reason:
+          short > 0
+            ? `${s.reason}. Se recortó ${short} min: no cabía todo el día.`
+            : s.reason,
+      });
+    });
+  }
+  return out;
 }
 
 /**
@@ -173,8 +222,17 @@ function distributeAcrossDays(n: number, days: number, urgent: boolean): number[
  * días tiene que comer más|Minuto que uno a cuarenta.
  */
 function shareOf(n: number, peak: number): number {
-  if (peak <= 0) return 0;
+  if (!(peak > 0)) return 0;
   return Math.max(0, Math.min(1, n / peak));
+}
+
+/** Un número usable, o el valor por defecto. Nunca NaN. */
+function num(v: unknown, fallback: number): number {
+  return typeof v === "number" && Number.isFinite(v) ? v : fallback;
+}
+
+function clamp(v: number, lo: number, hi: number): number {
+  return Math.max(lo, Math.min(hi, v));
 }
 
 function buildReason(urgent: boolean, knowledgeRatio: number, days: number, dayIdx: number): string {
