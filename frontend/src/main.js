@@ -355,7 +355,10 @@ async function bootstrap() {
     } catch {}
   }).catch(() => {});
   // v2.0.2: AI tutor FAB
-  mountAITutor();
+  // v2.38.7 — ya no se monta el FAB del tutor de IA: ocupaba el mismo
+  // hueco que el de captura y el companion ya cubre esa funcion, con
+  // historial y subconsultas. El tutor sigue disponible por ruta.
+  void mountAITutor;
   // v2.0.6: E2E sync via WebSocket
   connectSync();
   // v2.16.0: Conflict merge UI — listens for field-level merges from sync.

@@ -228,12 +228,27 @@ async function settled(page, ms = 1200) {
     return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
   });
   if (target) {
-    // Igual que el arrastre: el click va al elemento, no a la pantalla.
+    // v2.38.7 — la máscara nace SELECCIONADA: al crearla se abre el
+    // editor de etiqueta, y esa es la seleccion. El test anterior
+    // hacia clic esperando seleccionar y lo que hacia era
+    // deseleccionar; por eso la clase no aparecia y Delete no hacia
+    // nada. Los dos fallos eran de la prueba, no del widget.
+    const alCrear = await page.evaluate(
+      () => !!document.querySelector('.io-mask.is-selected, .io-mask[aria-selected="true"]'),
+    );
+    check('la máscara recién creada ya está seleccionada', alCrear);
+    await page.evaluate(() => document.querySelector('.io-mask')?.click());
+    await page.waitForTimeout(400);
+    const trasDeseleccionar = await page.evaluate(
+      () => !!document.querySelector('.io-mask.is-selected, .io-mask[aria-selected="true"]'),
+    );
+    check('un clic la deselecciona', alCrear && !trasDeseleccionar);
     await page.evaluate(() => document.querySelector('.io-mask')?.click());
     await page.waitForTimeout(400);
     const sel = await page.evaluate(
       () => !!document.querySelector('.io-mask.is-selected, .io-mask[aria-selected="true"]'),
     );
+    check('otro clic la vuelve a seleccionar', sel);
     await page.screenshot({ path: path.join(SHOTS, '4-seleccionada.png') });
     // La ayuda promete que Delete borra. Se comprueba que sea verdad.
     await page.evaluate(() => {

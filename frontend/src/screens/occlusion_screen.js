@@ -153,12 +153,23 @@ export async function renderOcclusionScreen(root) {
             <span class="muted">${c.masks.length} mask${c.masks.length === 1 ? "" : "s"}</span>
           </div>
           <div class="occ-row-actions">
+            <button class="btn small primary" data-act="practice" data-id="${escapeHtml(c.id)}">${i18n.t("occlusion.practice") || "Practicar"}</button>
             <button class="btn small" data-act="preview" data-id="${escapeHtml(c.id)}">${i18n.t("common.preview") || "Preview"}</button>
           </div>
         </div>
       `).join("");
       list.querySelectorAll('[data-act="preview"]').forEach((btn) => {
         btn.addEventListener("click", () => previewCard(cards.find((c) => c.id === btn.dataset.id)));
+      });
+      // v2.38.7 — practicar es independiente de la programación: tantas
+      // oclusiones y tantas veces como se quiera, sin que entre en la
+      // cola de estudio ni toque el calendario. Una tarjeta de oclusión
+      // es un recurso más de la nota, como lo es un PDF.
+      list.querySelectorAll('[data-act="practice"]').forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const card = cards.find((c) => c.id === btn.dataset.id);
+          if (card) practice(card);
+        });
       });
     } catch (e) {
       list.innerHTML = `<div class="muted">Error: ${escapeHtml(e.message)}</div>`;
@@ -208,6 +219,34 @@ export async function renderOcclusionScreen(root) {
  * `isCorrect` is the study logic and it lives here rather than in the
  * widget — the widget only knows where things were dropped.
  */
+  /**
+   * v2.38.7 — modo repaso a pantalla completa. Cuantas veces se quiera,
+   * sin pasar por el planificador.
+   */
+  function practice(card) {
+    const host = document.createElement("div");
+    host.className = "occ-practice";
+    host.setAttribute("role", "dialog");
+    host.setAttribute("aria-label", "Practicar oclusión");
+    const src = card.imageUrl || card.image || card.src || "";
+    host.innerHTML = `<button class="occ-practice-close" aria-label="Cerrar">✕</button><div id="occ-mount"></div>`;
+    document.body.appendChild(host);
+    const close = () => host.remove();
+    host.querySelector(".occ-practice-close").addEventListener("click", close);
+    document.addEventListener("keydown", function onEsc(e) {
+      if (e.key === "Escape") {
+        close();
+        document.removeEventListener("keydown", onEsc);
+      }
+    });
+    import("../widgets/image_occlusion.js").then((m) => {
+      m.mountOcclusionReview(host.querySelector("#occ-mount"), {
+        imageUrl: src,
+        occlusions: card.occlusions || [],
+        topic: card.topic || "",
+      });
+    });
+  }
 export function mountOcclusionDragExercise(host, { imageUrl, occlusions, chips, subject }) {
   return mountDragOcclusion({
     host,
