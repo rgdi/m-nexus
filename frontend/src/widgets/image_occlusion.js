@@ -122,9 +122,9 @@ export async function openImageOcclusionEditor({ imageUrl, imageBase64, topicId,
 
   overlay.innerHTML = `
     <div class="io-card" style="background:var(--bg-elevated);border-radius:16px;padding:20px;max-width:90vw;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;">
-      <header style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <h2 style="margin:0;">${i18n.t("occlusion.title") || "Image Occlusion"}</h2>
-        <div>
+      <header class="io-head">
+        <h2 class="io-title">${i18n.t("occlusion.title") || "Image Occlusion"}</h2>
+        <div class="io-actions">
           <button class="btn primary" id="io-save">${i18n.t("common.save") || "Save"}</button>
           <button class="btn" id="io-queue">${i18n.t("occlusion.saveAndQueue") || "Save + queue for approval"}</button>
           <button class="btn icon" id="io-close" aria-label="Close">✕</button>
@@ -155,15 +155,57 @@ export async function openImageOcclusionEditor({ imageUrl, imageBase64, topicId,
     return masks.length;
   }
 
+  /**
+   * v2.38.6 — el editor de etiqueta, en la barra. Reemplaza al prompt()
+   * nativo: la máscara existe desde ya y se le pone nombre después.
+   */
+  function openLabelEditor(idx) {
+    selected = idx;
+    // El resel也需要 repintar: entrar por el botón de la barra tiene que
+    // dejar la máscara con el mismo aspecto que si se hubiera tocado.
+    renderMasks();
+    const m = masks[idx];
+    if (!m) return;
+    const bar = overlay.querySelector(".io-toolbar");
+    let box = overlay.querySelector(".io-label-editor");
+    if (box) box.remove();
+    box = document.createElement("div");
+    box.className = "io-label-editor";
+    const m2 = masks[idx];
+    box.innerHTML = `
+      <input class="input" type="text" value="${escapeHtml(m2.label || "")}"
+             placeholder="${escapeHtml(i18n.t("occlusion.labelPlaceholder") || "¿Qué hay aquí?")}" />
+      <button class="btn small" data-ok>${escapeHtml(i18n.t("common.confirm") || "Listo")}</button>
+      <button class="btn small ghost" data-cancel>${escapeHtml(i18n.t("common.cancel") || "Cancelar")}</button>`;
+    bar?.after(box);
+    const input = box.querySelector("input");
+    const commit = () => {
+      m2.label = input.value.trim();
+      renderMasks();
+      box.remove();
+    };
+    box.querySelector("[data-ok]").addEventListener("click", commit);
+    box.querySelector("[data-cancel]").addEventListener("click", () => box.remove());
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") commit();
+      if (e.key === "Escape") box.remove();
+    });
+    input.focus();
+  }
+
+  let selected = null;
+
   function renderMasks() {
     masksLayer.innerHTML = "";
     masks.forEach((m, idx) => {
       const el = document.createElement("div");
-      el.className = "io-mask";
-      el.style.left = `${m.x}px`;
-      el.style.top = `${m.y}px`;
-      el.style.width = `${m.w}px`;
-      el.style.height = `${m.h}px`;
+      el.className = "io-mask" + (selected === idx ? " is-selected" : "");
+      el.tabIndex = 0;
+      el.setAttribute("aria-selected", selected === idx ? "true" : "false");
+      el.style.left = `${m.x * 100}%`;
+      el.style.top = `${m.y * 100}%`;
+      el.style.width = `${m.w * 100}%`;
+      el.style.height = `${m.h * 100}%`;
       el.innerHTML = `
         <span class="io-mask-label">${escapeHtml(m.label || `Mask ${idx + 1}`)}</span>
         <span class="io-mask-del" data-idx="${idx}" title="Remove">✕</span>
@@ -175,11 +217,11 @@ export async function openImageOcclusionEditor({ imageUrl, imageBase64, topicId,
           masks.splice(i, 1);
           renderMasks();
         } else {
-          const newLabel = prompt(i18n.t("occlusion.editLabel") || "Label", m.label || "");
-          if (newLabel !== null) {
-            m.label = newLabel.trim() || m.label;
-            renderMasks();
-          }
+          // v2.38.6: era un prompt() nativo — el segundo del widget.
+          // Ahora seleccionar y renombrar van por la barra.
+          selected = selected === idx ? null : idx;
+          renderMasks();
+          if (selected === idx) openLabelEditor(idx);
         }
         e.stopPropagation();
       });
@@ -187,12 +229,41 @@ export async function openImageOcclusionEditor({ imageUrl, imageBase64, topicId,
     });
   }
 
+  // v2.38.6 — lo que dice la ayuda tiene que existir. Decía "Delete
+  // para borrar" y la tecla no hacía nada: solo se podía borrar con el
+  // ✕ de cada máscara, de 10px. Ahora hay selección con teclado.
+  wrap.addEventListener("keydown", (e) => {
+    if (e.key !== "Delete" && e.key !== "Backspace") return;
+    if (selected === null) return;
+    masks.splice(selected, 1);
+    selected = null;
+    renderMasks();
+    e.preventDefault();
+  });
+
+  // v2.38.6 — coordenadas normalizadas 0..1, no píxeles.
+  //
+  // Con píxeles, girar el móvil o cambiar el ancho de la ventana
+  // desplazaba todas las máscaras y dejaban de caer donde el usuario
+  // las puso. Normalizado, la misma máscara sigue encima de lo mismo
+  // que la de ayer. getMousePos devuelve ahora fracciones y quien dibuja
+  // multiplica por el tamaño real solo al pintar.
   function getMousePos(e) {
     const r = wrap.getBoundingClientRect();
+    if (!r.width || !r.height) return { x: 0, y: 0 };
     return {
-      x: Math.max(0, Math.min(r.width, e.clientX - r.left)),
-      y: Math.max(0, Math.min(r.height, e.clientY - r.top)),
+      x: Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)),
+      y: Math.max(0, Math.min(1, (e.clientY - r.top) / r.height)),
     };
+  }
+  /** Pixels de dibujo: solo para el borrador, que se ve mientras se arrastra. */
+  function toPx(n) {
+    const r = wrap.getBoundingClientRect();
+    return n * r.width;
+  }
+  function toPy(n) {
+    const r = wrap.getBoundingClientRect();
+    return n * r.height;
   }
 
   wrap.addEventListener("mousedown", (e) => {
@@ -201,8 +272,8 @@ export async function openImageOcclusionEditor({ imageUrl, imageBase64, topicId,
     drawStart = p;
     drawingActive = true;
     drawing.style.display = "block";
-    drawing.style.left = `${p.x}px`;
-    drawing.style.top = `${p.y}px`;
+    drawing.style.left = `${toPx(p.x)}px`;
+    drawing.style.top = `${toPy(p.y)}px`;
     drawing.style.width = "0px";
     drawing.style.height = "0px";
   });
@@ -214,10 +285,10 @@ export async function openImageOcclusionEditor({ imageUrl, imageBase64, topicId,
     const y = Math.min(drawStart.y, p.y);
     const w = Math.abs(p.x - drawStart.x);
     const h = Math.abs(p.y - drawStart.y);
-    drawing.style.left = `${x}px`;
-    drawing.style.top = `${y}px`;
-    drawing.style.width = `${w}px`;
-    drawing.style.height = `${h}px`;
+    drawing.style.left = `${toPx(x)}px`;
+    drawing.style.top = `${toPy(y)}px`;
+    drawing.style.width = `${toPx(w)}px`;
+    drawing.style.height = `${toPy(h)}px`;
   });
 
   wrap.addEventListener("mouseup", (e) => {
@@ -229,11 +300,16 @@ export async function openImageOcclusionEditor({ imageUrl, imageBase64, topicId,
     const y = Math.min(drawStart.y, p.y);
     const w = Math.abs(p.x - drawStart.x);
     const h = Math.abs(p.y - drawStart.y);
-    if (w < 8 || h < 8) return; // too small
-    const label = prompt(i18n.t("occlusion.askLabel") || "Label for this region (e.g. Riñón):", "") || "";
-    if (!label.trim()) return;
-    masks.push({ x, y, w, h, label: label.trim() });
+    if (w * wrap.getBoundingClientRect().width < 8 || h * wrap.getBoundingClientRect().height < 8) {
+      return; // too small
+    }
+    // v2.38.6: esto era un prompt() nativo. Bloquea la pagina entera,
+    // trae sus propios botones en ingles y no se puede estilar. La
+    // máscara se crea ya y se nombra en la barra, que es donde se
+    // sigue trabajando.
+    masks.push({ x, y, w, h, label: "" });
     renderMasks();
+    openLabelEditor(masks.length - 1);
   });
 
   // Touch support

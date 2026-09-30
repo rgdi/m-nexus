@@ -100,13 +100,16 @@ async function settled(page, ms = 1200) {
   await page.waitForTimeout(ms);
 }
 
+const DESKTOP = process.argv.includes('--desktop');
+const VIEW = DESKTOP ? { width: 1440, height: 900 } : { width: 414, height: 896 };
+
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
   const browser = await chromium.launch({ executablePath: CHROME, args: ['--no-sandbox'] });
   const ctx = await browser.newContext({
-    viewport: { width: 414, height: 896 },
-    isMobile: true,
-    hasTouch: true,
+    viewport: VIEW,
+    isMobile: !DESKTOP,
+    hasTouch: !DESKTOP,
     deviceScaleFactor: 2,
     locale: 'es-ES',
   });
@@ -125,7 +128,8 @@ async function settled(page, ms = 1200) {
     info.token,
   );
 
-  const shot = (n) => page.screenshot({ path: path.join(OUT, n + '.png') });
+  const suffix = DESKTOP ? '-pc' : '';
+  const shot = (n) => page.screenshot({ path: path.join(OUT, n + suffix + '.png') });
   const go = async (r, wait) => {
     await page.goto(WEB + '/index.html#/' + r, { waitUntil: 'load' });
     await settled(page, wait);
@@ -133,29 +137,28 @@ async function settled(page, ms = 1200) {
 
   // --- 1. Editor de notas, a media escritura -----------------------------
   await go('notes');
-  await page.evaluate((id) => {
-    const row = document.querySelector(`[data-note-id="${id}"]`) || document.querySelector('.note-row');
-    if (row) row.click();
-  }, info.noteId);
-  await page.waitForTimeout(1800);
+  // v2.38.6 — la fila real es .tree-note. El selector anterior
+  // ([data-note-id], .note-row) no existe en el DOM: por eso la
+  // captura salia con la lista de carpetas y sin editor.
+  await page.evaluate(() => document.querySelector('.tree-note')?.click());
+  await page.waitForTimeout(2200);
   await page.evaluate(() => {
-    const ta = document.querySelector('textarea, [contenteditable="true"]');
-    if (ta) {
-      ta.focus();
-      ta.value = (ta.value || '') + '\n\n[leyendo] El páncreas es lo que suele fallar antes.';
-      ta.dispatchEvent(new Event('input', { bubbles: true }));
-    }
+    const ta =
+      document.querySelector('.note-editor textarea, .editor textarea') ||
+      document.querySelector('textarea');
+    if (!ta) return;
+    ta.focus();
+    ta.value = (ta.value || '') + '\n\n[leyendo] El páncreas es lo que suele fallar antes.';
+    ta.dispatchEvent(new Event('input', { bubbles: true }));
+    ta.dispatchEvent(new Event('change', { bubbles: true }));
   });
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(1400);
   await shot('01-editor-notas');
 
   // --- 2. El documento enlazado a esa parte ------------------------------
   await go('notes');
-  await page.evaluate((id) => {
-    const row = document.querySelector(`[data-note-id="${id}"]`) || document.querySelector('.note-row');
-    if (row) row.click();
-  }, info.noteId);
-  await page.waitForTimeout(1600);
+  await page.evaluate(() => document.querySelector('.tree-note')?.click());
+  await page.waitForTimeout(2200);
   await page.evaluate(() => {
     const link = document.querySelector('.note-link, [data-link], a[href*="assets/occlusion"]');
     if (link) link.click();
@@ -183,17 +186,18 @@ async function settled(page, ms = 1200) {
 
   // --- 4. RAG con citas ---------------------------------------------------
   await go('rag');
+  // v2.38.6 — el campo real es textarea.rag-input y el boton .m-btn.
+  // La captura anterior no llego a preguntar nada.
   await page.evaluate(() => {
-    const box = document.querySelector('textarea, input[type="text"]');
-    if (box) {
-      box.focus();
-      box.value = '¿Qué Cromosoma tiene el gen CFTR?';
-      box.dispatchEvent(new Event('input', { bubbles: true }));
-      const f = box.closest('form');
-      if (f) f.requestSubmit();
-    }
+    const box = document.querySelector('textarea.rag-input');
+    if (!box) return;
+    box.focus();
+    box.value = '¿Qué cromosoma tiene el gen CFTR?';
+    box.dispatchEvent(new Event('input', { bubbles: true }));
   });
-  await page.waitForTimeout(11000);
+  await page.waitForTimeout(400);
+  await page.evaluate(() => document.querySelector('.m-btn')?.click());
+  await page.waitForTimeout(13000);
   await shot('04-rag-citas');
 
   // --- 5. Oclusión: la biblioteca ---------------------------------------

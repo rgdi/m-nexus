@@ -4651,3 +4651,94 @@ body.dg-scrolling { user-select: none; }
 .diag-result--mismatched .diag-verdict { background: color-mix(in srgb, var(--danger) 16%, transparent); color: var(--danger); }
 .diag-when { margin: 0; font-size: var(--fs-sm); color: var(--fg-muted); }
 .diag-next { margin-top: 12px; }
+
+/* v2.38.6 — oclusión dentro de la sesión de estudio. */
+.m-occl-host { margin: 12px 0; }
+.m-occl-stage {
+  position: relative;
+  border-radius: var(--r-3);
+  overflow: hidden;
+  background: var(--bg-sunken);
+  box-shadow: var(--shadow-1);
+}
+.m-occl-stage img {
+  display: block;
+  width: 100%;
+  max-height: 46vh;
+  object-fit: contain;
+}
+.m-occl-layers { position: absolute; inset: 0; pointer-events: none; }
+.m-occl-mask {
+  position: absolute;
+  pointer-events: auto;
+  min-width: 0; min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: var(--m-ink-1, #1b1b20);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
+  cursor: pointer;
+  transition: background 180ms var(--ease), box-shadow 180ms var(--ease);
+}
+.m-occl-mask:hover { box-shadow: 0 0 0 2px var(--accent); }
+.m-occl-mask.is-off { background: transparent; box-shadow: none; }
+.m-occl-hint {
+  margin: 8px 0 0;
+  font-size: var(--fs-sm);
+  color: var(--fg-muted);
+}
+.m-occl-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+
+/* v2.38.6 — la cabecera del editor de oclusión.
+ *
+ * Era un header con display:flex y tres botones, sin wrap. En 414px los
+ * botones no caben y el "Guardar" le caía encima al título. El título
+ * y las acciones ahora se reparten en dos filas cuando hace falta, y la
+ * larga —"Guardar + enviar a aprobación"— baja de línea antes de
+ * partirse en dos. */
+.io-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex: 0 0 auto;
+}
+.io-title { margin: 0; font-size: 1.1rem; min-width: 0; }
+.io-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+@media (max-width: 520px) {
+  .io-head { justify-content: flex-start; }
+  .io-actions { width: 100%; }
+  .io-actions .btn:not(.icon) { flex: 1 1 auto; }
+  .io-actions #io-queue { flex-basis: 100%; order: 3; }
+}
+
+/* v2.38.6 — editor de etiqueta en la barra, en vez de un prompt(). */
+.io-label-editor {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+  padding: 10px;
+  border: 1px solid var(--accent);
+  border-radius: var(--r-2);
+  background: var(--bg-sunken);
+}
+.io-label-editor .input { flex: 1 1 160px; min-width: 0; }
+
+/* v2.38.6 — la máscara seleccionada se ve, porque ahora se puede
+ * seleccionar con el teclado para borrarla. */
+.io-mask { cursor: pointer; outline: none; }
+.io-mask.is-selected {
+  box-shadow: 0 0 0 2px var(--accent), 0 0 0 5px color-mix(in srgb, var(--accent) 30%, transparent);
+  z-index: 2;
+}
+.io-mask:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+.io-mask-del { cursor: pointer; }

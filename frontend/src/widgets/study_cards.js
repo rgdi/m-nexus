@@ -106,6 +106,21 @@ function renderCardFace(c) {
       <div class="m-study-a">${esc(c.back ?? c.a ?? "")}</div>`;
   }
 
+  // v2.38.6 — la oclusion entra en la sesion de estudio. Una tarjeta
+  // de imagen es un tipo mas, no una pantalla aparte: la montamos en el
+  // hueco de la pregunta y el alumno tapan y destapan igual que en el
+  // editor.
+  if (type === "image_occlusion" || type === "occlusion") {
+    const img = c.imageUrl || c.image || c.src || "";
+    return `${hints}${subject}
+      <div class="m-study-q">${esc(c.front ?? c.q ?? "Tapa lo que tapaste y di lo que falta.")}</div>
+      <div class="m-occl-host" data-occl-study
+           data-src="${esc(img)}"
+           data-topic="${esc(c.topicId ?? c.topic ?? "")}"
+           data-occlusions="${esc(JSON.stringify(c.occlusions || []))}"></div>
+      <div class="m-study-a" hidden>${esc(c.back ?? c.a ?? "")}</div>`;
+  }
+
   if (type === "drag_gap") {
     // The interactive widget is mounted after the card is in the DOM, so
     // the sentence arrives as plain text and the gaps are parsed by the
@@ -151,6 +166,107 @@ async function gradeMcq(cardId, chosenIndex) {
  * @param onRateError (err) => void  — v2.37.0: a failed save is visible
  * @param onScheduled ({ nextIntervalDays }) => void — v2.37.0: real FSRS
  */
+/**
+ * Monta el editor de oclusion dentro de la carta de estudio.
+ *
+ * Se monta en modo solo-tocar: no se puede redibujar la mascara desde
+ * aqui, que es cosa del editor. Lo que se puede es taparla y
+ * destaparla, que es justo el ejercicio.
+ *
+ * v2.38.6 — al fallar, esta tarjeta pesa mas. Ver studyWeight().
+ */
+function attachStudyOcclusion(el, card) {
+  const host = el.querySelector("[data-occl-study]");
+  if (!host) return;
+  let occlusions = [];
+  try {
+    occlusions = JSON.parse(host.dataset.occlusions || "[]");
+  } catch {
+    occlusions = [];
+  }
+  let revealed = 0;
+  paint();
+
+  function paint() {
+    const layers = occlusions
+      .map((o, i) => {
+        const on = i < revealed;
+        return `<button class="m-occl-mask ${on ? "is-off" : ""}" data-mask="${i}"
+          style="left:${(o.x ?? 0) * 100}%;top:${(o.y ?? 0) * 100}%;width:${(o.w ?? 0.1) * 100}%;height:${(o.h ?? 0.1) * 100}%"
+          aria-label="Mascara ${i + 1}"></button>`;
+      })
+      .join("");
+    host.innerHTML = `
+      <div class="m-occl-stage">
+        <img src="${esc(host.dataset.src)}" alt="" draggable="false" />
+        <div class="m-occl-layers">${layers}</div>
+      </div>
+      <p class="m-occl-hint">${revealed === 0
+        ? "Estan tapadas. Destapa una cada vez."
+        : `${revealed} de ${occlusions.length} destapadas.`}</p>
+      <div class="m-occl-actions">
+        <button class="btn small" data-reveal ${revealed >= occlusions.length ? "disabled" : ""}>Destapar otra</button>
+        <button class="btn small ghost" data-reset ${revealed === 0 ? "disabled" : ""}>Volver a tapar</button>
+      </div>`;
+    host.querySelectorAll("[data-mask]").forEach((b) =>
+      b.addEventListener("click", () => {
+        revealed = Math.max(revealed, Number(b.dataset.mask) + 1);
+        paint();
+      }),
+    );
+    host.querySelector("[data-reveal]")?.addEventListener("click", () => {
+      revealed = Math.min(occlusions.length, revealed + 1);
+      paint();
+    });
+    host.querySelector("[data-reset]")?.addEventListener("click", () => {
+      revealed = 0;
+      paint();
+    });
+  }
+}
+
+/**
+ * v2.38.6 — el peso de una oclusion cuando sale mal.
+ *
+ * Fallar una palabra escrita puede ser una falta de tipeo. Fallar
+ * destapando una imagen es otra cosa: o no lo sabes, o sabes donde
+ * mirar pero no que hay ahi debajo. Las dos cosas merecen distinto
+ * trato, y por eso una oclusion no se comporta como una tarjeta
+ * normal cuando se falla.
+ *
+ * Las nuevas y las viejas se tratan distinto a proposito. Una nueva
+ * que se falla no es un lapse — nunca se vio — asi que se baja con
+ * suavidad y vuelve en la sesion. Una vieja con mas de 21 dias de
+ * estabilidad que se falla si es un lapse de verdad: el scheduler
+ * entra en modo post-lapse y la manda lejos.
+ */
+export function studyWeight(card, rating) {
+  const type = card?.cardType || card?.type || "basic";
+  if (type !== "image_occlusion" && type !== "occlusion") return null;
+  if (rating !== 1) return null; // solo en fallo
+
+  const stability = Number(card?.fsrs?.stability ?? 0);
+  const state = card?.fsrs?.state ?? "new";
+  const isNew = state === "new" || stability <= 0;
+
+  if (isNew) {
+    return {
+      rating: 1,
+      delayHours: 4, // vuelve en la sesion, no manana
+      why: "Oclusion nueva fallada: no es un lapse, es que no ha entrado. Vuelve en unas horas.",
+      lapses: 0,
+    };
+  }
+  return {
+    rating: 1,
+    delayHours: 0, // deja el intervalo al scheduler, en modo post-lapse
+    why: stability >= 21
+      ? "Oclusion con ${Math.round(stability)} dias de estabilidad y se ha olvidado: lapse real."
+      : "Oclusion fallada: baja el intervalo.",
+    lapses: 1,
+  };
+}
+
 export function openStudySession({ cards = [], onRate, onClose, onRateError, onScheduled } = {}) {
   // Build the sheet
   const scrim = document.createElement("div");
@@ -222,6 +338,9 @@ export function openStudySession({ cards = [], onRate, onClose, onRateError, onS
         attachSwipe(el);
         if (el.dataset.type === "multiple_choice") attachMcq(el, c);
         if (el.dataset.type === "typed_answer") attachTyped(el, c);
+        if (el.dataset.type === "image_occlusion" || el.dataset.type === "occlusion") {
+          attachStudyOcclusion(el, c);
+        }
       } else el.addEventListener("click", () => { /* no-op for behind cards */ });
       stack.appendChild(el);
     }

@@ -2538,3 +2538,8 @@ body:not(.has-floating-window) .capture-fab {
 @media (min-width: 640px) {
   .app-drawer a[data-wide-only] { display: flex; }
 }
+
+/* v2.38.6 — la barra inferior es del táctil. En escritorio el dock de
+ * la izquierda ya cumple ese papel y las dos se veían montadas a la
+ * vez en 1440px. */
+[data-device="desktop"] .m-tabbar { display: none !important; }
