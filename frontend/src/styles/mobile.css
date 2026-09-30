@@ -310,6 +310,13 @@
 /* ------------------------------------------------------------
  * 3. Top app bar
  * ------------------------------------------------------------ */
+/* v2.38.2: `.m-appbar` is a global rule, and the widget mounts on every
+ * route — so a desktop got the mobile top bar laid over the desktop
+ * header, which already prints the screen's own name. Below 820px the
+ * bar IS the header and the in-page title is the duplicate; above it,
+ * the opposite is true. */
+[data-device="desktop"] .m-appbar { display: none !important; }
+
 .m-appbar {
   position: fixed;
   top: 0; left: 0; right: 0;
@@ -1555,6 +1562,14 @@
   display: flex; gap: 6px; overflow-x: auto; margin-bottom: 12px;
   padding-bottom: 2px; -webkit-overflow-scrolling: touch;
 }
+/* v2.38.2: three tabs that scroll off-screen on a phone mean the third
+ * one — Hábitos, usually — is simply invisible until you discover the
+ * strip scrolls. Below 400px they shrink enough to all fit. */
+@media (max-width: 400px) {
+  .cap-tab { padding: 0 10px; gap: 4px; }
+  .cap-tab-lbl { font-size: 12.5px; }
+  .cap-tab-icon { display: none; }
+}
 .cap-tab {
   display: flex; align-items: center; gap: 6px;
   min-height: 44px; padding: 0 14px;
@@ -2402,4 +2417,84 @@ a.gen-cite { min-height: 0; }
   [data-device="ipad"] .notes-toolbar {
     padding-top: calc(var(--m-appbar-h) + 8px);
   }
+}
+
+/* v2.38.2 — a touch device is a touch device at any width.
+ *
+ * The whole mobile block above is gated on max-width: 820px, which is
+ * true for every phone and false for an iPad Pro in landscape (1194px)
+ * and an Android tablet (900px). Those two sizes got the desktop dock
+ * AND the mobile tab bar at once, with the app bar reserving space the
+ * desktop layout never gave it.
+ *
+ * Mirroring the chrome rules for touch devices at any width is what
+ * makes the device attribute above meaningful. */
+@media (min-width: 821px) {
+  [data-device="tablet"],
+  [data-device="ipad"] {
+    /* Same chrome a phone gets, whatever the width. */
+    #dock, .dock, .dock-expand, .hamburger-fab, .cmd-trigger { display: none !important; }
+    .m-tabbar { display: flex !important; }
+    .app { padding-top: calc(var(--m-safe-t) + var(--m-appbar-h)); }
+    .screen { padding-top: var(--s-4); }
+    body { padding-bottom: calc(var(--m-tabbar-h) + var(--m-safe-b)); }
+    /* And the content stops edge to edge. */
+    .app, .screen { max-width: none; margin: 0; }
+  }
+  [data-device="tablet"] .screen,
+  [data-device="ipad"] .screen { max-width: 940px; margin: 0 auto; }
+  [data-device="ipad"] .screen { max-width: 1100px; }
+}
+
+/* v2.38.2 — multi-column dashboards on a touch device.
+ *
+ * The overview is a 3-column grid. On a desktop that is a dashboard;
+ * on an iPad at 820px it left the agenda and the subjects as two empty
+ * slivers and pushed the rest into one narrow column, with the section
+ * headings sitting under the app bar. A touch device gets one column
+ * and the full width. */
+@media (min-width: 821px) {
+  [data-device="tablet"] .grid-2,
+  [data-device="tablet"] .grid-3,
+  [data-device="tablet"] .grid-4,
+  [data-device="ipad"] .grid-2,
+  [data-device="ipad"] .grid-3,
+  [data-device="ipad"] .grid-4 { grid-template-columns: minmax(0, 1fr); }
+  [data-device="tablet"] .grid-2 > *,
+  [data-device="ipad"] .grid-2 > * { max-width: 560px; }
+}
+@media (max-width: 820px) {
+  [data-device="phone"] .grid-3,
+  [data-device="phone"] .grid-4 { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* The first block of a screen must clear the fixed bar. The app bar is
+ * 52px and the screen has 16px of padding; what was left was a heading
+ * tucked under the translucent bar on the wider touch sizes. */
+@media (min-width: 821px) {
+  [data-device="tablet"] .screen > *,
+  [data-device="ipad"] .screen > * { position: relative; z-index: 1; }
+  [data-device="tablet"] .screen > .grid > *:first-child,
+  [data-device="ipad"] .screen > .grid > *:first-child { padding-top: 4px; }
+}
+
+/* v2.38.2 — the 721–820px band had no top padding at all.
+ *
+ * The layout rule stops at 720px and the touch-device block starts at
+ * 821px, so a 820px iPad — the single most common tablet width —
+ * matched neither and its first section sat under the app bar. */
+@media (min-width: 721px) and (max-width: 820px) {
+  [data-device="tablet"],
+  [data-device="ipad"],
+  [data-device="phone"] {
+    .app, .app { padding-top: calc(var(--m-safe-t) + var(--m-appbar-h)); }
+  }
+  [data-device="tablet"] .app,
+  [data-device="ipad"] .app,
+  [data-device="phone"] .app { padding-top: calc(var(--m-safe-t) + var(--m-appbar-h)); }
+  [data-device="tablet"] .screen > *,
+  [data-device="ipad"] .screen > * { position: relative; z-index: 1; }
+  [data-device="tablet"] .grid-3,
+  [data-device="ipad"] .grid-3,
+  [data-device="phone"] .grid-3 { grid-template-columns: minmax(0, 1fr); }
 }

@@ -143,7 +143,7 @@ export async function renderSettings(root) {
       <section class="settings-section">
         <h2>Export</h2>
         <p class="muted">Descarga tu vault para respaldo o migración</p>
-        <div class="settings-grid" style="grid-template-columns: 1fr 1fr;">
+        <div class="settings-grid settings-grid--stack" style="grid-template-columns: 1fr 1fr;">
           <button class="settings-option" id="export-vault">
             <span class="ico">💾</span>
             <span class="name">Full vault (JSON)</span>

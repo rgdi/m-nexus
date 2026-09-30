@@ -193,3 +193,18 @@
   pointer-events: none;
   z-index: 5;
 }
+
+/* v2.38.2 — the calendar's toolbar was the one block starting above
+ * the app bar on a 360–390px phone, the two widths where the toggle,
+ * the "+ Crear evento" button and the date no longer fit on one line
+ * and wrap upward. Below 400px the toolbar becomes its own row with
+ * the safe-area offset applied once. */
+@media (max-width: 400px) {
+  .calendar-toolbar,
+  .screen-header:has(.view-toggle) {
+    flex-wrap: wrap;
+    row-gap: 8px;
+    padding-top: calc(var(--m-safe-t) + var(--m-appbar-h, 52px) + 4px);
+  }
+  .view-toggle .seg { padding: 8px 11px; font-size: 12.5px; }
+}

@@ -201,9 +201,18 @@ function attachDayHandlers(root) {
     const target = first
       ? first.getBoundingClientRect().top - events.getBoundingClientRect().top - 12
       : Math.max(0, (new Date().getHours() - 1) * hourPx());
+    // v2.38.2: only the calendar's own scroll container moves. A
+    // scrollIntoView() here scrolled the page as well, dragging the
+    // whole grid 325px up behind the app bar and hiding the toolbar.
     if (target > hourPx()) {
       const scroller = events.closest(".calendar");
-      if (scroller && scroller.scrollTo) scroller.scrollTop = target;
+      if (scroller) {
+        scroller.scrollTop = target;
+        // A container that was already scrolled by the browser (focus
+        // restoration, an earlier hash change) is put back.
+        const top = events.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
+        if (Math.abs(top - target) > 8) scroller.scrollTop += top - target;
+      }
     }
   }
 }

@@ -917,12 +917,25 @@ body.hide-ui .dock, body.hide-ui .lang-switcher, body.hide-ui .top-toolbar { dis
 }
 .settings-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  /* v2.38.2: minmax(160px, …) forced two 160px tracks plus a gap onto a
+   * 360px phone, and the page scrolled sideways. The floor has to fit
+   * the narrowest supported width with its gutters. */
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
   gap: var(--s-2);
+}
+/* One column once two would no longer fit — the language list is four
+ * items long and a 44px-tall row is better than a 24px one. */
+@media (max-width: 400px) {
+  .settings-grid { grid-template-columns: 1fr 1fr; }
+  .settings-grid--stack { grid-template-columns: 1fr !important; }
 }
 .settings-option {
   display: flex;
   align-items: center;
+  /* A flex item will not shrink below its content's min-content width
+   * unless told to, which is how a long label pushed the row past the
+   * viewport. */
+  min-width: 0;
   gap: var(--s-3);
   padding: var(--s-3) var(--s-4);
   border-radius: var(--r-2);
