@@ -31,10 +31,24 @@ let _zCounter = 1000;
 export function openFloatingWindow(opts) {
   const id = opts.id || ("fw-" + Math.random().toString(36).slice(2, 8));
   const title = opts.title || "Popup";
-  const kind = opts.kind || (window.matchMedia("(max-width: 900px)").matches ? "sheet" : "popup");
+  // v2.38.3 — a touch device gets a sheet, whatever the caller asked
+  // for. The AI companion and the drag-gap picker both pass
+  // kind: "popup", which on a 414px phone produced a free-floating
+  // card sitting on top of the app bar and the tab bar: the menu the
+  // user has to hunt for behind two other bars.
+  const coarse = window.matchMedia("(pointer: coarse)").matches;
+  const small = window.matchMedia("(max-width: 900px)").matches;
+  const kind = coarse || small ? "sheet" : opts.kind || "popup";
 
   // Close existing window with same id
   closeFloatingWindow(id);
+
+  // v2.38.3 — one floating surface at a time.
+  // The capture FAB sits at z-index 9000 and the windows at 1001, so a
+  // window opened over the AI route came up underneath the FAB: two
+  // rounded surfaces on screen, the smaller one on top of the bigger.
+  // The body flag lets the chrome stand down while a window is open.
+  document.body.classList.add("has-floating-window");
 
   // Root
   const root = document.createElement("div");
@@ -147,6 +161,11 @@ export function closeFloatingWindow(id) {
   const root = document.querySelector(`[data-fw-id="${id}"]`);
   if (root) {
     root.remove();
+    // The flag is shared: it clears when the last window closes, not
+    // when any one of them does.
+    if (!document.querySelector(".floating-window")) {
+      document.body.classList.remove("has-floating-window");
+    }
     _windows.delete(root);
   }
 }

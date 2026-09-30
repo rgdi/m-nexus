@@ -2498,3 +2498,22 @@ a.gen-cite { min-height: 0; }
   [data-device="ipad"] .grid-3,
   [data-device="phone"] .grid-3 { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* v2.38.3 — the capture FAB stands down while a floating window is
+ * open. It is z-index 9000 by design, because on a phone it is the one
+ * control that has to stay reachable from any screen; but with a sheet
+ * or popup up it was sitting on top of it, so the screen showed two
+ * rounded surfaces at once with the wrong one on top. */
+body.has-floating-window .mn-capture-fab,
+body.has-floating-window .capture-fab {
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.8);
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0s linear 0.15s;
+}
+/* ...and comes back the moment the window is gone. */
+body:not(.has-floating-window) .mn-capture-fab,
+body:not(.has-floating-window) .capture-fab {
+  transition: opacity 0.15s ease 0.05s, transform 0.15s ease 0.05s;
+}
