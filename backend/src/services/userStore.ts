@@ -38,7 +38,82 @@ import { logOp } from "../utils/log.js";
 
 const DATA = () => join(process.cwd(), "data");
 const LEGACY_FILE = (name: string) => join(DATA(), name);
-const USER_DIR = (sub: string) => join(DATA(), "users", sanitise(sub));
+// v2.38.12 — una cuenta puede tener varios dispositivos.
+//
+// Antes, la identidad ERA el dispositivo: cada registro era un subject
+// y por tanto un directorio, y por tanto "la tablet y el portatil a la
+// vez sobre la misma nota" era imposible. No era un bug de sync, era el
+// modelo de identidad.
+//
+// Ahora un subject puede pertenecer a una cuenta, y si pertenece, su
+// directorio ES el de la cuenta. Un solo punto de cambio —esta
+// funcion— y todo lo que ya funciona sigue funcionando: los que no
+// tienen cuenta siguen en su directorio de siempre, con los mismos
+// datos y sin migracion.
+//
+//   sin cuenta    data/users/<subject>/     ← como siempre
+//   con cuenta    data/accounts/<cuenta>/   ← los dispositivos juntos
+const ACCOUNT_DIR = (accountId: string) => join(DATA(), "accounts", sanitise(accountId));
+
+/**
+ * De subject a directorio. Es el unico sitio donde se decide, y por
+ * eso el cambio de identidad es una sola linea y no una migracion.
+ *
+ * La lista de cuentas se lee del disco y se cachea unos segundos: se
+ * consulta en cada lectura y no puede ser un a disco por nota.
+ */
+const accountCache = new Map<string, { root: string; at: number }>();
+const ACCOUNT_TTL_MS = 3000;
+
+/** La cuenta de un subject, o "" si no tiene ninguna. */
+export async function accountOf(sub: string): Promise<string> {
+  if (!sub) return "";
+  const hit = accountCache.get(sub);
+  if (hit && Date.now() - hit.at < ACCOUNT_TTL_MS) return hit.root;
+  try {
+    const dir = ACCOUNT_DIR("_links");
+    const files = await fs.readdir(dir);
+    for (const f of files) {
+      if (!f.endsWith(".link")) continue;
+      const device = f.slice(0, -5);
+      const account = (await fs.readFile(join(dir, f), "utf-8")).trim();
+      accountCache.set(device, { root: account, at: Date.now() });
+      if (device === sub) return account;
+    }
+    if (files.some((f) => f.endsWith(".link"))) anyLinksKnown = true;
+  } catch {
+    // Sin directorio de enlaces: nadie tiene cuenta. Es el caso normal.
+  }
+  return hit?.root ?? "";
+}
+
+/** Si alguna vez se ha visto un enlace, hay cuentas en el sistema.
+ *
+ *  Mientras sea false —que es el caso de cualquiera que no haya creado
+ *  una cuenta— el hook de rutas se mantiene EXACTAMENTE como estaba:
+ *  síncrono, sin promesas. Hacerlo asíncrono siempre fue lo que vació
+ *  la respuesta del dashboard, y no hay razón para que le cambie a
+ *  quien no usa cuentas.
+ */
+let anyLinksKnown = false;
+
+export function hasAnyAccounts(): boolean {
+  return anyLinksKnown;
+}
+
+export function invalidateAccounts(): void {
+  accountCache.clear();
+}
+
+function USER_DIR_SYNC(sub: string): string {
+  const hit = accountCache.get(sub);
+  if (hit && Date.now() - hit.at < ACCOUNT_TTL_MS) {
+    return hit.root ? ACCOUNT_DIR(hit.root) : join(DATA(), "users", sanitise(sub));
+  }
+  return join(DATA(), "users", sanitise(sub));
+}
+
+const USER_DIR = USER_DIR_SYNC;
 const USER_FILE = (sub: string, name: string) => join(USER_DIR(sub), name);
 
 export const DEFAULT_SUBJECT = "default";
@@ -91,6 +166,13 @@ export function runWithSubject<T>(sub: string, fn: () => T): T {
  * gets its own async chain — but it is the reason this is isolated to
  * one hook and documented, rather than sprinkled through the services.
  */
+export async function enterSubjectAsync(sub: string): Promise<void> {
+  // Antes de fijar el ambito se resuelve la cuenta, porque el
+  // directorio depende de ella y no hay forma de saberlo de forma
+  // sincronica sin leer disco en cada acceso.
+  if (sub && !accountCache.has(sub)) await accountOf(sub);
+}
+
 export function enterSubject(sub: string): void {
   als.enterWith(sub);
 }
@@ -112,9 +194,28 @@ export function subjectFor(auth: { sub?: string } | null | undefined): string {
 
 const caches = new Map<string, Map<string, unknown>>();
 
+/**
+ * v2.38.12 — la clave es el DIRECTORIO, no el dispositivo.
+ *
+ * Antes era el subject, que era lo mismo que el directorio mientras
+ * cada dispositivo tenía sus datos. Con una cuenta compartida ya no:
+ * el móvil leía su copia cacheada y no veía lo que acababa de escribir
+ * el portátil, en el mismo proceso y con el disco al día. El síntoma
+ * era "la tinta se guarda pero el otro dispositivo no la ve".
+ *
+ * Con la clave por directorio, los dispositivos de una cuenta comparten
+ * cache —que es lo correcto, comparten datos— y los de cuentas
+ * distintas siguen aislados.
+ */
+function cacheKeyFor(sub: string): string {
+  const dir = USER_DIR_SYNC(sub);
+  return "dir:" + dir;
+}
+
 function cacheFor(sub: string): Map<string, unknown> {
-  let c = caches.get(sub);
-  if (!c) { c = new Map(); caches.set(sub, c); }
+  const key = cacheKeyFor(sub);
+  let c = caches.get(key);
+  if (!c) { c = new Map(); caches.set(key, c); }
   return c;
 }
 

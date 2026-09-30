@@ -39,7 +39,7 @@ import { wsRoutes } from "./routes/ws.js";
 import { audioRoutes } from "./routes/audio.js";
 import { llmRoutes } from "./routes/llm.js";
 import { authMiddleware } from "./middleware/auth.js";
-import { runWithSubject, subjectFor } from "./services/userStore.js";
+import { runWithSubject, subjectFor, accountOf, hasAnyAccounts } from "./services/userStore.js";
 import { cloudflareAccessMiddleware, isCloudflareAccessEnabled } from "./middleware/cloudflareAccess.js";
 import { dashboardRoutes } from "./routes/dashboard.js";
 import { deviceRoutes } from "./routes/devices.js";
@@ -110,7 +110,14 @@ export async function buildServer(): Promise<any> {
     const inner = routeOptions.handler;
     if (typeof inner !== "function") return;
     (routeOptions as any).handler = function (this: any, request: any, reply: any) {
-      return runWithSubject(subjectFor(request?.auth), () => inner.call(this, request, reply));
+      const sub = subjectFor(request?.auth);
+      // v2.38.12 — antes de entrar en el ambito se resuelve si el
+      // dispositivo pertenece a una cuenta, porque de eso depende el
+      // directorio. Es una lectura de disco cacheada 3s, y solo la
+      // primera vez por dispositivo y proceso.
+      const run = () => runWithSubject(sub, () => inner.call(this, request, reply));
+      if (!hasAnyAccounts()) return run();
+      return accountOf(sub).then(run).catch(run);
     };
   });
 
@@ -191,7 +198,14 @@ export async function buildServer(): Promise<any> {
     const inner = routeOptions.handler;
     if (typeof inner !== "function") return;
     (routeOptions as any).handler = function (this: any, request: any, reply: any) {
-      return runWithSubject(subjectFor(request?.auth), () => inner.call(this, request, reply));
+      const sub = subjectFor(request?.auth);
+      // v2.38.12 — antes de entrar en el ambito se resuelve si el
+      // dispositivo pertenece a una cuenta, porque de eso depende el
+      // directorio. Es una lectura de disco cacheada 3s, y solo la
+      // primera vez por dispositivo y proceso.
+      const run = () => runWithSubject(sub, () => inner.call(this, request, reply));
+      if (!hasAnyAccounts()) return run();
+      return accountOf(sub).then(run).catch(run);
     };
   });
 
@@ -318,6 +332,13 @@ await app.register(multiBoardRoutes);
   // y en el portatil.
   const { inkRoutes } = await import("./routes/ink.js");
   inkRoutes(app);
+
+  // v2.38.12 — cuentas con varios dispositivos. Hasta ahora la
+  // identidad ERA el dispositivo, y por eso la tablet y el portatil no
+  // podian ver lo mismo. Esto es aditivo: quien no tenga cuenta sigue
+  // exactamente igual.
+  const { accountRoutes } = await import("./routes/accounts.js");
+  accountRoutes(app);
 
   // v0.62.8: /api/v1/ai/tutor is registered by aiRoutes (./routes/ai.ts).
   // Removed the inline handler to avoid duplicate-route registration error.

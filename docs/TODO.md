@@ -85,8 +85,17 @@ test o una captura. Lo demás está sin hacer o sin verificar, y se dice.
   sondeo. Hace falta push: WebSocket o SSE. El protocolo de empuje y
   tirada ya está hecho y probado (push/pull/hash/presencia); lo que
   falta es el transporte.
-- [ ] **D4bis. CUENTA DE USUARIO — BLOQUEANTE.** Este es el que impide
-  todo lo demás, y no estaba en la lista hasta ahora.
+- [x] **D4bis. CUENTA DE USUARIO.** Hecho el 2026-10-01.
+  `data/accounts/<id>/` con un dispositivo enlazado por código de 8
+  caracteres, 15 minutos de vida y un solo uso. Al crear la cuenta se
+  migra lo que ya tenía el dispositivo; al entrar, también. 20/20.
+  Aditivo: sin cuenta, todo sigue igual y con los mismos datos.
+- [~] **D4bis-bis. La seguridad del código, pendiente.** El código de
+  invitación es una contraseña y va por HTTP. Suficiente para pasar un
+  dispositivo de una habitación a otra; insuficiente para nada más.
+  Quien necesite más necesita HTTPS y límite de intentos.
+- [ ] ~~**D4bis. CUENTA DE USUARIO — BLOQUEANTE.**~~ Este es el que
+  impedía todo lo demás, y no estaba en la lista hasta ahora.
   La identidad de la app es **el dispositivo registrado**: cada
   registro es un subject distinto con su propio
   `data/users/<sub>/`. No hay cuenta, ni correo, ni forma de vincular
