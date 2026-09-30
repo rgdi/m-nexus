@@ -1,0 +1,28 @@
+[
+  {
+    "id": "fc-e57b5641-8fb5-4c05-92d1-942e96ea4f52",
+    "front": "¿Qué hay oculto en p.1 de x?",
+    "back": "A",
+    "cardType": "basic",
+    "subject": "general",
+    "tags": [
+      "general",
+      "pdf-occlusion",
+      "pdf-x"
+    ],
+    "sourceNoteId": "pdf:x.pdf#o=o-1"
+  },
+  {
+    "id": "fc-02be76ac-1ac8-4616-b438-15abc77b8468",
+    "front": "¿Qué hay oculto en p.2 de x?",
+    "back": "B",
+    "cardType": "basic",
+    "subject": "general",
+    "tags": [
+      "general",
+      "pdf-occlusion",
+      "pdf-x"
+    ],
+    "sourceNoteId": "pdf:x.pdf#o=o-2"
+  }
+]

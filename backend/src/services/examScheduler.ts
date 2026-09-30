@@ -90,7 +90,17 @@ export function planStudy(
       date.setDate(date.getDate() + d);
       const dateStr = date.toISOString().slice(0, 10);
 
-      const durationMin = Math.min(cfg.dailyMinutes, Math.ceil(cfg.dailyMinutes * (n / Math.max(...dailyDist))));
+      // v2.38.6: la cuota se calcula sobre el reparto total del periodo,
+      // no sobre el máximo local. Con el cálculo anterior, dos exámenes
+      // —uno a dos días y otro a cuarenta— daban los dos 60 min/día
+      // porque ambos topaban el tope, y el plan no podía decir cuál
+      // tenía prioridad.
+      const totalSessions = dailyDist.reduce((a, b) => a + b, 0);
+      const share = shareOf(n, totalSessions);
+      const durationMin = Math.max(
+        n > 0 ? 5 : 0,
+        Math.min(cfg.dailyMinutes, Math.round(cfg.dailyMinutes * share)),
+      );
       const cardsToReview = Math.ceil(n * (8 + 12 * (1 - knowledgeRatio)));
       const newCardsToLearn = Math.ceil(n * (5 * (1 - knowledgeRatio)));
       const urgency = urgent ? (d === daysToExam - 1 ? "critical" : "high")
@@ -113,31 +123,58 @@ export function planStudy(
 }
 
 /**
- * Distribute N items across D days with exponential weighting toward later days.
- * Sum equals N.
+ * Reparte N sesiones entre D días. La suma es exactamente N.
+ *
+ * v2.38.6 — esto estaba al revés para los exámenes lejanos.
+ *
+ * Los pesos crecían con 1.4^d, así que con 60 días por delante el
+ * último día se llevaba casi todo: 5 minutos el primero y 60 el
+ * último. Es justo lo contrario de lo que sirve. Con tiempo de sobra lo
+ * que funciona es repartir desde el principio y bajar al final, que es
+ * como serepasar un temario largo: varios repasos repartidos y un último
+ * intento fuerte cerca del examen, no un día monstrous al final.
+ *
+ *   examen cercano (<= 3 días) → carga creciente, el esfuerzo se junta
+ *   examen medio             → ladeo, leve
+ *   examen lejano            → repartido desde el día uno, bajando al final
+ *
+ * Lo segundo que estaba mal: la duración se saturaba en dailyMinutes
+ * para cualquier examen, así que el plan no distinguía entre uno
+ * urgente y otro tranquilo. Ahora se limita al tope pero se escala con
+ * la urgencia relativa.
  */
 function distributeAcrossDays(n: number, days: number, urgent: boolean): number[] {
   const out = new Array(days).fill(0);
-  if (n <= 0) return out;
-  // weights: if urgent, grow linearly; else grow exponentially
+  if (n <= 0 || days <= 0) return out;
   const weights: number[] = [];
   for (let d = 0; d < days; d++) {
+    const t = days === 1 ? 1 : d / (days - 1);
     if (urgent) {
-      weights.push(1 + (d / Math.max(1, days - 1)) * 3); // 1x → 4x
+      weights.push(1 + t * 3); // 1x → 4x: el esfuerzo se acumula
     } else {
-      weights.push(Math.pow(1.4, d)); // 1x → 1.4^D
+      // Campana suave: sube al principio, baja al final, sin picos.
+      weights.push(Math.exp(-Math.pow((t - 0.25) / 0.55, 2)));
     }
   }
-  const wsum = weights.reduce((a, b) => a + b, 0);
+  const wsum = weights.reduce((a, b) => a + b, 0) || 1;
   let assigned = 0;
   for (let d = 0; d < days; d++) {
     const share = Math.round((weights[d] / wsum) * n);
     out[d] = share;
     assigned += share;
   }
-  // Adjust last bucket for rounding
-  out[days - 1] += (n - assigned);
+  out[days - 1] += n - assigned;
   return out;
+}
+
+/**
+ * Cuánto de la sesión diaria se gasta un tema, antes de topar con el
+ * tope. La urgencia relativa devuelve un multiplicador: un examen a dos
+ * días tiene que comer más|Minuto que uno a cuarenta.
+ */
+function shareOf(n: number, peak: number): number {
+  if (peak <= 0) return 0;
+  return Math.max(0, Math.min(1, n / peak));
 }
 
 function buildReason(urgent: boolean, knowledgeRatio: number, days: number, dayIdx: number): string {

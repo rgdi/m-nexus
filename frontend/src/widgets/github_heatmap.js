@@ -34,8 +34,11 @@ function installRovingTabindex(grid) {
     cells().forEach((c) => { c.tabIndex = c === cell ? 0 : -1; });
     if (cell) cell.focus();
   };
-  const first = cells()[0];
-  if (first) first.tabIndex = 0;
+  // Solo la primera arranca tabulable. Poner solo la primera a 0 sin
+  // bajar el resto a -1 no hace nada: siguen siendo 371 paradas de
+  // tabulación, que es justo lo que se quería quitar.
+  const list = cells();
+  list.forEach((c, i) => { c.tabIndex = i === 0 ? 0 : -1; });
 
   grid.addEventListener("keydown", (ev) => {
     const list = cells();
