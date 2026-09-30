@@ -249,6 +249,41 @@ y hay que interpretar el umbral de 60 mmol por litro correctamente.
     (await suCruce.json()).warning?.slice(0, 60) || '');
 
   // =====================================================================
+  // 4bis. Un PDF escaneado, que es la mitad del temario de grado
+  // =====================================================================
+  console.log('\n— un PDF sin capa de texto —');
+  const scanned = fs.existsSync('/tmp/escaneado.pdf') ? fs.readFileSync('/tmp/escaneado.pdf').toString('base64') : null;
+  if (scanned) {
+    const t0 = Date.now();
+    const sc = await idx('Escaneada.pdf', scanned);
+    check('un PDF escaneado se lee con OCR', sc.status === 200 && sc.body.chunks > 0,
+      sc.status === 200
+        ? `${sc.body.chunks} trozos · ${sc.body.words} palabras · ${Date.now() - t0}ms`
+        : JSON.stringify(sc.body).slice(0, 90));
+    check('y avisa de que viene de OCR, no de su texto', /OCR/.test(sc.body.warning || ''),
+      String(sc.body.warning).slice(0, 56));
+    if (sc.status === 200) {
+      const c2 = await fetch(API + '/api/v1/coverage/cross', {
+        method: 'POST', headers: H,
+        body: JSON.stringify({
+          transcript:
+            'La semivida de eliminacion es el tiempo que tarda el cuerpo en reducir a la mitad la concentracion del farmaco. ' +
+            'El aclaramiento y el volumen de distribucion determinan la dosis de mantenimiento. ' +
+            'En insuficiencia hepatica hay que reducir la dosis un treinta por ciento. ' +
+            'Tambien vimos interaccion con warfarina que no sale en el papel.',
+        }),
+      }).then((x) => x.json());
+      check('y se puede cruzar igual que un PDF con texto', c2.covered > 0,
+        `${c2.covered}/${c2.total} frases (${Math.round((c2.ratio || 0) * 100)}%)`);
+      check('el OCR no come la deteccion de huecos',
+        (c2.missing || []).some((m) => /warfarina/i.test(m.text)),
+        (c2.missing || [])[0]?.text.slice(0, 50) || 'ninguno');
+    }
+  } else {
+    console.log('  (sin /tmp/escaneado.pdf: se salta)');
+  }
+
+  // =====================================================================
   // 5. La lógica por dentro
   // =====================================================================
   console.log('\n— la lógica —');

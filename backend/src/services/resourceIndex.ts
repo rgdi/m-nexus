@@ -24,7 +24,14 @@
 
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { promisify } from "node:util";
+import { execFile } from "node:child_process";
 import AdmZip from "adm-zip";
+
+const execFileAsync = promisify(execFile);
+// Una instancia: tesseract es un proceso, no se crea uno por página.
+let sharedOcr: import("./ocr.js").OCRService | null = null;
 
 // ---------------------------------------------------------------------------
 // Tipos
@@ -170,6 +177,52 @@ function chunkFromLines(docId: string, fileName: string, kind: Provenance["kind"
 }
 
 /**
+ * Rasteriza un PDF y le pasa OCR. Poppler (`pdftoppm`) y tesseract ya
+ * están en la imagen; si falta cualquiera de los dos se devuelve vacío
+ * y quien llama lo dice, en vez de devolver un índice vacío.
+ */
+async function ocrPdf(buf: Buffer, maxPages: number): Promise<string[][]> {
+  const { OCRService } = await import("./ocr.js");
+  if (!sharedOcr) sharedOcr = new OCRService();
+  const tmp = join(tmpdir(), `mnexus-ocr-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`);
+  const src = `${tmp}.pdf`;
+  const out: string[][] = [];
+  try {
+    await fs.mkdir(tmp, { recursive: true });
+    await fs.writeFile(src, buf);
+    await execFileAsync(
+      "pdftoppm",
+      ["-r", "200", "-png", "-f", "1", "-l", String(Math.min(maxPages, 40)), src, `${tmp}/p`],
+      { timeout: 120000, maxBuffer: 8 * 1024 * 1024 },
+    );
+
+    const files = (await fs.readdir(tmp)).filter((f) => f.endsWith(".png")).sort();
+    for (const f of files) {
+      const img = await fs.readFile(join(tmp, f));
+      try {
+        const r = await sharedOcr.recognize(img, { language: "spa+eng" });
+        out.push(
+          r.blocks
+            .filter((b: { text?: string }) => Boolean(b.text && b.text.trim().length > 1))
+            .map((b: { text: string }) => b.text.trim()),
+        );
+      } catch {
+        out.push([]);
+      }
+    }
+  } catch {
+    // sin poppler o sin tessdata: se devuelve vacío y el aviso lo cuenta
+    return [];
+  } finally {
+    try {
+      await fs.rm(tmp, { recursive: true, force: true });
+      await fs.unlink(src).catch(() => {});
+    } catch {}
+  }
+  return out.filter((p) => p.length);
+}
+
+/**
  * PDF: se leen los flujos de contenido de cada página. Sin pdf.js no se
  * descomprime el contenido comprimido, así que el extractor lee lo que
  * se puede y avisa del resto en vez de devolver vacío en silencio.
@@ -202,10 +255,26 @@ async function extractPdf(buf: Buffer, docId: string, fileName: string): Promise
     if (text && text.trim()) extracted++;
   }
 
+  if (!extracted && streams.length) {
+    // v2.38.9 — un PDF de profesor muy a menudo viene escaneado, y la
+    // mitad del temario de grado lo está. Antes eso era un muro: "no se
+    // puede leer". Ahora se rasteriza página a página y se le pasa OCR
+    // con el mismo motor que usa el resto de la app.
+    const ocr = await ocrPdf(buf, pageTexts.length || 8);
+    if (ocr.length) {
+      return {
+        pages: ocr.length,
+        texts: ocr,
+        warning: "Sin capa de texto: se ha leído con OCR. Las palabras pueden no ser exactas, y el orden de lectura de un PDF de dos columnas no siempre es el correcto.",
+      };
+    }
+  }
+  // Solo se llega aquí si el OCR no ha servido, y entonces se explica por
+  // qué en vez de devolver un índice vacío que parece un índice.
   const warning =
     extracted === 0 && streams.length
-      ? "No se ha podido leer el texto del PDF: está comprimido o escaneado sin capa de texto. " +
-        "Hace falta pasarlo por OCR para poder compararlo."
+      ? "No se ha podido leer este PDF: está comprimido o escaneado y el OCR tampoco ha sacado texto. " +
+        "Suele ser un escaneo de muy baja resolución."
       : undefined;
   return { pages: pageMatches.length || pageTexts.length, texts: pageTexts, warning };
 }

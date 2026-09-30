@@ -44,6 +44,19 @@
 .screen-header .h-sub {
   font-size: var(--fs-lg);
   color: var(--fg-muted);
+  /* v2.38.9 — era un hermano más del título en un flex con wrap. Al no
+   * caber en la misma línea, su caja llegaba al borde de la pantalla y
+   * la última palabra se quedaba pegada al marco. Ahora es una línea
+   * propia, con margen y able de partirse por donde toque.
+   *
+   * basis: 100% + min-width: 0 es lo que hace que baje de línea en
+   * lugar de estorbar al título. */
+  flex: 1 1 100%;
+  min-width: 0;
+  margin-inline: 0;
+  padding-inline-end: var(--s-2);
+  line-height: 1.35;
+  text-wrap: pretty;
 }
 
 .screen-header > .spacer { flex: 1; min-width: 0; }

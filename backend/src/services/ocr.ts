@@ -75,10 +75,17 @@ export class OCRService {
     let stdout: string | undefined;
     try {
       await writeFile(tmpIn, image);
+      // v2.38.9 — faltaba pedir el formato. `tesseract in out` solo
+      // escribe out.txt; el .tsv hay que nombrarlo o no se genera nunca.
+      // El servicio leía un .tsv que no existía y toda Recognize fallaba
+      // con ENOENT: el OCR de verdad no había funcionado nunca, solo el
+      // de la oclusión, que va por otro camino.
       stdout = await this.run([
         tmpIn, tmpOutBase,
         "-l", language,
         "-c", "preserve_interword_spaces=1",
+        "txt",
+        "tsv",
       ], 30_000);
       const tsv = await import("node:fs/promises").then(fs => fs.readFile(`${tmpOutBase}.tsv`, "utf-8"));
       const text = await import("node:fs/promises").then(fs => fs.readFile(`${tmpOutBase}.txt`, "utf-8"));
