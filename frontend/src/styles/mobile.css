@@ -2517,3 +2517,13 @@ body:not(.has-floating-window) .mn-capture-fab,
 body:not(.has-floating-window) .capture-fab {
   transition: opacity 0.15s ease 0.05s, transform 0.15s ease 0.05s;
 }
+
+/* v2.38.4 — `display: flex` on .m-tab-badge beat the `hidden`
+ * attribute, because any explicit display wins over the UA rule for
+ * [hidden]. The five badges all read "0" over Resumen, Notas, Progreso
+ * and Ajustes. Restoring the icons also restored the badge nodes, so
+ * this had to be fixed with them.
+ *
+ * The correct rule for a component that is hidden by an attribute:
+ * the attribute has to be honoured explicitly. */
+.m-tab-badge[hidden] { display: none !important; }

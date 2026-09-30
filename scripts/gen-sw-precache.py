@@ -55,6 +55,17 @@ def collect() -> list[str]:
             if fn.endswith((".js", ".css")):
                 rel = os.path.relpath(os.path.join(dirpath, fn), FRONTEND)
                 files.append("./" + rel.replace(os.sep, "/"))
+    # v2.38.4: los diagramas de la biblioteca de oclusion tambien
+    # tienen que estar en el precache. Sin esto la biblioteca aparecia
+    # vacia al primer arranque sin red, que es justo cuando se abre.
+    for extra in ("assets/occlusion/ear-es.png",
+                  "assets/occlusion/pelvis-es.png",
+                  "assets/occlusion/muscles-ar.png",
+                  "assets/occlusion/anatomia.png",
+                  "assets/occlusion/heart-en.svg"):
+        path = os.path.join(FRONTEND, extra)
+        if os.path.exists(path):
+            files.append("./" + extra)
     return sorted(files)
 
 

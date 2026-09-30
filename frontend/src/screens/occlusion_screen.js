@@ -10,6 +10,21 @@ import { api } from "../services/api.js";
 import { escapeHtml } from "../services/safe.js";
 import { openImageOcclusionEditor, openImageOcclusionFromFile } from "../widgets/image_occlusion.js";
 
+/**
+ * Diagramas de anatomía libres para probar la oclusión sin tener que
+ * subir nada. Todos vienen de Wikimedia Commons y se distribuyen bajo
+ * dominio público o CC; el archivo LICENSE-ASSETS.txt lleva el detalle
+ * y el enlace de cada uno.
+ */
+const OCCLUSION_LIBRARY = [
+  { label: "Oído", src: "assets/occlusion/ear-es.png", alt: "Anatomía del oído humano", credit: "Wikimedia Commons · CC BY 2.5" },
+  { label: "Pelvis", src: "assets/occlusion/pelvis-es.png", alt: "Diagrama de la pelvis", credit: "Wikimedia Commons · dominio público" },
+  { label: "Músculos", src: "assets/occlusion/muscles-ar.png", alt: "Sistema muscular anterior", credit: "Wikimedia Commons · dominio público" },
+  { label: "Cuerpo", src: "assets/occlusion/anatomia.png", alt: "Anatomía humana", credit: "Wikimedia Commons · dominio público" },
+];
+const OCCLUSION_CREDIT =
+  "Diagramas de Wikimedia Commons, dominio público y CC. Fuentes y licencias en LICENSE-ASSETS.txt.";
+
 export async function renderOcclusionScreen(root) {
   root.innerHTML = `
     <div class="screen occlusion-screen">
@@ -36,8 +51,26 @@ export async function renderOcclusionScreen(root) {
           </label>
         </div>
         <input class="input" id="src-url" type="url" placeholder="https://..." style="display:none;" />
-        <input class="input" type="file" id="src-file" accept="image/*" />
+        <label class="occlusion-file" id="src-file-label">
+          <input type="file" id="src-file" accept="image/*" />
+          <span class="occlusion-file-cta">${i18n.t("occlusion.chooseFile") || "Elegir imagen"}</span>
+          <span class="occlusion-file-name" data-file-name>${i18n.t("occlusion.noFile") || "Ningún archivo elegido"}</span>
+        </label>
         <button class="btn primary" id="start">${i18n.t("occlusion.start") || "Start editing →"}</button>
+      </div>
+
+      <div class="card">
+        <h2>${i18n.t("occlusion.library") || "Imágenes de la biblioteca"}</h2>
+        <p class="muted small">${i18n.t("occlusion.libraryHint") || "Diagramas libres, listos para tapar. Elige uno y empieza a editar."}</p>
+        <div class="occlusion-library">
+          ${OCCLUSION_LIBRARY.map(
+            (it) => `<button class="occlusion-library-item" data-library-src="${escapeHtml(it.src)}" title="${escapeHtml(it.credit)}">
+            <img src="${escapeHtml(it.src)}" alt="${escapeHtml(it.alt)}" loading="lazy" />
+            <span class="occlusion-library-label">${escapeHtml(it.label)}</span>
+          </button>`,
+          ).join("")}
+        </div>
+        <p class="muted small occlusion-credit">${OCCLUSION_CREDIT}</p>
       </div>
 
       <div class="card">
@@ -58,6 +91,29 @@ export async function renderOcclusionScreen(root) {
   });
 
   // Start editing
+  // El input de archivo va escondido y se pisa con un boton propio:
+  // el control nativo sale como "Choose File / No file chosen", en
+  // ingles y con otra tipografia, dentro de una app en espanol.
+  const fileInput = root.querySelector("#src-file");
+  const fileName = root.querySelector("[data-file-name]");
+  fileInput.addEventListener("change", () => {
+    const f = fileInput.files[0];
+    fileName.textContent = f
+      ? f.name
+      : i18n.t("occlusion.noFile") || "Ningún archivo elegido";
+  });
+
+  // Un diagram de la biblioteca se comporta como una URL ya escrita.
+  root.querySelectorAll("[data-library-src]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const topic = root.querySelector("#topic").value.trim() || "general";
+      root.querySelectorAll("[data-library-src]").forEach((o) => o.classList.remove("is-active"));
+      btn.classList.add("is-active");
+      await openImageOcclusionEditor({ imageUrl: btn.dataset.librarySrc, topicId: topic });
+      await loadList();
+    });
+  });
+
   root.querySelector("#start").addEventListener("click", async () => {
     const topic = root.querySelector("#topic").value.trim() || "general";
     const isUrl = root.querySelector('input[name="src"]:checked').value === "url";

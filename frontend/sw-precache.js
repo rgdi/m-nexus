@@ -10,6 +10,11 @@
 
 
 const MODULES = [
+  "./assets/occlusion/anatomia.png",
+  "./assets/occlusion/ear-es.png",
+  "./assets/occlusion/heart-en.svg",
+  "./assets/occlusion/muscles-ar.png",
+  "./assets/occlusion/pelvis-es.png",
   "./src/main.js",
   "./src/screens/ai.js",
   "./src/screens/approvals.js",

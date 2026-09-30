@@ -440,7 +440,22 @@ document.addEventListener("notes:open", (e) => {
 function applyI18nToDom() {
   document.querySelectorAll("[data-i18n]").forEach((el) => {
     const key = el.dataset.i18n;
-    el.textContent = i18n.t(key);
+    const text = i18n.t(key);
+    // v2.38.4: textContent replaces every child node. The tab bar
+    // anchors carry an <svg> icon and a badge span inside the
+    // [data-i18n] element, so translating them deleted the icons and
+    // left five bare words in the bar. An element that already has
+    // children gets the text put into its own label slot instead.
+    if (el.children.length === 0) {
+      el.textContent = text;
+      return;
+    }
+    let slot = el.querySelector(":scope > span:not([data-i18n-keep]):not(.m-tab-badge)");
+    if (!slot) {
+      slot = document.createElement("span");
+      el.appendChild(slot);
+    }
+    slot.textContent = text;
   });
 }
 

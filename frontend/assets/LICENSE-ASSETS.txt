@@ -1,0 +1,29 @@
+M-NEXUS — assets de terceros
+============================
+
+Las imagenes de assets/occlusion/ no son nuestras. Vienen de Wikimedia
+Commons y se sirven desde este repositorio con la licencia con la que
+el autor las publico. Se pueden quitar sin tocar codigo: el editor de
+occlusion acepta cualquier archivo o URL.
+
+ear-es.png      Anatomia del oido humano (es)
+                CC BY 2.5
+                https://commons.wikimedia.org/wiki/File:Anatomy_of_the_Human_Ear.es.png
+
+pelvis-es.png   Diagrama de la pelvis (es)
+                Dominio publico (PD-user)
+                https://commons.wikimedia.org/wiki/File:Pelvis_diagram_es.png
+
+muscles-ar.png  Sistema muscular anterior
+                Dominio publico
+                https://commons.wikimedia.org/wiki/File:Muscles_anterior_labeled-ar.png
+
+anatomia.png    Anatomia humana
+                Dominio publico
+                https://commons.wikimedia.org/wiki/File:Anatom%C3%ADa_humana.png
+
+heart-en.svg    Diagrama del corazon (SVG)
+                CC BY-SA 3.0
+                https://commons.wikimedia.org/wiki/File:Heart_diagram-en.svg
+
+Redimensionadas a 900px de lado mayor para no cargar de mas en un movil.
