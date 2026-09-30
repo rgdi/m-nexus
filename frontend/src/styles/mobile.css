@@ -2527,3 +2527,14 @@ body:not(.has-floating-window) .capture-fab {
  * The correct rule for a component that is hidden by an attribute:
  * the attribute has to be honoured explicitly. */
 .m-tab-badge[hidden] { display: none !important; }
+
+/* v2.38.5 — generar material es de escritorio y de tablet.
+ *
+ * En un telefono recorre una carpeta entera y devuelve resumen,
+ * tarjetas, quiz y mapa mental: varios segundos de pantalla en blanco
+ * para algo que no se hace de pie. En tablet y por encima vuelve, pero
+ * plegado, no como un icono mas entre cinco. */
+.app-drawer a[data-wide-only] { display: none; }
+@media (min-width: 640px) {
+  .app-drawer a[data-wide-only] { display: flex; }
+}

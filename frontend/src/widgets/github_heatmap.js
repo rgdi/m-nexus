@@ -24,6 +24,45 @@ const DOW_LABELS = ["", "L", "", "M", "", "J", ""]; // Sun..Sat (ES single lette
  * @param opts.lang   "es" | "en"
  * @param opts.onTap  (day) => void
  */
+/**
+ * Un solo elemento tabulable dentro del grupo. Las flechas recorren la
+ * rejilla; el grupo entero sigue siendo una sola parada de tabulacion.
+ */
+function installRovingTabindex(grid) {
+  const cells = () => Array.from(grid.querySelectorAll(".m-heat-cell"));
+  const setActive = (cell) => {
+    cells().forEach((c) => { c.tabIndex = c === cell ? 0 : -1; });
+    if (cell) cell.focus();
+  };
+  const first = cells()[0];
+  if (first) first.tabIndex = 0;
+
+  grid.addEventListener("keydown", (ev) => {
+    const list = cells();
+    const i = list.indexOf(document.activeElement);
+    if (i < 0) return;
+    const cols = 7; // una semana es una columna
+    const moves = {
+      ArrowRight: 1, ArrowLeft: -1, ArrowDown: cols, ArrowUp: -cols,
+      Home: -i, End: list.length - 1 - i,
+    };
+    if (!(ev.key in moves)) return;
+    ev.preventDefault();
+    const next = list[Math.max(0, Math.min(list.length - 1, i + moves[ev.key]))];
+    if (next) setActive(next);
+  });
+  // Al salir del bloque el foco vuelve al principio, para que entrar de
+  // nuevo no arranque por la celda donde se quedo la vez anterior.
+  grid.addEventListener("focusout", () => {
+    queueMicrotask(() => {
+      if (!grid.contains(document.activeElement)) {
+        const f = cells()[0];
+        if (f) f.tabIndex = 0;
+      }
+    });
+  });
+}
+
 export function mountHeatmap(host, opts = {}) {
   const weeks = opts.weeks ?? 53;
   const lang = opts.lang ?? "es";
@@ -143,10 +182,16 @@ export function mountHeatmap(host, opts = {}) {
       b.addEventListener("focus", () => showTip(b, d));
       b.addEventListener("blur", hideTip);
       b.addEventListener("touchstart", () => showTip(b, d), { passive: true });
+      // v2.38.5 — roving tabindex. 53 semanas son 371 botones: con
+      // tabIndex 0 cada celda era una parada de tabulacion y un teclado
+      // tardaba un minuto en salir del heatmap. Solo una celda es
+      // tabulable a la vez; las flechas se mueven entre ellas.
+      b.tabIndex = 0;
       if (opts.onTap) b.addEventListener("click", () => opts.onTap(d));
       frag.appendChild(b);
     }
     grid.appendChild(frag);
+    installRovingTabindex(grid);
     window.addEventListener("scroll", hideTip, { passive: true });
 
     // Headline numbers

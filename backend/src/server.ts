@@ -290,6 +290,11 @@ await app.register(multiBoardRoutes);
   const { registerResourceRoutes } = await import("./routes/resources.js");
   registerResourceRoutes(app);
 
+  // v2.38.5 — "¿qué sabes ya?": medicion de conocimiento previo con
+  // excavacion progresiva y FSRS acoplado.
+  const { diagnosticRoutes } = await import("./routes/diagnostic.js");
+  diagnosticRoutes(app);
+
   // v0.62.8: /api/v1/ai/tutor is registered by aiRoutes (./routes/ai.ts).
   // Removed the inline handler to avoid duplicate-route registration error.
   console.log("DEBUG: tutor route registered via aiRoutes");

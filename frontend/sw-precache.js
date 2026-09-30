@@ -32,6 +32,7 @@ const MODULES = [
   "./src/screens/occlusion_screen.js",
   "./src/screens/overview.js",
   "./src/screens/pdf.js",
+  "./src/screens/prior_probe.js",
   "./src/screens/progress.js",
   "./src/screens/rag.js",
   "./src/screens/settings.js",

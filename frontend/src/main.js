@@ -28,6 +28,7 @@ import { renderTodos } from "./screens/todos.js";
 import { renderCapture } from "./screens/capture.js";
 import { renderRag } from "./screens/rag.js";
 import { renderGenerate } from "./screens/generate.js";
+import { renderPriorProbe } from "./screens/prior_probe.js";
 import { mountAppbar } from "./widgets/appbar.js";
 import { renderMood } from "./screens/mood.js";
 import { mountCaptureFab } from "./widgets/capture_fab.js";
@@ -64,6 +65,9 @@ const ROUTES = {
   rag: renderRag,
   // v2.38.1: generate study material from a folder
   generate: renderGenerate,
+  // v2.38.5: excavacion de conocimiento previo. El diagnostic
+  // clasico de arriba sigue en /#/diagnostic; este baja niveles.
+  probe: renderPriorProbe,
   // v2.38.1: mood tracker as its own screen
   mood: renderMood,
   ai: renderAI,
@@ -529,8 +533,14 @@ function openAppDrawer() {
     // v2.38.1: two more destinations, kept out of the dock so the
     // bottom bar stays thumb-sized. Both are reachable in one tap
     // from here.
-    { hash: "#/generate", i18n: "dock.generate", icon: "✨" },
     { hash: "#/mood",     i18n: "dock.mood",     icon: "💚" },
+    // v2.38.5: generar material se queda fuera del menu en movil. Es
+    // una herramienta de escritorio: coge una carpeta entera, la
+    // recorre y devuelve resumen, tarjetas, quiz y mapa mental. En un
+    // telefono eso son varios segundos de pantalla en blanco, y no es
+    // algo que se haga de pie en el metro. En tablet y por encima se
+    // revive, pero plegado en "Mas", no como un icono mas.
+    { hash: "#/generate", i18n: "dock.generate", icon: "✨", dataWide: "true" },
   ];
 
   const scrim = document.createElement("div");
@@ -562,7 +572,7 @@ function openAppDrawer() {
         <h3>${i18n.t("drawer.advanced")}</h3>
         <nav class="app-drawer-nav" aria-label="Advanced">
           ${advanced.map((r) => `
-            <a href="${r.hash}" class="${cur === r.hash ? "active" : ""}" ${cur === r.hash ? 'aria-current="page"' : ""}>
+            <a href="${r.hash}" class="${cur === r.hash ? "active" : ""}${r.dataWide ? " is-wide-only" : ""}" ${r.dataWide ? 'data-wide-only="true"' : ""} ${cur === r.hash ? 'aria-current="page"' : ""}>
               <span class="icon" aria-hidden="true">${r.icon}</span>
               <span>${i18n.t(r.i18n)}</span>
             </a>

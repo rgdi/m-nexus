@@ -4598,3 +4598,56 @@ body.dg-scrolling { user-select: none; }
 .occlusion-library-item:hover { border-color: var(--accent); transform: translateY(-2px); }
 .occlusion-library-item.is-active { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
 .occlusion-credit { margin-top: 12px; font-size: 11.5px; }
+
+/* v2.38.5 — "¿qué sabes ya?" */
+.diag-body { display: grid; gap: var(--s-4); }
+.diag-progress { display: flex; align-items: center; gap: 6px; }
+.diag-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--border);
+}
+.diag-dot.is-on { background: var(--accent); }
+.diag-body .diag-progress .muted { margin-left: 8px; }
+.diag-why {
+  margin: 0; padding: 8px 12px;
+  border-left: 2px solid var(--accent);
+  background: var(--bg-sunken);
+  border-radius: 0 var(--r-2) var(--r-2) 0;
+  font-size: var(--fs-sm); color: var(--fg-muted);
+}
+.diag-card { display: grid; gap: 12px; }
+.diag-level {
+  font-size: 11px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--accent);
+}
+.diag-q { margin: 0; font-size: 1.15rem; line-height: 1.35; }
+.diag-options { display: grid; gap: 8px; }
+.diag-option {
+  min-height: 48px; padding: 12px 14px; text-align: left;
+  border: 1px solid var(--border); border-radius: var(--r-2);
+  background: var(--bg-sunken); color: var(--fg);
+  font-size: var(--fs-base); cursor: pointer;
+  transition: border-color 140ms var(--ease), background 140ms var(--ease);
+}
+.diag-option:hover { border-color: var(--accent); }
+.diag-option.is-picked {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.diag-option.small { min-height: 44px; font-size: var(--fs-sm); }
+.diag-controls { display: grid; gap: 16px; }
+.diag-control p { margin: 0 0 8px; font-weight: 600; }
+.diag-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.diag-result { display: grid; gap: 6px; margin-bottom: 10px; }
+.diag-result-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.diag-verdict {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; padding: 3px 8px; border-radius: var(--r-pill);
+  background: var(--bg-sunken); color: var(--fg-muted);
+}
+.diag-result--known .diag-verdict { background: color-mix(in srgb, var(--success) 18%, transparent); color: var(--success); }
+.diag-result--absent .diag-verdict,
+.diag-result--mismatched .diag-verdict { background: color-mix(in srgb, var(--danger) 16%, transparent); color: var(--danger); }
+.diag-when { margin: 0; font-size: var(--fs-sm); color: var(--fg-muted); }
+.diag-next { margin-top: 12px; }
