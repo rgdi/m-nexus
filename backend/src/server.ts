@@ -301,6 +301,18 @@ await app.register(multiBoardRoutes);
   const { coverageRoutes } = await import("./routes/coverage.js");
   coverageRoutes(app);
 
+  // v2.38.10 — el índice único de recursos y el estudio exclusivo. Es
+  // la pieza que permite "estudiar solo este PDF" y "esta tarjeta salió
+  // de esta nota", que hasta ahora no se podían preguntar.
+  const { graphRoutes } = await import("./routes/graph.js");
+  graphRoutes(app);
+
+  // v2.38.10 — el tutor socratico. Preguntas extraidas de la nota del
+  // propio usuario, con comparacion determinista de terminos y sin
+  // gastar modelo mas que en la capa que de verdad lo necesita.
+  const { socraticRoutes } = await import("./routes/socratic.js");
+  socraticRoutes(app);
+
   // v0.62.8: /api/v1/ai/tutor is registered by aiRoutes (./routes/ai.ts).
   // Removed the inline handler to avoid duplicate-route registration error.
   console.log("DEBUG: tutor route registered via aiRoutes");

@@ -21,9 +21,10 @@ test o una captura. Lo demás está sin hacer o sin verificar, y se dice.
 ## B. Lo que pediste y no existe
 
 ### Indexación y documentos
-- [ ] **B1. Índice general de recursos.** El de `coverage` existe pero
-  solo cruza transcripciones. No hay un índice único de "qué hay en mis
-  notas, PDFs, grabaciones y tarjetas, y cómo se relacionan".
+- [x] **B1. Índice general de recursos.** Hecho el 2026-10-01. Un grafo
+  con notas, tarjetas, documentos, grabaciones, eventos y tareas, cada
+  uno con su procedencia y aristas entre ellos. Reconstrucción
+  incremental por sello: 300 notas en 6ms.
 - [x] **B2. OCR dentro de PDFs.** Hecho el 2026-10-01. Un PDF sin capa de
   texto se rasteriza con poppler y se lee con tesseract, y el aviso dice
   que viene de OCR. Verificado con un PDF escaneado de verdad: 1 → 26
@@ -42,11 +43,14 @@ test o una captura. Lo demás está sin hacer o sin verificar, y se dice.
 - [ ] **B6. Asignación automática.** Al crear una nota que depende de un
   PDF o una grabación, que sus flashcards e imágenes的后 queden
   apuntando a ese origen.
-- [ ] **B7. Estudio exclusivo de un tema**, desde el chat o desde un menú
-  especial semiescondido: solo ese PDF, solo esa carpeta, solo esa nota.
-- [ ] **B8. Tutor socrático como actividad.** Comparar la respuesta del
-  usuario con la estandarizada, sobre recursos de referencia. No existe
-  ningún servicio de esto.
+- [~] **B7. Estudio exclusivo de un tema.** El backend está hecho
+  (`POST /graph/scope`): dado un recurso devuelve su material, por tipo,
+  y ordena lo más antiguo primero. Falta la interfaz para pedirlo sin
+  escribir la ruta a mano.
+- [x] **B8. Tutor socrático como actividad.** Hecho el 2026-10-01.
+  Preguntas extraídas de la nota del propio usuario, comparación
+  determinista de términos en tres capas y veredicto `inverted` para el
+  modelo al revés. Sin modelo funciona igual y lo dice.
 - [ ] **B9. El RAG cita la línea exacta** y permite abrir el recurso
   donde empieza el Passage. Cita el documento y un fragmento, pero no
   lleva a la línea.
@@ -76,7 +80,7 @@ test o una captura. Lo demás está sin hacer o sin verificar, y se dice.
 
 1. **A1** — dos líneas de CSS, lo que queda está roto hoy.
 2. **B3** — el índice ya guarda línea y página, y B2 ya está hecho.
-3. **B1** — un índice único, que es la base de B4, B6 y B7.
+3. ~~**B1**~~ — hecho. Queda **B9** sobre sus cimientos.
 4. **B9** — el RAG ya recibe los trozos; solo falta citar y saltar.
 5. **B5 + B6** — flashcards IA con su nota y su puerta de aprobación.
 6. **B7** — estudio exclusivo, que ya tiene la mecánica de scope.
