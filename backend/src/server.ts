@@ -295,6 +295,12 @@ await app.register(multiBoardRoutes);
   const { diagnosticRoutes } = await import("./routes/diagnostic.js");
   diagnosticRoutes(app);
 
+  // v2.38.9 — cruzar una clase con el material del profesor: lo que se
+  // dijo y no está en el PDF/PPT/DOCX, y lo que está y nadie ha
+  // comentado. Con la página exacta de cada cosa.
+  const { coverageRoutes } = await import("./routes/coverage.js");
+  coverageRoutes(app);
+
   // v0.62.8: /api/v1/ai/tutor is registered by aiRoutes (./routes/ai.ts).
   // Removed the inline handler to avoid duplicate-route registration error.
   console.log("DEBUG: tutor route registered via aiRoutes");

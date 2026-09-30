@@ -247,6 +247,20 @@ export function openAiCompanion(seedQuestion = "") {
     log.scrollTop = log.scrollHeight;
 
     try {
+      // v2.38.9 — primero lo que el backend ya sabe hacer sin modelo.
+      // Un LLM para "¿qué se ha dicho de más en la clase?" es tirar
+      //tokens: es un cruce de palabras contra el índice, y sale
+      //determinista. Solo si no hay coincidencias se pregunta al modelo.
+      const local = await tryLocalIntent(q);
+      if (local) {
+        pending.remove();
+        turns.push({ role: "assistant", ...local });
+        saveHistory();
+        repaint();
+        busy = false;
+        return;
+      }
+
       const r = await fetch(`${BASE}/api/v1/rag/ask`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
@@ -287,4 +301,111 @@ export function openAiCompanion(seedQuestion = "") {
 export function closeAiCompanion() {
   closeFloatingWindow("mnexus-ai-companion");
   win = null;
+}
+
+// ---------------------------------------------------------------------------
+// Intenciones locales: las que no necesitan modelo
+// ---------------------------------------------------------------------------
+
+/**
+ * v2.38.9 — "que se ha dicho de mas en la clase" y "que se ha dejado de
+ * ver" no son preguntas de lenguaje: son cruces contra el indice de
+ * recursos. Se resuelven en el backend en milisegundos y con el mismo
+ * resultado cada vez, y un LLM aqui seria Caro e inventado.
+ *
+ * El motivo de que esto viva en el chat y no en un boton: el usuario
+ * ya esta escribiendo a la IA. Anadir un boton al lado obliga a decidir
+ * cual de los dos; esto no obliga a decidir nada.
+ */
+const INTENTS = [
+  {
+    id: "coverage",
+    // Sin tildes ni mayusculas: se compara en normalizado.
+    match: (q) => /(que|q)\s+(se\s+ha\s+)?(dicho|contado|explicado|visto)|se\s+ha\s+quedado\s+fuera|falta\s+en\s+(el\s+)?(powerpoint|ppt|diapositiv)/.test(q),
+    answer: "Voy a cruzar lo último que has dicho con tu material.",
+  },
+  {
+    id: "unreviewed",
+    match: (q) => /que\s+no\s+(hemos|vimos|ha)\s+(visto|comentado|repasado)|no\s+hemos\s+visto/.test(q),
+    answer: "Te digo qué hay en el material que no hemos pasado.",
+  },
+];
+
+async function tryLocalIntent(raw) {
+  const q = (raw || "").toLowerCase();
+  if (!q) return null;
+  if (!/cobert|diapositiv|powerpoint|clase|material|transcri|revisad/.test(q)) return null;
+  const intent = INTENTS.find((i) => i.match(q));
+  if (!intent) return null;
+
+  const { authHeaders } = await import("../services/auth.js");
+  const { detectApiBase } = await import("../services/api_base.js");
+  const base = detectApiBase();
+  const H = { ...authHeaders(), "content-type": "application/json" };
+
+  // De dónde sale la transcripción: la última grabación, o lo que haya
+  // en la caja de captura. Sin transcripción no hay nada que cruzar y
+  // se dice, en vez de fingir un resultado.
+  const transcript = await latestTranscript(base, H);
+  if (!transcript) {
+    return {
+      text:
+        "No encuentro ninguna transcripción que cruzar. Graba la clase o pega los apuntes en la pantalla de captura y te lo cruzo con el material.",
+    };
+  }
+
+  try {
+    const r = await fetch(base + "/api/v1/coverage/cross", {
+      method: "POST",
+      headers: H,
+      body: JSON.stringify({ transcript: transcript.text, label: transcript.label }),
+    });
+    if (r.status === 409) {
+      const b = await r.json().catch(() => ({}));
+      return { text: b.warning || "No hay material indexado todavía." };
+    }
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const d = await r.json();
+    return { text: renderCoverage(d, intent.id), coverage: d };
+  } catch (e) {
+    return { text: "No pude hacer el cruce: " + (e.message || e) };
+  }
+}
+
+async function latestTranscript(base, H) {
+  try {
+    const r = await fetch(base + "/api/v1/recordings", { headers: H });
+    if (r.ok) {
+      const list = (await r.json()) || [];
+      const arr = Array.isArray(list) ? list : list.recordings || [];
+      const last = arr.filter((x) => x && (x.transcript || x.text)).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0];
+      if (last) return { text: last.transcript || last.text, label: last.title || last.subject || "última clase" };
+    }
+  } catch {}
+  return null;
+}
+
+/** El cruce en texto plano. Cada línea lleva su sitio en el documento. */
+function renderCoverage(d, intent) {
+  const pct = Math.round((d.ratio || 0) * 100);
+  const L = [];
+  L.push(`**${intent === "unreviewed" ? "Sin revisar" : "Cobertura"}: ${d.covered}/${d.total} frases (${pct}%)**`);
+  for (const p of d.perDoc || []) {
+    const w = p.warning ? ` — ${p.warning}` : "";
+    L.push(`· ${p.fileName}: ${Math.round(p.ratio * 100)}% de ${p.total} bloques · ${p.pages} pág.${w}`);
+  }
+  if (intent === "unreviewed") {
+    const u = (d.unreviewed || []).slice(0, 8);
+    if (!u.length) L.push("\nNo queda nada sin pasar: todo el material aparece en la clase.");
+    for (const x of u) L.push(`· ${x.locator || x.fileName}: ${x.quote.slice(0, 110)}…`);
+  } else {
+    const m = (d.missing || []).slice(0, 8);
+    if (!m.length) L.push("\nTodo lo que se dijo está en el material.");
+    for (const g of m) {
+      const donde = g.nearest ? ` (parecido a ${g.nearest.locator || g.nearest.fileName})` : "";
+      L.push(`· **${g.severity}** ${g.text.slice(0, 140)}…${donde}`);
+    }
+  }
+  L.push(`\n_(${d.ms}ms, determinista — sin modelo de lenguaje)_`);
+  return L.join("\n");
 }
