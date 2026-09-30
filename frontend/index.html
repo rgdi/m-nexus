@@ -3,16 +3,26 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0f1115" />
   <title>M-NEXUS — Education Service</title>
   <meta name="description" content="Cuaderno, calendario, asignaturas y tutor IA para cualquier carrera (Medicina, Ingeniería, Derecho, ADE…). Tablet-first con soporte de stylus." />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="manifest" href="/manifest.json" />
   <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+  <!-- One theme-color, matching --m-bg. There were two and the first
+       said #0f1115, which is not the background the app actually paints. -->
   <meta name="theme-color" content="#08080e" />
+  <!-- v2.38.2: iPad and iPhone ignore most of the web app manifest and
+       read these instead. Without apple-mobile-web-app-status-bar-style
+       the status bar sits over the app bar; without the title the home
+       screen icon is called "index.html". -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="M-NEXUS" />
+  <meta name="application-name" content="M-NEXUS" />
+  <meta name="format-detection" content="telephone=no" />
+  <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png" />
+  <link rel="apple-touch-startup-image" href="/icons/icon-512.png" />
   <meta name="mobile-web-app-capable" content="yes" />
   <link rel="stylesheet" href="/src/styles/tokens.css" />
   <link rel="stylesheet" href="/src/styles/base.css" />

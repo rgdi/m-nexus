@@ -205,7 +205,7 @@ async function renderNotesList(root) {
     // Show "All notes" count in main area, but most nav is via tree
     root.querySelector("#grid").innerHTML = `
       <div class="empty">
-        <div class="em-title">${filtered.length} ${filtered.length === 1 ? "note" : "notes"}</div>
+        <div class="em-title">${i18n.t("notes.count", { n: filtered.length })}</div>
         <div>${i18n.t("notes.selectFromTree") || "Select from sidebar →"}</div>
       </div>
     `;

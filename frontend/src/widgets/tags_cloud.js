@@ -54,7 +54,9 @@ export async function renderTagsCloud(rootEl) {
   const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 30);
   const active = getActiveTag();
   if (sorted.length === 0) {
-    rootEl.innerHTML = `<div class="muted small" style="padding: var(--s-3)">No tags yet. Add #your-tag to note bodies.</div>`;
+    // v2.38.2: hardcoded English on a screen the rest of translates.
+    const { i18n } = await import("../services/i18n.js");
+    rootEl.innerHTML = `<div class="muted small" style="padding: var(--s-3)">${i18n.t("notes.noTags")}</div>`;
     return;
   }
   rootEl.innerHTML = `

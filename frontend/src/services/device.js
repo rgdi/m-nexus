@@ -10,6 +10,7 @@ class DeviceInfo {
     this._listeners = new Set();
     this._values = {};
     this._collect();
+    this._applyKind();
     if (typeof window !== "undefined") {
       window.matchMedia("(orientation: portrait)").addEventListener("change", () => this._onChange());
       window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => this._onChange());
@@ -20,10 +21,46 @@ class DeviceInfo {
     }
   }
 
+  /**
+   * What kind of machine is this, really?
+   *
+   * Width alone cannot answer it. iPadOS 13+ presents Safari with a
+   * desktop macOS user agent — no "iPad", not even "Mobile" — so a
+   * width check files an iPad Pro as a laptop and gives it the desktop
+   * chrome with a phone's worth of usable space. The tell is a Mac UA
+   * that reports touch points: no real Mac does that, and no iPad
+   * stops doing it.
+   */
+  _kind(mq) {
+    const ua = navigator.userAgent || "";
+    const maxTouch = navigator.maxTouchPoints || 0;
+    const isMacUA = /Macintosh|Mac OS X/i.test(ua);
+    const claimsIPad = /iPad/i.test(ua);
+    const isIPad = claimsIPad || (isMacUA && maxTouch > 1);
+
+    // Android tablets report touch but are wide; a phone in landscape
+    // is the case that gets misfiled, so the width floor does the work.
+    const coarse = mq("(pointer: coarse)").matches;
+    const w = window.innerWidth;
+    const isTablet = !isIPad && coarse && w >= 720;
+    const isPhone = !isIPad && !isTablet && w < 720;
+
+    if (isIPad) return "ipad";
+    if (isTablet) return "tablet";
+    if (isPhone) return "phone";
+    return "desktop";
+  }
+
   _collect() {
     if (typeof window === "undefined") return;
     const mq = (q) => window.matchMedia(q);
+    const kind = this._kind(mq);
     this._values = {
+      // v2.38.2 — `kind` is the one to branch on. `tier` is width only
+      // and cannot tell an iPad from a laptop.
+      kind,
+      isIPad: kind === "ipad",
+      isTabletDevice: kind === "tablet" || kind === "ipad",
       dpr: window.devicePixelRatio || 1,
       width: window.innerWidth,
       height: window.innerHeight,
@@ -51,8 +88,26 @@ class DeviceInfo {
     return "desktop";
   }
 
+  /**
+   * Mirror the kind onto <html data-device>.
+   *
+   * CSS can branch on this, and it is the only signal that survives an
+   * iPad: a media query on width files an iPad Pro as a desktop, and the
+   * same breakpoint has to mean two different things on a phone and on
+   * a tablet.
+   */
+  _applyKind() {
+    if (typeof document === "undefined") return;
+    const v = this._values;
+    if (!v || !v.kind) return;
+    const html = document.documentElement;
+    html.setAttribute("data-device", v.kind);
+    html.setAttribute("data-touch", String(!!v.isTouch));
+  }
+
   _onChange() {
     this._collect();
+    this._applyKind();
     this._listeners.forEach((cb) => cb(this._values));
   }
 

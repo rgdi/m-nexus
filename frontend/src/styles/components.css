@@ -788,7 +788,10 @@ body.hide-ui .dock, body.hide-ui .lang-switcher, body.hide-ui .top-toolbar { dis
  * ============================================================ */
 .notes-with-sidebar {
   display: grid;
-  grid-template-columns: 260px 1fr;
+  /* v2.38.2: minmax(0, …) so the editor column can actually shrink.
+   * A plain 1fr track is minmax(auto, 1fr) and the content pushes the
+   * sidebar wider than its share. */
+  grid-template-columns: 260px minmax(0, 1fr);
   gap: 0;
   min-height: calc(100vh - 80px);
   max-width: none !important;

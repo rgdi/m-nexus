@@ -131,6 +131,9 @@ const STRINGS = {
   // ============================================================
   // Notes screen (notebook)
   // ============================================================
+  "notes.count":            { en: "{n} notes", es: "{n} notas", pt: "{n} notas" },
+  "notes.noTags":           { en: "No tags yet. Add #your-tag to note bodies.", es: "Todavía no hay etiquetas. Añade #una-etiqueta al cuerpo de una nota.", pt: "Sem etiquetas ainda. Adiciona #uma-etiqueta ao corpo de uma nota." },
+  "notes.search":           { en: "Search notebooks", es: "Buscar cuadernos", pt: "Buscar cadernos" },
   "notes.new":              { en: "+ New note", es: "+ Nueva nota", pt: "+ Nova nota" },
   "notes.search":           { en: "Search notebooks", es: "Buscar cuadernos", pt: "Buscar cadernos" },
   "notes.intelligentOverview": { en: "✦ Intelligent overview", es: "✦ Resumen inteligente", pt: "✦ Visão inteligente" },

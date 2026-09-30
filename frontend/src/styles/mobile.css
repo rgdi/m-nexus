@@ -2324,3 +2324,82 @@ a.gen-cite { min-height: 0; }
   overflow-wrap: anywhere;
   text-wrap: pretty;
 }
+
+/* ============================================================
+   v2.38.2 — tablet
+   ============================================================
+   The only breakpoint in the app was 720px, so a tablet got mobile
+   chrome stacked on top of the desktop grid: a bottom tab bar under a
+   two-column layout, and both fighting for the same 820px. This is the
+   missing middle: touch-sized targets and the bottom bar, with room to
+   actually use them.
+
+   The selector is the device, not the width. An iPad Pro is 1024px in
+   landscape and a laptop can be 820px in a split window — the same
+   number, two different machines, and the width query cannot tell them
+   apart. */
+@media (min-width: 721px) {
+  [data-device="tablet"],
+  [data-device="ipad"] {
+    /* Content gets a real margin instead of running edge to edge. */
+    --m-tabbar-h: 66px;
+  }
+  [data-device="tablet"] .screen,
+  [data-device="ipad"] .screen {
+    max-width: 940px;
+    margin: 0 auto;
+  }
+  /* A tablet is wide enough for a side rail and content side by side,
+   * and narrow enough that stacking them wastes a third of the screen. */
+  [data-device="tablet"] .notes-tree,
+  [data-device="ipad"] .notes-tree {
+    position: sticky;
+    top: calc(var(--m-appbar-h) + 12px);
+    max-height: calc(100dvh - var(--m-appbar-h) - var(--m-tabbar-h) - 40px);
+  }
+  /* The floating chrome keeps clear of the wider gutters. */
+  [data-device="tablet"] .mn-capture-fab,
+  [data-device="ipad"] .mn-capture-fab {
+    right: max(20px, calc(50vw - 470px));
+  }
+  /* The app bar is the header on every touch device, so the in-page
+   * title is a duplicate here exactly as it is on a phone. The old rule
+   * was inside a max-width query, so at 820px both titles drew and the
+   * screen's own heading landed under the bar. */
+  [data-device="tablet"] .screen-header .h-title,
+  [data-device="ipad"] .screen-header .h-title,
+  [data-device="tablet"] .screen-header h1,
+  [data-device="ipad"] .screen-header h1 { display: none; }
+  [data-device="tablet"] .screen-header,
+  [data-device="ipad"] .screen-header { margin-bottom: var(--s-4); }
+}
+
+/* iPad in landscape has width to spare; portrait is a big phone. */
+@media (orientation: landscape) and (min-width: 1024px) {
+  [data-device="ipad"] .screen { max-width: 1100px; }
+}
+
+
+/* v2.38.2 — the notes tree on a tablet.
+ *
+ * At 820px a fixed 260px rail took a third of the screen and left the
+ * editor too narrow to write in, while the empty-state text sat alone in
+ * a wide column. The rail is sized for touch and the editor keeps the
+ * rest. */
+@media (min-width: 721px) {
+  [data-device="tablet"] .notes-with-sidebar,
+  [data-device="ipad"] .notes-with-sidebar {
+    grid-template-columns: 224px minmax(0, 1fr);
+  }
+  /* The tree and the editor both need to start below the app bar; the
+   * rail is sticky so the list stays reachable while the editor scrolls. */
+  [data-device="tablet"] .notes-tree,
+  [data-device="ipad"] .notes-tree {
+    padding-top: 12px;
+  }
+  /* The "new note" button was landing under the fixed app bar. */
+  [data-device="tablet"] .notes-toolbar,
+  [data-device="ipad"] .notes-toolbar {
+    padding-top: calc(var(--m-appbar-h) + 8px);
+  }
+}
