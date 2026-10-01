@@ -73,159 +73,454 @@ export function loadThree() {
 export const MODELOS = {
   corazon: {
     label: "Corazón",
-    hint: "Aurículas, ventrículos y las cuatro válvulas",
+    hint: "Aurículas, ventrículos y los grandes vasos",
     build(T) {
       const g = new T.Group();
-      const meat = new T.MeshStandardMaterial({ color: 0xb03a48, roughness: 0.72 });
-      const chamber = new T.MeshStandardMaterial({ color: 0x6d1f28, roughness: 0.85 });
-      // Los dos ventriculos: conos apuntando abajo.
-      for (const side of [-1, 1]) {
-        const v = new T.Mesh(new T.ConeGeometry(1.15, 2.5, 28), chamber);
-        v.position.set(side * 0.85, -0.5, 0.1);
-        v.rotation.z = side * -0.32;
-        g.add(v);
-        // Aurícula: esfera encima de cada ventrículo.
-        const a = new T.Mesh(new T.SphereGeometry(0.78, 26, 20), meat);
-        a.position.set(side * 0.95, 1.05, 0.05);
-        a.scale.set(1, 0.78, 1);
-        g.add(a);
+      // v2.38.18 — los ventrículos son conos de punta, no bolas. Un
+      // corazón son dos conos apuntando al ápex, con la aurícula encima;
+      const MYO = new T.MeshStandardMaterial({ color: 0xa8323f, roughness: 0.62 });
+      const MYO_INT = new T.MeshStandardMaterial({ color: 0x6e1f28, roughness: 0.85 });
+      const GRASO = new T.MeshStandardMaterial({ color: 0xc4576a, roughness: 0.55 });
+      const VASO = new T.MeshStandardMaterial({ color: 0x9b3b4a, roughness: 0.5 });
+      const AZUL = new T.MeshStandardMaterial({ color: 0x4a6fa5, roughness: 0.5 });
+      const MORADO = new T.MeshStandardMaterial({ color: 0x8a4a9c, roughness: 0.5 });
+
+      // v2.38.18 — el ventrículo es un perfil TORNEADO, no un cono.
+      // Un cono tiene las paredes rectas y el vértice: parece un cubo
+      // de Rubik. Lo que identifica la masa ventricular es la curva:
+      // base ancha y plana arriba, y un ápex que se afila abajo. El
+      // perfil se gira y sale con esa forma sola.
+      const perfilVentriculo = (grosor) => [
+        new T.Vector2(0.02, 1.32),
+        new T.Vector2(0.62 * grosor, 1.26),
+        new T.Vector2(1.02 * grosor, 1.02),
+        new T.Vector2(1.18 * grosor, 0.5),
+        new T.Vector2(1.12 * grosor, -0.1),
+        new T.Vector2(0.86 * grosor, -0.72),
+        new T.Vector2(0.46 * grosor, -1.28),
+        new T.Vector2(0.02, -1.62),
+      ];
+
+      // El izquierdo: más grande y más bajo. Su pared es tres veces más
+      // gruesa que la del derecho, y esa es la diferencia que importa
+      // cuando estás mirando el corte.
+      const izq = new T.Mesh(new T.LatheGeometry(perfilVentriculo(1.0), 40), MYO);
+      izq.position.set(-0.42, -0.15, 0.18);
+      izq.rotation.set(0.1, 0, 0.22);
+      g.add(izq);
+      const der = new T.Mesh(new T.LatheGeometry(perfilVentriculo(0.86), 36), MYO);
+      der.position.set(0.72, -0.05, -0.08);
+      der.rotation.set(-0.06, 0, -0.3);
+      g.add(der);
+
+      // El tabique interventricular: la pared gruesa entre los dos.
+      // Sin ella, los dos ventrículos son un bulto y no hay corazón.
+      const tabique = new T.Mesh(new T.LatheGeometry(perfilVentriculo(0.2), 24), GRASO);
+      tabique.position.set(0.16, -0.1, 0.34);
+      tabique.rotation.set(0.1, 0, 0.02);
+      g.add(tabique);
+
+      // Aurículas: cámaras anchas y de pared fina, sentadas encima de
+      // los ventrículos. Domina el tercio superior.
+      const auricula = (x, y, z, sx) => {
+        const m = new T.Mesh(new T.SphereGeometry(0.8, 30, 22), GRASO);
+        m.position.set(x, y, z);
+        m.scale.set(sx, 0.72, 0.94);
+        return m;
+      };
+      g.add(auricula(0.66, 1.34, -0.06, 1.16));    // derecha
+      g.add(auricula(-0.62, 1.42, 0.2, 1.2));     // izquierda
+
+      // Aorta: ascendente, arco y descendente, con las TRES ramas del
+      // arco. Es lo que hace que se reconozca un corazón desde atrás.
+      const asc = new T.Mesh(new T.CylinderGeometry(0.24, 0.26, 1.35, 22), VASO);
+      asc.position.set(0.2, 2.05, -0.14);
+      asc.rotation.z = 0.14;
+      g.add(asc);
+      const arco = new T.Mesh(new T.TorusGeometry(0.82, 0.23, 16, 44, Math.PI * 1.08), VASO);
+      arco.position.set(-0.2, 2.66, -0.14);
+      arco.rotation.set(Math.PI / 2, 0, Math.PI * 0.46);
+      g.add(arco);
+      const desc = new T.Mesh(new T.CylinderGeometry(0.2, 0.17, 1.4, 20), VASO);
+      desc.position.set(-0.9, 2.16, -0.14);
+      desc.rotation.z = -0.1;
+      g.add(desc);
+      for (const [x, y, h, tilt] of [[0.42, 3.36, 0.6, -0.2], [-0.06, 3.42, 0.7, 0.05], [-0.56, 3.28, 0.6, 0.22]]) {
+        const r = new T.Mesh(new T.CylinderGeometry(0.1, 0.085, h, 14), VASO);
+        r.position.set(x, y, -0.14);
+        r.rotation.z = tilt;
+        g.add(r);
       }
-      // El tabique, para que no parezca una bolsa.
-      const sep = new T.Mesh(new T.BoxGeometry(0.16, 2.1, 1.6), meat);
-      sep.position.set(0, 0.15, 0.1);
-      g.add(sep);
-      // La aorta: el arco de encima.
-      const aorta = new T.Mesh(new T.TorusGeometry(0.85, 0.22, 14, 40, Math.PI * 1.15), meat);
-      aorta.position.set(0, 1.5, -0.15);
-      aorta.rotation.z = Math.PI * 0.42;
-      g.add(aorta);
-      // La arteria pulmonar, más pequeña y delante.
-      const pulm = new T.Mesh(new T.TorusGeometry(0.58, 0.16, 12, 34, Math.PI * 0.95), meat);
-      pulm.position.set(0.1, 1.35, 0.5);
-      pulm.rotation.z = Math.PI * 1.15;
-      g.add(pulm);
+
+      // Tronco pulmonar: DELANTE y más bajo que la aorta. Detrás no se
+      // ve, y si no se ve, la relación entre los dos grandes vasos —que
+      // es justo lo que se pregunta— no se puede contestar.
+      const tronco = new T.Mesh(new T.CylinderGeometry(0.27, 0.32, 1.3, 22), VASO);
+      tronco.position.set(0.36, 1.82, 0.66);
+      tronco.rotation.z = -0.3;
+      g.add(tronco);
+      for (const side of [-1, 1]) {
+        const pa = new T.Mesh(new T.CylinderGeometry(0.16, 0.13, 0.92, 16), VASO);
+        pa.position.set(0.36 + side * 0.44, 2.4, 0.64);
+        pa.rotation.z = side * 0.74;
+        g.add(pa);
+      }
+
+      // Venas cavares: entran en la aurícula derecha por arriba y por
+      // abajo. Son la vía de retorno, y en azul se distinguen de un
+      // vistazo de las arterias.
+      const cavaSup = new T.Mesh(new T.CylinderGeometry(0.2, 0.2, 1.1, 18), AZUL);
+      cavaSup.position.set(1.02, 2.42, -0.04);
+      cavaSup.rotation.z = -0.24;
+      g.add(cavaSup);
+      const cavaInf = new T.Mesh(new T.CylinderGeometry(0.24, 0.24, 1.0, 18), AZUL);
+      cavaInf.position.set(1.24, 0.62, -0.04);
+      cavaInf.rotation.z = -0.16;
+      g.add(cavaInf);
+      // Venas pulmonares: cuatro, a la aurícula izquierda.
+      for (const [x, y, z, rz] of [[-1.28, 1.72, 0.3, 0.52], [-1.28, 1.2, 0.06, 0.64]]) {
+        const pv = new T.Mesh(new T.CylinderGeometry(0.13, 0.13, 0.78, 14), MORADO);
+        pv.position.set(x, y, z);
+        pv.rotation.z = rz;
+        g.add(pv);
+      }
       return g;
     },
   },
+
   craneo: {
     label: "Cráneo",
-    hint: "El cerebro dentro de la caja ósea",
+    hint: "Bóveda, orbits, mandíbula y foramen magnum",
     build(T) {
       const g = new T.Group();
-      const bone = new T.MeshStandardMaterial({ color: 0xe8dfc8, roughness: 0.85 });
-      const shell = new T.Mesh(new T.SphereGeometry(1.5, 30, 24), bone);
-      shell.scale.set(1, 1.06, 1.16);
-      g.add(shell);
-      const jaw = new T.Mesh(new T.BoxGeometry(1.5, 0.52, 1.1), bone);
-      jaw.position.set(0, -1.2, 0.5);
-      g.add(jaw);
-      const brain = new T.Mesh(
-        new T.SphereGeometry(1.16, 24, 20),
-        new T.MeshStandardMaterial({ color: 0xd98c8c, roughness: 0.9 }));
-      brain.position.set(0, 0.12, 0.06);
-      brain.scale.set(1, 0.9, 1.05);
-      g.add(brain);
-      return g;
-    },
-  },
-  hueso: {
-    label: "Hueso largo",
-    hint: "Epífisis, diáfisis y médula",
-    build(T) {
-      const g = new T.Group();
-      const bone = new T.MeshStandardMaterial({ color: 0xefe6d0, roughness: 0.88 });
-      const shaft = new T.Mesh(new T.CylinderGeometry(0.34, 0.34, 3.1, 20), bone);
-      g.add(shaft);
-      for (const y of [-1.7, 1.7]) {
-        const head = new T.Mesh(new T.SphereGeometry(0.72, 26, 20), bone);
-        head.position.y = y;
-        head.scale.set(1, 0.7, 1);
-        g.add(head);
+      const HUESO = new T.MeshStandardMaterial({ color: 0xe6dcc2, roughness: 0.88 });
+      const SUTURA = new T.MeshStandardMaterial({ color: 0xc9bb9c, roughness: 0.95 });
+      // v2.38.18 — la bóveda es un perfil torneado, no una esfera: la
+      // cabeza es más estrecha arriba que a los lados, y con una esfera
+      // parecía una bola con una mandíbula pegada.
+      const perfil = [
+        new T.Vector2(0.02, -1.5), new T.Vector2(0.55, -1.35),
+        new T.Vector2(0.95, -0.85), new T.Vector2(1.18, -0.1),
+        new T.Vector2(1.22, 0.6), new T.Vector2(1.05, 1.1),
+        new T.Vector2(0.62, 1.42), new T.Vector2(0.02, 1.5),
+      ];
+      const boveda = new T.Mesh(new T.LatheGeometry(perfil, 40), HUESO);
+      boveda.scale.set(1, 1, 1.12);
+      g.add(boveda);
+      // La frente se adelanta un poco: sin esto parece un huevo.
+      const frente = new T.Mesh(new T.SphereGeometry(0.72, 26, 20), HUESO);
+      frente.position.set(0, 0.62, 0.78); frente.scale.set(1.05, 0.78, 0.7);
+      g.add(frente);
+      // Orbitas: dos huecos hundidos.
+      for (const side of [-1, 1]) {
+        const orb = new T.Mesh(new T.SphereGeometry(0.34, 22, 16),
+          new T.MeshStandardMaterial({ color: 0x8d8367, roughness: 0.95 }));
+        orb.position.set(side * 0.46, 0.16, 1.02);
+        orb.scale.set(1, 0.86, 0.6);
+        g.add(orb);
       }
-      const marrow = new T.Mesh(
-        new T.CylinderGeometry(0.19, 0.19, 2.9, 16),
-        new T.MeshStandardMaterial({ color: 0xc96a6a, roughness: 0.8 }));
-      g.add(marrow);
+      // Nasal.
+      const nariz = new T.Mesh(new T.ConeGeometry(0.2, 0.5, 12), HUESO);
+      nariz.position.set(0, -0.16, 1.08); nariz.rotation.x = Math.PI * 0.5;
+      g.add(nariz);
+      // Foramen magnum, en la base.
+      const foramen = new T.Mesh(new T.TorusGeometry(0.34, 0.11, 12, 26), HUESO);
+      foramen.position.set(0, -1.28, -0.24); foramen.rotation.x = Math.PI / 2;
+      g.add(foramen);
+      // Sutura sagital: la línea de arriba abajo. Lo primero que se ve
+      // en un cráneo de frente.
+      const sut = new T.Mesh(new T.BoxGeometry(0.05, 2.4, 0.06), SUTURA);
+      sut.position.set(0, 0.4, 0.02);
+      g.add(sut);
+      // Mandíbula, con la curva del mentón.
+      const mand = new T.Mesh(new T.TorusGeometry(0.82, 0.19, 12, 30, Math.PI * 0.9), HUESO);
+      mand.position.set(0, -1.16, 0.5); mand.rotation.set(Math.PI / 2, 0, Math.PI * 1.06);
+      g.add(mand);
+      const menton = new T.Mesh(new T.BoxGeometry(0.5, 0.34, 0.4), HUESO);
+      menton.position.set(0, -1.42, 0.78);
+      g.add(menton);
       return g;
     },
   },
-  vertebra: {
-    label: "Vértebra",
-    hint: "Cuerpo, apófisis espinosa y el canal medular",
-    build(T) {
-      const g = new T.Group();
-      const bone = new T.MeshStandardMaterial({ color: 0xece2cc, roughness: 0.86 });
-      const body = new T.Mesh(new T.CylinderGeometry(0.85, 0.85, 0.62, 26), bone);
-      body.rotation.x = Math.PI / 2;
-      g.add(body);
-      const arch = new T.Mesh(new T.TorusGeometry(0.55, 0.2, 12, 28, Math.PI), bone);
-      arch.position.z = -0.5;
-      g.add(arch);
-      const spine = new T.Mesh(new T.BoxGeometry(0.24, 0.24, 1.15), bone);
-      spine.position.z = -1.15;
-      g.add(spine);
-      const cord = new T.Mesh(
-        new T.CylinderGeometry(0.2, 0.2, 0.9, 16),
-        new T.MeshStandardMaterial({ color: 0xf0e08a, roughness: 0.7 }));
-      cord.rotation.x = Math.PI / 2;
-      cord.position.z = -0.45;
-      g.add(cord);
-      return g;
-    },
-  },
+
   pulmon: {
     label: "Pulmones",
-    hint: "Lóbulos y la árbol bronquial",
+    hint: "Lóbulos, tráquea y árbol bronquial",
     build(T) {
       const g = new T.Group();
-      const lung = new T.MeshStandardMaterial({ color: 0xd88a92, roughness: 0.85 });
+      const PARENQ = new T.MeshStandardMaterial({ color: 0xcf7a86, roughness: 0.9 });
+      const VIA = new T.MeshStandardMaterial({ color: 0xe6dcc6, roughness: 0.75 });
+      // v2.38.18 — el DERECHO tiene tres lóbulos y el IZQUIERDO dos:
+      // el corazón se lo come el sitio. Esa diferencia es el nombre
+      // de los lóbulos, así que un pulmón de dos mitades iguales no
+      // sirve para estudiarlos.
+      // v2.38.18 — cada pulmón es un perfil TORNEADO, no una pila de
+      // esferas. Apilado se ve como un montoncito de pelotas; lo que
+      // dice "pulmón" es el áxis estrecho arriba, el máximo hacia
+      // un tercio de arriba y la base ancha. Los lóbulos se marcan con
+      // las cisuras encima, que es como se ven de verdad.
+      const perfilPulmon = (conMedio) => [
+        new T.Vector2(0.05, 1.62),
+        new T.Vector2(0.3, 1.5),
+        new T.Vector2(0.62, 1.12),
+        new T.Vector2(0.86, 0.62),
+        new T.Vector2(0.94, 0.05),
+        new T.Vector2(0.88, -0.58),
+        new T.Vector2(0.72, -1.08),
+        new T.Vector2(0.44, -1.42),
+        new T.Vector2(0.05, -1.5),
+      ];
+      const hacerPulmon = (side) => {
+        const m = new T.Mesh(new T.LatheGeometry(perfilPulmon(side > 0), 34), PARENQ);
+        m.position.set(side * 0.98, 0, 0.12);
+        m.scale.set(1, 1, 0.82);
+        m.rotation.y = side * -0.16;
+        g.add(m);
+        // Cisuras: los surcos que separan los lóbulos. El izquierdo
+        // tiene una; el derecho, dos.
+        const surcos = side > 0 ? [[0.28, 0.5]] : [[0.42, 0.52], [-0.3, -0.52]];
+        for (const [y, ang] of surcos) {
+          const cis = new T.Mesh(new T.TorusGeometry(0.86, 0.035, 8, 32, Math.PI * 1.15),
+            new T.MeshStandardMaterial({ color: 0xa8525f, roughness: 0.96 }));
+          cis.position.set(side * 0.98, y, 0.12);
+          cis.rotation.set(0, Math.PI / 2, ang);
+          cis.scale.set(1, 1, 0.86);
+          g.add(cis);
+        }
+      };
+      hacerPulmon(1);
+      hacerPulmon(-1);
+      // Tráquea y bifurcación.
+      // v2.38.18 — la vía aérea sube POR ENCIMA de la masa pulmonar.
+      // Antes la tracrea estaba a y=1.42 con los pulmones hasta 1.6:
+      // entera dentro, y no se veía ni la bifurcación ni los bronquios,
+      // que es justo lo que se pregunta de un árbol bronquial.
+      const traq = new T.Mesh(new T.CylinderGeometry(0.2, 0.2, 1.5, 20), VIA);
+      traq.position.set(0, 2.06, 0.12);
+      g.add(traq);
+      const anillos = new T.Mesh(new T.TorusGeometry(0.2, 0.035, 8, 22), VIA);
+      anillos.position.set(0, 2.5, 0.12);
+      anillos.rotation.x = Math.PI / 2;
+      g.add(anillos);
+      // La carina: donde se bifurca.
+      const carina = new T.Mesh(new T.SphereGeometry(0.2, 16, 12), VIA);
+      carina.position.set(0, 1.42, 0.12);
+      g.add(carina);
       for (const side of [-1, 1]) {
-        const l = new T.Mesh(new T.SphereGeometry(1.05, 26, 22), lung);
-        l.position.set(side * 0.95, 0, 0);
-        l.scale.set(0.72, 1.5, 0.86);
-        g.add(l);
-      }
-      const trachea = new T.Mesh(
-        new T.CylinderGeometry(0.16, 0.16, 1.3, 16),
-        new T.MeshStandardMaterial({ color: 0xe8e2d0, roughness: 0.8 }));
-      trachea.position.y = 0.95;
-      g.add(trachea);
-      for (const side of [-1, 1]) {
-        const bron = new T.Mesh(
-          new T.CylinderGeometry(0.08, 0.1, 1.1, 12),
-          new T.MeshStandardMaterial({ color: 0xe8e2d0, roughness: 0.8 }));
-        bron.position.set(side * 0.4, 0.42, 0);
+        const bron = new T.Mesh(new T.CylinderGeometry(0.14, 0.12, 1.1, 16), VIA);
+        bron.position.set(side * 0.5, 1.16, 0.12);
         bron.rotation.z = side * 0.7;
         g.add(bron);
+        // Dos bronquios más finos entrando en cada pulmón.
+        for (const [dy, dz] of [[0.52, -0.34], [0.4, 0.4]]) {
+          const b2 = new T.Mesh(new T.CylinderGeometry(0.08, 0.05, 0.8, 10), VIA);
+          b2.position.set(side * 1.02, dy, 0.12 + dz);
+          b2.rotation.z = side * 1.1;
+          g.add(b2);
+        }
+      }
+      // Diafragma: la cúpula de abajo, que separa los pulmones del
+      // abdomen. Sin ella el pulmón flota y no se entiende la presión.
+      // La CÚPULA, no el cuenco. thetaStart 0 es el hemisferio de
+      // arriba; con la mitad de abajo salía una pala flotando
+      // debajo de los pulmones, separada, y sin ninguna relación.
+      const diafragma = new T.Mesh(new T.SphereGeometry(1.45, 34, 18, 0, Math.PI * 2, 0, Math.PI / 2),
+        new T.MeshStandardMaterial({ color: 0xc98a72, roughness: 0.85 }));
+      diafragma.position.set(0, -1.62, 0.12);
+      diafragma.scale.set(1.08, 0.52, 0.78);
+      g.add(diafragma);
+      return g;
+    },
+  },
+
+  cerebro: {
+    label: "Cerebro",
+    hint: "Lóbulos, cuerpo calloso y tronco encefálico",
+    build(T) {
+      const g = new T.Group();
+      const SUST = new T.MeshStandardMaterial({ color: 0xdd9a9c, roughness: 0.94 });
+      const BLANCO = new T.MeshStandardMaterial({ color: 0xf2ece0, roughness: 0.7 });
+      // v2.38.18 — los surcos. Un cerebro liso es un melón. Los surcos
+      // son lo que le da la forma de cerebro, y son justo lo que se
+      // identifica en un corte o en una foto.
+      const perfil = [
+        new T.Vector2(0.02, -1.1), new T.Vector2(0.7, -0.95),
+        new T.Vector2(1.15, -0.4), new T.Vector2(1.32, 0.25),
+        new T.Vector2(1.16, 0.85), new T.Vector2(0.6, 1.16),
+        new T.Vector2(0.02, 1.2),
+      ];
+      const cerebro = new T.Mesh(new T.LatheGeometry(perfil, 44), SUST);
+      cerebro.scale.set(1, 1, 1.16);
+      g.add(cerebro);
+      // v2.38.18 — el cerebro va LISO.
+      //
+      // Se intentaron los surcos como aros de toro sobre la superficie:
+      // se veían como los anillos de un planeta. Como grupos sobre la
+      // superficie, medio enterrados: no se veían. Un cerebro liso con
+      // el cuerpo calloso, el tálamo, el cerebelo y el tronco —que es
+      // lo que se etiqueta y lo que se pregunta en un corte— es mejor
+      // que un cerebro con aros. Los giros de verdad son una malla, y
+      // eso no cabe en un `build()` de primitivas sin mentir.
+      const radioEn = (y) => {
+        const ys = [-1.1, -0.95, -0.4, 0.25, 0.85, 1.16, 1.2];
+        const rs = [0.02, 0.7, 1.15, 1.32, 1.16, 0.6, 0.02];
+        for (let i = 1; i < ys.length; i++) {
+          if (y <= ys[i]) {
+            const t = (y - ys[i - 1]) / (ys[i] - ys[i - 1]);
+            return rs[i - 1] + t * (rs[i] - rs[i - 1]);
+          }
+        }
+        return 1.3;
+      };
+      // El surco longitudinal, el que separa los hemisferios.
+      const fisura = new T.Mesh(new T.BoxGeometry(0.07, 1.6, 1.3),
+        new T.MeshStandardMaterial({ color: 0xb97578, roughness: 0.96 }));
+      fisura.position.set(0, 0.05, 0.02);
+      g.add(fisura);
+      // Cuerpo calloso: el arco de materia blanca que une los dos
+      // hemisferios. En un corte sagital es lo primero que se señala.
+      const calloso = new T.Mesh(new T.TorusGeometry(0.78, 0.19, 14, 34, Math.PI * 1.1), BLANCO);
+      calloso.position.set(0, 0.06, 0.16);
+      calloso.rotation.set(0, Math.PI / 2, Math.PI * 0.42);
+      calloso.scale.set(1, 1.2, 1);
+      g.add(calloso);
+      // Tálamo, debajo del cuerpo calloso.
+      const talamo = new T.Mesh(new T.SphereGeometry(0.4, 20, 16),
+        new T.MeshStandardMaterial({ color: 0xc9a3a4, roughness: 0.85 }));
+      talamo.position.set(0, -0.22, 0.05);
+      g.add(talamo);
+      // Cerebelo, detrás y abajo.
+      const cerebelo = new T.Mesh(new T.SphereGeometry(0.62, 24, 18), SUST);
+      cerebelo.position.set(0, -1.05, -0.72);
+      cerebelo.scale.set(1.28, 0.76, 0.9);
+      g.add(cerebelo);
+      // Tronco encefálico: mesencéfalo, puente y bulbo, en fila.
+      const tallo = new T.Mesh(new T.CylinderGeometry(0.22, 0.3, 1.5, 18),
+        new T.MeshStandardMaterial({ color: 0xd0a0a0, roughness: 0.8 }));
+      tallo.position.set(0, -1.15, -0.18);
+      g.add(tallo);
+      return g;
+    },
+  },
+
+  vertebra: {
+    label: "Vértebra",
+    hint: "Cuerpo, apófisis y canal medular",
+    build(T) {
+      const g = new T.Group();
+      const HUESO = new T.MeshStandardMaterial({ color: 0xece2cc, roughness: 0.87 });
+      const CART = new T.MeshStandardMaterial({ color: 0xb9c9a8, roughness: 0.6 });
+      // v2.38.18 — el cuerpo vertebronal es un cilindro, y lo que
+      // distingue una vértebra lumbar de una cervical es el TAMAÑO de
+      // ese cilindro respecto al arco. Además, el disco está FUERA:
+      // es de otra vértebra, no de esta.
+      const cuerpo = new T.Mesh(new T.CylinderGeometry(0.92, 0.9, 0.72, 30), HUESO);
+      cuerpo.rotation.x = Math.PI / 2;
+      cuerpo.position.z = 0.5;
+      g.add(cuerpo);
+      // Caras articulares superior e inferior.
+      for (const z of [0.86, 0.14]) {
+        const cara = new T.Mesh(new T.CylinderGeometry(0.86, 0.86, 0.09, 30), CART);
+        cara.rotation.x = Math.PI / 2;
+        cara.position.z = z;
+        g.add(cara);
+      }
+      // Pedículos: los dos cuellos que unen cuerpo y arco.
+      for (const side of [-1, 1]) {
+        const ped = new T.Mesh(new T.BoxGeometry(0.3, 0.42, 0.42), HUESO);
+        ped.position.set(side * 0.66, 0, -0.08);
+        g.add(ped);
+      }
+      // Láminas: cierran el arco por detrás.
+      for (const side of [-1, 1]) {
+        const lam = new T.Mesh(new T.BoxGeometry(0.36, 0.5, 0.4), HUESO);
+        lam.position.set(side * 0.5, -0.16, -0.52);
+        lam.rotation.y = side * 0.42;
+        g.add(lam);
+      }
+      // Apófisis espinosa: la punta de atrás, en la línea media.
+      const espina = new T.Mesh(new T.BoxGeometry(0.2, 0.9, 0.34), HUESO);
+      espina.position.set(0, -0.4, -0.86);
+      espina.rotation.x = -0.34;
+      g.add(espina);
+      // Apófisis transversas: las dos alas laterales.
+      for (const side of [-1, 1]) {
+        const tr = new T.Mesh(new T.BoxGeometry(0.66, 0.16, 0.26), HUESO);
+        tr.position.set(side * 0.94, -0.06, -0.2);
+        tr.rotation.z = side * -0.16;
+        g.add(tr);
+        const artic = new T.Mesh(new T.BoxGeometry(0.24, 0.28, 0.26), CART);
+        artic.position.set(side * 1.24, -0.12, -0.16);
+        g.add(artic);
+      }
+      // Médula: lo que pasa por el canal. Sin esto no se entiende para
+      // qué está el hueco del centro.
+      const medula = new T.Mesh(new T.CylinderGeometry(0.24, 0.24, 1.15, 20),
+        new T.MeshStandardMaterial({ color: 0xf2e79a, roughness: 0.55 }));
+      medula.rotation.x = Math.PI / 2;
+      medula.position.z = -0.32;
+      g.add(medula);
+      // Las raíces, saliendo del canal.
+      for (const side of [-1, 1]) {
+        const raiz = new T.Mesh(new T.CylinderGeometry(0.07, 0.05, 0.7, 10),
+          new T.MeshStandardMaterial({ color: 0xf0d98a, roughness: 0.5 }));
+        raiz.position.set(side * 0.4, -0.2, -0.72);
+        raiz.rotation.set(Math.PI / 2.4, 0, side * 0.7);
+        g.add(raiz);
       }
       return g;
     },
   },
-  cerebro: {
-    label: "Cerebro",
-    hint: "Lóbulos y surcos",
+
+  hueso: {
+    label: "Hueso largo",
+    hint: "Epífisis, diáfisis, cortical y médula",
     build(T) {
       const g = new T.Group();
-      const brain = new T.MeshStandardMaterial({ color: 0xe3a0a0, roughness: 0.92 });
-      const big = new T.Mesh(new T.SphereGeometry(1.4, 34, 26), brain);
-      big.scale.set(1, 0.82, 1.1);
-      g.add(big);
-      // El surco longitudinal, que es lo que separa los hemisferios.
-      const fissure = new T.Mesh(
-        new T.BoxGeometry(0.09, 1.5, 1.2),
-        new T.MeshStandardMaterial({ color: 0xc98a8a, roughness: 0.95 }));
-      fissure.position.set(0, 0.12, 0);
-      g.add(fissure);
-      for (const side of [-1, 1]) {
-        const stem = new T.Mesh(new T.CylinderGeometry(0.17, 0.22, 1.1, 16), brain);
-        stem.position.set(side * 0.32, -1.35, 0);
-        stem.rotation.z = side * 0.24;
-        g.add(stem);
+      const CORTICAL = new T.MeshStandardMaterial({ color: 0xf0e7d2, roughness: 0.88 });
+      const ESPONJOSO = new T.MeshStandardMaterial({ color: 0xe3d5b4, roughness: 0.95 });
+      const MEDULA = new T.MeshStandardMaterial({ color: 0xc26a6a, roughness: 0.75 });
+      // v2.38.18 — el hueso largo tiene tres partes que se nombran por
+      // separado: epífisis (los extremos), metafisis (la transición) y
+      // diáfisis (el cuerpo). Aquí se ven las tres, y dentro, la
+      // cortical por fuera y la médula por dentro.
+      const diafisis = new T.Mesh(new T.CylinderGeometry(0.42, 0.38, 2.5, 28), CORTICAL);
+      g.add(diafisis);
+      for (const [y, r, sy] of [[1.62, 0.86, 0.62], [-1.62, 0.86, 0.62]]) {
+        const epi = new T.Mesh(new T.SphereGeometry(r, 30, 24), ESPONJOSO);
+        epi.position.y = y; epi.scale.set(1, sy, 0.94);
+        g.add(epi);
+        // La placa de crecimiento: la línea donde el hueso sigue
+        // creciendo. En un niño es cartilago, en un adulto una línea.
+        const placa = new T.Mesh(new T.CylinderGeometry(r * 0.62, r * 0.62, 0.1, 24),
+          new T.MeshStandardMaterial({ color: 0xb9c9a8, roughness: 0.6 }));
+        placa.position.y = y - sy * r * 0.62;
+        g.add(placa);
+        // Cóndilos.
+        for (const side of [-1, 1]) {
+          const con = new T.Mesh(new T.SphereGeometry(0.34, 20, 16), ESPONJOSO);
+          con.position.set(side * 0.34, y + sy * r * 0.62, 0);
+          con.scale.set(0.9, 0.62, 0.9);
+          g.add(con);
+        }
+        // La apófisis, si es una tibia.
+        const apo = new T.Mesh(new T.BoxGeometry(0.3, 0.3, 0.24), ESPONJOSO);
+        apo.position.set(0, y + sy * r * 0.4, -0.38);
+        g.add(apo);
       }
+      // Médula: solo en la diáfisis, y solo por dentro.
+      const medula = new T.Mesh(new T.CylinderGeometry(0.2, 0.2, 2.4, 20), MEDULA);
+      g.add(medula);
+      // Periostio: la película que envuelve el hueso. Sin ella el
+      // hueso parece de plástico.
+      const periostio = new T.Mesh(new T.CylinderGeometry(0.46, 0.42, 2.62, 28, 1, true),
+        new T.MeshStandardMaterial({ color: 0xe8d3b4, roughness: 0.7, side: T.DoubleSide }));
+      g.add(periostio);
       return g;
     },
   },
 };
+
 
 export const MODEL_IDS = Object.keys(MODELOS);
 
@@ -366,7 +661,47 @@ export async function mountModel3D(host, opts = {}) {
     holder.add(model);
     rotY = 0.25; rotX = -0.12;
     foot.textContent = def ? `${def.label} — ${def.hint}` : "";
+    encuadrar();
     paint();
+  }
+
+  /**
+   * Encuadra el modelo, venga del tamaño que venga.
+   *
+   * v2.38.18 — la cámara estaba a una distancia fija, puesta a ojo. Al
+   * agrandar los modelos, el corazón se salía por los cuatro lados:
+   * se veía unChunks de ventrículo y nada más. Ahora se mide la
+   * esfera envolvente y se calcula la distancia que hace que quepa
+   * entera. El margen es de 0.94 a propósito: la esfera incluye los
+   * extremos de los vasos, que no ocupan nada de pantalla en su
+   * mayoría, y con un margen holgado el modelo salía diminuto
+   * centrado en un cuadro vacío. Un pelo de recorte en las puntas
+   * entra en el presupuesto; un modelo pequeño no se ve.
+   */
+  function encuadrar(margen = 0.94) {
+    if (!model) return;
+    const caja = new THREE.Box3().setFromObject(model);
+    if (caja.isEmpty()) return;
+    const esfera = caja.getBoundingSphere(new THREE.Sphere());
+    // Mitad del ángulo vertical y mitad del HORIZONTAL. El horizontal
+    // no es `aspect * fov`: sale de la tangente. Con la fórmula mala el
+    // modelo salía a la mitad de la pantalla, porque la distancia se
+    // calculaba como si la escena fuese mucho más ancha de lo que es.
+    const fovV = (camera.fov * Math.PI) / 180;
+    const fovH = 2 * Math.atan(Math.tan(fovV / 2) * camera.aspect);
+    const distV = esfera.radius / Math.sin(fovV / 2);
+    const distH = esfera.radius / Math.sin(fovH / 2);
+    const d = Math.max(distV, distH) * margen;
+    // El grupo se desplaza para que el centro del modelo quede en el
+    // origen. A partir de ahí la cámara mira al ORIGEN, no al centro
+    // antigo: si no, el recentrado y la cámara se contradicen y el
+    // modelo queda descentrado.
+    holder.position.set(-esfera.center.x, -esfera.center.y, -esfera.center.z);
+    camera.position.set(0, esfera.radius * 0.06, d);
+    camera.near = Math.max(0.05, d - esfera.radius * 3);
+    camera.far = d + esfera.radius * 6;
+    camera.lookAt(0, 0, 0);
+    camera.updateProjectionMatrix();
   }
 
   /** Un punto de la pantalla → coordenadas del modelo. */
@@ -554,7 +889,7 @@ export async function mountModel3D(host, opts = {}) {
     const h = stage.clientHeight || Math.round(w * 0.68);
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
-    camera.updateProjectionMatrix();
+    encuadrar();
     paint();
   }
   const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(resize) : null;
@@ -570,8 +905,8 @@ export async function mountModel3D(host, opts = {}) {
     if (autoSpin) paint();      // las etiquetas giran con el modelo
   }
 
-  buildModel();
   resize();
+  buildModel();
   loop();
 
   return {

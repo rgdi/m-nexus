@@ -1,0 +1,24 @@
+[
+  {
+    "text": "comprar leche el viernes a las 18:00",
+    "done": false,
+    "due": null,
+    "priority": 0,
+    "subject": "",
+    "kind": "shopping",
+    "id": "task-2d42062d-d28b-4a10-aae2-9ce6f427903f",
+    "createdAt": 1790844189210,
+    "updatedAt": 1790844189210
+  },
+  {
+    "text": "estudiar el ciclo cardíaco mañana a las 20:00",
+    "done": false,
+    "due": null,
+    "priority": 0,
+    "subject": "",
+    "kind": "task",
+    "id": "task-22a7820c-bd5f-49d7-93ab-723c30c66ebd",
+    "createdAt": 1790844189335,
+    "updatedAt": 1790844189335
+  }
+]

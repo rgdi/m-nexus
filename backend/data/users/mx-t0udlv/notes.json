@@ -1,0 +1,1546 @@
+[
+  {
+    "id": "note-3c012bb3-7dfd-46d4-aa81-f69c86819b30",
+    "title": "Fibrosis quística",
+    "body": "La fibrosis quística es autosómica recesiva por mutación en CFTR.",
+    "subject": "",
+    "tags": [],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "folderId": "folder-a9c2655f-5cff-4569-a359-04c48151973a",
+    "createdAt": 1790844080969,
+    "updatedAt": 1790844080969
+  },
+  {
+    "id": "note-011efc8c-a8d4-4cab-bb5e-f31fc1439983",
+    "title": "Herencia mendeliana",
+    "body": "Segregación y distribución independiente.",
+    "subject": "",
+    "tags": [],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "folderId": "folder-a9c2655f-5cff-4569-a359-04c48151973a",
+    "createdAt": 1790844080987,
+    "updatedAt": 1790844080987
+  },
+  {
+    "id": "journal-2026-09-25-general",
+    "title": "📓 2026-09-25",
+    "body": "",
+    "subject": "",
+    "tags": [
+      "journal",
+      "daily"
+    ],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "folderId": null,
+    "createdAt": 1790844081086,
+    "updatedAt": 1790844081120,
+    "blocks": [
+      {
+        "id": "block-1c22696d-0e49-4bc9-9a0a-75c5a57be286",
+        "parentId": null,
+        "order": 0,
+        "text": "📓 Hoy",
+        "type": "text",
+        "meta": {
+          "kind": "heading",
+          "title": "Hoy",
+          "emoji": "📓",
+          "headingLevel": 1,
+          "journalDate": "2026-09-25",
+          "subject": "",
+          "userId": null
+        },
+        "createdAt": 1790844081086,
+        "updatedAt": 1790844081086
+      },
+      {
+        "id": "block-72fd7507-696d-4e1d-917e-6212db410eb5",
+        "parentId": null,
+        "order": 1,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "mood",
+          "mood": {
+            "score": 3,
+            "note": ""
+          }
+        },
+        "createdAt": 1790844081086,
+        "updatedAt": 1790844081120
+      },
+      {
+        "id": "block-13d6caef-5589-4ff5-9c97-96b85caa465b",
+        "parentId": null,
+        "order": 2,
+        "text": "1. \n2. \n3. ",
+        "type": "text",
+        "meta": {
+          "kind": "gratitude",
+          "title": "3 cosas por las que estoy agradecido/a",
+          "gratitude": true
+        },
+        "createdAt": 1790844081086,
+        "updatedAt": 1790844081086
+      },
+      {
+        "id": "block-c3c330b9-c736-4943-9290-1ff1803f8760",
+        "parentId": null,
+        "order": 3,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "agenda",
+          "title": "Agenda del día",
+          "agenda": true
+        },
+        "createdAt": 1790844081086,
+        "updatedAt": 1790844081086
+      },
+      {
+        "id": "block-8ca25726-f0ef-48b7-8088-2c5ceb704c66",
+        "parentId": null,
+        "order": 4,
+        "text": "📅 Cargando eventos…",
+        "type": "text",
+        "meta": {
+          "kind": "query-events-today",
+          "query": {
+            "type": "events-today",
+            "refreshOnView": true
+          }
+        },
+        "createdAt": 1790844081086,
+        "updatedAt": 1790844081086
+      },
+      {
+        "id": "block-48ddaf61-24e5-4b77-8501-091c80aea0a5",
+        "parentId": null,
+        "order": 5,
+        "text": "🃏 Cargando tarjetas…",
+        "type": "cloze",
+        "meta": {
+          "kind": "query-cards-due",
+          "title": "Tarjetas para repasar",
+          "query": {
+            "type": "cards-due",
+            "refreshOnView": true
+          }
+        },
+        "createdAt": 1790844081086,
+        "updatedAt": 1790844081086
+      },
+      {
+        "id": "block-964d14b9-a4ce-4776-bfae-89992b4bf968",
+        "parentId": null,
+        "order": 6,
+        "text": "✓ Cargando tareas…",
+        "type": "text",
+        "meta": {
+          "kind": "query-tasks-open",
+          "title": "Tareas abiertas",
+          "query": {
+            "type": "tasks-open"
+          }
+        },
+        "createdAt": 1790844081086,
+        "updatedAt": 1790844081086
+      },
+      {
+        "id": "block-4ae57615-e72a-45ee-86e1-6391085af64e",
+        "parentId": null,
+        "order": 7,
+        "text": "---",
+        "type": "text",
+        "meta": {
+          "kind": "divider",
+          "divider": true
+        },
+        "createdAt": 1790844081086,
+        "updatedAt": 1790844081086
+      },
+      {
+        "id": "block-f64b32a1-0d66-46d5-ac6c-2e68f1666906",
+        "parentId": null,
+        "order": 8,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "learnings",
+          "title": "Lo que aprendí hoy",
+          "learnings": true
+        },
+        "createdAt": 1790844081086,
+        "updatedAt": 1790844081086
+      },
+      {
+        "id": "block-8e689689-008a-40c1-9d78-aaab6a8f9d0b",
+        "parentId": null,
+        "order": 9,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "questions",
+          "title": "Lo que todavía no entiendo",
+          "questions": true
+        },
+        "createdAt": 1790844081086,
+        "updatedAt": 1790844081086
+      },
+      {
+        "id": "block-c79ae264-c2ca-4e42-96c9-71c75000e867",
+        "parentId": null,
+        "order": 10,
+        "text": "---",
+        "type": "text",
+        "meta": {
+          "kind": "divider",
+          "divider": true
+        },
+        "createdAt": 1790844081086,
+        "updatedAt": 1790844081086
+      },
+      {
+        "id": "block-6eb9deec-d64e-4107-a88a-4b4aabef5ae2",
+        "parentId": null,
+        "order": 11,
+        "text": "Una frase: ¿qué te llevas de hoy?",
+        "type": "callout",
+        "meta": {
+          "kind": "callout",
+          "title": "Reflexión del día",
+          "emoji": "✨",
+          "calloutTitle": "Reflexión del día"
+        },
+        "createdAt": 1790844081086,
+        "updatedAt": 1790844081086
+      },
+      {
+        "id": "block-d6462bc4-8bb3-48be-99c2-12186b250a00",
+        "parentId": null,
+        "order": 12,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "free",
+          "free": true
+        },
+        "createdAt": 1790844081086,
+        "updatedAt": 1790844081086
+      }
+    ],
+    "isJournal": true,
+    "journalDate": "2026-09-25"
+  },
+  {
+    "id": "journal-2026-09-26-general",
+    "title": "📓 2026-09-26",
+    "body": "",
+    "subject": "",
+    "tags": [
+      "journal",
+      "daily"
+    ],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "folderId": null,
+    "createdAt": 1790844081142,
+    "updatedAt": 1790844081164,
+    "blocks": [
+      {
+        "id": "block-4f6455fb-61c8-4541-a1f7-57200f342352",
+        "parentId": null,
+        "order": 0,
+        "text": "📓 Hoy",
+        "type": "text",
+        "meta": {
+          "kind": "heading",
+          "title": "Hoy",
+          "emoji": "📓",
+          "headingLevel": 1,
+          "journalDate": "2026-09-26",
+          "subject": "",
+          "userId": null
+        },
+        "createdAt": 1790844081142,
+        "updatedAt": 1790844081142
+      },
+      {
+        "id": "block-beb4dbf8-0218-46c7-b5d1-887b1ce4a1ca",
+        "parentId": null,
+        "order": 1,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "mood",
+          "mood": {
+            "score": 4,
+            "note": ""
+          }
+        },
+        "createdAt": 1790844081142,
+        "updatedAt": 1790844081164
+      },
+      {
+        "id": "block-fe5e4c32-1838-4dfc-9954-148c69fc9c5c",
+        "parentId": null,
+        "order": 2,
+        "text": "1. \n2. \n3. ",
+        "type": "text",
+        "meta": {
+          "kind": "gratitude",
+          "title": "3 cosas por las que estoy agradecido/a",
+          "gratitude": true
+        },
+        "createdAt": 1790844081142,
+        "updatedAt": 1790844081142
+      },
+      {
+        "id": "block-35392607-b446-4444-83f9-3eb24b4ef3c5",
+        "parentId": null,
+        "order": 3,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "agenda",
+          "title": "Agenda del día",
+          "agenda": true
+        },
+        "createdAt": 1790844081142,
+        "updatedAt": 1790844081142
+      },
+      {
+        "id": "block-b6062d2f-5049-4d38-8619-c277f67fa0d2",
+        "parentId": null,
+        "order": 4,
+        "text": "📅 Cargando eventos…",
+        "type": "text",
+        "meta": {
+          "kind": "query-events-today",
+          "query": {
+            "type": "events-today",
+            "refreshOnView": true
+          }
+        },
+        "createdAt": 1790844081142,
+        "updatedAt": 1790844081142
+      },
+      {
+        "id": "block-6584b89b-0524-414c-b79d-c19e805b966a",
+        "parentId": null,
+        "order": 5,
+        "text": "🃏 Cargando tarjetas…",
+        "type": "cloze",
+        "meta": {
+          "kind": "query-cards-due",
+          "title": "Tarjetas para repasar",
+          "query": {
+            "type": "cards-due",
+            "refreshOnView": true
+          }
+        },
+        "createdAt": 1790844081142,
+        "updatedAt": 1790844081142
+      },
+      {
+        "id": "block-2044f5ca-1aa8-4b31-8e39-a50377a810a3",
+        "parentId": null,
+        "order": 6,
+        "text": "✓ Cargando tareas…",
+        "type": "text",
+        "meta": {
+          "kind": "query-tasks-open",
+          "title": "Tareas abiertas",
+          "query": {
+            "type": "tasks-open"
+          }
+        },
+        "createdAt": 1790844081142,
+        "updatedAt": 1790844081142
+      },
+      {
+        "id": "block-9b4f99f2-df99-42e6-9032-541e8ea61602",
+        "parentId": null,
+        "order": 7,
+        "text": "---",
+        "type": "text",
+        "meta": {
+          "kind": "divider",
+          "divider": true
+        },
+        "createdAt": 1790844081142,
+        "updatedAt": 1790844081142
+      },
+      {
+        "id": "block-5592b901-1744-499c-b943-c9b17abfdce0",
+        "parentId": null,
+        "order": 8,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "learnings",
+          "title": "Lo que aprendí hoy",
+          "learnings": true
+        },
+        "createdAt": 1790844081142,
+        "updatedAt": 1790844081142
+      },
+      {
+        "id": "block-e5204ee2-f64a-4619-82a1-754450f2579f",
+        "parentId": null,
+        "order": 9,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "questions",
+          "title": "Lo que todavía no entiendo",
+          "questions": true
+        },
+        "createdAt": 1790844081142,
+        "updatedAt": 1790844081142
+      },
+      {
+        "id": "block-10130f6e-e81e-4e73-9745-3a679cb32af2",
+        "parentId": null,
+        "order": 10,
+        "text": "---",
+        "type": "text",
+        "meta": {
+          "kind": "divider",
+          "divider": true
+        },
+        "createdAt": 1790844081142,
+        "updatedAt": 1790844081142
+      },
+      {
+        "id": "block-b8b8c052-7d13-4c04-acb4-4df0481cc25f",
+        "parentId": null,
+        "order": 11,
+        "text": "Una frase: ¿qué te llevas de hoy?",
+        "type": "callout",
+        "meta": {
+          "kind": "callout",
+          "title": "Reflexión del día",
+          "emoji": "✨",
+          "calloutTitle": "Reflexión del día"
+        },
+        "createdAt": 1790844081142,
+        "updatedAt": 1790844081142
+      },
+      {
+        "id": "block-2ed92178-dddd-457e-94cf-648e5ca80072",
+        "parentId": null,
+        "order": 12,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "free",
+          "free": true
+        },
+        "createdAt": 1790844081142,
+        "updatedAt": 1790844081142
+      }
+    ],
+    "isJournal": true,
+    "journalDate": "2026-09-26"
+  },
+  {
+    "id": "journal-2026-09-27-general",
+    "title": "📓 2026-09-27",
+    "body": "",
+    "subject": "",
+    "tags": [
+      "journal",
+      "daily"
+    ],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "folderId": null,
+    "createdAt": 1790844081187,
+    "updatedAt": 1790844081209,
+    "blocks": [
+      {
+        "id": "block-7718e91e-3e87-4b22-bae6-16f45cce66e1",
+        "parentId": null,
+        "order": 0,
+        "text": "📓 Hoy",
+        "type": "text",
+        "meta": {
+          "kind": "heading",
+          "title": "Hoy",
+          "emoji": "📓",
+          "headingLevel": 1,
+          "journalDate": "2026-09-27",
+          "subject": "",
+          "userId": null
+        },
+        "createdAt": 1790844081187,
+        "updatedAt": 1790844081187
+      },
+      {
+        "id": "block-4d7af0b1-ca06-4358-9ac1-f89aefdf9589",
+        "parentId": null,
+        "order": 1,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "mood",
+          "mood": {
+            "score": 4,
+            "note": ""
+          }
+        },
+        "createdAt": 1790844081187,
+        "updatedAt": 1790844081209
+      },
+      {
+        "id": "block-dfc28341-ef75-4b14-913d-319eaf018c67",
+        "parentId": null,
+        "order": 2,
+        "text": "1. \n2. \n3. ",
+        "type": "text",
+        "meta": {
+          "kind": "gratitude",
+          "title": "3 cosas por las que estoy agradecido/a",
+          "gratitude": true
+        },
+        "createdAt": 1790844081187,
+        "updatedAt": 1790844081187
+      },
+      {
+        "id": "block-7a3fa3c3-f2eb-4416-ac13-d887014a510f",
+        "parentId": null,
+        "order": 3,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "agenda",
+          "title": "Agenda del día",
+          "agenda": true
+        },
+        "createdAt": 1790844081187,
+        "updatedAt": 1790844081187
+      },
+      {
+        "id": "block-06f3e9d2-efac-44fc-b8d3-72c2fed40f4f",
+        "parentId": null,
+        "order": 4,
+        "text": "📅 Cargando eventos…",
+        "type": "text",
+        "meta": {
+          "kind": "query-events-today",
+          "query": {
+            "type": "events-today",
+            "refreshOnView": true
+          }
+        },
+        "createdAt": 1790844081187,
+        "updatedAt": 1790844081187
+      },
+      {
+        "id": "block-4d7b0037-c906-4aa0-bfa2-a4afd89af3f3",
+        "parentId": null,
+        "order": 5,
+        "text": "🃏 Cargando tarjetas…",
+        "type": "cloze",
+        "meta": {
+          "kind": "query-cards-due",
+          "title": "Tarjetas para repasar",
+          "query": {
+            "type": "cards-due",
+            "refreshOnView": true
+          }
+        },
+        "createdAt": 1790844081187,
+        "updatedAt": 1790844081187
+      },
+      {
+        "id": "block-d7ce6222-88fd-4e11-a23b-369f8ce46e61",
+        "parentId": null,
+        "order": 6,
+        "text": "✓ Cargando tareas…",
+        "type": "text",
+        "meta": {
+          "kind": "query-tasks-open",
+          "title": "Tareas abiertas",
+          "query": {
+            "type": "tasks-open"
+          }
+        },
+        "createdAt": 1790844081187,
+        "updatedAt": 1790844081187
+      },
+      {
+        "id": "block-d947bbde-34b7-4db3-994e-a33e80278e17",
+        "parentId": null,
+        "order": 7,
+        "text": "---",
+        "type": "text",
+        "meta": {
+          "kind": "divider",
+          "divider": true
+        },
+        "createdAt": 1790844081187,
+        "updatedAt": 1790844081187
+      },
+      {
+        "id": "block-27031661-2f47-43e0-8493-7e314b2dbc71",
+        "parentId": null,
+        "order": 8,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "learnings",
+          "title": "Lo que aprendí hoy",
+          "learnings": true
+        },
+        "createdAt": 1790844081187,
+        "updatedAt": 1790844081187
+      },
+      {
+        "id": "block-2e5372fc-883b-4db0-8a20-3d04fc397302",
+        "parentId": null,
+        "order": 9,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "questions",
+          "title": "Lo que todavía no entiendo",
+          "questions": true
+        },
+        "createdAt": 1790844081187,
+        "updatedAt": 1790844081187
+      },
+      {
+        "id": "block-0e3b3fdc-4bf4-4817-af41-120efd6aa4c4",
+        "parentId": null,
+        "order": 10,
+        "text": "---",
+        "type": "text",
+        "meta": {
+          "kind": "divider",
+          "divider": true
+        },
+        "createdAt": 1790844081187,
+        "updatedAt": 1790844081187
+      },
+      {
+        "id": "block-d7edf6c9-08fc-4e29-90cc-b4ae8111f304",
+        "parentId": null,
+        "order": 11,
+        "text": "Una frase: ¿qué te llevas de hoy?",
+        "type": "callout",
+        "meta": {
+          "kind": "callout",
+          "title": "Reflexión del día",
+          "emoji": "✨",
+          "calloutTitle": "Reflexión del día"
+        },
+        "createdAt": 1790844081187,
+        "updatedAt": 1790844081187
+      },
+      {
+        "id": "block-783d14b9-24fb-4dc1-8596-ded86c3e2190",
+        "parentId": null,
+        "order": 12,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "free",
+          "free": true
+        },
+        "createdAt": 1790844081187,
+        "updatedAt": 1790844081187
+      }
+    ],
+    "isJournal": true,
+    "journalDate": "2026-09-27"
+  },
+  {
+    "id": "journal-2026-09-28-general",
+    "title": "📓 2026-09-28",
+    "body": "",
+    "subject": "",
+    "tags": [
+      "journal",
+      "daily"
+    ],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "folderId": null,
+    "createdAt": 1790844081233,
+    "updatedAt": 1790844081273,
+    "blocks": [
+      {
+        "id": "block-c9e0f492-3f05-4015-85e4-27af31ba86c8",
+        "parentId": null,
+        "order": 0,
+        "text": "📓 Hoy",
+        "type": "text",
+        "meta": {
+          "kind": "heading",
+          "title": "Hoy",
+          "emoji": "📓",
+          "headingLevel": 1,
+          "journalDate": "2026-09-28",
+          "subject": "",
+          "userId": null
+        },
+        "createdAt": 1790844081233,
+        "updatedAt": 1790844081233
+      },
+      {
+        "id": "block-0e6b6255-771f-4fbe-85b6-f7bde5e3d566",
+        "parentId": null,
+        "order": 1,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "mood",
+          "mood": {
+            "score": 2,
+            "note": ""
+          }
+        },
+        "createdAt": 1790844081233,
+        "updatedAt": 1790844081273
+      },
+      {
+        "id": "block-a0be7e77-654d-4e47-a96a-58de630414c3",
+        "parentId": null,
+        "order": 2,
+        "text": "1. \n2. \n3. ",
+        "type": "text",
+        "meta": {
+          "kind": "gratitude",
+          "title": "3 cosas por las que estoy agradecido/a",
+          "gratitude": true
+        },
+        "createdAt": 1790844081233,
+        "updatedAt": 1790844081233
+      },
+      {
+        "id": "block-97c64e3a-f791-4533-b01f-c070793889a2",
+        "parentId": null,
+        "order": 3,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "agenda",
+          "title": "Agenda del día",
+          "agenda": true
+        },
+        "createdAt": 1790844081233,
+        "updatedAt": 1790844081233
+      },
+      {
+        "id": "block-950fa240-f64d-4b5d-9582-fa4d9992627a",
+        "parentId": null,
+        "order": 4,
+        "text": "📅 Cargando eventos…",
+        "type": "text",
+        "meta": {
+          "kind": "query-events-today",
+          "query": {
+            "type": "events-today",
+            "refreshOnView": true
+          }
+        },
+        "createdAt": 1790844081233,
+        "updatedAt": 1790844081233
+      },
+      {
+        "id": "block-5fbc2986-87c1-4559-945e-b5288a59b5c7",
+        "parentId": null,
+        "order": 5,
+        "text": "🃏 Cargando tarjetas…",
+        "type": "cloze",
+        "meta": {
+          "kind": "query-cards-due",
+          "title": "Tarjetas para repasar",
+          "query": {
+            "type": "cards-due",
+            "refreshOnView": true
+          }
+        },
+        "createdAt": 1790844081233,
+        "updatedAt": 1790844081233
+      },
+      {
+        "id": "block-44e39763-9243-4340-a231-71a1c9f8ca0e",
+        "parentId": null,
+        "order": 6,
+        "text": "✓ Cargando tareas…",
+        "type": "text",
+        "meta": {
+          "kind": "query-tasks-open",
+          "title": "Tareas abiertas",
+          "query": {
+            "type": "tasks-open"
+          }
+        },
+        "createdAt": 1790844081233,
+        "updatedAt": 1790844081233
+      },
+      {
+        "id": "block-039e4dca-f792-4726-97c8-d1ae6cf2ef07",
+        "parentId": null,
+        "order": 7,
+        "text": "---",
+        "type": "text",
+        "meta": {
+          "kind": "divider",
+          "divider": true
+        },
+        "createdAt": 1790844081233,
+        "updatedAt": 1790844081233
+      },
+      {
+        "id": "block-e0a76acf-c8dc-4050-9843-94228f25143d",
+        "parentId": null,
+        "order": 8,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "learnings",
+          "title": "Lo que aprendí hoy",
+          "learnings": true
+        },
+        "createdAt": 1790844081233,
+        "updatedAt": 1790844081233
+      },
+      {
+        "id": "block-d3eb6d3e-7fca-4d3c-8b87-0af5bd8352d1",
+        "parentId": null,
+        "order": 9,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "questions",
+          "title": "Lo que todavía no entiendo",
+          "questions": true
+        },
+        "createdAt": 1790844081233,
+        "updatedAt": 1790844081233
+      },
+      {
+        "id": "block-9c96a1a5-2bc4-4f28-b0dc-c4b4939d13fd",
+        "parentId": null,
+        "order": 10,
+        "text": "---",
+        "type": "text",
+        "meta": {
+          "kind": "divider",
+          "divider": true
+        },
+        "createdAt": 1790844081233,
+        "updatedAt": 1790844081233
+      },
+      {
+        "id": "block-f7b21a66-9eef-42de-a618-66184db18aa2",
+        "parentId": null,
+        "order": 11,
+        "text": "Una frase: ¿qué te llevas de hoy?",
+        "type": "callout",
+        "meta": {
+          "kind": "callout",
+          "title": "Reflexión del día",
+          "emoji": "✨",
+          "calloutTitle": "Reflexión del día"
+        },
+        "createdAt": 1790844081233,
+        "updatedAt": 1790844081233
+      },
+      {
+        "id": "block-273bb907-1288-4f19-868e-9b2c1bd8dbe1",
+        "parentId": null,
+        "order": 12,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "free",
+          "free": true
+        },
+        "createdAt": 1790844081233,
+        "updatedAt": 1790844081233
+      }
+    ],
+    "isJournal": true,
+    "journalDate": "2026-09-28"
+  },
+  {
+    "id": "journal-2026-09-29-general",
+    "title": "📓 2026-09-29",
+    "body": "",
+    "subject": "",
+    "tags": [
+      "journal",
+      "daily"
+    ],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "folderId": null,
+    "createdAt": 1790844081294,
+    "updatedAt": 1790844081333,
+    "blocks": [
+      {
+        "id": "block-9c281503-050c-4e77-bc57-22d413958910",
+        "parentId": null,
+        "order": 0,
+        "text": "📓 Hoy",
+        "type": "text",
+        "meta": {
+          "kind": "heading",
+          "title": "Hoy",
+          "emoji": "📓",
+          "headingLevel": 1,
+          "journalDate": "2026-09-29",
+          "subject": "",
+          "userId": null
+        },
+        "createdAt": 1790844081294,
+        "updatedAt": 1790844081294
+      },
+      {
+        "id": "block-be9310be-def2-4418-a911-0781beb8c494",
+        "parentId": null,
+        "order": 1,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "mood",
+          "mood": {
+            "score": 5,
+            "note": ""
+          }
+        },
+        "createdAt": 1790844081294,
+        "updatedAt": 1790844081333
+      },
+      {
+        "id": "block-429fed69-d2d6-4251-8950-17188108c1d0",
+        "parentId": null,
+        "order": 2,
+        "text": "1. \n2. \n3. ",
+        "type": "text",
+        "meta": {
+          "kind": "gratitude",
+          "title": "3 cosas por las que estoy agradecido/a",
+          "gratitude": true
+        },
+        "createdAt": 1790844081294,
+        "updatedAt": 1790844081294
+      },
+      {
+        "id": "block-b3c981e4-39a9-47fb-a426-c7efba0a8225",
+        "parentId": null,
+        "order": 3,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "agenda",
+          "title": "Agenda del día",
+          "agenda": true
+        },
+        "createdAt": 1790844081294,
+        "updatedAt": 1790844081294
+      },
+      {
+        "id": "block-7f68ec80-da13-48b5-82c3-d30fabf13c25",
+        "parentId": null,
+        "order": 4,
+        "text": "📅 Cargando eventos…",
+        "type": "text",
+        "meta": {
+          "kind": "query-events-today",
+          "query": {
+            "type": "events-today",
+            "refreshOnView": true
+          }
+        },
+        "createdAt": 1790844081294,
+        "updatedAt": 1790844081294
+      },
+      {
+        "id": "block-bd8c7fdd-00f4-4368-9cb4-2f437ea0d93f",
+        "parentId": null,
+        "order": 5,
+        "text": "🃏 Cargando tarjetas…",
+        "type": "cloze",
+        "meta": {
+          "kind": "query-cards-due",
+          "title": "Tarjetas para repasar",
+          "query": {
+            "type": "cards-due",
+            "refreshOnView": true
+          }
+        },
+        "createdAt": 1790844081294,
+        "updatedAt": 1790844081294
+      },
+      {
+        "id": "block-54b5a99a-bcc8-4997-aa17-0c84898f1b49",
+        "parentId": null,
+        "order": 6,
+        "text": "✓ Cargando tareas…",
+        "type": "text",
+        "meta": {
+          "kind": "query-tasks-open",
+          "title": "Tareas abiertas",
+          "query": {
+            "type": "tasks-open"
+          }
+        },
+        "createdAt": 1790844081294,
+        "updatedAt": 1790844081294
+      },
+      {
+        "id": "block-7d41e8d8-eb96-407d-96d3-8a39da643ed4",
+        "parentId": null,
+        "order": 7,
+        "text": "---",
+        "type": "text",
+        "meta": {
+          "kind": "divider",
+          "divider": true
+        },
+        "createdAt": 1790844081294,
+        "updatedAt": 1790844081294
+      },
+      {
+        "id": "block-2d225be4-2bf7-4361-b179-ce4489fe89c6",
+        "parentId": null,
+        "order": 8,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "learnings",
+          "title": "Lo que aprendí hoy",
+          "learnings": true
+        },
+        "createdAt": 1790844081294,
+        "updatedAt": 1790844081294
+      },
+      {
+        "id": "block-f2cfa2d4-319e-432f-afa1-3f2833f576e4",
+        "parentId": null,
+        "order": 9,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "questions",
+          "title": "Lo que todavía no entiendo",
+          "questions": true
+        },
+        "createdAt": 1790844081294,
+        "updatedAt": 1790844081294
+      },
+      {
+        "id": "block-b6a090e1-e267-4024-8533-ea1a2e734a84",
+        "parentId": null,
+        "order": 10,
+        "text": "---",
+        "type": "text",
+        "meta": {
+          "kind": "divider",
+          "divider": true
+        },
+        "createdAt": 1790844081294,
+        "updatedAt": 1790844081294
+      },
+      {
+        "id": "block-5008ddcb-a687-48d3-8c60-3a96780ad770",
+        "parentId": null,
+        "order": 11,
+        "text": "Una frase: ¿qué te llevas de hoy?",
+        "type": "callout",
+        "meta": {
+          "kind": "callout",
+          "title": "Reflexión del día",
+          "emoji": "✨",
+          "calloutTitle": "Reflexión del día"
+        },
+        "createdAt": 1790844081294,
+        "updatedAt": 1790844081294
+      },
+      {
+        "id": "block-13fd471d-5edf-4f89-8926-5aa09ecbbf41",
+        "parentId": null,
+        "order": 12,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "free",
+          "free": true
+        },
+        "createdAt": 1790844081294,
+        "updatedAt": 1790844081294
+      }
+    ],
+    "isJournal": true,
+    "journalDate": "2026-09-29"
+  },
+  {
+    "id": "journal-2026-09-30-general",
+    "title": "📓 2026-09-30",
+    "body": "",
+    "subject": "",
+    "tags": [
+      "journal",
+      "daily"
+    ],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "folderId": null,
+    "createdAt": 1790844081359,
+    "updatedAt": 1790844081382,
+    "blocks": [
+      {
+        "id": "block-6ace9e3d-b7c0-4364-9e0c-16d6eeaa6966",
+        "parentId": null,
+        "order": 0,
+        "text": "📓 Hoy",
+        "type": "text",
+        "meta": {
+          "kind": "heading",
+          "title": "Hoy",
+          "emoji": "📓",
+          "headingLevel": 1,
+          "journalDate": "2026-09-30",
+          "subject": "",
+          "userId": null
+        },
+        "createdAt": 1790844081359,
+        "updatedAt": 1790844081359
+      },
+      {
+        "id": "block-f1a69ef6-46ce-4bc2-baf1-363d88123d98",
+        "parentId": null,
+        "order": 1,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "mood",
+          "mood": {
+            "score": 3,
+            "note": ""
+          }
+        },
+        "createdAt": 1790844081359,
+        "updatedAt": 1790844081382
+      },
+      {
+        "id": "block-3b425106-f300-4830-97c8-0e6677e6a4c1",
+        "parentId": null,
+        "order": 2,
+        "text": "1. \n2. \n3. ",
+        "type": "text",
+        "meta": {
+          "kind": "gratitude",
+          "title": "3 cosas por las que estoy agradecido/a",
+          "gratitude": true
+        },
+        "createdAt": 1790844081359,
+        "updatedAt": 1790844081359
+      },
+      {
+        "id": "block-b881520a-919b-4178-8720-9adfc871463a",
+        "parentId": null,
+        "order": 3,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "agenda",
+          "title": "Agenda del día",
+          "agenda": true
+        },
+        "createdAt": 1790844081359,
+        "updatedAt": 1790844081359
+      },
+      {
+        "id": "block-a184b347-548b-411f-98b4-e5656d2d6193",
+        "parentId": null,
+        "order": 4,
+        "text": "📅 Cargando eventos…",
+        "type": "text",
+        "meta": {
+          "kind": "query-events-today",
+          "query": {
+            "type": "events-today",
+            "refreshOnView": true
+          }
+        },
+        "createdAt": 1790844081359,
+        "updatedAt": 1790844081359
+      },
+      {
+        "id": "block-85991cb4-2004-4283-8788-4a23cbb003f8",
+        "parentId": null,
+        "order": 5,
+        "text": "🃏 Cargando tarjetas…",
+        "type": "cloze",
+        "meta": {
+          "kind": "query-cards-due",
+          "title": "Tarjetas para repasar",
+          "query": {
+            "type": "cards-due",
+            "refreshOnView": true
+          }
+        },
+        "createdAt": 1790844081359,
+        "updatedAt": 1790844081359
+      },
+      {
+        "id": "block-4aa3cd29-1bc3-4dfb-bad2-54b603b5e070",
+        "parentId": null,
+        "order": 6,
+        "text": "✓ Cargando tareas…",
+        "type": "text",
+        "meta": {
+          "kind": "query-tasks-open",
+          "title": "Tareas abiertas",
+          "query": {
+            "type": "tasks-open"
+          }
+        },
+        "createdAt": 1790844081359,
+        "updatedAt": 1790844081359
+      },
+      {
+        "id": "block-d03198aa-06e7-4e4e-bacb-c1768b5ce224",
+        "parentId": null,
+        "order": 7,
+        "text": "---",
+        "type": "text",
+        "meta": {
+          "kind": "divider",
+          "divider": true
+        },
+        "createdAt": 1790844081359,
+        "updatedAt": 1790844081359
+      },
+      {
+        "id": "block-3d34b21c-1f03-421d-9ef5-856bd64504db",
+        "parentId": null,
+        "order": 8,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "learnings",
+          "title": "Lo que aprendí hoy",
+          "learnings": true
+        },
+        "createdAt": 1790844081359,
+        "updatedAt": 1790844081359
+      },
+      {
+        "id": "block-b18eb812-96c8-4259-b81d-e50ca07c441e",
+        "parentId": null,
+        "order": 9,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "questions",
+          "title": "Lo que todavía no entiendo",
+          "questions": true
+        },
+        "createdAt": 1790844081359,
+        "updatedAt": 1790844081359
+      },
+      {
+        "id": "block-6ae879d4-2048-4b79-869f-76781b63b5cf",
+        "parentId": null,
+        "order": 10,
+        "text": "---",
+        "type": "text",
+        "meta": {
+          "kind": "divider",
+          "divider": true
+        },
+        "createdAt": 1790844081359,
+        "updatedAt": 1790844081359
+      },
+      {
+        "id": "block-e5dd472f-5bb3-459d-bb96-f8fe4782674b",
+        "parentId": null,
+        "order": 11,
+        "text": "Una frase: ¿qué te llevas de hoy?",
+        "type": "callout",
+        "meta": {
+          "kind": "callout",
+          "title": "Reflexión del día",
+          "emoji": "✨",
+          "calloutTitle": "Reflexión del día"
+        },
+        "createdAt": 1790844081359,
+        "updatedAt": 1790844081359
+      },
+      {
+        "id": "block-8d358766-9202-41a1-a75c-6b52229b268b",
+        "parentId": null,
+        "order": 12,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "free",
+          "free": true
+        },
+        "createdAt": 1790844081359,
+        "updatedAt": 1790844081359
+      }
+    ],
+    "isJournal": true,
+    "journalDate": "2026-09-30"
+  },
+  {
+    "id": "journal-2026-10-01-general",
+    "title": "📓 2026-10-01",
+    "body": "",
+    "subject": "",
+    "tags": [
+      "journal",
+      "daily"
+    ],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "folderId": null,
+    "createdAt": 1790844081405,
+    "updatedAt": 1790844081480,
+    "blocks": [
+      {
+        "id": "block-946b770f-8208-40dc-9aab-814025c5190a",
+        "parentId": null,
+        "order": 0,
+        "text": "📓 Hoy",
+        "type": "text",
+        "meta": {
+          "kind": "heading",
+          "title": "Hoy",
+          "emoji": "📓",
+          "headingLevel": 1,
+          "journalDate": "2026-10-01",
+          "subject": "",
+          "userId": null
+        },
+        "createdAt": 1790844081405,
+        "updatedAt": 1790844081405
+      },
+      {
+        "id": "block-4bb1cc63-04fc-41e1-a3e9-86761fa88aad",
+        "parentId": null,
+        "order": 1,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "mood",
+          "mood": {
+            "score": 4,
+            "note": ""
+          }
+        },
+        "createdAt": 1790844081405,
+        "updatedAt": 1790844081480
+      },
+      {
+        "id": "block-f437e79f-c866-4034-88cd-c1231adff3c6",
+        "parentId": null,
+        "order": 2,
+        "text": "1. \n2. \n3. ",
+        "type": "text",
+        "meta": {
+          "kind": "gratitude",
+          "title": "3 cosas por las que estoy agradecido/a",
+          "gratitude": true
+        },
+        "createdAt": 1790844081405,
+        "updatedAt": 1790844081405
+      },
+      {
+        "id": "block-15235655-8512-49af-be25-af4c329fbf31",
+        "parentId": null,
+        "order": 3,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "agenda",
+          "title": "Agenda del día",
+          "agenda": true
+        },
+        "createdAt": 1790844081405,
+        "updatedAt": 1790844081405
+      },
+      {
+        "id": "block-8ad7737a-216d-4de7-a7d7-5947e184de74",
+        "parentId": null,
+        "order": 4,
+        "text": "📅 Cargando eventos…",
+        "type": "text",
+        "meta": {
+          "kind": "query-events-today",
+          "query": {
+            "type": "events-today",
+            "refreshOnView": true
+          }
+        },
+        "createdAt": 1790844081405,
+        "updatedAt": 1790844081405
+      },
+      {
+        "id": "block-05fa0f84-1e58-4073-9772-317210be8dcf",
+        "parentId": null,
+        "order": 5,
+        "text": "🃏 Cargando tarjetas…",
+        "type": "cloze",
+        "meta": {
+          "kind": "query-cards-due",
+          "title": "Tarjetas para repasar",
+          "query": {
+            "type": "cards-due",
+            "refreshOnView": true
+          }
+        },
+        "createdAt": 1790844081405,
+        "updatedAt": 1790844081405
+      },
+      {
+        "id": "block-a7dbb37e-67fc-40ad-8498-e610531d7f5d",
+        "parentId": null,
+        "order": 6,
+        "text": "✓ Cargando tareas…",
+        "type": "text",
+        "meta": {
+          "kind": "query-tasks-open",
+          "title": "Tareas abiertas",
+          "query": {
+            "type": "tasks-open"
+          }
+        },
+        "createdAt": 1790844081405,
+        "updatedAt": 1790844081405
+      },
+      {
+        "id": "block-996ba0ae-20f8-406a-9bda-c408f685ebed",
+        "parentId": null,
+        "order": 7,
+        "text": "---",
+        "type": "text",
+        "meta": {
+          "kind": "divider",
+          "divider": true
+        },
+        "createdAt": 1790844081405,
+        "updatedAt": 1790844081405
+      },
+      {
+        "id": "block-dbb3c5b7-1bd0-462b-8885-3b6290b0e06e",
+        "parentId": null,
+        "order": 8,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "learnings",
+          "title": "Lo que aprendí hoy",
+          "learnings": true
+        },
+        "createdAt": 1790844081405,
+        "updatedAt": 1790844081405
+      },
+      {
+        "id": "block-decb3bc2-98ac-4728-a253-d2dab8ba0f13",
+        "parentId": null,
+        "order": 9,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "questions",
+          "title": "Lo que todavía no entiendo",
+          "questions": true
+        },
+        "createdAt": 1790844081405,
+        "updatedAt": 1790844081405
+      },
+      {
+        "id": "block-390d83e5-6ee0-4870-80c6-2bd49a69ca39",
+        "parentId": null,
+        "order": 10,
+        "text": "---",
+        "type": "text",
+        "meta": {
+          "kind": "divider",
+          "divider": true
+        },
+        "createdAt": 1790844081405,
+        "updatedAt": 1790844081405
+      },
+      {
+        "id": "block-aff555c1-a88e-4636-a1ca-ef8dcd6325f3",
+        "parentId": null,
+        "order": 11,
+        "text": "Una frase: ¿qué te llevas de hoy?",
+        "type": "callout",
+        "meta": {
+          "kind": "callout",
+          "title": "Reflexión del día",
+          "emoji": "✨",
+          "calloutTitle": "Reflexión del día"
+        },
+        "createdAt": 1790844081405,
+        "updatedAt": 1790844081405
+      },
+      {
+        "id": "block-7b25f1bc-45dc-492a-b9fd-7d4408b22c46",
+        "parentId": null,
+        "order": 12,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "free",
+          "free": true
+        },
+        "createdAt": 1790844081405,
+        "updatedAt": 1790844081405
+      }
+    ],
+    "isJournal": true,
+    "journalDate": "2026-10-01"
+  }
+]

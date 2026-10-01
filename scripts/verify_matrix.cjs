@@ -128,12 +128,23 @@ const PROBE = () => {
   });
   out.escaped = out.escaped.slice(0, 3);
 
-  const fab = document.querySelector('.mn-capture-fab');
-  const tab = document.querySelector('.m-tabbar');
+  // v2.38.17 — el mismo trato que la barra de arriba: un elemento con
+  // display:none tiene rect a cero, y compararlo contra otro da
+  // "solapan" o "no solapan" sin decir nada. En escritorio los dos
+  // estan ocultos y la comprobacion marcaba las nueve pantallas como
+  // rotas por un boton que no existe en pantalla.
+  const visible = (el) => {
+    if (!el) return null;
+    const cs = getComputedStyle(el);
+    if (cs.display === 'none' || cs.visibility === 'hidden') return null;
+    const r = el.getBoundingClientRect();
+    return r.width > 1 && r.height > 1 ? r : null;
+  };
+  const fab = visible(document.querySelector('.mn-capture-fab'));
+  const tab = visible(document.querySelector('.m-tabbar'));
   if (fab && tab) {
-    const a = fab.getBoundingClientRect();
-    const t = tab.getBoundingClientRect();
-    out.fabOverBar = !(a.right < t.left || a.left > t.right || a.bottom < t.top || a.top > t.bottom);
+    out.fabOverBar = !(fab.right <= tab.left || fab.left >= tab.right ||
+                       fab.bottom <= tab.top || fab.top >= tab.bottom);
   }
 
   // The same screen name in the bar and in the page.

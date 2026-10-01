@@ -1,0 +1,11 @@
+[
+  {
+    "id": "folder-bf25e1fa-5265-4ae2-af9d-92c1be3dd76a",
+    "name": "Genética",
+    "parentId": null,
+    "color": "var(--subj-blue)",
+    "icon": "folder",
+    "createdAt": 1790844137414,
+    "updatedAt": 1790844137414
+  }
+]

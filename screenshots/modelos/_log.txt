@@ -1,0 +1,6 @@
+corazon: captura
+craneo: captura
+pulmon: captura
+cerebro: captura
+vertebra: captura
+hueso: captura
