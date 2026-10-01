@@ -1,6 +1,6 @@
 [
   {
-    "id": "fc-a7f118de-d2ac-4e12-af3d-137f71be6861",
+    "id": "fc-53d32a54-278e-44af-a4d4-35d0c5f0fa19",
     "front": "¿Qué hay oculto en p.1 de x?",
     "back": "A",
     "cardType": "basic",
@@ -13,7 +13,7 @@
     "sourceNoteId": "pdf:x.pdf#o=o-1"
   },
   {
-    "id": "fc-28574b36-175b-4ec4-9923-3f103db64e3e",
+    "id": "fc-8483a5de-9440-4666-a5af-6313390e3024",
     "front": "¿Qué hay oculto en p.2 de x?",
     "back": "B",
     "cardType": "basic",

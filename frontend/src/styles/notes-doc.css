@@ -1,0 +1,310 @@
+/* ══════════════════════════════════════════════════════════════
+ * v2.38.16 — La nota como documento.
+ *
+ * La pantalla anterior era un cuaderno: pagina 1 de 1 en un boton
+ * grande arriba, doce botones en una barra, cinco pestanas al lado.
+ * Todo estaba, y no se sabia donde.
+ *
+ * Aqui hay una sola columna de texto y, en PC, una columna de
+ * contexto. Lo que se ve es lo que hay. El color se usa para lo que
+ * de verdad lo necesita —un enlace, una etiqueta, la palabra que
+ * estas escribiendo— y para nada mas.
+ * ══════════════════════════════════════════════════════════════ */
+
+.doc-screen, .doc-list { display: flex; flex-direction: column; min-height: 100%; background: var(--bg); }
+
+/* ── la barra de arriba: quieta ─────────────────────────────── */
+.doc-bar {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: .35rem;
+  padding: .5rem clamp(.6rem, 3vw, 1.4rem);
+  padding-top: max(.5rem, env(safe-area-inset-top));
+  /* v2.38.16 — el piloto de estado del servidor vive en la esquina
+   * superior derecha, en la misma barra. Sin este hueco, el boton de
+   * "mas" queda debajo y no se puede pulsar: en movil, nada. */
+  padding-right: 8.5rem;
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+.doc-bar-title { font-size: 1.15rem; font-weight: 650; margin: 0; letter-spacing: -.01em; }
+.doc-crumb { color: var(--fg-muted); font-size: .88rem; }
+.doc-back, .doc-act {
+  width: 40px; height: 40px; border-radius: 11px;
+  display: grid; place-items: center;
+  border: 1px solid transparent; background: transparent;
+  color: var(--fg); font-size: 1.15rem; cursor: pointer;
+  transition: background .14s ease, border-color .14s ease, transform .14s ease;
+}
+.doc-back { font-size: 1.6rem; line-height: 1; margin-right: -.2rem; }
+.doc-act:hover, .doc-back:hover {
+  background: color-mix(in srgb, var(--accent, #7c5cff) 14%, transparent);
+  border-color: color-mix(in srgb, var(--accent, #7c5cff) 30%, transparent);
+}
+.doc-act:active, .doc-back:active { transform: scale(.94); }
+.doc-act:focus-visible, .doc-back:focus-visible,
+.doc-card:focus-visible, .doc-add:focus-visible {
+  outline: 2px solid var(--accent, #7c5cff); outline-offset: 2px;
+}
+
+/* ── la lista ───────────────────────────────────────────────── */
+.doc-list-wrap { padding: clamp(.8rem, 3vw, 2rem); max-width: 860px; margin: 0 auto; width: 100%; }
+.doc-search { width: 100%; margin-bottom: 1rem; }
+.doc-cards { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; }
+.doc-card {
+  display: grid; gap: .22rem; width: 100%; text-align: left; cursor: pointer;
+  padding: .85rem 1rem; border-radius: 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: inherit; font: inherit;
+  transition: border-color .15s ease, transform .15s ease, background .15s ease;
+}
+.doc-card:hover { border-color: color-mix(in srgb, var(--accent, #7c5cff) 45%, var(--border)); transform: translateY(-1px); }
+.doc-card-title { font-weight: 620; font-size: 1rem; }
+.doc-card-snippet { color: var(--fg-muted); font-size: .86rem; line-height: 1.45;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.doc-card-meta { color: var(--fg-faint); font-size: .76rem; }
+.doc-list-empty { text-align: center; padding: 3.5rem 1rem; color: var(--fg-muted); }
+.doc-list-empty p { margin: .3rem 0; }
+
+/* ── el cuerpo: papel y columna de contexto ─────────────────── */
+.doc-body {
+  flex: 1; display: grid; grid-template-columns: minmax(0,1fr) 300px;
+  gap: 0; align-items: start; min-height: 0;
+}
+.doc-paper {
+  position: relative; min-width: 0;
+  background: var(--bg);
+  padding: clamp(1rem, 4vw, 2.6rem) clamp(1rem, 5vw, 3.4rem) 8rem;
+  max-width: 46rem; margin: 0 auto; width: 100%;
+}
+.doc-flow { position: relative; z-index: 2; }
+
+/* La tinta va DEBAJO del texto, no encima: escribir a mano no
+ * debería tapar lo que estás leyendo. Sobre el papel, con el
+ * lienzo detrás, la letra se lee igual. */
+.doc-ink { position: absolute; inset: 0; z-index: 1; pointer-events: auto; }
+.doc-ink .ink-pad { height: 100%; }
+.doc-ink .ink-toolbar {
+  /* v2.38.16 — la barra del lapiz va ABAJO a la derecha, flotando.
+   *
+   * El pad es una capa absoluta sobre todo el papel, asi que una barra
+   * dentro de su rejilla salia pegada al principio de la nota, encima
+   * del titulo, como si el titulo fuera un encabezado. */
+  position: fixed; right: 5.4rem; bottom: calc(4.6rem + env(safe-area-inset-bottom));
+  z-index: 30;
+  display: inline-flex; gap: .2rem; padding: .28rem; margin: 0;
+  background: color-mix(in srgb, var(--bg-elevated) 94%, transparent);
+  border: 1px solid var(--border); border-radius: 14px;
+  box-shadow: 0 10px 28px rgba(0,0,0,.4);
+  backdrop-filter: blur(12px);
+}
+.doc-ink .ink-status { font-size: .74rem; color: var(--fg-faint); margin: .3rem 0 0; }
+.doc-ink .ink-stage { background: transparent; border: 0; border-radius: 10px; min-height: 240px; }
+.doc-ink .ink-cursor { display: none; }
+
+/* ── título y metadatos ─────────────────────────────────────── */
+.doc-title {
+  font-size: clamp(1.6rem, 4.2vw, 2.35rem); line-height: 1.14; font-weight: 700;
+  letter-spacing: -.022em; margin: 0 0 .35rem; outline: none;
+}
+.doc-title:focus-visible { box-shadow: 0 2px 0 var(--accent, #7c5cff); }
+.doc-title:empty::before { content: "Sin título"; color: var(--fg-faint); }
+.doc-meta { margin: 0 0 1.6rem; color: var(--fg-faint); font-size: .8rem; }
+
+/* ── el texto ───────────────────────────────────────────────── */
+.doc-content { font-size: 1.03rem; line-height: 1.72; color: var(--fg); }
+.doc-content p { margin: 0 0 1.05rem; }
+.doc-placeholder { color: var(--fg-faint); line-height: 1.7; }
+.doc-placeholder code, .doc-rail code {
+  background: var(--bg-sunken); padding: .08em .38em;
+  border-radius: 5px; font-size: .88em; color: var(--fg);
+}
+.doc-underline { border-bottom: 2px solid #f5d76e; padding-bottom: 1px; }
+.doc-highlight { background: #f5d76e38; border-radius: 3px; padding: 0 .16em; }
+.doc-bookref { color: #9db4ff; }
+
+/* El textarea de edicion: MISMA tipografia, MISMO ancho, mismos
+ * margenes que el texto ya maquetado. Por eso entrar en edicion no
+ * da un salto: no cambia nada de sitio, solo aparece el cursor. */
+.doc-editor {
+  width: 100%; min-height: 12rem; resize: vertical;
+  font: inherit; font-size: 1.03rem; line-height: 1.72; color: inherit;
+  background: transparent; border: 0; outline: none; padding: 0; margin: 0;
+  caret-color: var(--accent, #7c5cff);
+}
+
+/* ── enlaces ────────────────────────────────────────────────── */
+.doc-link {
+  color: var(--accent, #7c5cff); text-decoration: none;
+  border-bottom: 1.5px solid color-mix(in srgb, var(--accent, #7c5cff) 45%, transparent);
+  cursor: pointer; padding-bottom: 1px;
+  transition: background .13s ease, border-color .13s ease;
+}
+.doc-link:hover { background: color-mix(in srgb, var(--accent, #7c5cff) 13%, transparent);
+  border-bottom-color: var(--accent, #7c5cff); }
+.doc-rail-list button {
+  background: none; border: 0; color: var(--accent, #7c5cff);
+  cursor: pointer; font: inherit; text-align: left; padding: .18rem 0;
+  border-bottom: 1px solid transparent;
+}
+.doc-rail-list button:hover { border-bottom-color: currentColor; }
+
+/* ── bloques embebidos ──────────────────────────────────────── */
+.doc-blocks { display: grid; gap: 1.1rem; margin: 1.6rem 0; }
+.doc-block {
+  border: 1px solid var(--border); border-radius: 16px;
+  background: var(--bg-elevated); padding: .85rem;
+}
+.doc-block-head { display: flex; align-items: center; gap: .5rem; margin-bottom: .6rem; }
+.doc-block-kind {
+  font-size: .7rem; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--fg-faint); font-weight: 600;
+}
+.doc-block-x {
+  margin-left: auto; width: 30px; height: 30px; border-radius: 8px;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--fg-muted); cursor: pointer; line-height: 1;
+}
+.doc-block-x:hover { color: #f87171; border-color: #f8717155; }
+.doc-block-empty { margin: 0; color: var(--fg-muted); font-size: .88rem; }
+.doc-block .m3d-stage { cursor: grab; max-height: min(46vh, 380px); }
+
+.doc-add-row { margin-top: 1.4rem; }
+.doc-add {
+  display: inline-flex; align-items: center; gap: .45rem;
+  min-height: 44px; padding: 0 1rem; border-radius: 12px; cursor: pointer;
+  color: var(--fg-muted); font: inherit; font-size: .9rem;
+  background: transparent; border: 1px dashed var(--border-strong);
+  transition: color .15s ease, border-color .15s ease, background .15s ease;
+}
+.doc-add:hover {
+  color: var(--accent, #7c5cff); border-color: var(--accent, #7c5cff);
+  background: color-mix(in srgb, var(--accent, #7c5cff) 8%, transparent);
+}
+
+/* ── la columna de contexto ──────────────────────────────────── */
+.doc-rail {
+  position: sticky; top: 3.6rem; align-self: start;
+  padding: 1.2rem 1.1rem 3rem;
+  border-left: 1px solid var(--border);
+  display: grid; gap: 1.4rem; max-height: calc(100vh - 3.6rem); overflow: auto;
+}
+.doc-rail-sec { display: grid; gap: .45rem; }
+.doc-rail-h {
+  font-size: .7rem; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--fg-faint); font-weight: 600; margin: 0;
+}
+.doc-rail-h--sub { margin-top: .7rem; }
+.doc-rail-empty { margin: 0; font-size: .82rem; color: var(--fg-faint); line-height: 1.55; }
+.doc-rail-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .1rem; font-size: .88rem; }
+.doc-tags { display: flex; flex-wrap: wrap; gap: .3rem; }
+.doc-tag {
+  font-size: .76rem; padding: .16rem .5rem; border-radius: 999px;
+  background: color-mix(in srgb, var(--accent, #7c5cff) 15%, transparent);
+  color: color-mix(in srgb, var(--accent, #7c5cff) 82%, white);
+}
+
+/* ── menús ──────────────────────────────────────────────────── */
+.doc-menu[hidden] { display: none; }
+.doc-menu {
+  position: fixed; z-index: 90; width: 250px; padding: .35rem;
+  background: var(--bg-elevated); border: 1px solid var(--border);
+  border-radius: 14px; box-shadow: 0 18px 44px rgba(0,0,0,.5);
+  display: grid; gap: 1px; animation: doc-pop .13s ease-out;
+}
+@keyframes doc-pop { from { opacity: 0; transform: translateY(5px) scale(.98); } }
+.doc-menu button {
+  display: flex; align-items: center; gap: .6rem; width: 100%; text-align: left;
+  padding: .5rem .6rem; border: 0; border-radius: 9px; cursor: pointer;
+  background: transparent; color: inherit; font: inherit; font-size: .88rem;
+}
+.doc-menu button:hover { background: color-mix(in srgb, var(--accent, #7c5cff) 14%, transparent); }
+.doc-menu button strong { display: block; font-weight: 550; }
+.doc-menu button small { display: block; color: var(--fg-faint); font-size: .75rem; }
+.doc-menu-icon { font-size: 1.05rem; width: 1.4rem; text-align: center; }
+.doc-menu-hint {
+  margin: .3rem .6rem .25rem; padding-top: .45rem; font-size: .74rem;
+  color: var(--fg-faint); border-top: 1px solid var(--border);
+}
+.doc-menu-hint kbd {
+  font: inherit; font-size: .72rem; background: var(--bg-sunken);
+  border: 1px solid var(--border-strong); border-radius: 5px; padding: .05rem .32rem;
+}
+
+/* ── sugerencias de [[ ──────────────────────────────────────── */
+.doc-suggest {
+  position: fixed; z-index: 95; width: 290px; max-height: 260px; overflow: auto;
+  background: var(--bg-elevated); border: 1px solid var(--border);
+  border-radius: 12px; box-shadow: 0 16px 40px rgba(0,0,0,.5); padding: .25rem;
+  display: grid; gap: 1px;
+}
+.doc-suggest button {
+  display: grid; gap: .1rem; text-align: left; width: 100%;
+  padding: .45rem .6rem; border: 0; border-radius: 8px; cursor: pointer;
+  background: transparent; color: inherit; font: inherit;
+}
+.doc-suggest button:hover, .doc-suggest button[aria-selected="true"] {
+  background: color-mix(in srgb, var(--accent, #7c5cff) 16%, transparent);
+}
+.doc-suggest strong { font-size: .88rem; font-weight: 550; }
+.doc-suggest small { color: var(--fg-faint); font-size: .74rem;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── responsive ─────────────────────────────────────────────── */
+
+/* Movil: una sola columna, sin la de contexto. El contexto cabe en
+ * el menu ⋯; meterlo al lado dejaria 180px de texto. */
+@media (max-width: 900px) {
+  .doc-body { grid-template-columns: minmax(0, 1fr); }
+  .doc-rail { display: none; }
+  .doc-paper { max-width: none; }
+  .doc-content, .doc-editor { font-size: 1.06rem; }
+  .doc-block { border-radius: 14px; padding: .7rem; }
+}
+
+/* Movil pequeño: el "+" de anadir bloque se va abajo del todo, a
+ * un dedo, en vez de en medio de la nota. */
+@media (max-width: 520px) {
+  .doc-add-row { margin-top: 2rem; }
+  .doc-bar { gap: .2rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .doc-menu { animation: none; }
+  .doc-card, .doc-act, .doc-back { transition: none; }
+}
+
+/* v2.38.16 — una etiqueta escrita en el texto tiene que parecer una
+ * etiqueta. Antes salia un "#anatomia" suelto en mitad del parrafo,
+ * que es justo lo que hace que no se sepa que es una etiqueta. */
+.doc-tag-inline {
+  font-size: .88em; padding: .1em .45em; border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: color-mix(in srgb, var(--accent) 78%, var(--fg));
+  white-space: nowrap;
+}
+
+/* ── la barra del modelo 3D ──────────────────────────────────── */
+.doc-block .m3d-bar { display: flex; align-items: center; gap: .45rem; flex-wrap: wrap; }
+.doc-block select.m3d-pick,
+select.m3d-pick {
+  flex: 1 1 8rem; min-width: 8rem; min-height: 38px;
+  padding: 0 .5rem; border-radius: 10px; font: inherit; font-size: .86rem;
+  background: var(--bg-sunken); color: var(--fg); border: 1px solid var(--border);
+}
+.doc-block .m3d-label-btn, .doc-block .m3d-occ-btn {
+  display: inline-flex; align-items: center; gap: .3rem; min-height: 38px;
+  padding: 0 .7rem; border-radius: 10px; cursor: pointer; font: inherit;
+  font-size: .84rem; color: var(--fg-muted);
+  background: var(--bg-sunken); border: 1px solid var(--border);
+  transition: color .14s ease, border-color .14s ease, background .14s ease;
+}
+.doc-block .m3d-label-btn:hover, .doc-block .m3d-occ-btn:hover {
+  color: var(--accent); border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.doc-block .m3d-label-btn[aria-pressed="true"],
+.doc-block .m3d-occ-btn[aria-pressed="true"] {
+  color: #fff; background: var(--accent); border-color: var(--accent);
+}

@@ -73,15 +73,41 @@ describe("v2.33.0 — icons.js has print icon", () => {
   });
 });
 
-describe("v2.33.0 — Notes toolbar print button", () => {
-  it("notes.js wires #print-note to printNote()", () => {
-    const src = readFileSync(
-      join(process.cwd(), "src/screens/notes.js"),
-      "utf-8",
-    );
-    expect(src).toMatch(/#print-note/);
+describe("v2.33.0 → v2.38.16 — imprimir desde el teclado, no desde un boton", () => {
+  // v2.38.16. Este test comprueba que NO hay boton de imprimir. Antes
+  // comproba que lo hubiera, en la barra ancha y en la de movil, que es
+  // justo lo que se pidio quitar: en un telefono un icono de
+  // impresora abre un dialogo del sistema que no lleva a ninguna parte.
+  it("no queda ningun boton de imprimir en las barras", () => {
+    const src = readFileSync(join(process.cwd(), "src/screens/notes.js"), "utf-8");
+    // El marcado ya no los lleva...
+    expect(src).not.toMatch(/id="print-note"/);
+    expect(src).not.toMatch(/id="print-note-mobile"/);
+    expect(src).not.toMatch(/id="print-config"/);
+    expect(src).not.toMatch(/id="print-config-mobile"/);
+    // ...y el manejador del boton se fue con ellos. Lo que queda es el
+    // atajo, que llama a printNote con la nota.
+    expect(src).not.toMatch(/querySelector\("#print-note"\)/);
+    expect(src).toMatch(/printThisNote/);
     expect(src).toMatch(/printNote\(note/);
-    expect(src).toMatch(/#print-note-mobile/);
+  });
+
+  it("el atajo solo se registra en un PC", () => {
+    const src = readFileSync(join(process.cwd(), "src/screens/notes.js"), "utf-8");
+    expect(src).toMatch(/puedeImprimirConTeclado\(\)/);
+    // Y el nombre de la nota se comprueba por el tipo de maquina, no
+    // por el ancho: un iPad Pro en horizontal es mas ancho que un
+    // portatil y no tiene Ctrl+P.
+    const dev = readFileSync(join(process.cwd(), "src/services/device.js"), "utf-8");
+    expect(dev).toMatch(/export function puedeImprimirConTeclado/);
+    expect(dev).toMatch(/"ipad"/);
+  });
+
+  it("la nota nueva no trae ningun boton de imprimir", () => {
+    const src = readFileSync(join(process.cwd(), "src/screens/notes_doc.js"), "utf-8");
+    expect(src).not.toMatch(/print-note/);
+    expect(src).toMatch(/puedeImprimirConTeclado/);
+    expect(src).toMatch(/Ctrl<\/kbd>\+<kbd>P/);
   });
 });
 

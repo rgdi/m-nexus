@@ -1,0 +1,6 @@
+pc: {"lienzo":true,"nota3d":true,"bloques":1,"tinta":false,"punteroLateral":true,"meta":"28 palabras · 1 min de lectura · ahora · 1 enlace · 1 bloque","texto":162,"editorOculto":true}
+pc: 3D {"etiquetas":1,"oclusiones":1,"nombre":"Aurícula derecha"}
+movil: {"lienzo":true,"nota3d":true,"bloques":1,"tinta":false,"punteroLateral":false,"meta":"28 palabras · 1 min de lectura · ahora · 1 enlace · 1 bloque","texto":162,"editorOculto":true}
+movil: 3D {"etiquetas":1,"oclusiones":1,"nombre":"Aurícula derecha"}
+tablet: {"lienzo":true,"nota3d":true,"bloques":1,"tinta":true,"punteroLateral":false,"meta":"28 palabras · 1 min de lectura · ahora · 1 enlace · 1 bloque","texto":162,"editorOculto":true}
+tablet: 3D {"etiquetas":1,"oclusiones":1,"nombre":"Aurícula derecha"}

@@ -1,0 +1,37 @@
+[
+  {
+    "id": "note-b70cb048-483f-403b-810f-993602efb10b",
+    "title": "Sistema de conducción cardíaca",
+    "body": "El impulso eléctrico nace en el ==nodo sinoauricular== y viaja por el nodo auriculoventricular.\n\nDe ahí baja por el ==haz de His== hacia el ápex, y desde ahí sube por las ramas de Tawara hasta las fibras de Purkinje.\n\n!!La（金 aurícula derecha y la izquierda se contraen a la vez!!, y por eso las aurículas van antes que los ventrículos.\n\nVer también: [[Ciclo cardíaco]] y [[Válvulas cardíacas]].\n\n#anatomía",
+    "subject": "",
+    "tags": [
+      "cardio",
+      "anatomía"
+    ],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "folderId": null,
+    "createdAt": 1790822557481,
+    "updatedAt": 1790822557481
+  },
+  {
+    "id": "note-4e134034-a58f-4895-b7fd-cc62570650ce",
+    "title": "Ciclo cardíaco",
+    "body": "Sístole y diástole.\n\nVuelve a [[Sistema de conducción cardíaca]].\n\n{{3d:{\"m\":\"corazon\",\"l\":[[-0.5005,0.32,-0.1847,\"Aurícula derecha\"],[-0.5005,0.32,-0.1847,\"Aurícula derecha\"]],\"o\":[[0.4676,1.7316,0.2671,0.16,0.12,\"\"]]}}}\n\n{{3d:{\"m\":\"corazon\",\"l\":[],\"o\":[]}}}\n\n",
+    "subject": "",
+    "tags": [],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "folderId": null,
+    "createdAt": 1790822557516,
+    "updatedAt": 1790822608926
+  }
+]

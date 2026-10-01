@@ -131,7 +131,6 @@ export async function renderOverview(root) {
 
           <button class="btn primary" id="cv-btn" style="margin-top: var(--s-5)">📊 ${i18n.t("overview.crossVerify")}</button>
           <button class="btn primary" id="exam-btn" style="margin-top: var(--s-3)">📋 ${i18n.t("overview.exam")}</button>
-          <button class="btn primary" id="graph-btn" style="margin-top: var(--s-3)">🕸 3D Graph</button>
 
           <h3 class="muted small semibold" style="margin: var(--s-5) 0 var(--s-3)">🎓 Syllabus tracker</h3>
           <div id="syl-dashboard-host"></div>
@@ -183,31 +182,13 @@ export async function renderOverview(root) {
     });
   }
 
-  // v2.1.5: 3D graph (was graph_3d.js, removed in v2.3.0-A; now uses three_d_viewer)
-  const graphBtn = root.querySelector("#graph-btn");
-  if (graphBtn) {
-    graphBtn.addEventListener("click", async () => {
-      const { open3DViewer } = await import("../widgets/three_d_viewer.js");
-      const noteList = await dataSource.notes.list();
-      // Build hotspots from note list (each note becomes a hotspot on a 3D bone)
-      const hotspots = noteList.slice(0, 12).map((n, i) => ({
-        id: n.id,
-        title: n.title,
-        position: [(i % 4 - 1.5) * 0.6, Math.floor(i / 4) * 0.7 - 0.5, 0],
-        note: n.body?.slice(0, 80) || "",
-      }));
-      const viewer = document.createElement("div");
-      viewer.id = "graph-3d-viewer";
-      viewer.style.cssText = "position:fixed;inset:0;z-index:9999;background:#0a0d12";
-      document.body.appendChild(viewer);
-      try {
-        await open3DViewer(viewer, hotspots, "bone");
-      } catch (e) {
-        viewer.remove();
-        console.error("[3D graph]", e);
-      }
-    });
-  }
+  // v2.38.16 — el 3D Graph se fue.
+  //
+  // Era el resumen con las notas esparcidas como chinchetas sobre un
+  // hueso: bonito y sin ninguna utilidad. Lo que siserve es meter un
+  // modelo 3D DENTRO de una nota, con etiquetas y con oclusion encima
+  // —que es como se estudia anatomia de verdad—. Eso vive ahora en
+  // la nota, donde el contenido esta; el boton disappears de aqui.
 
   // v2.1.1: Syllabus tracker dashboard
   const sylHost = root.querySelector("#syl-dashboard-host");

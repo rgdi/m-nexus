@@ -1,0 +1,96 @@
+[
+  {
+    "id": "note-6aca039b-e412-4d94-8349-464a5646f32d",
+    "title": "Test note",
+    "body": "<p>Hello</p>",
+    "subject": "",
+    "tags": [],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "folderId": null,
+    "createdAt": 1790824973477,
+    "updatedAt": 1790824973493,
+    "printConfig": {
+      "customAuthor": "Dr. Garcia",
+      "customFooter": "Universidad de Salamanca — 2026",
+      "pageSize": "Letter",
+      "orientation": "landscape"
+    }
+  },
+  {
+    "id": "note-723524d7-3f18-45c4-b389-29638effd8a5",
+    "title": "Note X",
+    "body": "",
+    "subject": "",
+    "tags": [],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "folderId": null,
+    "createdAt": 1790824973509,
+    "updatedAt": 1790824973527,
+    "printConfig": {
+      "customAuthor": "Test",
+      "showFlashcards": false
+    }
+  },
+  {
+    "id": "note-a0f78f43-49f8-4822-8ecd-1e53b782438f",
+    "title": "Y",
+    "body": "",
+    "subject": "",
+    "tags": [],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "folderId": null,
+    "createdAt": 1790824973544,
+    "updatedAt": 1790824973544
+  },
+  {
+    "id": "note-2c219766-7eb2-491a-8c2f-a163d2689440",
+    "title": "Z",
+    "body": "",
+    "subject": "",
+    "tags": [],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "folderId": null,
+    "createdAt": 1790824973566,
+    "updatedAt": 1790824973566
+  },
+  {
+    "id": "note-133185d1-394e-4e95-8f5b-e03fe0042fdb",
+    "title": "M",
+    "body": "",
+    "subject": "",
+    "tags": [],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "folderId": null,
+    "createdAt": 1790824973586,
+    "updatedAt": 1790824973614,
+    "printConfig": {
+      "customAuthor": "Alice",
+      "customFooter": "Footer B"
+    }
+  }
+]

@@ -5086,3 +5086,16 @@ body.dg-scrolling { user-select: none; }
   .scrim--wide .pdf-body { flex-direction: column; }
   .scrim--wide .pdf-sidepanel { max-height: 34%; }
 }
+
+/* v2.38.16 — un enlace que no lleva a ninguna parte tiene que
+ * parecerlo. Antes `[[Nota]]` inexistente te llevaba a la primera nota
+ * de la lista, sin aviso: el enlace funcionaba y te llevaba al sitio
+ * equivocado. */
+.tl-wikilink--missing {
+  color: var(--danger, #f87171);
+  text-decoration: underline wavy;
+  text-decoration-color: currentColor;
+  text-underline-offset: 3px;
+  cursor: help;
+  opacity: 0.9;
+}

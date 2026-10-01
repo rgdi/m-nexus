@@ -34,3 +34,9 @@ vendor/pdf.worker.min.mjs
   https://github.com/mozilla/pdf.js
   Servido localmente desde el 2026-10-01 (v2.38.15) para que el visor de
   PDF funcione sin conexion. Antes se cargaba desde cdnjs.
+
+vendor/three.min.js
+  three.js r158 — MIT License
+  https://github.com/mrdoob/three.js
+  Servido localmente desde el 2026-10-01 (v2.38.16) para que los
+  modelos 3D de las notas funcionen sin conexion.

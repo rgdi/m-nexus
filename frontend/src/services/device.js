@@ -164,3 +164,24 @@ export function startDeviceWatch() {
   apply();
   return device.subscribe(apply);
 }
+
+
+/**
+ * Imprimir con el teclado solo tiene sentido en un PC.
+ *
+ * v2.38.16 — para Ctrl+P. En un telefono o una tablet el atajo no
+ * existe: no hay Ctrl que pulsar, y aunque lo hubiera, imprimir desde
+ * ahi abre un dialogo que no lleva a ninguna parte. En esos
+ * dispositivos no hay ni boton ni atajo, y no se finge que si.
+ *
+ * Se pregunta por el tipo de maquina, no por el ancho: un iPad Pro en
+ * horizontal mide 1366 px, mas que un portatil, y no tiene Ctrl+P.
+ */
+export function puedeImprimirConTeclado() {
+  if (typeof window === "undefined") return false;
+  const kind = device._values?.kind || "phone";
+  if (kind === "phone" || kind === "tablet" || kind === "ipad") return false;
+  // Y que de verdad tenga un puntero fino: un portatil tactil en modo
+  // tablet sigue teniendo teclado, asi que entra igual.
+  return typeof matchMedia === "function" ? matchMedia("(pointer: fine)").matches : true;
+}

@@ -1,0 +1,355 @@
+[
+  {
+    "id": "fc-a7f118de-d2ac-4e12-af3d-137f71be6861",
+    "front": "¿Qué hay oculto en p.1 de x?",
+    "back": "A",
+    "subject": "general",
+    "tags": [
+      "general",
+      "pdf-occlusion",
+      "pdf-x"
+    ],
+    "sourceNoteId": "pdf:x.pdf#o=o-1",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 0,
+      "difficulty": 5,
+      "state": "new",
+      "reps": 0,
+      "lapses": 0,
+      "lastReview": 0,
+      "due": 1790822110505,
+      "retrievability": 1
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "createdAt": 1790822110505,
+    "updatedAt": 1790822110505
+  },
+  {
+    "id": "fc-28574b36-175b-4ec4-9923-3f103db64e3e",
+    "front": "¿Qué hay oculto en p.2 de x?",
+    "back": "B",
+    "subject": "general",
+    "tags": [
+      "general",
+      "pdf-occlusion",
+      "pdf-x"
+    ],
+    "sourceNoteId": "pdf:x.pdf#o=o-2",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 0,
+      "difficulty": 5,
+      "state": "new",
+      "reps": 0,
+      "lapses": 0,
+      "lastReview": 0,
+      "due": 1790822110505,
+      "retrievability": 1
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "createdAt": 1790822110505,
+    "updatedAt": 1790822110505
+  },
+  {
+    "id": "fc-06976d4a-b724-4076-a33d-a2090e3c432c",
+    "front": "¿Cuántas fases tiene el ciclo cardíaco?",
+    "back": "Dos: sístole y diástole",
+    "subject": "cardio",
+    "tags": [
+      "cardio",
+      "basico"
+    ],
+    "sourceNoteId": "",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 3.126204466938387,
+      "difficulty": 3.9349,
+      "state": "review",
+      "reps": 5,
+      "lapses": 0,
+      "lastReview": 1790822110631,
+      "due": 1791092214697,
+      "retrievability": 1,
+      "sched": {
+        "elapsedDays": 0,
+        "targetRetention": 0.9
+      }
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "reviewHistory": [
+      {
+        "t": 1790822110541,
+        "rating": 2,
+        "r": 1
+      },
+      {
+        "t": 1790822110560,
+        "rating": 3,
+        "r": 1
+      },
+      {
+        "t": 1790822110579,
+        "rating": 3,
+        "r": 1
+      },
+      {
+        "t": 1790822110601,
+        "rating": 4,
+        "r": 1
+      },
+      {
+        "t": 1790822110631,
+        "rating": 3,
+        "r": 1
+      }
+    ],
+    "createdAt": 1790822110520,
+    "updatedAt": 1790822110631
+  },
+  {
+    "id": "fc-e0376cce-64c1-4871-aa20-1e7201ebb92c",
+    "front": "¿Qué ocurre durante la sístole ventricular?",
+    "back": "Expulsa sangre hacia la aorta y la arteria pulmonar",
+    "subject": "cardio",
+    "tags": [
+      "cardio",
+      "basico"
+    ],
+    "sourceNoteId": "",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 3.1262036827788173,
+      "difficulty": 3.9349,
+      "state": "review",
+      "reps": 5,
+      "lapses": 0,
+      "lastReview": 1790822110768,
+      "due": 1791092214766,
+      "retrievability": 1,
+      "sched": {
+        "elapsedDays": 0,
+        "targetRetention": 0.9
+      }
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "reviewHistory": [
+      {
+        "t": 1790822110684,
+        "rating": 2,
+        "r": 1
+      },
+      {
+        "t": 1790822110708,
+        "rating": 3,
+        "r": 1
+      },
+      {
+        "t": 1790822110732,
+        "rating": 3,
+        "r": 1
+      },
+      {
+        "t": 1790822110750,
+        "rating": 4,
+        "r": 1
+      },
+      {
+        "t": 1790822110768,
+        "rating": 3,
+        "r": 1
+      }
+    ],
+    "createdAt": 1790822110658,
+    "updatedAt": 1790822110768
+  },
+  {
+    "id": "fc-a8031b19-dfc9-49ed-8eee-05cf1d28de78",
+    "front": "¿Cuál es la mayor arteria del cuerpo?",
+    "back": "La aorta",
+    "subject": "cardio",
+    "tags": [
+      "cardio",
+      "basico"
+    ],
+    "sourceNoteId": "",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 3.126203930334128,
+      "difficulty": 3.9349,
+      "state": "review",
+      "reps": 5,
+      "lapses": 0,
+      "lastReview": 1790822110898,
+      "due": 1791092214918,
+      "retrievability": 1,
+      "sched": {
+        "elapsedDays": 0,
+        "targetRetention": 0.9
+      }
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "reviewHistory": [
+      {
+        "t": 1790822110814,
+        "rating": 2,
+        "r": 1
+      },
+      {
+        "t": 1790822110836,
+        "rating": 3,
+        "r": 1
+      },
+      {
+        "t": 1790822110856,
+        "rating": 3,
+        "r": 1
+      },
+      {
+        "t": 1790822110876,
+        "rating": 4,
+        "r": 1
+      },
+      {
+        "t": 1790822110898,
+        "rating": 3,
+        "r": 1
+      }
+    ],
+    "createdAt": 1790822110790,
+    "updatedAt": 1790822110898
+  },
+  {
+    "id": "fc-4e5d75d6-05cb-4b7d-8cc6-72ba9efbf5e5",
+    "front": "¿Qué estructura absorbe el pico de presión sistólico?",
+    "back": "La elasticidad de la aorta",
+    "subject": "cardio",
+    "tags": [
+      "cardio",
+      "cloze"
+    ],
+    "sourceNoteId": "",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 3.126203862009529,
+      "difficulty": 3.9349,
+      "state": "review",
+      "reps": 5,
+      "lapses": 0,
+      "lastReview": 1790822111089,
+      "due": 1791092215103,
+      "retrievability": 1,
+      "sched": {
+        "elapsedDays": 0,
+        "targetRetention": 0.9
+      }
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "reviewHistory": [
+      {
+        "t": 1790822110961,
+        "rating": 2,
+        "r": 1
+      },
+      {
+        "t": 1790822111029,
+        "rating": 3,
+        "r": 1
+      },
+      {
+        "t": 1790822111046,
+        "rating": 3,
+        "r": 1
+      },
+      {
+        "t": 1790822111066,
+        "rating": 4,
+        "r": 1
+      },
+      {
+        "t": 1790822111089,
+        "rating": 3,
+        "r": 1
+      }
+    ],
+    "createdAt": 1790822110937,
+    "updatedAt": 1790822111090
+  },
+  {
+    "id": "fc-46afd76a-1c44-4e1f-a42f-fbb427be0885",
+    "front": "¿Qué devuelven las venas?",
+    "back": "La sangre al corazón",
+    "subject": "cardio",
+    "tags": [
+      "cardio",
+      "basico"
+    ],
+    "sourceNoteId": "",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 3.126203413695031,
+      "difficulty": 3.9349,
+      "state": "review",
+      "reps": 5,
+      "lapses": 0,
+      "lastReview": 1790822111202,
+      "due": 1791092215177,
+      "retrievability": 1,
+      "sched": {
+        "elapsedDays": 0,
+        "targetRetention": 0.9
+      }
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "reviewHistory": [
+      {
+        "t": 1790822111125,
+        "rating": 2,
+        "r": 1
+      },
+      {
+        "t": 1790822111149,
+        "rating": 3,
+        "r": 1
+      },
+      {
+        "t": 1790822111167,
+        "rating": 3,
+        "r": 1
+      },
+      {
+        "t": 1790822111185,
+        "rating": 4,
+        "r": 1
+      },
+      {
+        "t": 1790822111202,
+        "rating": 3,
+        "r": 1
+      }
+    ],
+    "createdAt": 1790822111108,
+    "updatedAt": 1790822111202
+  }
+]

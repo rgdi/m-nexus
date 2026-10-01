@@ -16,7 +16,7 @@
     "deviceName": "Test",
     "platform": "linux",
     "registeredAt": 1789829183759,
-    "lastSeenAt": 1790032415711
+    "lastSeenAt": 1790824932101
   },
   {
     "deviceId": "test-d-002",
@@ -25,7 +25,7 @@
     "appVersion": "2.19.1",
     "osVersion": "Android 15",
     "registeredAt": 1789828862078,
-    "lastSeenAt": 1790821929600
+    "lastSeenAt": 1790825000372
   },
   {
     "deviceId": "test-d-003",
@@ -36,7 +36,7 @@
       "audio": true
     },
     "registeredAt": 1789828862202,
-    "lastSeenAt": 1790821929635
+    "lastSeenAt": 1790825000403
   },
   {
     "deviceId": "test-d-004",
@@ -45,73 +45,73 @@
       "syncIntervalMinutes": 10
     },
     "registeredAt": 1789828862293,
-    "lastSeenAt": 1790821929661
+    "lastSeenAt": 1790825000418
   },
   {
     "deviceId": "test-d-005",
     "userId": "user-A",
     "registeredAt": 1789828862378,
-    "lastSeenAt": 1790821929667
+    "lastSeenAt": 1790825000424
   },
   {
     "deviceId": "test-d-006",
     "userId": "user-A",
     "registeredAt": 1789828862384,
-    "lastSeenAt": 1790821929716
+    "lastSeenAt": 1790825000429
   },
   {
     "deviceId": "test-d-007",
     "userId": "user-B",
     "registeredAt": 1789828862389,
-    "lastSeenAt": 1790821929722
+    "lastSeenAt": 1790825000434
   },
   {
     "deviceId": "test-d-008",
     "registeredAt": 1789828862395,
-    "lastSeenAt": 1790821929731
+    "lastSeenAt": 1790825000441
   },
   {
     "deviceId": "reg-2",
     "deviceName": "New",
     "pluginVersion": "1.0",
     "registeredAt": 1789829183764,
-    "lastSeenAt": 1790821887411
+    "lastSeenAt": 1790824932113
   },
   {
     "deviceId": "reg-3",
     "registeredAt": 1789829183773,
-    "lastSeenAt": 1790821887431,
+    "lastSeenAt": 1790824932118,
     "blocked": false
   },
   {
     "deviceId": "auth-http-1",
     "deviceName": "Test",
     "registeredAt": 1789829184425,
-    "lastSeenAt": 1790821891789,
-    "lastAccessTokenId": "1351fb9b9bf3c7049e8054148619b1a8"
+    "lastSeenAt": 1790824933191,
+    "lastAccessTokenId": "7d6c9c7bc6bf3ef0296adefd994de2f7"
   },
   {
     "deviceId": "auth-http-2",
     "registeredAt": 1789829184495,
-    "lastSeenAt": 1790821891856,
-    "lastAccessTokenId": "f72eae34ea5cad1264c714284c4468f0"
+    "lastSeenAt": 1790824933211,
+    "lastAccessTokenId": "874448082ec3ddaa3408a2e24965fb3b"
   },
   {
     "deviceId": "auth-http-3",
     "registeredAt": 1789829184552,
-    "lastSeenAt": 1790821891934,
-    "lastAccessTokenId": "1ac95da08227c79c3e5214a4800892bc"
+    "lastSeenAt": 1790824933321,
+    "lastAccessTokenId": "aa1be1b8c861a382d0b24dcdd0b7476a"
   },
   {
     "deviceId": "auth-audit",
     "registeredAt": 1789829184593,
-    "lastSeenAt": 1790821891967,
-    "lastAccessTokenId": "624a5a64580ebb9d54b682255f2a91dd"
+    "lastSeenAt": 1790824933357,
+    "lastAccessTokenId": "055093200998061a8e21a0264818596b"
   },
   {
     "deviceId": "auth-revoke",
     "registeredAt": 1789829184680,
-    "lastSeenAt": 1790821892014
+    "lastSeenAt": 1790824933376
   },
   {
     "deviceId": "test-device-1",
@@ -119,26 +119,26 @@
     "platform": "linux",
     "pluginVersion": "0.28.0",
     "registeredAt": 1789829186447,
-    "lastSeenAt": 1790821882058,
-    "lastAccessTokenId": "8cf3edbebd3e7068620e1e401c6606fa"
+    "lastSeenAt": 1790824969689,
+    "lastAccessTokenId": "aedc9362e083422dcc5e0dba25d98cd0"
   },
   {
     "deviceId": "device-for-list",
     "deviceName": "List test",
     "registeredAt": 1789829186477,
-    "lastSeenAt": 1790821874933,
-    "lastAccessTokenId": "68f567b537e9ab70f662bbb2ea9af481"
+    "lastSeenAt": 1790824944579,
+    "lastAccessTokenId": "364dbaf79f528011bccb78a29d143781"
   },
   {
     "deviceId": "device-token-test",
     "registeredAt": 1789829186507,
-    "lastSeenAt": 1790821875033
+    "lastSeenAt": 1790824944618
   },
   {
     "deviceId": "ws-test-device",
     "deviceName": "WS Test",
     "registeredAt": 1789829192257,
-    "lastSeenAt": 1790821910947
+    "lastSeenAt": 1790824975446
   },
   {
     "deviceId": "shots-2jta1jj2",
@@ -638,46 +638,383 @@
     "lastSeenAt": 1790724113578
   },
   {
-    "deviceId": "dev-gaz955vu",
+    "deviceId": "2d4850b9-f86f-477d-b825-c680d0116d15",
+    "deviceName": "Linux x86_64",
+    "platform": "web",
+    "registeredAt": 1790822036952,
+    "lastSeenAt": 1790822045740
+  },
+  {
+    "deviceId": "notas-nwoh06mz",
+    "deviceName": "notas-capture",
+    "platform": "web",
+    "registeredAt": 1790822069535,
+    "lastSeenAt": 1790822069535,
+    "lastAccessTokenId": "16b093688f23a9924c5e419bd8c03cb7"
+  },
+  {
+    "deviceId": "70b9bf16-c5fc-4595-9c1e-56d3f7257cbf",
+    "deviceName": "Linux x86_64",
+    "platform": "web",
+    "registeredAt": 1790822071526,
+    "lastSeenAt": 1790822080410
+  },
+  {
+    "deviceId": "core-1pkyyvvs",
+    "deviceName": "core-capture",
+    "platform": "web",
+    "registeredAt": 1790822110362,
+    "lastSeenAt": 1790822110362,
+    "lastAccessTokenId": "87ca0e95b0b3831bbdf8da7502bbfc9c"
+  },
+  {
+    "deviceId": "1ce8f212-05fc-4d1c-bcf5-71b350720ca2",
+    "deviceName": "Linux x86_64",
+    "platform": "web",
+    "registeredAt": 1790822113030,
+    "lastSeenAt": 1790822150542
+  },
+  {
+    "deviceId": "doc-vl7gn3y4",
+    "deviceName": "doc-cap",
+    "platform": "web",
+    "registeredAt": 1790822444736,
+    "lastSeenAt": 1790822444736,
+    "lastAccessTokenId": "eab951df409add80e629f7a7cddd8385"
+  },
+  {
+    "deviceId": "6bf0e6bd-8f10-4354-b8b7-83cadd1fd0e4",
+    "deviceName": "MacIntel",
+    "platform": "web",
+    "registeredAt": 1790822446747,
+    "lastSeenAt": 1790822446747
+  },
+  {
+    "deviceId": "b7db594f-af31-4092-90ac-cc406384ed60",
+    "deviceName": "Linux x86_64",
+    "platform": "web",
+    "registeredAt": 1790822522944,
+    "lastSeenAt": 1790822522944
+  },
+  {
+    "deviceId": "doc-3czbmu5v",
+    "deviceName": "doc-cap",
+    "platform": "web",
+    "registeredAt": 1790822557454,
+    "lastSeenAt": 1790822557454,
+    "lastAccessTokenId": "005d59969156206aedaff2bf3bd6e79c"
+  },
+  {
+    "deviceId": "09ed6413-e72e-475f-b728-d2be68afecc6",
+    "deviceName": "Linux x86_64",
+    "platform": "web",
+    "registeredAt": 1790822559314,
+    "lastSeenAt": 1790822597427
+  },
+  {
+    "deviceId": "doc-tw3rgj6b",
+    "deviceName": "doc-cap",
+    "platform": "web",
+    "registeredAt": 1790822703369,
+    "lastSeenAt": 1790822703369,
+    "lastAccessTokenId": "c295f03c2c70068b60b7e7b0acb24f8e"
+  },
+  {
+    "deviceId": "fa4b7acb-7ba8-4794-beae-88faed0f9105",
+    "deviceName": "Linux x86_64",
+    "platform": "web",
+    "registeredAt": 1790822705254,
+    "lastSeenAt": 1790822736255
+  },
+  {
+    "deviceId": "doc-bn15z0l2",
+    "deviceName": "doc-cap",
+    "platform": "web",
+    "registeredAt": 1790822802746,
+    "lastSeenAt": 1790822802746,
+    "lastAccessTokenId": "d8667f4b819390a5d3c1c5da1289fe63"
+  },
+  {
+    "deviceId": "0ce193c5-badd-43c4-804d-0ab1a1476a81",
+    "deviceName": "Linux x86_64",
+    "platform": "web",
+    "registeredAt": 1790822804549,
+    "lastSeenAt": 1790822835449
+  },
+  {
+    "deviceId": "doc-d74mn551",
+    "deviceName": "doc-cap",
+    "platform": "web",
+    "registeredAt": 1790822938578,
+    "lastSeenAt": 1790822938578,
+    "lastAccessTokenId": "55f70a0e784114a5c0fe6fec21ca0b4b"
+  },
+  {
+    "deviceId": "a5013456-f103-45e5-a549-5c016cbf8171",
+    "deviceName": "Linux x86_64",
+    "platform": "web",
+    "registeredAt": 1790822940655,
+    "lastSeenAt": 1790823037459
+  },
+  {
+    "deviceId": "doc-25254c41",
+    "deviceName": "doc-cap",
+    "platform": "web",
+    "registeredAt": 1790823103839,
+    "lastSeenAt": 1790823103839,
+    "lastAccessTokenId": "61b9f5c29196f8f83703ed460689e619"
+  },
+  {
+    "deviceId": "0514387f-2e31-4a90-a774-8578db549559",
+    "deviceName": "MacIntel",
+    "platform": "web",
+    "registeredAt": 1790823105877,
+    "lastSeenAt": 1790823272519
+  },
+  {
+    "deviceId": "doc-kbm403nx",
+    "deviceName": "doc-cap",
+    "platform": "web",
+    "registeredAt": 1790823372566,
+    "lastSeenAt": 1790823372566,
+    "lastAccessTokenId": "0b1004c5ebdfaf2222c97bacb6e29468"
+  },
+  {
+    "deviceId": "3686d04e-d7fa-4861-9b18-7e6b365e5348",
+    "deviceName": "MacIntel",
+    "platform": "web",
+    "registeredAt": 1790823374376,
+    "lastSeenAt": 1790823479635
+  },
+  {
+    "deviceId": "e2w5wnng",
+    "deviceName": "e",
+    "platform": "web",
+    "registeredAt": 1790823668036,
+    "lastSeenAt": 1790823668036,
+    "lastAccessTokenId": "988b5d91b121116eeab83e05797ba37f"
+  },
+  {
+    "deviceId": "bbf8637d-0fa3-4dc8-a7b2-53bde642eeca",
+    "deviceName": "Linux x86_64",
+    "platform": "web",
+    "registeredAt": 1790823669725,
+    "lastSeenAt": 1790823669725
+  },
+  {
+    "deviceId": "eyppo51a",
+    "deviceName": "e",
+    "platform": "web",
+    "registeredAt": 1790823700966,
+    "lastSeenAt": 1790823700966,
+    "lastAccessTokenId": "3bf22323f8195b6a33d9c7d3e54011ad"
+  },
+  {
+    "deviceId": "bb3bf995-5c28-4c3f-a12c-bdf6621b523d",
+    "deviceName": "Linux x86_64",
+    "platform": "web",
+    "registeredAt": 1790823702714,
+    "lastSeenAt": 1790823702714
+  },
+  {
+    "deviceId": "e8ug7ka6",
+    "deviceName": "e",
+    "platform": "web",
+    "registeredAt": 1790823731278,
+    "lastSeenAt": 1790823731278,
+    "lastAccessTokenId": "239bca81de04568f3ac81115a2dab41b"
+  },
+  {
+    "deviceId": "17ee9da6-33e6-4690-93f0-38e6060573ab",
+    "deviceName": "Linux x86_64",
+    "platform": "web",
+    "registeredAt": 1790823733045,
+    "lastSeenAt": 1790823733045
+  },
+  {
+    "deviceId": "doc-u0fwhg8q",
+    "deviceName": "doc-cap",
+    "platform": "web",
+    "registeredAt": 1790823774451,
+    "lastSeenAt": 1790823774451,
+    "lastAccessTokenId": "3c835b3b62db86294ef045871e163704"
+  },
+  {
+    "deviceId": "doc-2pmgayeq",
+    "deviceName": "doc-cap",
+    "platform": "web",
+    "registeredAt": 1790823807028,
+    "lastSeenAt": 1790823807028,
+    "lastAccessTokenId": "6716f713629e305a62ae0b039e173354"
+  },
+  {
+    "deviceId": "052114db-8015-4696-92a3-a968a914280c",
+    "deviceName": "MacIntel",
+    "platform": "web",
+    "registeredAt": 1790823808777,
+    "lastSeenAt": 1790823890575
+  },
+  {
+    "deviceId": "doc-sc6grq4p",
+    "deviceName": "doc-cap",
+    "platform": "web",
+    "registeredAt": 1790823956646,
+    "lastSeenAt": 1790823956646,
+    "lastAccessTokenId": "1a130cc911db1ba54056062fd9306d31"
+  },
+  {
+    "deviceId": "0b799bb0-8cd2-4a61-b258-a3b7fbf16011",
+    "deviceName": "MacIntel",
+    "platform": "web",
+    "registeredAt": 1790823958456,
+    "lastSeenAt": 1790824017317
+  },
+  {
+    "deviceId": "doc-4w95q8fj",
+    "deviceName": "doc-cap",
+    "platform": "web",
+    "registeredAt": 1790824022931,
+    "lastSeenAt": 1790824022931,
+    "lastAccessTokenId": "3a4897c8f368daa4f75d386f93c77798"
+  },
+  {
+    "deviceId": "31ce7dcf-c7c3-482b-bb5f-8baf75b3c342",
+    "deviceName": "MacIntel",
+    "platform": "web",
+    "registeredAt": 1790824026118,
+    "lastSeenAt": 1790824107377
+  },
+  {
+    "deviceId": "doc-1jthug09",
+    "deviceName": "doc-cap",
+    "platform": "web",
+    "registeredAt": 1790824109652,
+    "lastSeenAt": 1790824109652,
+    "lastAccessTokenId": "4b5bbf7dba824e385ea7e97f73de2bdb"
+  },
+  {
+    "deviceId": "c2d1afb6-ae2f-4890-9796-00eae0cc4c47",
+    "deviceName": "MacIntel",
+    "platform": "web",
+    "registeredAt": 1790824112785,
+    "lastSeenAt": 1790824205738
+  },
+  {
+    "deviceId": "doc-n115czzt",
+    "deviceName": "doc-cap",
+    "platform": "web",
+    "registeredAt": 1790824195042,
+    "lastSeenAt": 1790824195042,
+    "lastAccessTokenId": "cb5f87fa08f811a6088118ec4861f90f"
+  },
+  {
+    "deviceId": "ba736336-1920-44e4-80b0-ab4f135da86f",
+    "deviceName": "MacIntel",
+    "platform": "web",
+    "registeredAt": 1790824199251,
+    "lastSeenAt": 1790824347212
+  },
+  {
+    "deviceId": "doc-14pu2ceq",
+    "deviceName": "doc-cap",
+    "platform": "web",
+    "registeredAt": 1790824290877,
+    "lastSeenAt": 1790824290877,
+    "lastAccessTokenId": "d45cb307f0f8a5b928a62e4b558a8936"
+  },
+  {
+    "deviceId": "7b7b4725-970b-4c83-94a3-df9df2ff5278",
+    "deviceName": "MacIntel",
+    "platform": "web",
+    "registeredAt": 1790824293639,
+    "lastSeenAt": 1790824376425
+  },
+  {
+    "deviceId": "nd-qt8qpca",
+    "deviceName": "nd-test",
+    "platform": "web",
+    "registeredAt": 1790824379078,
+    "lastSeenAt": 1790824379078,
+    "lastAccessTokenId": "ebd1241a9d43347d88de635d72e78146"
+  },
+  {
+    "deviceId": "01dcf73d-2292-4e11-b9b2-5824410ed6b5",
+    "deviceName": "Linux x86_64",
+    "platform": "web",
+    "registeredAt": 1790824382063,
+    "lastSeenAt": 1790824412859
+  },
+  {
+    "deviceId": "nd-wytcq63",
+    "deviceName": "nd-test",
+    "platform": "web",
+    "registeredAt": 1790824448439,
+    "lastSeenAt": 1790824448439,
+    "lastAccessTokenId": "92141b266fc27a7f988102bd6e7f4a21"
+  },
+  {
+    "deviceId": "7ce6e253-0d53-4318-a046-c724b00b8830",
+    "deviceName": "Linux x86_64",
+    "platform": "web",
+    "registeredAt": 1790824450525,
+    "lastSeenAt": 1790824475736
+  },
+  {
+    "deviceId": "nd-ji0zn77",
+    "deviceName": "nd-test",
+    "platform": "web",
+    "registeredAt": 1790824548014,
+    "lastSeenAt": 1790824548014,
+    "lastAccessTokenId": "a7cd8271a543b10ebe37372427d937e3"
+  },
+  {
+    "deviceId": "2fc5575c-dd78-4f35-8a25-867e8661c0b9",
+    "deviceName": "Linux x86_64",
+    "platform": "web",
+    "registeredAt": 1790824549822,
+    "lastSeenAt": 1790824604742
+  },
+  {
+    "deviceId": "dev-cdp1nsi9",
     "deviceName": "security-test",
     "platform": "web",
-    "registeredAt": 1790821869846,
-    "lastSeenAt": 1790821869846,
-    "lastAccessTokenId": "4eabd8e5c3e39f2a121171dce7bbe803"
+    "registeredAt": 1790824942193,
+    "lastSeenAt": 1790824942193,
+    "lastAccessTokenId": "4ffb09af5a3856f9279c782ee908a474"
   },
   {
-    "deviceId": "pub-mfhlu9j6",
+    "deviceId": "pub-5lpagen7",
     "deviceName": "t",
     "platform": "web",
-    "registeredAt": 1790821870141,
-    "lastSeenAt": 1790821870141
+    "registeredAt": 1790824942479,
+    "lastSeenAt": 1790824942479
   },
   {
-    "deviceId": "cap-y52jbkv4",
+    "deviceId": "t-3rxmpai3",
     "deviceName": "vitest",
     "platform": "test",
-    "registeredAt": 1790821893895,
-    "lastSeenAt": 1790821893895
+    "registeredAt": 1790824961567,
+    "lastSeenAt": 1790824961567
   },
   {
-    "deviceId": "t-ejhkyydp",
+    "deviceId": "cap-9t0nubuv",
     "deviceName": "vitest",
     "platform": "test",
-    "registeredAt": 1790821896202,
-    "lastSeenAt": 1790821896202
+    "registeredAt": 1790824963489,
+    "lastSeenAt": 1790824963489
   },
   {
-    "deviceId": "t-0mcr2wmx",
+    "deviceId": "t-g50e2zw5",
     "deviceName": "vitest",
     "platform": "test",
-    "registeredAt": 1790821898276,
-    "lastSeenAt": 1790821898276
+    "registeredAt": 1790824966866,
+    "lastSeenAt": 1790824966866
   },
   {
-    "deviceId": "dev-pp-1790821902383-cjvut6ab0nk",
+    "deviceId": "dev-pp-1790824973457-6eajl18jj6",
     "deviceName": "test",
     "platform": "node",
-    "registeredAt": 1790821902388,
-    "lastSeenAt": 1790821902388
+    "registeredAt": 1790824973461,
+    "lastSeenAt": 1790824973461
   }
 ]

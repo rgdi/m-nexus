@@ -10,6 +10,7 @@ import { authHeaders } from "../services/auth.js";
 // paragraphs do not overwrite each other.
 import { reconcile, applyRemote, deleteBlock, isBlockDeleted } from "../services/noteCrdt.js";
 import { getDeviceId } from "../services/device_id.js";
+import { puedeImprimirConTeclado } from "../services/device.js";
 const BASE = detectApiBase();
 import { i18n } from "../services/i18n.js";
 import { api } from "../services/api.js";
@@ -373,26 +374,63 @@ async function renderNotebook(root, id) {
   // v1.7.3: export PDF
   root.querySelector("#export-pdf").addEventListener("click", () => downloadNoteAsPDF(note));
 
-  // v2.33.0: print note (premium print stylesheet)
-  const printBtn = root.querySelector("#print-note");
-  if (printBtn) {
-    printBtn.addEventListener("click", async () => {
-      try {
-        // v2.33.1: fetch per-note print config + global defaults
+  // v2.38.16 — imprimir ya no es un boton, es Ctrl+P. Y solo en PC.
+  //
+  // El boton estaba en las dos barras, la ancha y la de movil. En un
+  // telefono un icono de impresora abre un dialogo del sistema que
+  // manda a una impresora que no existe: un control muerto. En un PC
+  // con teclado, Ctrl+P es lo que todo el mundo ya sabe, y ademas
+  // pasa por la configuracion de impresion del navegador en lugar de
+  // salirse de la pagina.
+  const printThisNote = async () => {
+    try {
+      // v2.33.1: fetch per-note print config + global defaults
+      const printCfg = await loadPrintConfig(note);
+      await printNote(note, {
+        vaultName: localStorage.getItem("mnexus.vault.name") || "M-NEXUS",
+        printConfig: printCfg,
+      });
+    } catch (e) {
+      console.error("print failed", e);
+      // Fallback: print current document
+      window.print();
+    }
+  };
+  if (puedeImprimirConTeclado()) {
+    const onKey = async (ev) => {
+      if (!(ev.ctrlKey || ev.metaKey)) return;
+      if (String(ev.key).toLowerCase() !== "p") return;
+
+      // Ctrl+Shift+P: la configuracion de impresion. El engranaje se
+      // fue con el boton, y sin esta puerta se quedaria inalcanzable.
+      if (ev.shiftKey) {
+        ev.preventDefault();
         const printCfg = await loadPrintConfig(note);
-        await printNote(note, {
-          vaultName: localStorage.getItem("mnexus.vault.name") || "M-NEXUS",
-          printConfig: printCfg,
+        const { openPrintConfigModal } = await import("../widgets/print_config_modal.js");
+        openPrintConfigModal({
+          noteId: note.id,
+          currentConfig: printCfg,
+          onSaved: (u) => { if (u?.printConfig) note.printConfig = u.printConfig; },
         });
-      } catch (e) {
-        console.error("print failed", e);
-        // Fallback: print current document
-        window.print();
+        return;
       }
-    });
+      // Si hay un dialogo abierto, que lo imprima el, no la nota.
+      if (document.querySelector(".scrim, dialog[open]")) return;
+      ev.preventDefault();
+      printThisNote();
+    };
+    document.addEventListener("keydown", onKey);
+    // El oyente vive en `document`, que sobrevive al cambio de
+    // pantalla. Sin esto se acumula uno por cada nota abierta y
+    // Ctrl+P abriria la previsualizacion cinco veces. El router
+    // emite `mnexus:route` antes de desmontar.
+    const onRoute = () => document.removeEventListener("keydown", onKey);
+    window.addEventListener("mnexus:route", onRoute, { once: true });
   }
 
-  // v2.33.1: gear icon for print-config modal
+  // v2.33.1: gear icon for print-config modal.
+  // v2.38.16: sin boton, este bloque no se ejecuta nunca. Se deja el
+  // modal accesible por Ctrl+Shift+P desde el atajo de impresion.
   const cfgBtn = root.querySelector("#print-config");
   if (cfgBtn) {
     cfgBtn.addEventListener("click", async () => {
@@ -1311,7 +1349,27 @@ function renderTextLayer(layer, body) {
       e.preventDefault();
       const target = a.dataset.wikilink;
       const all = await dataSource.notes.list();
-      const found = all.find((n) => (n.title || "").toLowerCase() === target.toLowerCase()) || all[0];
+      const norm = (s) => (s || "").trim().toLowerCase();
+      const found =
+        all.find((n) => norm(n.title) === norm(target)) ||
+        // Parcial: `[[Aorta]]` encuentra "Arteria aorta". Mejor una
+        // coincidencia parcial que un salto a una nota que no es.
+        all.find((n) => norm(n.title).includes(norm(target))) ||
+        null;
+
+      // v2.38.16 — aqui estaba `|| all[0]`: un enlace a una nota que
+      // no existe te llevaba a la PRIMERA nota de la lista, sin
+      // avisar. Parecia que el enlace funcionaba y te llevaba al
+      // sitio equivocado. Si no esta, se dice que no esta.
+      if (!found) {
+        a.classList.add("tl-wikilink--missing");
+        a.setAttribute("title", `No existe ninguna nota llamada "${target}"`);
+        a.removeAttribute("data-wikilink");
+        const { showToast } = await import("../widgets/toast.js");
+        showToast(`No hay ninguna nota llamada "${target}"`, "warn");
+        return;
+      }
+
       if (found) {
         state.selectedId = found.id;
         state.page = 0;
@@ -1374,8 +1432,6 @@ function renderNotebookWideHTML(note, pages) {
               <button class="tool-btn" id="open-ai-side" title="${i18n.t("ai.open") || "AI"}" aria-label="${i18n.t("ai.open") || "AI"}">✦</button>
               <button class="tool-btn" id="new-card-btn" title="${i18n.t("notes.newFlashcard")}" aria-label="${i18n.t("notes.newFlashcard")}">${svgIcon("flashcard", 18)}</button>
               <button class="tool-btn" id="export-pdf" title="PDF" aria-label="PDF">${svgIcon("text", 18)}</button>
-              <button class="tool-btn" id="print-note" title="${i18n.t("common.print") || "Print"}" aria-label="${i18n.t("common.print") || "Print"}">${svgIcon("print", 18)}</button>
-              <button class="tool-btn" id="print-config" title="Configurar impresión / PDF" aria-label="Configurar impresión">⚙️</button>
             </div>
           </div>
         </main>
@@ -1436,8 +1492,6 @@ function renderNotebookNarrowHTML(note) {
         <span class="tool-sep"></span>
         <button class="tool-btn" id="open-ai-side" title="${i18n.t("ai.open") || "AI"}" aria-label="AI">✦</button>
         <button class="tool-btn" id="export-pdf-mobile" title="PDF" aria-label="PDF">${svgIcon("text", 18)}</button>
-        <button class="tool-btn" id="print-note-mobile" title="${i18n.t("common.print") || "Print"}" aria-label="${i18n.t("common.print") || "Print"}">${svgIcon("print", 18)}</button>
-        <button class="tool-btn" id="print-config-mobile" title="Configurar impresión / PDF" aria-label="Configurar impresión">⚙️</button>
         <button class="tool-btn" id="new-card-btn-mobile" title="${i18n.t("notes.newFlashcard")}" aria-label="${i18n.t("notes.newFlashcard")}">${svgIcon("flashcard", 18)}</button>
         <button class="tool-btn" id="search-btn-mobile" title="${i18n.t("common.search")}" aria-label="${i18n.t("common.search")}">${svgIcon("search", 18)}</button>
         <button class="tool-btn" id="overview-btn-mobile" title="${i18n.t("notes.intelligentOverview")}" aria-label="${i18n.t("notes.intelligentOverview")}">${svgIcon("eye", 18)}</button>
@@ -1468,20 +1522,8 @@ function wireNarrow(root, id, note) {
   });
   root.querySelector("#export-pdf").addEventListener("click", () => downloadNoteAsPDF(note));
 
-  // v2.33.0: print note (premium print stylesheet)
-  const printBtn2 = root.querySelector("#print-note");
-  if (printBtn2) {
-    printBtn2.addEventListener("click", async () => {
-      try {
-        await printNote(note, {
-          vaultName: localStorage.getItem("mnexus.vault.name") || "M-NEXUS",
-        });
-      } catch (e) {
-        console.error("print failed", e);
-        window.print();
-      }
-    });
-  }
+  // v2.38.16 — no hay boton de imprimir. El atajo se registro mas
+  // arriba, en renderNotebook(), que corre para los dos layouts.
 
   // v2.11.0: mobile toolbar buttons (mirror the wide layout actions)
   const mirror = (srcId, fn) => {
@@ -1490,8 +1532,6 @@ function wireNarrow(root, id, note) {
   };
   mirror("#open-ai-side", () => root.querySelector("#open-ai")?.click());
   mirror("#export-pdf-mobile", () => root.querySelector("#export-pdf")?.click());
-  mirror("#print-note-mobile", () => root.querySelector("#print-note")?.click());
-  mirror("#print-config-mobile", () => root.querySelector("#print-config")?.click());
   mirror("#new-card-btn-mobile", () => {
     // Trigger the existing flashcard slash flow (or open side panel)
     location.hash = "#/notes?topic=" + encodeURIComponent(note.subject || "general");

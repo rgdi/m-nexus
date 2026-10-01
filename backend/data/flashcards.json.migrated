@@ -1,54 +1,28 @@
 [
   {
-    "id": "fc-legacy-1",
-    "front": "¿Gen de fibrosis quística?",
-    "back": "CFTR",
-    "subject": "biología",
-    "tags": [
-      "recreo"
-    ],
-    "sourceNoteId": "note-1",
-    "sourceExcerpt": "Gen de fibrosis…",
+    "id": "fc-a7f118de-d2ac-4e12-af3d-137f71be6861",
+    "front": "¿Qué hay oculto en p.1 de x?",
+    "back": "A",
     "cardType": "basic",
-    "fsrs": {
-      "stability": 0,
-      "difficulty": 5,
-      "state": "new",
-      "reps": 0,
-      "lapses": 0,
-      "lastReview": 0,
-      "due": 1790032438961,
-      "retrievability": 1
-    },
-    "elaborations": [],
-    "relatedTo": [],
-    "interleaveGroup": null,
-    "createdAt": 1700000000000,
-    "updatedAt": 1700000000000
+    "subject": "general",
+    "tags": [
+      "general",
+      "pdf-occlusion",
+      "pdf-x"
+    ],
+    "sourceNoteId": "pdf:x.pdf#o=o-1"
   },
   {
-    "id": "fc-legacy-2",
-    "front": "El páncreas secreta {{c1::insulina}}",
-    "back": "insulina",
-    "subject": "",
-    "tags": [],
-    "sourceNoteId": "",
-    "sourceExcerpt": "",
-    "cardType": "cloze",
-    "fsrs": {
-      "stability": 0,
-      "difficulty": 5,
-      "state": "new",
-      "reps": 0,
-      "lapses": 0,
-      "lastReview": 0,
-      "due": 1790032438961,
-      "retrievability": 1
-    },
-    "elaborations": [],
-    "relatedTo": [],
-    "interleaveGroup": null,
-    "createdAt": 1700000000001,
-    "updatedAt": 1700000001001
+    "id": "fc-28574b36-175b-4ec4-9923-3f103db64e3e",
+    "front": "¿Qué hay oculto en p.2 de x?",
+    "back": "B",
+    "cardType": "basic",
+    "subject": "general",
+    "tags": [
+      "general",
+      "pdf-occlusion",
+      "pdf-x"
+    ],
+    "sourceNoteId": "pdf:x.pdf#o=o-2"
   }
 ]

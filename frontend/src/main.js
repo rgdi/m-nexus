@@ -23,7 +23,8 @@ import { icon as svgIcon } from "./widgets/icons.js";
 import { renderOverview } from "./screens/overview.js";
 import { renderCalendar } from "./screens/calendar.js";
 import { renderSubjects } from "./screens/subjects.js";
-import { renderNotes } from "./screens/notes.js";
+// v2.38.16 — la nota es un documento, no un cuaderno de paginas.
+import { renderNotes } from "./screens/notes_doc.js";
 import { renderTodos } from "./screens/todos.js";
 import { renderCapture } from "./screens/capture.js";
 import { renderRag } from "./screens/rag.js";

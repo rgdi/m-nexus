@@ -29,6 +29,7 @@ const MODULES = [
   "./src/screens/login.js",
   "./src/screens/mood.js",
   "./src/screens/notes.js",
+  "./src/screens/notes_doc.js",
   "./src/screens/occlusion_screen.js",
   "./src/screens/overview.js",
   "./src/screens/pdf.js",
@@ -80,6 +81,7 @@ const MODULES = [
   "./src/styles/layout.css",
   "./src/styles/mobile.css",
   "./src/styles/notebook.css",
+  "./src/styles/notes-doc.css",
   "./src/styles/popups.css",
   "./src/styles/print.css",
   "./src/styles/tokens.css",
@@ -113,6 +115,7 @@ const MODULES = [
   "./src/widgets/kg_graph.js",
   "./src/widgets/lang_switcher.js",
   "./src/widgets/modal.js",
+  "./src/widgets/model3d_block.js",
   "./src/widgets/multi_board.js",
   "./src/widgets/notifications_bell.js",
   "./src/widgets/occlusion_editor.js",
@@ -147,6 +150,7 @@ const MODULES = [
   "./src/widgets/tour.js",
   "./vendor/pdf.min.mjs",
   "./vendor/pdf.worker.min.mjs",
+  "./vendor/three.min.js",
 ];
 
 // Exposed on self so sw.js can read it: a bare `const` in the worker
