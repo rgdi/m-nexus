@@ -27,6 +27,7 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { currentSubject, accountOf, revisionOf, runWithSubject, subjectFor } from "../services/userStore.js";
 import { verifyAccessToken } from "../auth/jwt.js";
+import { isOriginAllowed } from "../utils/corsPolicy.js";
 import { addListener, removeListener, historyFor, publish, activeListenerCount, type ChangeEvent } from "../services/realtime.js";
 
 const HEARTBEAT_MS = 25_000;
@@ -64,12 +65,30 @@ export async function streamRoutes(app: FastifyInstance): Promise<void> {
     }
     const account = (await accountOf(sub)) || `sub:${sub}`;
 
-    reply.raw.writeHead(200, {
+    // v2.38.15 — el canal se escribe con raw.writeHead, que SE SALTA
+    // las cabeceras que el hook de CORS había puesto en la respuesta de
+    // Fastify. El navegador rechazaba el stream entero con ERR_FAILED y
+    // el cliente se quedaba reconectando en bucle, con el saludazo
+    // pareciendo que funcionaba.
+    //
+    // Se vuelven a poner a mano, con la MISMA politica de origen, no
+    // con "*": el canal lleva el token en la URL y no hace falta que
+    // cualquier pagina se suscriba.
+    const origin = req.headers.origin;
+    const headers: Record<string, string> = {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache, no-transform",
       Connection: "keep-alive",
       "X-Accel-Buffering": "no", // nginx: sin esto se bufferea y no llega
-    });
+    };
+    if (origin && isOriginAllowed(origin)) {
+      headers["Access-Control-Allow-Origin"] = origin;
+      headers["Vary"] = "Origin";
+    } else if (origin) {
+      // Origen no permitido: se cierra en vez de dejar abierto.
+      return reply.code(403).send({ error: "origin_not_allowed" });
+    }
+    reply.raw.writeHead(200, headers);
 
     const send = (event: string, data: unknown, id?: number) => {
       try {

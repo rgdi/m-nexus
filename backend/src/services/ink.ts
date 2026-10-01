@@ -357,7 +357,7 @@ export function strokeToPath(s: Stroke): string {
         .join(" ");
       const mid = g[Math.floor(g.length / 2)];
       const w = mid.p >= 0 ? mid.p * s.width : s.width * 0.7;
-      return `<path d="${d}" stroke-width="${(w * 2000).toFixed(1)}"/>`;
+      return `<path d="${d}" stroke-width="${w.toFixed(4)}"/>`;
     })
     .join("");
 }

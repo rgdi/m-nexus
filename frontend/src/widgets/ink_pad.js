@@ -282,7 +282,7 @@ const r0 = (el) => {
 /** Un trazo a path SVG, agrupando por grosor parecido. */
 function pathOf(s) {
   if (!s.points.length) return "";
-  if (s.points.length === 1) return `<path d="M ${s.points[0].x} ${s.points[0].y} L ${s.points[0].x + 0.0001} ${s.points[0].y}" stroke-width="${(s.width * 2000).toFixed(1)}"/>`;
+  if (s.points.length === 1) return `<path d="M ${s.points[0].x} ${s.points[0].y} L ${s.points[0].x + 0.0001} ${s.points[0].y}" stroke-width="${s.width.toFixed(4)}"/>`;
   const at = (p, from) => (p.p >= 0 ? p.p * s.width : speedWidth(from ?? p, p, s.width));
   const groups = [];
   let cur = [s.points[0]];
@@ -300,7 +300,7 @@ function pathOf(s) {
       const d = g.map((p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`)).join(" ");
       const mid = g[Math.floor(g.length / 2)];
       const w = mid.p >= 0 ? mid.p * s.width : s.width * 0.7;
-      return `<path d="${d}" stroke-width="${(w * 2000).toFixed(1)}"/>`;
+      return `<path d="${d}" stroke-width="${w.toFixed(4)}"/>`;
     })
     .join("");
 }

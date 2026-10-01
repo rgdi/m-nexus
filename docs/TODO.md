@@ -83,13 +83,13 @@ test o una captura. Lo demás está sin hacer o sin verificar, y se dice.
   tinta se comparten por cuenta. Verificado entre dos ventanas, con dos
   sesiones reales y aislamiento entre cuentas. Falta probarlo entre dos
   máquinas de verdad, que es la parte que no se puede simular aquí.
-- [x] **D4. Transporte en tiempo real.** Hecho el 2026-10-01: SSE en
-  `GET /api/v1/stream` y cliente suscrito en `services/live.js`, con
-  reconexión progresiva y aviso por evento `mnexus:changed`.
-  **Falta confirmar:** que el evento llegue a la pantalla que lo espera
-  sin recargar. El canal abre, autentica y saluda con la revisión
-  correcta; el sondeo de 3 s hace que los cambios lleguen igual, pero el
-  push puro no está verificado de punta a punta en el navegador.
+- [x] **D4. Transporte en tiempo real.** Hecho y verificado el
+  2026-10-01: SSE en `GET /api/v1/stream`, cliente suscrito en
+  `services/live.js`, reconexión progresiva y aviso por evento
+  `mnexus:changed`. `test_live_push.cjs` 7/7: otro dispositivo
+  escribe y la página se entera sin recargar, también con dos ventanas
+  abiertas a la vez. El bug era CORS: el canal se escribía a pelo con
+  `raw.writeHead` y se saltaba las cabeceras del hook.
 - [x] **D8. Login convencional.** Correo y contraseña, alta y entrada.
   scrypt con sal propia; bcrypt se queda para lo que ya estaba guardado
   con él, para no dejar cuentas a medio migrar.

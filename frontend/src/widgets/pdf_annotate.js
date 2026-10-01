@@ -98,6 +98,12 @@ export function mountPdfAnnotate(host, { docId, getPage, pageCount = 1, onStatus
     for (const [n, pad] of padByPage) pad.merge(byPage.get(n) || []);
   }
 
+  // v2.38.15 — faltaba esto. Se definia init() y nunca se llamaba, asi
+  // que el visor se quedaba eternamente en "Cargando anotaciones…" y
+  // las paginas no se montaban nunca. Lo vio la captura; el test de
+  // sintaxis no lo ve porque una funcion sin usar es codigo valido.
+  init();
+
   return {
     get page() { return current; },
     goto(n) { current = Math.max(0, Math.min(pageCount - 1, n)); },

@@ -185,16 +185,17 @@ saludo sí llegaba.
 | `test_account.cjs` — 20/20 | dos dispositivos, una cuenta, aislamiento |
 | `test_multidevice.cjs` — 12 | login, revisión, canal en vivo |
 | `test_ink_ui.cjs` — 9/10 | lápiz, presión, sincronización, deshacer |
+| `test_live_push.cjs` — 7/7 | el push, de punta a punta |
 
 **NO verificado:**
 
-- **El bucle completo de tiempo real en el navegador**: escribir en A y
-  que B reciba el evento `change` sin recargar. El canal funciona
-  aislado —se abre, autentica, saluda con la revisión correcta— y el
-  sondeo de 3 s hace que los cambios lleguen igual, pero el push puro
-  no está confirmado de punta a punta. **El cliente está suscrito**;
-  que el evento llegue a la pantalla concreta que lo espera es lo que
-  falta comprobar.
+- ~~El bucle de tiempo real~~ — **cerrado el 2026-10-01**. El problema
+  era CORS: el canal se escribía con `raw.writeHead`, que se salta las
+  cabeceras que el hook de CORS había puesto, y el navegador lo
+  rechazaba con `ERR_FAILED` mientras el cliente se reconectaba en
+  bucle. Con las cabeceras de origen puestas a mano y la misma política
+  —no `*`, que el canal lleva el token en la URL— el push llega:
+  otro dispositivo escribe y la página se entera sin recargar.
 - **La entrega de lo perdido al reconectar.** El endpoint acepta
   `?since=`; leer de un SSE que no termina cuelga el test.
 - **Un lápiz real.** La presión se simula despachando PointerEvents

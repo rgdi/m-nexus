@@ -4923,7 +4923,19 @@ body.dg-scrolling { user-select: none; }
 .occ-score-list li.is-wrong { color: var(--danger); }
 
 /* v2.38.14 — la superficie de escritura a mano. */
-.ink-pad { display: grid; gap: 8px; }
+.ink-pad {
+  height: 100%;            /* dentro de una capa absoluta, sin esto no llena */
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;  /* barra · lienzo · estado */
+  gap: 8px;
+  min-height: 0;
+}
+/* La superficie tiene que LLENAR lo que la envuelve. Sin esto el
+ * <svg> se queda con la altura de su contenido —cero— y los trazos se
+ * dibujan en un espejo de 1px: se ve una caja blanca y no se ve nada
+ * escrito, que es justo lo que pasaba en las capturas. */
+.ink-pad > .ink-stage { min-height: 0; height: 100%; }
+.ink-pad:not([style*="grid-template-rows"]) > .ink-stage { min-height: 220px; }
 .ink-toolbar {
   display: flex; align-items: center; gap: 4px;
   flex-wrap: wrap;
@@ -4944,6 +4956,8 @@ body.dg-scrolling { user-select: none; }
 }
 .ink-stage {
   position: relative;
+  align-self: stretch;
+  min-height: 0;
   touch-action: none;          /* sin esto el dedo hace scroll y no escribe */
   -webkit-user-select: none;
   user-select: none;
