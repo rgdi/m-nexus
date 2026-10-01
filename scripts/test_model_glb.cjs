@@ -17,7 +17,9 @@ const { extname, join, resolve } = require('node:path');
 const ROOT = resolve(__dirname, '..');
 const FE = join(ROOT, 'frontend');
 const OUT = join(ROOT, 'screenshots', 'modelos');
-const GLB = process.argv[2] || '/tmp/caja.glb';
+const GLB = process.argv[2] || join(__dirname, 'fixtures', 'caja.glb');
+const API = 'http://localhost:4000';
+const WEB = 'http://localhost:8080';
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
@@ -68,7 +70,46 @@ if (!existsSync(GLB)) { console.error(`No existe ${GLB}`); process.exit(1); }
   const page = await br.newPage({ viewport: { width: 1000, height: 760 } });
   const errores = [];
   page.on('pageerror', (e) => errores.push(String(e).split('\n')[0]));
-  await page.goto(`${BASE}/prueba.html`, { waitUntil: 'load' });
+  // v2.38.21 — elegir un modelo lo sube al servidor, asi que hace
+  // falta sesion. Antes se guardaba solo en el navegador y por eso
+  // este test no necesitaba token.
+  await page.addInitScript((cfg) => {
+    localStorage.setItem('mnexus.setup.completed', '1');
+    localStorage.setItem('mnexus.setup.v1', '{"completed":true,"skipped":true}');
+    sessionStorage.setItem('mnexus.auth.access', cfg.tok);
+    localStorage.setItem('mnexus.auth.refresh', cfg.tok);
+    localStorage.setItem('mnexus.backend.url', cfg.api);
+    localStorage.setItem('mnexus.theme', 'dark');
+  }, { tok: process.env.GLBT || (await (async () => {
+    const r = await fetch(API + '/api/v1/register', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        username: 'glb' + Date.now(), password: 'demo123',
+        deviceId: 'glb-' + Math.random().toString(36).slice(2, 8),
+        deviceName: 'glb', platform: 'web',
+      }),
+    });
+    return (await r.json()).accessToken;
+  })()), api: API });
+
+  // La pagina tiene que servirse desde :8080, no desde un puerto
+  // aleatorio: el backend solo acepta los origenes de la aplicacion,
+  // asi que desde un puerto inventado la subida la para CORS. Y no es
+  // un detalle del arnes: es la misma politica que vera el usuario si
+  // abriera la app desde cualquier otra parte.
+  await page.goto(WEB + '/index.html#/overview', { waitUntil: 'load' });
+  await page.waitForTimeout(1500);
+  await page.evaluate(async () => {
+    const { mountModel3D } = await import('/src/widgets/model3d_block.js');
+    const h = document.createElement('div');
+    h.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#0e1118';
+    const inner = document.createElement('div');
+    inner.style.cssText = 'width:1000px;height:760px;margin:20px auto';
+    h.appendChild(inner);
+    document.body.appendChild(h);
+    await mountModel3D(inner, { modelId: 'corazon' });
+  });
+  await page.waitForTimeout(1800);
   await page.waitForTimeout(2500);
 
   const antes = await page.evaluate(() => {
@@ -89,8 +130,12 @@ if (!existsSync(GLB)) { console.error(`No existe ${GLB}`); process.exit(1); }
   // "Modelo guardado", no "Modelo propio": el archivo se queda en el
   // dispositivo y hay que decirlo, para que se sepa que es de esta
   // máquina y no viaja con la nota.
-  chk('el .glb se carga y se dice que queda guardado aquí',
-    /Modelo guardado/.test(despues.pie), despues.pie.slice(0, 60));
+  // El pie dice "Modelo — <crédito>". Lo que NO puede decir es el
+  // aviso de "se abrió solo en este aparato": eso sería que la subida
+  // falló, y hay una comprobación aparte para eso.
+  chk('el .glb se carga y no cae en el modo "solo aquí"',
+    /caja/.test(despues.pie) && !/solo en este aparato/.test(despues.pie),
+    despues.pie.slice(0, 70));
   chk('el crédito se rellena con el nombre del archivo',
     /caja/.test(despues.pie), despues.pie.slice(0, 60));
   chk('sigue habiendo lienzo', despues.lienzo);
@@ -124,16 +169,27 @@ if (!existsSync(GLB)) { console.error(`No existe ${GLB}`); process.exit(1); }
   /* ── La parte que faltaba: que sobreviva a recargar ─────────── */
   // v2.38.20 — hasta aquí el modelo vivía en la sesión. Al recargar
   // la página se apagaba y volvía al de ejemplo sin decir por qué.
+  // v2.38.21 — ahora hay servidor Y cache. Los dos, o el modelo no
+  // llega al otro aparato.
+  const enServidor = await page.evaluate(async () => {
+    const m = await import('/src/services/model_store.js');
+    const d = await m.listarServidor();
+    return { n: (d.models || []).length, usados: d.used, max: d.max,
+             error: d.error || null,
+             sinMiId: (d.models || []).some((x) => !x.builtin) };
+  });
+  chk('el archivo se sube al servidor, no se queda en el aparato',
+    enServidor.sinMiId,
+    enServidor.error ? `error: ${enServidor.error}`
+      : `${enServidor.n} modelo(s), ${enServidor.usados} de ${enServidor.max} bytes`);
+
   const guardado = await page.evaluate(async () => {
     const m = await import('/src/services/model_store.js');
-    const lista = await m.listarModelos();
+    const lista = await m.listarCache();
     return { n: lista.length, nombre: lista[0]?.nombre, bytes: lista[0]?.bytes };
   });
-  chk('el archivo se guarda en el dispositivo, no en la nota',
-    guardado.n === 1, `${guardado.n} modelo(s), ${guardado.nombre}, ${guardado.bytes} bytes`);
-  chk('y pesa lo que el archivo, no lo que pesaría en base64',
-    guardado.bytes > 0 && guardado.bytes < 200 * 1024 * 1024,
-    `${guardado.bytes} bytes`);
+  chk('y además queda en caché, para no bajarlo cada vez',
+    guardado.n >= 1, `${guardado.n} en caché, ${guardado.nombre}, ${guardado.bytes} bytes`);
 
   // Recargar de verdad.
   await page.reload({ waitUntil: 'load' });
@@ -146,23 +202,26 @@ if (!existsSync(GLB)) { console.error(`No existe ${GLB}`); process.exit(1); }
   // es que el almacén devuelve el Blob y que el visor lo abre.
   const rehidratado = await page.evaluate(async () => {
     const m = await import('/src/services/model_store.js');
-    const l = await m.listarModelos();
+    const l = await m.listarCache();
     if (!l.length) return { ok: false, motivo: 'el almacén quedó vacío' };
     const url = await m.urlDeModelo(l[0].id);
     if (!url) return { ok: false, motivo: 'no hay Blob' };
+    if (!url) return { ok: false, motivo: 'ni en cache ni en el servidor' };
     const r = await fetch(url);
     const b = await r.blob();
+    const tipo = b.type || '(sin tipo)';
     URL.revokeObjectURL(url);
-    return { ok: b.size === l[0].bytes, motivo: `${b.size} vs ${l[0].bytes}` };
+    return { ok: b.size === l[0].bytes, id: l[0].id, deCache: r.deCache,
+             motivo: `id=${l[0].id} · ${r.deCache ? 'de la cache' : 'bajado del servidor'} · ${b.size} vs ${l[0].bytes} · ${tipo}` };
   });
-  chk('tras recargar la página, el modelo sigue en el dispositivo',
-    rehidratado.ok, rehidratado.motivo);
+  chk('tras recargar la página, el modelo sigue en la caché del aparato',
+    rehidratado.ok && rehidratado.deCache === true, rehidratado.motivo);
 
   // Y ahora sí, el circuito entero: un modelo guardado que se abre
   // desde su id, sin volver a elegir el archivo.
   const desdeId = await page.evaluate(async () => {
     const m = await import('/src/services/model_store.js');
-    const l = await m.listarModelos();
+    const l = await m.listarCache();
     const { mountModel3D } = await import('/src/widgets/model3d_block.js');
     const h = document.createElement('div');
     h.style.cssText = 'width:600px;height:460px';
@@ -175,7 +234,8 @@ if (!existsSync(GLB)) { console.error(`No existe ${GLB}`); process.exit(1); }
     };
   });
   chk('el visor abre el modelo por su id, sin volver a elegir el archivo',
-    /Modelo guardado/.test(desdeId.pie), desdeId.pie.slice(0, 60));
+    /caja/.test(desdeId.pie) && !/solo en este aparato/.test(desdeId.pie),
+    desdeId.pie.slice(0, 70));
   chk('y pinta', desdeId.canvas);
 
   chk('sin errores en consola durante todo el proceso',

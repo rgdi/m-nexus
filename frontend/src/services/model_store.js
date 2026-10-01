@@ -1,31 +1,38 @@
-/**
- * model_store.js — dónde vive un modelo 3D que tú has abierto.
- *
- * v2.38.20. Un `.glb` de un cuerpo entero pesa entre 5 y 40 MB.
- *
- * La primera versión lo guardaba como un `objectURL` en memoria, que
- * dura lo que dura la pestaña: al recargar la nota, el modelo se
- * apagaba y volvía al de ejemplo sin decir por qué.
- *
- * Lo que NO sirve, y se intentó primero:
- *
- * - **localStorage con base64**, como se guardan los adjuntos. Un .glb
- *   de 12 MB son 16 MB de base64, y la cuota son 5. En el segundo
- *   modelo te comía la cuota entera de la aplicación: las notas, los
- *   ajustes y el resto de adjuntos. Los adjuntos de texto siguen así
- *   porque son pequeños; un modelo no.
- * - **Subirlo al servidor.** El endpoint de subida por trozos existe y
- *   acepta hasta 500 MB, pero **no hay ninguna ruta que sirva lo
- *   subido**: no se puede volver a pedir. Montar ese camino —subir,
- *   servir con autenticación, limpiar, sincronizar entre dispositivos—
- *   es trabajo de producto, no un parche. Está anotado en el TODO.
- *
- * IndexedDB sí: almacena el `Blob` tal cual, sin base64 y sin
- * multiplicar por un tercio el tamaño, y aguanta de sobra.
- *
- * Alcance: **este dispositivo y este navegador**. No se sincroniza entre
- * dispositivos. Es lo que hay, y se dice.
- */
+// model_store.js — dónde vive un modelo 3D que tú has abierto.
+//
+// v2.38.20 lo puso en IndexedDB: mejor que nada, pero el archivo
+// vivía SOLO en ese navegador. Abres un modelo en el portátil, no lo
+// tienes en la tablet, y la nota se ve rota en la tablet.
+//
+// v2.38.21 — ahora hay dos sitios, y uno manda:
+//
+//   1. **El servidor**, en el directorio del usuario. Es la fuente
+//      buena: se sube una vez y llega a todos los dispositivos, con
+//      cuenta o sin ella.
+//   2. **IndexedDB**, como caché. Para no bajar 12 MB cada vez que
+//      abres la nota, y para que funcione sin red.
+//
+// Al abrir un modelo: primero IndexedDB; si no está, se pide al
+// servidor y se cachea. Al elegir uno nuevo: se sube y se cachea.
+//
+// ── Lo que no sirve, y por qué ────────────────────────────────────
+//
+// - **localStorage con base64**, como los adjuntos. Un .glb de 12 MB
+//   son 16 MB de base64, y la cuota son 5. En el segundo modelo te
+//   comía la cuota entera de la aplicación: notas, ajustes y el resto
+//   de adjuntos. Los adjuntos de texto siguen así porque son
+//   pequeños; un modelo no.
+//
+// - **Guardarlo solo en el navegador**, que es lo que había. Barato y
+//   inútil en cuanto cambias de aparato, que es justo cuando lo
+//   necesitas para estudiar.
+//
+// La subida va por el endpoint propio de modelos, no por el de trozos
+// de `upload.ts`: aquel no ata la sesión a ningún usuario y deja el
+// archivo en un directorio compartido.
+
+import { authHeaders } from "./auth.js";
+import { detectApiBase } from "./api_base.js";
 
 const DB = "mnexus-models";
 const STORE = "modelos";
@@ -43,8 +50,8 @@ function abrir() {
       if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE, { keyPath: "id" });
     };
     req.onsuccess = () => ok(req.result);
-    // Se aborta a proposito: si IndexedDB no abre, `promesaDB` queda
-    // en null y el siguiente intento lo vuelve a intentar. Dejar el
+    // Se aborta a proposito: si IndexedDB no abre, `promesaDB` queda en
+    // null y el siguiente intento lo vuelve a intentar. Dejar el
     // rechazo cacheado dejaría el boton muerto para siempre.
     req.onerror = () => { promesaDB = null; ko(req.error || new Error("IndexedDB no abre")); };
   });
@@ -63,45 +70,133 @@ function tx(modo, fn) {
   }));
 }
 
-/** Guarda el archivo. Devuelve el id con el que quedarse guardado. */
-export async function guardarModelo({ nombre, blob, credito = "" }) {
-  const id = "mdl-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
+/* ── caché local ────────────────────────────────────────────────── */
+
+/** Guarda el archivo en este dispositivo. */
+export async function guardarEnCache({ id, nombre, blob, credito = "" }) {
   await tx("readwrite", (s) => s.put({
-    id, nombre, credito, blob, bytes: blob.size, guardadoAt: Date.now(),
+    id, nombre, credito, blob, bytes: blob.size, cacheadoAt: Date.now(),
   }));
   return id;
 }
 
-/** Devuelve el registro, o null si este dispositivo no lo tiene. */
-export async function leerModelo(id) {
+export async function leerDeCache(id) {
   if (!id) return null;
   try { return await tx("readonly", (s) => s.get(id)); }
   catch { return null; }
 }
 
-/** Una URL de objeto para el visor. La que sea, no importa cuál. */
-export async function urlDeModelo(id) {
-  const reg = await leerModelo(id);
+export async function urlDeCache(id) {
+  const reg = await leerDeCache(id);
   if (!reg || !reg.blob) return null;
   return URL.createObjectURL(reg.blob);
 }
 
-export async function borrarModelo(id) {
-  try { await tx("readwrite", (s) => s.delete(id)); } catch { /* nada que hacer */ }
+export async function borrarDeCache(id) {
+  try { await tx("readwrite", (s) => s.delete(id)); } catch { /* nada */ }
 }
 
-/** Los modelos guardados en este dispositivo, para la lista. */
-export async function listarModelos() {
+export async function listarCache() {
   try {
     const todos = await tx("readonly", (s) => s.getAll());
-    return (todos || [])
-      .map(({ id, nombre, bytes, guardadoAt }) => ({ id, nombre, bytes, guardadoAt }))
-      .sort((a, b) => b.guardadoAt - a.guardadoAt);
+    return (todos || []).map(({ id, nombre, bytes, cacheadoAt }) =>
+      ({ id, nombre, bytes, cacheadoAt }));
   } catch { return []; }
 }
 
-/** Los que ocupan sitio, para poder dizerlo en voz alta. */
-export async function espacioUsado() {
-  const l = await listarModelos();
-  return l.reduce((n, m) => n + (m.bytes || 0), 0);
+/* ── el servidor ────────────────────────────────────────────────── */
+
+const API = () => `${detectApiBase()}/api/v1/models`;
+
+async function pedir(ruta, opciones = {}) {
+  const r = await fetch(API() + ruta, { ...opciones, headers: authHeaders() });
+  if (!r.ok) {
+    let detalle = "";
+    try { detalle = (await r.json())?.error || ""; } catch { /* cuerpo no json */ }
+    const e = new Error(detalle || `HTTP ${r.status}`);
+    e.status = r.status;
+    throw e;
+  }
+  return r;
+}
+
+/** Sube el archivo. Devuelve el registro del servidor, id incluido. */
+export async function subirModelo({ nombre, blob, credito = "" }) {
+  const fd = new FormData();
+  fd.append("file", new Blob([blob], { type: "model/gltf-binary" }), nombre || "modelo.glb");
+  if (credito) fd.append("credit", credito);
+  const r = await fetch(API() + "/upload", {
+    method: "POST",
+    headers: authHeaders(),
+    body: fd,
+  });
+  const cuerpo = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    const e = new Error(cuerpo.error || `HTTP ${r.status}`);
+    e.status = r.status;
+    e.limite = cuerpo.max || null;
+    throw e;
+  }
+  return cuerpo;
+}
+
+/**
+ * Lo que hay en el servidor, para este usuario.
+ *
+ * v2.38.21 — el fallo se devuelve en vez de tragárselo. Antes devolvía
+ * una lista vacía y quien la miraba veía "no tienes modelos", que es
+ * una verdad: la de verdad, que es "no se pudo preguntar", no lo era.
+ */
+export async function listarServidor() {
+  try {
+    // `pedir` devuelve la Response, no el cuerpo. Sin este `.json()` la
+    // lista llegaba como una Response y `d.models` era undefined: la
+    // pantalla decía "no tienes modelos" cuando lo que pasaba es que
+    // nadie había preguntado.
+    const r = await pedir("");
+    return await r.json();
+  } catch (e) {
+    return { models: [], used: 0, max: 0, error: String(e.message || e) };
+  }
+}
+
+/**
+ * El archivo de un modelo, de donde toque.
+ *
+ * Primero la caché —que es lo que hace que abrir una nota no baje 12 MB
+ * cada vez— y si no está, el servidor, y se cachea para la próxima.
+ *
+ * Devuelve `{ url, deCache }`, o `null` si no se puede en ninguna parte.
+ */
+export async function urlDeModelo(id) {
+  if (!id) return null;
+  const enCache = await urlDeCache(id);
+  if (enCache) return { url: enCache, deCache: true };
+
+  let r;
+  try {
+    r = await pedir("/" + encodeURIComponent(id));
+  } catch {
+    return null;
+  }
+  const blob = await r.blob();
+  const nombre = r.headers.get("content-disposition")?.match(/filename="?([^";]+)"?/)?.[1] || id;
+  await guardarEnCache({ id, nombre, blob, credito: "" }).catch(() => {});
+  const url = URL.createObjectURL(blob);
+  return { url, deCache: false, nombre };
+}
+
+/** Sube y deja en caché: el camino de "acabo de elegir un archivo". */
+export async function subirYCachear({ nombre, blob, credito = "" }) {
+  const rec = await subirModelo({ nombre, blob, credito });
+  await guardarEnCache({
+    id: rec.id, nombre: rec.name || nombre, blob, credito: rec.credit || credito,
+  });
+  return rec;
+}
+
+export async function borrarModelo(id) {
+  await borrarDeCache(id).catch(() => {});
+  try { await pedir("/" + encodeURIComponent(id), { method: "DELETE" }); }
+  catch { /* que se quede en la caché si el servidor no lo pudo borrar */ }
 }

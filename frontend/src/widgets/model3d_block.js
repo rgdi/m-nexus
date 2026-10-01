@@ -34,7 +34,7 @@ function escapeHtml(s) {
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
-import { guardarModelo, urlDeModelo } from "../services/model_store.js";
+import { subirYCachear, urlDeModelo } from "../services/model_store.js";
 
 /** GLTFLoader, local. Cargar un .glb propio es lo que da acceso a
  *  modelos anatómicos de verdad, y sin meterse en redistribuir los de
@@ -694,11 +694,14 @@ export async function mountModel3D(host, opts = {}) {
     // la URL: el id es lo que viaja en la nota, y la URL temporal se
     // rehace cada vez que se abre.
     if (state.assetId) {
-      foot.textContent = "Abriendo el modelo guardado…";
-      const guardada = await urlDeModelo(state.assetId);
-      if (guardada) {
-        const carga = await cargarGLB(guardada);
-        URL.revokeObjectURL(guardada);
+      // "Abriendo el modelo" y no "de este dispositivo": v2.38.21 el
+      // archivo puede venir de la cache o bajarse del servidor, y el
+      // usuario no tiene por qué saber cuál de las dos cosas pasó.
+      foot.textContent = "Abriendo el modelo…";
+      const guardado = await urlDeModelo(state.assetId);
+      if (guardado?.url) {
+        const carga = await cargarGLB(guardado.url);
+        URL.revokeObjectURL(guardado.url);
         if (carga) {
           model = carga;
           holder.add(model);
@@ -706,12 +709,12 @@ export async function mountModel3D(host, opts = {}) {
           encuadrar();
           paint();
           foot.textContent = state.credit
-            ? `Modelo guardado — ${state.credit}`
-            : "Modelo guardado en este dispositivo.";
+            ? `Modelo — ${state.credit}`
+            : "Modelo guardado.";
           return;
         }
       } else {
-        fallo = "no está guardado en este dispositivo";
+        fallo = "no está ni en este dispositivo ni en el servidor";
       }
     }
 
@@ -996,19 +999,28 @@ export async function mountModel3D(host, opts = {}) {
     const antes = openBtn.textContent;
     openBtn.textContent = "Guardando…";
     try {
-      // El archivo a IndexedDB, no a la nota. v2.38.20.
-      state.assetId = await guardarModelo({ nombre: f.name, blob: f, credito: state.credit });
+      // v2.38.21 — al servidor primero. El archivo vive en el
+      // directorio del usuario, y este navegador es solo la cache.
+      // Con esto, el modelo llega a la tablet y al portátil.
+      const rec = await subirYCachear({ nombre: f.name, blob: f, credito: state.credit });
+      state.assetId = rec.id;
+      state.credit = rec.credit || state.credit;
       state.modelUrl = null;
       await buildModel();
       state.onChange(state);
     } catch (e) {
-      // Si IndexedDB no abre, se dice. Un botón que no hace nada es
-      // peor que un botón que avisa.
+      // Si no se puede subir —sin red, sin cuota, sin servidor— el
+      // archivo se abre igual desde este dispositivo y se DICE que
+      // solo está aquí. Un botón que no hace nada es peor que un
+      // botón que avisa de lo que no ha podido hacer.
       state.credit = f.name;
       state.assetId = null;
       state.modelUrl = URL.createObjectURL(f);
       await buildModel();
-      showAviso(`No se pudo guardar en este dispositivo: ${String(e.message || e).slice(0, 60)}`);
+      const porQue = e.status === 413
+        ? (e.limite ? `no cabe: el límite son ${Math.round(e.limite / 1024 / 1024)} MB` : "no cabe en tu espacio")
+        : String(e.message || e).slice(0, 160);
+      showAviso(`Se abrió solo en este aparato: no se pudo subir (${porQue}).`);
     } finally {
       openBtn.disabled = false;
       openBtn.textContent = antes;

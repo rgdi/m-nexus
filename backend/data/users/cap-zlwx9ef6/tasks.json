@@ -1,0 +1,109 @@
+[
+  {
+    "text": "comprar pan",
+    "done": false,
+    "due": 1790899200000,
+    "priority": 1,
+    "subject": "compras",
+    "kind": "shopping",
+    "how": "rule",
+    "sourceText": "comprar pan mañana, llamar al dentista el viernes",
+    "id": "task-b79dcebe-b632-47f1-9d45-031885efb229",
+    "createdAt": 1790895648779,
+    "updatedAt": 1790895648779
+  },
+  {
+    "text": "llamar al dentista",
+    "done": false,
+    "due": 1790899200000,
+    "priority": 2,
+    "subject": "",
+    "kind": "task",
+    "how": "rule",
+    "sourceText": "comprar pan mañana, llamar al dentista el viernes",
+    "id": "task-457f82f3-0309-4a74-918b-06bada926e3d",
+    "createdAt": 1790895648809,
+    "updatedAt": 1790895648809
+  },
+  {
+    "text": "pagué 40€ de la luz",
+    "done": false,
+    "due": null,
+    "priority": 1,
+    "subject": "dinero",
+    "kind": "expense",
+    "amountCents": 4000,
+    "how": "rule",
+    "sourceText": "pagué 40€ de la luz",
+    "id": "task-e248fb71-8c81-4d04-b689-59def9aafd5e",
+    "createdAt": 1790895648829,
+    "updatedAt": 1790895648829
+  },
+  {
+    "text": "comprar pan",
+    "done": false,
+    "due": null,
+    "priority": 1,
+    "subject": "compras",
+    "kind": "shopping",
+    "how": "rule",
+    "sourceText": "comprar pan",
+    "id": "task-eaa4c205-64ae-45dd-a8e0-a4229b04c4bc",
+    "createdAt": 1790895648850,
+    "updatedAt": 1790895648850
+  },
+  {
+    "text": "ir al gimnasio todos los días",
+    "done": true,
+    "due": null,
+    "priority": 1,
+    "subject": "hábitos",
+    "kind": "habit",
+    "cadence": "daily",
+    "how": "rule",
+    "sourceText": "ir al gimnasio todos los días",
+    "id": "task-e99eb33e-4edb-4b94-aa70-fcb34d1804ff",
+    "createdAt": 1790895648869,
+    "updatedAt": 1790895648898,
+    "streakDays": [
+      "2026-10-01"
+    ]
+  },
+  {
+    "text": "comprar pan",
+    "done": false,
+    "due": null,
+    "priority": 1,
+    "subject": "compras",
+    "kind": "shopping",
+    "how": "rule",
+    "sourceText": "comprar pan",
+    "id": "task-96afb88d-9bd3-42a7-9087-c140be74d0d3",
+    "createdAt": 1790895648912,
+    "updatedAt": 1790895648912
+  },
+  {
+    "text": "pagué 10€ de gasolina",
+    "done": false,
+    "due": null,
+    "priority": 1,
+    "subject": "dinero",
+    "kind": "expense",
+    "amountCents": 1000,
+    "how": "rule",
+    "sourceText": "pagué 10€ de gasolina",
+    "id": "task-17e0d34b-ed3c-44fa-917d-bd5453ee050f",
+    "createdAt": 1790895648928,
+    "updatedAt": 1790895648928
+  },
+  {
+    "text": "tarea antigua",
+    "done": false,
+    "due": null,
+    "priority": 0,
+    "subject": "",
+    "id": "task-90175a45-3b00-48f8-9ab8-36ef43ebccfa",
+    "createdAt": 1790895648951,
+    "updatedAt": 1790895648951
+  }
+]

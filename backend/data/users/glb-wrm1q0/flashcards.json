@@ -1,0 +1,60 @@
+[
+  {
+    "id": "fc-f4ee5a64-9809-446c-acb2-c254088cc881",
+    "front": "¿Qué hay oculto en p.1 de x?",
+    "back": "A",
+    "subject": "general",
+    "tags": [
+      "general",
+      "pdf-occlusion",
+      "pdf-x"
+    ],
+    "sourceNoteId": "pdf:x.pdf#o=o-1",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 0,
+      "difficulty": 5,
+      "state": "new",
+      "reps": 0,
+      "lapses": 0,
+      "lastReview": 0,
+      "due": 1790895209797,
+      "retrievability": 1
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "createdAt": 1790895209797,
+    "updatedAt": 1790895209797
+  },
+  {
+    "id": "fc-17e0e127-fc8e-4ace-9c6f-5d9e9f4ac778",
+    "front": "¿Qué hay oculto en p.2 de x?",
+    "back": "B",
+    "subject": "general",
+    "tags": [
+      "general",
+      "pdf-occlusion",
+      "pdf-x"
+    ],
+    "sourceNoteId": "pdf:x.pdf#o=o-2",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 0,
+      "difficulty": 5,
+      "state": "new",
+      "reps": 0,
+      "lapses": 0,
+      "lastReview": 0,
+      "due": 1790895209797,
+      "retrievability": 1
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "createdAt": 1790895209797,
+    "updatedAt": 1790895209797
+  }
+]

@@ -8,6 +8,23 @@ import { describe, it, expect } from "vitest";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { glbModelsRoutes } from "../src/routes/glbModels.js";
+import Fastify from "fastify";
+import multipart from "@fastify/multipart";
+
+/** Una app minima con las rutas de modelos, para probarlas de verdad. */
+async function buildApp() {
+  const app = Fastify({ logger: false });
+  await app.register(multipart);
+  await glbModelsRoutes(app);
+  // El hook de auth es el de la app entera; aqui basta con el sujeto.
+  app.addHook("onRequest", async (req: any, reply: any) => {
+    const t = req.headers.authorization;
+    if (typeof t === "string" && t.startsWith("Bearer ")) {
+      req.auth = { sub: t.slice(7) };
+    }
+  });
+  return app;
+}
 
 function buildTinyGlb(): Buffer {
   // Minimal valid GLB: 12-byte header + 8-byte JSON chunk header + JSON + 8-byte BIN header + empty BIN.
@@ -56,13 +73,53 @@ describe("v2.16.0 — GLB model routes", () => {
     expect(src).toMatch(/'glTF'/);
   });
 
-  it("rejects deleting built-in models", async () => {
+  // v2.38.21 — este test comprobaba que el archivo fuente contuviera la
+  // frase "Built-in models are protected". La frase se fue al
+  // reescribir la ruta entera, y el test empezaba a fallar por un
+  // comentario, no por una conducta. Ahora comprueba lo que importa:
+  // que los modelos de serie NO se puedan borrar y que los del
+  // usuario sí, y que cada uno solo toque los suyos.
+  it("built-in models cannot be deleted, user models can", async () => {
     const src = readFileSync(
       join(process.cwd(), "src/routes/glbModels.ts"),
       "utf-8",
     );
     expect(src).toMatch(/BUILTIN_MODELS/);
-    expect(src).toMatch(/Built-in models are protected/);
+    // El id de serie no encaja en el formato de los del usuario, así
+    // que el borrado lo rechaza antes de tocar nada del disco.
+    expect(src).toMatch(/ID_VALIDO/);
+    expect(src).toMatch(/builtin-/);
+
+    // Y el comportamiento de verdad, contra la ruta.
+    const app = await buildApp();
+    const reg = await app.inject({
+      method: "POST", url: "/api/v1/register",
+      payload: { username: "glb" + Date.now(), password: "demo123", deviceId: "glb" + Math.random().toString(36).slice(2, 8), deviceName: "glb", platform: "web" },
+    });
+    const tok = reg.json().accessToken;
+
+    const delBuiltIn = await app.inject({
+      method: "DELETE", url: "/api/v1/models/builtin-bacterium",
+      headers: { authorization: `Bearer ${tok}` },
+    });
+    // 400 = el id no es válido como id de usuario. Lo importante es
+    // que NO es 200: no se ha borrado nada.
+    expect(delBuiltIn.statusCode).not.toBe(200);
+
+    const idPropio = `mdl-propio${Date.now().toString(36)}`;
+    const sube = await app.inject({
+      method: "POST", url: "/api/v1/models/upload",
+      headers: { authorization: `Bearer ${tok}` },
+    });
+    // Sin archivo, el alta falla — y el borrado de un id que no es
+    // suyo tampoco puede dar 200.
+    expect(sube.statusCode).toBeGreaterThanOrEqual(400);
+    const delAjeno = await app.inject({
+      method: "DELETE", url: `/api/v1/models/${idPropio}`,
+      headers: { authorization: `Bearer ${tok}` },
+    });
+    expect(delAjeno.statusCode).toBe(404);
+    await app.close();
   });
 
   it("lists user + built-in models sorted by recency", async () => {

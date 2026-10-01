@@ -116,6 +116,19 @@ function USER_DIR_SYNC(sub: string): string {
 const USER_DIR = USER_DIR_SYNC;
 const USER_FILE = (sub: string, name: string) => join(USER_DIR(sub), name);
 
+/**
+ * El directorio de un usuario: el de su cuenta si tiene, el suyo si no.
+ *
+ * v2.38.21 — lo exportan los ficheros que guardan cosas que no son
+ * colecciones —un modelo 3D, por ejemplo, que es un binario y no un
+ * JSON—. Es el MISMO directorio que usan las notas, para que un
+ * dispositivo con cuenta y otro sin ella no acaben con los datos
+ * partidos.
+ */
+export function userDirFor(sub: string): string {
+  return USER_DIR(sub);
+}
+
 export const DEFAULT_SUBJECT = "default";
 
 /**

@@ -80,8 +80,19 @@ export const authMiddleware: (req: FastifyRequest, reply: FastifyReply) => Promi
     "/api/v1/upload/init",
     "/api/v1/upload/chunk",
     "/api/v1/upload/complete",
-    // v2.16.0: user-uploaded .glb models (import anatomical assets).
-    "/api/v1/models",
+    // v2.38.21 — "/api/v1/models" sale de esta lista.
+    //
+    // Estaba aquí desde v2.16.0, cuando los modelos se guardaban en
+    // `public/models/user/` y se servían por ruta pública: si eso era
+    // público, la API que los listaba podía serlo también. Con lo que
+    // hay ahora —cada modelo en el directorio de quien lo subió, con
+    // la propiedad comprobada en el índice— no hay ningún motivo para
+    // que sea pública, y sí un motivo muy claro: sin esto, pedir la
+    // lista sin token devolvía 200 con los modelos del usuario por
+    // defecto.
+    //
+    // Lo que sigue siendo público son los modelos QUE VIVEN DE SERIO
+    // en public/models/, y esos los sirve el estático, no esta API.
     "/api/v1/update",
     "/api/v1/rollback",
     // v2.2.0: WS sync es relay-only (no data plane). Auth opcional via WS_AUTH_REQUIRED=1.

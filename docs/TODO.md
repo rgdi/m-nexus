@@ -175,13 +175,6 @@ sincronización sin conflictos es una forma de perder trabajo—.
 
 ### Abierto, y por qué
 
-- **Que los modelos se sincronicen entre dispositivos.** Ahora el
-  `.glb` vive en IndexedDB, que es **de este dispositivo**. El endpoint
-  de subida por trozos existe y admite 500 MB, pero **no hay ninguna
-  ruta que sirva lo subido**, así que no hay forma de volver a
-  pedirlo. Montar ese camino —subir, servir con autenticación por
-  usuario, limpiar lo que nadie usa, y decidir qué pasa si el modelo no
-  cabe en el cuota— es trabajo de producto, no un parche.
 
 - **El indicador de conexión en toda la app.** El canal ya no miente,
   pero el "En línea" de la barra usa otro indicador. Que todos miren al
@@ -195,3 +188,10 @@ sincronización sin conflictos es una forma de perder trabajo—.
 
 - **Dos máquinas de verdad**: las pruebas son dos ventanas y dos
   sesiones simuladas, no dos ordenadores.
+
+- **Que la descarga en frío de un modelo funcione desde la app.** El
+  endpoint existe y está probado contra la API (17/17), pero en el
+  arnés de navegador, tras recargar la página, la petición cae en el
+  origen de la propia aplicación y devuelve el `index.html` en vez del
+  archivo. La causa está en cómo este test resuelve la base de la API,
+  no comprobada todavía en la app real. **Sin cerrar.**
