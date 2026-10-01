@@ -34,6 +34,25 @@ function escapeHtml(s) {
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
+/** GLTFLoader, local. Cargar un .glb propio es lo que da acceso a
+ *  modelos anatómicos de verdad, y sin meterse en redistribuir los de
+ *  otros. */
+let gltfPromise = null;
+export function loadGltfLoader() {
+  if (gltfPromise) return gltfPromise;
+  gltfPromise = (async () => {
+    for (const url of ["/vendor/GLTFLoader.js",
+      "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/loaders/GLTFLoader.js"]) {
+      try {
+        const mod = await import(/* @vite-ignore */ url);
+        if (mod && mod.GLTFLoader) return mod.GLTFLoader;
+      } catch { /* el siguiente */ }
+    }
+    return null;
+  })();
+  return gltfPromise;
+}
+
 /* ── three.js local, con el CDN como red de seguridad ───────────── */
 let threePromise = null;
 export function loadThree() {
@@ -584,6 +603,10 @@ export async function mountModel3D(host, opts = {}) {
   injectStyles();
   const state = {
     modelId: opts.modelId || "corazon",
+    // Un .glb del usuario. No se guarda en la nota — pesa —; vive en
+    // la sesión. Si quieres que persista, se sube a tus ficheros.
+    modelUrl: opts.modelUrl || null,
+    credit: opts.credit || "",
     labels: [...(opts.labels || [])],
     occlusions: [...(opts.occlusions || [])],
     onChange: opts.onChange || (() => {}),
@@ -597,6 +620,9 @@ export async function mountModel3D(host, opts = {}) {
       </select>
       <button class="btn ghost m3d-label-btn" type="button" title="Poner una etiqueta sobre el modelo">🏷 Etiquetar</button>
       <button class="btn ghost m3d-occ-btn" type="button" title="Tapar una zona para jugar">▮ Ocluir</button>
+      <button class="btn ghost m3d-open-btn" type="button"
+        title="Abrir un modelo 3D tuyo (.glb)">📂 Abrir .glb</button>
+      <input type="file" accept=".glb,.gltf,model/gltf-binary,model/gltf+json" hidden data-file>
     </div>
     <div class="m3d-stage">
       <div class="m3d-tools">
@@ -654,15 +680,59 @@ export async function mountModel3D(host, opts = {}) {
   let rotY = 0.25, rotX = -0.12, autoSpin = true, alive = true;
   let mode = null;      // "label" | "occlusion" | null
 
-  function buildModel() {
+  async function buildModel() {
     if (model) { holder.remove(model); model = null; }
+    if (state.modelUrl) {
+      foot.textContent = "Cargando el modelo…";
+      const carga = await cargarGLB(state.modelUrl);
+      if (carga) {
+        model = carga;
+        holder.add(model);
+        rotY = 0.25; rotX = -0.12;
+        encuadrar();
+        paint();
+        foot.textContent = state.credit
+          ? `Modelo propio — ${state.credit}`
+          : "Modelo propio. Si lo usas para estudiar y es de terceros, la licencia va con él.";
+        return;
+      }
+    }
     const def = MODELOS[state.modelId];
     model = def ? def.build(THREE) : MODELOS.corazon.build(THREE);
     holder.add(model);
     rotY = 0.25; rotX = -0.12;
-    foot.textContent = def ? `${def.label} — ${def.hint}` : "";
+    // Si veníamos con un archivo y no se pudo abrir, se dice aquí y no
+    // antes: antes el aviso se pisaba con el nombre del modelo de
+    // ejemplo, y el fallo desaparecía de la pantalla.
+    foot.textContent = fallo
+      ? `⚠ No se pudo abrir tu archivo (${fallo}). Se muestra "${def.label}" de ejemplo.`
+      : `${def.label} — ${def.hint}`;
     encuadrar();
     paint();
+  }
+
+  /**
+   * Un .glb o .gltf, venga de un archivo local o de una URL.
+   *
+   * v2.38.19 — el fallo se guarda y se MUESTRA. Antes se tragaba el
+   * error y caía de vuelta al modelo de ejemplo sin decir por qué, y
+   * el pie decía "Corazón": tu archivo no se había abierto, y la
+   * pantallaemblaba estar bien.
+   */
+  let fallo = null;
+  async function cargarGLB(url) {
+    const GLTFLoader = await loadGltfLoader();
+    if (!GLTFLoader) { fallo = "no se pudo cargar el lector de .glb"; return null; }
+    const loader = new GLTFLoader();
+    try {
+      const g = await new Promise((ok, ko) => loader.load(url, ok, undefined, ko));
+      if (!g || !g.scene) { fallo = "el archivo no trae escena"; return null; }
+      fallo = null;
+      return g.scene;
+    } catch (e) {
+      fallo = String((e && e.message) || e).slice(0, 120);
+      return null;
+    }
   }
 
   /**
@@ -861,6 +931,9 @@ export async function mountModel3D(host, opts = {}) {
   /* ── barra ───────────────────────────────────────────────────── */
   pick.addEventListener("change", () => {
     state.modelId = pick.value;
+    // Volver a la lista de modelos deja el archivo propio.
+    state.modelUrl = null;
+    state.credit = "";
     buildModel();
     state.onChange(state);
   });
@@ -874,6 +947,22 @@ export async function mountModel3D(host, opts = {}) {
     occBtn.setAttribute("aria-pressed", String(mode === "occlusion"));
     labelBtn.setAttribute("aria-pressed", String(mode === "label"));
   });
+  const openBtn = host.querySelector(".m3d-open-btn");
+  const fileInput = host.querySelector("[data-file]");
+  openBtn.addEventListener("click", () => fileInput.click());
+  fileInput.addEventListener("change", async () => {
+    const f = fileInput.files?.[0];
+    if (!f) return;
+    const url = URL.createObjectURL(f);
+    // El crédito no se inventa: se lee del nombre del archivo y se
+    // puede cambiar. La licencia de un modelo ajeno es de quien lo
+    // tenga, y el sitio de la app tiene que poder mostrarla.
+    state.credit = f.name.replace(/\.glt?f$/i, "");
+    state.modelUrl = url;
+    await buildModel();
+    state.onChange(state);
+  });
+
   host.querySelector('[data-act="reset"]').addEventListener("click", () => {
     rotY = 0.25; rotX = -0.12; paint();
   });
@@ -906,7 +995,7 @@ export async function mountModel3D(host, opts = {}) {
   }
 
   resize();
-  buildModel();
+  await buildModel();
   loop();
 
   return {

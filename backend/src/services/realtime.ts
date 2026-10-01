@@ -52,6 +52,18 @@ export function historyFor(account: string): ChangeEvent[] {
   return history.get(account) ?? [];
 }
 
+/** La revisión más antigua que todavía se guarda. Antes de esta, ya no
+ *  hay nada: lo que se pasó mientras el cliente estaba fuera se ha
+ *  perdido de verdad, y hay que decirlo en vez de fingir que no.
+ *
+ *  v2.38.19 — `Infinity` cuando no queda nada, para que un cliente que
+ *  va atrasado y se encuentra el historial vacío se entere del hueco.
+ */
+export function oldestRevisionFor(account: string): number {
+  const h = historyFor(account);
+  return h.length ? h[0].revision : Number.POSITIVE_INFINITY;
+}
+
 /** Publica un cambio. Devuelve el evento, para que quien escribe lo
  *  pueda incluir en su propia respuesta. */
 export function publish(ev: Omit<ChangeEvent, "at"> & { at?: number }): ChangeEvent {

@@ -40,3 +40,10 @@ vendor/three.min.js
   https://github.com/mrdoob/three.js
   Servido localmente desde el 2026-10-01 (v2.38.16) para que los
   modelos 3D de las notas funcionen sin conexion.
+
+vendor/GLTFLoader.js
+  three.js r158 — MIT License
+  https://github.com/mrdoob/three.js
+  Copia local (2026-10-01, v2.38.19) con el import de 'three'
+  resuelto contra el namespace global, porque no hay empaquetador.
+  Permite abrir un .glb propio desde el dispositivo.

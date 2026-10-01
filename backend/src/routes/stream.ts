@@ -28,7 +28,7 @@ import type { FastifyInstance, FastifyRequest } from "fastify";
 import { currentSubject, accountOf, revisionOf, runWithSubject, subjectFor } from "../services/userStore.js";
 import { verifyAccessToken } from "../auth/jwt.js";
 import { isOriginAllowed } from "../utils/corsPolicy.js";
-import { addListener, removeListener, historyFor, publish, activeListenerCount, type ChangeEvent } from "../services/realtime.js";
+import { addListener, removeListener, historyFor, oldestRevisionFor, publish, activeListenerCount, type ChangeEvent } from "../services/realtime.js";
 
 const HEARTBEAT_MS = 25_000;
 const MAX_CLIENTS = 500;
@@ -101,7 +101,6 @@ export async function streamRoutes(app: FastifyInstance): Promise<void> {
     };
 
     const startRev = await revisionOf(sub);
-    send("hello", { account, revision: startRev, at: Date.now() });
     if (activeListenerCount() >= MAX_CLIENTS) {
       send("bye", { reason: "demasiados clientes" });
       reply.raw.end();
@@ -109,12 +108,42 @@ export async function streamRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const since = Number(req.query.since);
+    // ¿Podemos contarlo todo?
+    //
+    // v2.38.19 — el historial se guarda 10 minutos y 200 eventos. Si el
+    // cliente estuvo fuera más de eso, lo que se perdió ya no está. Y
+    // antes no se decía nada: el `hello` traía la revisión actual, el
+    // cliente la aceptaba, y se quedaba creyendo que estaba al día con
+    // datos viejos para siempre. Ahora se dice `truncated` y quien
+    // escucha puede recargar lo que haga falta.
+    const truncated =
+      Number.isFinite(since) && since < startRev &&
+      (since < oldestRevisionFor(account));
+
+    // El `hello` ya NO lleva la revisión actual como si el cliente
+    // estuviera al día. Va la de referencia, la que el cliente dice
+    // tener, y el backlog la sube. Mandarla por delante hacía que
+    // todos los eventos perdidos se descartaran por viejos — que es
+    // justo el caso para el que existen.
+    send("hello", {
+      account,
+      revision: Number.isFinite(since) && since >= 0 ? since : 0,
+      current: startRev,
+      since: Number.isFinite(since) ? since : null,
+      truncated,
+      at: Date.now(),
+    });
+
     const listenerId = addListener(account, (ev: ChangeEvent) => send("change", ev, ev.revision));
 
     // Lo perdido mientras no estábamos: desde `since` hasta ahora.
     if (Number.isFinite(since) && since >= 0) {
       for (const ev of backlog(account, since)) send("change", ev, ev.revision);
     }
+
+    // Cierre de la sincronización. El cliente ya tiene todo lo que
+    // había; a partir de aquí, la revisión es la buena.
+    send("synced", { revision: startRev, truncated });
 
     // Latido: sin esto, proxies y móviles cierran la conexión por
     // inactividad y el usuario ve "se ha desconectado" cada minuto.

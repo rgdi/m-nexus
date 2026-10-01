@@ -148,6 +148,7 @@ const MODULES = [
   "./src/widgets/toast.js",
   "./src/widgets/top_toolbar.js",
   "./src/widgets/tour.js",
+  "./vendor/GLTFLoader.js",
   "./vendor/pdf.min.mjs",
   "./vendor/pdf.worker.min.mjs",
   "./vendor/three.min.js",

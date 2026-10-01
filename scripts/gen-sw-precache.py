@@ -72,7 +72,8 @@ def collect() -> list[str]:
                   "assets/occlusion/heart-en.svg",
                   "vendor/pdf.min.mjs",
                   "vendor/pdf.worker.min.mjs",
-                  "vendor/three.min.js"):
+                  "vendor/three.min.js",
+                  "vendor/GLTFLoader.js"):
         path = os.path.join(FRONTEND, extra)
         if os.path.exists(path):
             files.append("./" + extra)

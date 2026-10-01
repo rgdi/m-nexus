@@ -45,7 +45,13 @@ let reconnectTimer = null;
 let attempts = 0;
 
 const listeners = new Set();
-const state = { connected: false, revision: 0, lastEventAt: 0, account: null };
+// `gap` a true significa: hay cambios que este cliente no va a poder
+// recuperar del canal porque ya no están en el historial. La app lo
+// tiene que honor, no esconderlo.
+const state = {
+  connected: false, revision: 0, lastEventAt: 0, account: null,
+  gap: false, serverRevision: 0, lastSyncedAt: 0,
+};
 
 /** Alguien que quiere enterarse. Devuelve la función para dejar de oír. */
 export function onChange(fn) {
@@ -93,11 +99,43 @@ function connect() {
     try { d = JSON.parse(ev.data); } catch {}
     state.connected = true;
     state.account = d.account ?? null;
+    // v2.38.19 — aquí ya NO se adopta la revisión que manda el
+    // servidor. Antes sí, y era el agujero entero: al reconectar, el
+    // `hello` subía `revision` a la actual, y los eventos perdidos que
+    // venían justo después llegaban "viejos" y se descartaban. Es
+    // decir: reconectar garantizaba perder lo perdido.
+    //
+    // Ahora la referencia es la que el cliente dice tener. El backlog
+    // la sube evento a evento, y el `synced` final la fija.
+    if (typeof d.revision === "number") {
+      revision = Math.max(revision, d.revision);
+      state.revision = revision;
+    }
+    // `truncated`: el hueco es más grande que el historial guardado.
+    // No hay nada que recuperar, así que hay que decirlo —quien
+    // escucha decide si recarga, y una recarga a ciegas en mitad de
+    // una escritura borra el trabajo.
+    state.gap = !!d.truncated;
+    state.serverRevision = typeof d.current === "number" ? d.current : revision;
+    attempts = 0;
+    if (state.gap) {
+      for (const fn of listeners) {
+        try { fn({ revision, collection: null, by: null, gap: true }); }
+        catch { /* un oyente roto no para a los demás */ }
+      }
+    }
+  });
+
+  // Cierre de la sincronización: ya se ha entregado todo lo que había.
+  es.addEventListener("synced", (ev) => {
+    let d = {};
+    try { d = JSON.parse(ev.data); } catch {}
     if (typeof d.revision === "number") {
       revision = d.revision;
       state.revision = revision;
     }
-    attempts = 0;
+    state.serverRevision = revision;
+    state.lastSyncedAt = Date.now();
   });
 
   es.addEventListener("change", (ev) => {
@@ -163,9 +201,10 @@ export async function checkRevision() {
     const d = await r.json();
     if (typeof d.revision === "number" && d.revision > revision) {
       revision = d.revision;
-      return { stale: true, revision };
+      state.revision = revision;
+      return { stale: true, revision, gap: state.gap };
     }
-    return { stale: false, revision };
+    return { stale: false, revision, gap: state.gap };
   } catch {
     return { stale: false, revision };
   }
