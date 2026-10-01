@@ -179,6 +179,17 @@ export const authMiddleware: (req: FastifyRequest, reply: FastifyReply) => Promi
     return;
   }
 
+  // v2.38.14 — el canal de tiempo real se autentica por query.
+  //
+  // EventSource no puede mandar cabeceras, así que el token llega en
+  // ?token= y lo verifica la propia ruta con verifyAccessToken. Si el
+  // hook lo rechazara antes por falta de cabecera, ese camino no
+  // existiría nunca. Se salta SOLO esta ruta y SOLO si trae token: sin
+  // token sigue pidiendo la cabecera de siempre, que es lo correcto.
+  if (req.url?.startsWith("/api/v1/stream") && req.url.includes("token=")) {
+    return;
+  }
+
   const authHeader = req.headers.authorization;
   if (!authHeader) {
     return sendAuthError(reply, E.auth("EC-AUTH-001", "Missing Authorization header", {

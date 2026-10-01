@@ -25,15 +25,43 @@
 // le manda lo que se perdió en vez de todo.
 
 import type { FastifyInstance, FastifyRequest } from "fastify";
-import { currentSubject, accountOf, revisionOf } from "../services/userStore.js";
+import { currentSubject, accountOf, revisionOf, runWithSubject, subjectFor } from "../services/userStore.js";
+import { verifyAccessToken } from "../auth/jwt.js";
 import { addListener, removeListener, historyFor, publish, activeListenerCount, type ChangeEvent } from "../services/realtime.js";
 
 const HEARTBEAT_MS = 25_000;
 const MAX_CLIENTS = 500;
 
 export async function streamRoutes(app: FastifyInstance): Promise<void> {
-  app.get<{ Querystring: { since?: string } }>("/api/v1/stream", async (req, reply) => {
-    const sub = currentSubject();
+  /**
+   * v2.38.14 — el token va por query, porque EventSource NO puede mandar
+   * cabeceras. Sin esto el canal conectaba sin identidad, caia en el
+   * subject por defecto y no llegaba ningún cambio: el cliente abierta
+   * la conexión, recibiria el "hola" y nada más, para siempre.
+   *
+   * El inconveniente es conocido y está escrito: un token en la URL se
+   * queda en los logs del servidor y en el historial del navegador. Se
+   * comprueba con verifyAccessToken y no con decodificar, y el canal
+   * solo puede LEER. Para quien necesite que no aparezca en ninguna URL,
+   * la alternativa es fetch con cabeceras y leer el stream a mano, que
+   * es lo que hace fetch-based EventSource polyfill.
+   */
+  app.get<{ Querystring: { since?: string; token?: string } }>("/api/v1/stream", async (req, reply) => {
+    let sub = currentSubject();
+    if (req.query.token) {
+      try {
+        const payload = verifyAccessToken(req.query.token);
+        sub = subjectFor({ sub: payload.sub });
+      } catch {
+        return reply.code(401).send({ error: "unauthorized" });
+      }
+    }
+    if (!sub || sub === "default") {
+      return reply.code(401).send({
+        error: "unauthorized",
+        hint: "El canal necesita el token: EventSource no puede mandar cabeceras.",
+      });
+    }
     const account = (await accountOf(sub)) || `sub:${sub}`;
 
     reply.raw.writeHead(200, {

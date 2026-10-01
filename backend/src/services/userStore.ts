@@ -368,11 +368,14 @@ export async function writeCollection<T>(sub: string, name: string, value: T): P
   // hace que el otro dispositivo recargue en vez de quedarse con una
   // foto vieja.
   const rev = await bumpRevision(sub);
-  const account = await accountOf(sub);
-  if (account) {
-    const { publish } = await import("./realtime.js");
-    publish({ account, revision: rev, collection: name, by: sub });
-  }
+  // v2.38.14 — la clave del canal es la cuenta si la hay, y
+  // "sub:<subject>" si no. Antes solo se publicaba con cuenta, asi que
+  // un usuario SIN cuenta —que es el caso por defecto— se suscribia a
+  // un canal donde nunca se publicaba nada. Parecia funcionar porque
+  // el saludo si llegaba.
+  const key = (await accountOf(sub)) || `sub:${sub}`;
+  const { publish } = await import("./realtime.js");
+  publish({ account: key, revision: rev, collection: name, by: sub });
 }
 
 /* ------------------------------------------------------------------ *

@@ -332,6 +332,25 @@ async function bootstrap() {
     }
   });
   document.addEventListener("mnexus:open-ai", () => openAiCompanion());
+
+  // v2.38.14 — el canal en tiempo real. El servidor ya avisa de lo que
+  // cambia; esto es lo que hace que llegue a la pantalla. Sin él, dos
+  // dispositivos muestran dos verdades y todo parece funcionar.
+  import("./services/live.js").then(async (live) => {
+    live.startLive();
+    // v2.38.14 — se avisa, no se recarga sola. Un recargón en mitad de
+    // una edición borra lo que el usuario está escribiendo, que es
+    // peor que mostrar algo un segundo más viejo.
+    live.onChange((ev) => {
+      window.dispatchEvent(new CustomEvent("mnexus:changed", { detail: ev }));
+    });
+    // Al volver del segundo plano el canal puede no haberse conectado,
+    // y sin esta comprobación el usuario abre la app con datos viejos
+    // sin enterarse de que existen otros.
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") live.checkRevision();
+    });
+  }).catch(() => {});
   // v2.35.0: mobile bottom tab bar (visible ≤ 820px via CSS)
   mountBottomTabbar(document.body);
   // v2.35.0: study tab badge = due card count

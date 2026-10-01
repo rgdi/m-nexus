@@ -4921,3 +4921,94 @@ body.dg-scrolling { user-select: none; }
 }
 .occ-score-list li.is-right { color: var(--success); }
 .occ-score-list li.is-wrong { color: var(--danger); }
+
+/* v2.38.14 — la superficie de escritura a mano. */
+.ink-pad { display: grid; gap: 8px; }
+.ink-toolbar {
+  display: flex; align-items: center; gap: 4px;
+  flex-wrap: wrap;
+}
+.ink-spacer { flex: 1; min-width: 8px; }
+.ink-tool {
+  display: grid; place-items: center;
+  width: 44px; height: 44px;
+  border: 1px solid transparent; border-radius: var(--r-2);
+  background: transparent; color: var(--fg-muted);
+  font-size: 17px; cursor: pointer;
+}
+.ink-tool:hover { background: var(--bg-sunken); }
+.ink-tool.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.ink-stage {
+  position: relative;
+  touch-action: none;          /* sin esto el dedo hace scroll y no escribe */
+  -webkit-user-select: none;
+  user-select: none;
+  border: 1px solid var(--border);
+  border-radius: var(--r-2);
+  background: var(--bg-elevated);
+  overflow: hidden;
+  cursor: crosshair;
+}
+.ink-svg { display: block; width: 100%; height: 100%; }
+.ink-cursor {
+  position: absolute;
+  width: 26px; height: 26px;
+  margin: -13px 0 0 -13px;
+  border: 1.5px solid var(--fg-muted);
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: .7;
+}
+.ink-status { margin: 0; font-size: var(--fs-sm); color: var(--fg-muted); min-height: 1.2em; }
+
+/* v2.38.14 — el PDF con la tinta encima. */
+.pdf-annot { display: grid; gap: 12px; }
+.pdf-annot-status {
+  font-size: var(--fs-sm);
+  color: var(--fg-muted);
+  padding: 8px 12px;
+  border-radius: var(--r-2);
+  background: var(--bg-sunken);
+}
+.pdf-annot-pages { display: grid; gap: 16px; }
+.pdf-annot-page {
+  position: relative;
+  display: grid;
+  border-radius: var(--r-2);
+  overflow: hidden;
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-1);
+}
+.pdf-annot-canvas img,
+.pdf-annot-vacia {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1.414;   /* A4 */
+  object-fit: contain;
+  background: var(--bg-sunken);
+}
+.pdf-annot-vacia {
+  display: grid; place-items: center;
+  color: var(--fg-muted); font-size: var(--fs-sm);
+}
+.pdf-annot-ink {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+}
+.pdf-annot-ink .ink-toolbar { position: absolute; top: 6px; right: 6px; z-index: 2;
+  background: var(--bg-elevated); border-radius: var(--r-2); padding: 2px;
+  box-shadow: var(--shadow-2); }
+.pdf-annot-ink .ink-stage { border: 0; border-radius: 0; background: transparent; height: 100%; }
+.pdf-annot-ink .ink-status { display: none; }
+.pdf-annot-num {
+  position: absolute; left: 6px; bottom: 6px;
+  padding: 2px 8px; border-radius: var(--r-pill);
+  background: rgba(0,0,0,.6); color: #fff;
+  font-size: 11px; font-weight: 700;
+  pointer-events: none;
+}

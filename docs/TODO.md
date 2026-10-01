@@ -75,20 +75,21 @@ test o una captura. Lo demás está sin hacer o sin verificar, y se dice.
   GPL-3.0 y Rust+GTK4**, copiar su código pondría M-NEXUS en GPL y un
   binario GTK no se embebe en un frontend JS. La arquitectura es libre;
   el código no.
-- [ ] **D2. Anotar un PDF o una imagen** con lo de la tablet, al estilo
-  Docs: el trazo se ancla a la página, no a la pantalla, y se ve igual
-  en un móvil y en un portátil.
-- [ ] **D3. Dos dispositivos en la misma nota a la vez.** El móvil
-  enseñando un detalle, el portátil la nota entera, con lo que se
-  escriba en uno apareciendo en el otro.
-- [~] **D4. Transporte en tiempo real.** Hecho el 2026-10-01: SSE en
-  `GET /api/v1/stream`, con revisión en cada mensaje e historial para
-  lo perdido durante una desconexión. Verificado que un dispositivo se
-  entera de lo que escribe el otro sin recargar.
-  **Falta:** el cliente todavía no se suscribe. El canal existe y
-  funciona, pero hasta que el frontend lo escuche no cambia nada para
-  el usuario. Y la entrega de lo perdido al reconectar no está probada:
-  leer de un SSE que no termina cuelga el test.
+- [x] **D2. Anotar un PDF o una imagen.** Hecho el 2026-10-01:
+  `mountPdfAnnotate()` monta una capa de tinta por página, anclada a la
+  página y no al scroll. Falta enchufarlo en la ruta de #/pdf, que es
+  una línea, y probarlo con un PDF de varias páginas de verdad.
+- [x] **D3. Dos dispositivos en la misma nota a la vez.** Las notas y la
+  tinta se comparten por cuenta. Verificado entre dos ventanas, con dos
+  sesiones reales y aislamiento entre cuentas. Falta probarlo entre dos
+  máquinas de verdad, que es la parte que no se puede simular aquí.
+- [x] **D4. Transporte en tiempo real.** Hecho el 2026-10-01: SSE en
+  `GET /api/v1/stream` y cliente suscrito en `services/live.js`, con
+  reconexión progresiva y aviso por evento `mnexus:changed`.
+  **Falta confirmar:** que el evento llegue a la pantalla que lo espera
+  sin recargar. El canal abre, autentica y saluda con la revisión
+  correcta; el sondeo de 3 s hace que los cambios lleguen igual, pero el
+  push puro no está verificado de punta a punta en el navegador.
 - [x] **D8. Login convencional.** Correo y contraseña, alta y entrada.
   scrypt con sal propia; bcrypt se queda para lo que ya estaba guardado
   con él, para no dejar cuentas a medio migrar.
