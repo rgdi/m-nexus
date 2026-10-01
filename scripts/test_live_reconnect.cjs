@@ -163,23 +163,83 @@ async function registrar() {
     `${stAntes.revision} → ${conHueco.st.revision}`);
   await p2.close();
 
-  /* ── 3. Lo que no debe pasar ─────────────────────────────────── */
-  console.log('\n3. Lo que NO debe pasar');
-  // El canal avisa; no recarga. Una recarga en mitad de una escritura
-  // borra lo que se está escribiendo, así que no debe pasar sola.
-  const noRecarga = await page.evaluate(async () => {
-    window.__marcador = 'sigo aqui';
+  /* ── 3. Conectado y mudo ────────────────────────────────────── */
+  console.log('\n3. Conectado y mudo: el servidor acepta y no vuelve a hablar');
+  // v2.38.20 — dos formas de simularlo, y ninguna servía:
+  //
+  //  - `context.setOffline(true)` no corta una conexión SSE ya abierta:
+  //    el socket sigue vivo y el latido sigue llegando.
+  //  - `route.fulfill` con un saludo y nada más: la respuesta se
+  //    cierra al instante, el EventSource da error, y de eso se entera
+  //    `onerror`, no el vigilante. Se prueba el camino equivocado.
+  //
+  // El caso de verdad es una conexión ABIERTA y silenciosa, y eso se
+  // hace con un EventSource que se traga todo lo que llega después del
+  // saludo. El cliente no puede distinguirlos: para él es un servidor
+  // que ha dejado de hablar.
+  const p3 = await ctx.newPage();
+  await p3.addInitScript(auth, { tok, url: API });
+  await p3.goto(WEB + '/index.html#/overview', { waitUntil: 'load' });
+  const st3 = await esperarConectado(p3);
+  chk('con el servidor hablando, conectado', st3.connected, `revisión ${st3.revision}`);
+
+  await p3.evaluate(async () => {
+    const Real = window.EventSource;
+    // A partir de ahora, el canal no vuelve a decir nada.
+    window.EventSource = class Mudo extends Real {
+      constructor(url, opts) {
+        super(url, opts);
+        this.addEventListener('hello', () => { this.__mudo = true; });
+        for (const ev of ['change', 'synced', 'ping']) {
+          this.addEventListener(ev, (e) => { if (this.__mudo) e.stopImmediatePropagation(); });
+        }
+      }
+    };
     const m = await import('/src/services/live.js');
-    m.onChange(() => {});
     m.stopLive();
     m.startLive();
-    await new Promise((r) => setTimeout(r, 2000));
-    return { marcador: window.__marcador, st: m.liveState() };
   });
-  chk('el aviso no se convierte en recarga automática',
-    noRecarga.marcador === 'sigo aqui', 'la pagina no se ha vuelto a pintar');
-  chk('y tras reconectar queda conectada',
-    noRecarga.st.connected === true);
+  await p3.waitForTimeout(2000);
+  const abierto = await p3.evaluate(async () =>
+    (await import('/src/services/live.js')).liveState());
+  chk('el canal sigue "conectado": la conexión está abierta',
+    abierto.connected === true);
+
+  // Ahora sí, a esperar. El vigilante tiene que despertar solo.
+  const t0 = Date.now();
+  let caida = null;
+  while (Date.now() - t0 < 45_000) {
+    caida = await p3.evaluate(async () =>
+      (await import('/src/services/live.js')).liveState());
+    if (!caida.connected) break;
+    await p3.waitForTimeout(500);
+  }
+  const enCuanto = Math.round((Date.now() - t0) / 1000);
+  chk('el indicador deja de decir "en línea" cuando el servidor calla',
+    caida.connected === false, `a los ${enCuanto} s de silencio`);
+  chk('y se entera antes de un minuto',
+    enCuanto < 45, `peor caso: ${enCuanto} s`);
+
+  // Con el canal muerto, otro dispositivo escribe.
+  for (let i = 0; i < 4; i++) await mknote('Canal muerto ' + i);
+  const enServidor = await fetch(API + '/api/v1/accounts/revision', { headers: h })
+    .then((r) => r.json());
+  chk('el servidor registra lo que se escribió sin que lo viéramos',
+    enServidor.revision > st3.revision, `${st3.revision} → ${enServidor.revision}`);
+
+  // El servidor vuelve a hablar de verdad: se quita el EventSource mudo.
+  await p3.evaluate(async () => {
+    location.reload();
+  });
+  await p3.waitForTimeout(12000);
+  const vuelta = await p3.evaluate(async () =>
+    (await import('/src/services/live.js')).liveState());
+  chk('al volver el servidor, se reconecta solo', vuelta.connected === true);
+  chk('y recupera lo que se perdió mientras el canal estaba muerto',
+    vuelta.revision === enServidor.revision,
+    `tiene ${vuelta.revision}, el servidor está en ${enServidor.revision}`);
+  chk('sin hueco: lo perdido cabía en el historial', vuelta.gap === false);
+  await p3.close();
 
   await br.close();
   console.log(`\n${'='.repeat(46)}\n${ok}/${ok + fail} correctas\n`);

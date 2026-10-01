@@ -58,6 +58,7 @@ const MODULES = [
   "./src/services/i18n.js",
   "./src/services/inkSync.js",
   "./src/services/live.js",
+  "./src/services/model_store.js",
   "./src/services/native_intents.js",
   "./src/services/noteCrdt.js",
   "./src/services/notif_capture.js",

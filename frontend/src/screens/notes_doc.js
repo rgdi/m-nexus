@@ -78,8 +78,14 @@ const cuando = (ts) => {
 const RE_3D = /\{\{3d:(\{.*?\})\}\}/g;
 const RE_OCCL = /\{\{occl:(\{.*?\})\}\}/g;
 
+// v2.38.20 — `f` es el id del modelo guardado en el dispositivo y `c`
+// su crédito. El ARCHIVO no va aquí: pesa, y una nota con un modelo
+// dentro tiene que poder viajar por la red, imprimirse y exportarse
+// sin arrastrar 12 MB de geometría.
 const serializa3D = (s) => JSON.stringify({
   m: s.modelId,
+  ...(s.assetId ? { f: s.assetId } : {}),
+  ...(s.credit ? { c: s.credit } : {}),
   l: s.labels.map((l) => [l.x, l.y, l.z, l.text]),
   o: s.occlusions.map((o) => [o.x, o.y, o.z, o.w, o.h, o.answer || ""]),
 });
@@ -88,11 +94,15 @@ const deserializa3D = (raw) => {
     const d = JSON.parse(raw);
     return {
       modelId: d.m || "corazon",
+      assetId: d.f || null,
+      credit: d.c || "",
       labels: (d.l || []).map(([x, y, z, text], i) => ({ id: "l" + i, x, y, z, text })),
       occlusions: (d.o || []).map(([x, y, z, w, h, answer], i) =>
         ({ id: "o" + i, x, y, z, w, h, answer, tapped: false })),
     };
-  } catch { return { modelId: "corazon", labels: [], occlusions: [] }; }
+  } catch {
+    return { modelId: "corazon", assetId: null, credit: "", labels: [], occlusions: [] };
+  }
 };
 
 /* ── lectura: el cuerpo como documento ─────────────────────── */
@@ -389,6 +399,8 @@ async function abrirNota(root, id) {
         const cuerpoBloque = card.querySelector(".doc-block-body");
         mountModel3D(cuerpoBloque, {
           modelId: datos.modelId,
+          assetId: datos.assetId,
+          credit: datos.credit,
           labels: datos.labels,
           occlusions: datos.occlusions,
           onChange: (st) => {

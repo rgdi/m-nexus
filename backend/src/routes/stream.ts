@@ -30,7 +30,11 @@ import { verifyAccessToken } from "../auth/jwt.js";
 import { isOriginAllowed } from "../utils/corsPolicy.js";
 import { addListener, removeListener, historyFor, oldestRevisionFor, publish, activeListenerCount, type ChangeEvent } from "../services/realtime.js";
 
-const HEARTBEAT_MS = 25_000;
+// v2.38.20 — 25 s era el mínimo para no gastar. Con el evento `ping`
+// de verdad, el cliente puede detectar una conexión muerta, y a 25 s
+// tardaba hasta tres minutos en enterarse. A 10 s el peor caso son 30,
+// y son 6 bytes cada 10 segundos por cliente.
+const HEARTBEAT_MS = 10_000;
 const MAX_CLIENTS = 500;
 
 export async function streamRoutes(app: FastifyInstance): Promise<void> {
@@ -90,9 +94,9 @@ export async function streamRoutes(app: FastifyInstance): Promise<void> {
     }
     reply.raw.writeHead(200, headers);
 
-    const send = (event: string, data: unknown, id?: number) => {
+    const send = (event: string, data: unknown, id?: number | null) => {
       try {
-        if (id !== undefined) reply.raw.write(`id: ${id}\n`);
+        if (id !== undefined && id !== null) reply.raw.write(`id: ${id}\n`);
         reply.raw.write(`event: ${event}\n`);
         reply.raw.write(`data: ${JSON.stringify(data)}\n\n`);
       } catch {
@@ -147,9 +151,18 @@ export async function streamRoutes(app: FastifyInstance): Promise<void> {
 
     // Latido: sin esto, proxies y móviles cierran la conexión por
     // inactividad y el usuario ve "se ha desconectado" cada minuto.
+    //
+    // v2.38.20 — se manda TAMBIÉN un evento de verdad. El comentario
+    // `:` no lo ve el EventSource: el navegador lo ignora y no
+    // dispara nada. Sin un evento, el cliente no puede saber si la
+    // conexión sigue viva, y con la red caída sigue poniendo "en
+    // línea" hasta que pasan los 25 s del latido. Un indicador que
+    // miente durante medio minuto, en un móvil, es un ConnectionBadge
+    // roto.
     const beat = setInterval(() => {
       try {
         reply.raw.write(`: ping\n\n`);
+        send("ping", { at: Date.now() }, null);
       } catch {
         clearInterval(beat);
       }

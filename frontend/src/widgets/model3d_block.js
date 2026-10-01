@@ -34,6 +34,8 @@ function escapeHtml(s) {
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
+import { guardarModelo, urlDeModelo } from "../services/model_store.js";
+
 /** GLTFLoader, local. Cargar un .glb propio es lo que da acceso a
  *  modelos anatómicos de verdad, y sin meterse en redistribuir los de
  *  otros. */
@@ -601,11 +603,16 @@ function injectStyles() {
  */
 export async function mountModel3D(host, opts = {}) {
   injectStyles();
+  // El motivo del ultimo fallo, si lo hubo. Se muestra en el pie.
+  let fallo = null;
+
   const state = {
     modelId: opts.modelId || "corazon",
-    // Un .glb del usuario. No se guarda en la nota — pesa —; vive en
-    // la sesión. Si quieres que persista, se sube a tus ficheros.
+    // Un .glb del usuario. El ARCHIVO no va en la nota — pesa —: se
+    // guarda en IndexedDB y aquí solo queda su id. La nota viaja
+    // ligera y el modelo se abre desde el disco al leerla.
     modelUrl: opts.modelUrl || null,
+    assetId: opts.assetId || null,
     credit: opts.credit || "",
     labels: [...(opts.labels || [])],
     occlusions: [...(opts.occlusions || [])],
@@ -682,6 +689,32 @@ export async function mountModel3D(host, opts = {}) {
 
   async function buildModel() {
     if (model) { holder.remove(model); model = null; }
+
+    // v2.38.20 — un modelo guardado en este dispositivo. Va antes que
+    // la URL: el id es lo que viaja en la nota, y la URL temporal se
+    // rehace cada vez que se abre.
+    if (state.assetId) {
+      foot.textContent = "Abriendo el modelo guardado…";
+      const guardada = await urlDeModelo(state.assetId);
+      if (guardada) {
+        const carga = await cargarGLB(guardada);
+        URL.revokeObjectURL(guardada);
+        if (carga) {
+          model = carga;
+          holder.add(model);
+          rotY = 0.25; rotX = -0.12;
+          encuadrar();
+          paint();
+          foot.textContent = state.credit
+            ? `Modelo guardado — ${state.credit}`
+            : "Modelo guardado en este dispositivo.";
+          return;
+        }
+      } else {
+        fallo = "no está guardado en este dispositivo";
+      }
+    }
+
     if (state.modelUrl) {
       foot.textContent = "Cargando el modelo…";
       const carga = await cargarGLB(state.modelUrl);
@@ -719,7 +752,6 @@ export async function mountModel3D(host, opts = {}) {
    * el pie decía "Corazón": tu archivo no se había abierto, y la
    * pantallaemblaba estar bien.
    */
-  let fallo = null;
   async function cargarGLB(url) {
     const GLTFLoader = await loadGltfLoader();
     if (!GLTFLoader) { fallo = "no se pudo cargar el lector de .glb"; return null; }
@@ -933,7 +965,9 @@ export async function mountModel3D(host, opts = {}) {
     state.modelId = pick.value;
     // Volver a la lista de modelos deja el archivo propio.
     state.modelUrl = null;
+    state.assetId = null;
     state.credit = "";
+    fallo = null;
     buildModel();
     state.onChange(state);
   });
@@ -948,19 +982,37 @@ export async function mountModel3D(host, opts = {}) {
     labelBtn.setAttribute("aria-pressed", String(mode === "label"));
   });
   const openBtn = host.querySelector(".m3d-open-btn");
+  const showAviso = (t) => { foot.textContent = "⚠ " + t; };
   const fileInput = host.querySelector("[data-file]");
   openBtn.addEventListener("click", () => fileInput.click());
   fileInput.addEventListener("change", async () => {
     const f = fileInput.files?.[0];
     if (!f) return;
-    const url = URL.createObjectURL(f);
-    // El crédito no se inventa: se lee del nombre del archivo y se
-    // puede cambiar. La licencia de un modelo ajeno es de quien lo
-    // tenga, y el sitio de la app tiene que poder mostrarla.
+    // El crédito no se inventa: se lee del nombre del archivo. La
+    // licencia de un modelo ajeno es de quien lo tenga, y el sitio de
+    // la app tiene que poder mostrarla.
     state.credit = f.name.replace(/\.glt?f$/i, "");
-    state.modelUrl = url;
-    await buildModel();
-    state.onChange(state);
+    openBtn.disabled = true;
+    const antes = openBtn.textContent;
+    openBtn.textContent = "Guardando…";
+    try {
+      // El archivo a IndexedDB, no a la nota. v2.38.20.
+      state.assetId = await guardarModelo({ nombre: f.name, blob: f, credito: state.credit });
+      state.modelUrl = null;
+      await buildModel();
+      state.onChange(state);
+    } catch (e) {
+      // Si IndexedDB no abre, se dice. Un botón que no hace nada es
+      // peor que un botón que avisa.
+      state.credit = f.name;
+      state.assetId = null;
+      state.modelUrl = URL.createObjectURL(f);
+      await buildModel();
+      showAviso(`No se pudo guardar en este dispositivo: ${String(e.message || e).slice(0, 60)}`);
+    } finally {
+      openBtn.disabled = false;
+      openBtn.textContent = antes;
+    }
   });
 
   host.querySelector('[data-act="reset"]').addEventListener("click", () => {

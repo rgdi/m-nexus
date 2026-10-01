@@ -1,0 +1,135 @@
+[
+  {
+    "id": "fc-304b5907-0556-4ce1-aaba-ecc108bfb8a7",
+    "front": "Capital de Francia",
+    "back": "París",
+    "subject": "math",
+    "tags": [
+      "geo"
+    ],
+    "sourceNoteId": "",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 0,
+      "difficulty": 5,
+      "state": "new",
+      "reps": 0,
+      "lapses": 0,
+      "lastReview": 0,
+      "due": 1790874889618,
+      "retrievability": 1
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "createdAt": 1790874889618,
+    "updatedAt": 1790874889618
+  },
+  {
+    "id": "fc-336d9896-d73d-4ab8-a7d2-9e9c42aa7b3e",
+    "front": "q1",
+    "back": "a1-updated",
+    "subject": "bio",
+    "tags": [],
+    "sourceNoteId": "",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 0,
+      "difficulty": 5,
+      "state": "new",
+      "reps": 0,
+      "lapses": 0,
+      "lastReview": 0,
+      "due": 1790874889639,
+      "retrievability": 1
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "createdAt": 1790874889638,
+    "updatedAt": 1790874889654
+  },
+  {
+    "id": "fc-36ed5497-0b55-4b6c-98c4-436b0a9f3efb",
+    "front": "2+2",
+    "back": "4",
+    "subject": "math",
+    "tags": [
+      "algebra",
+      "basics"
+    ],
+    "sourceNoteId": "note-7fbaf206-c52b-4d5a-bc0f-89b9069aba82",
+    "sourceExcerpt": "2+2::4",
+    "cardType": "cloze",
+    "fsrs": {
+      "stability": 0,
+      "difficulty": 5,
+      "state": "new",
+      "reps": 0,
+      "lapses": 0,
+      "lastReview": 0,
+      "due": 1790874889694,
+      "retrievability": 1
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "createdAt": 1790874889694,
+    "updatedAt": 1790874889694
+  },
+  {
+    "id": "fc-4d154a9d-aa2e-4795-899d-0761cd0b7c04",
+    "front": "3*5",
+    "back": "15",
+    "subject": "math",
+    "tags": [
+      "algebra",
+      "basics"
+    ],
+    "sourceNoteId": "note-7fbaf206-c52b-4d5a-bc0f-89b9069aba82",
+    "sourceExcerpt": "3*5::15",
+    "cardType": "cloze",
+    "fsrs": {
+      "stability": 0,
+      "difficulty": 5,
+      "state": "new",
+      "reps": 0,
+      "lapses": 0,
+      "lastReview": 0,
+      "due": 1790874889712,
+      "retrievability": 1
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "createdAt": 1790874889712,
+    "updatedAt": 1790874889712
+  },
+  {
+    "id": "fc-1d9b6d07-646a-459e-8c21-4baf7c00e880",
+    "front": "A",
+    "back": "B",
+    "subject": "bio",
+    "tags": [],
+    "sourceNoteId": "note-026325ce-48bc-46ce-9f04-ef6c6e203ddf",
+    "sourceExcerpt": "A::B",
+    "cardType": "cloze",
+    "fsrs": {
+      "stability": 0,
+      "difficulty": 5,
+      "state": "new",
+      "reps": 0,
+      "lapses": 0,
+      "lastReview": 0,
+      "due": 1790874889747,
+      "retrievability": 1
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "createdAt": 1790874889747,
+    "updatedAt": 1790874889747
+  }
+]

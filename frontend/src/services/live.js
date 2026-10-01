@@ -43,13 +43,50 @@ let source = null;
 let revision = 0;
 let reconnectTimer = null;
 let attempts = 0;
+let watchdog = null;
+let lastSeenAt = 0;
+
+// v2.38.20 — el navegador NO avisa de que se ha ido la red. El
+// EventSource se queda "conectado" hasta que una escritura falla, y con
+// una conexión SSE abierta no hay escrituras: solo habla el latido del
+// servidor. O sea: el indicador "en línea" miente hasta medio minuto,
+// en un móvil, dentro de un túnel.
+//
+// El vigilante no espera a que el navegador se entere: mira cuándo fue
+// la última vez que dijo algo el servidor, y si hace demasiado, da el
+// canal por muerto y reconecta. Es lo que hace el resto de clientes
+// de tiempo real, y es la diferencia entre un indicador que miente y
+// uno que no.
+const SILENCIO_MAX_MS = 30_000;   // tres latidos perdidos
+const VIGILANTE_MS = 2_000;
+
+function arrancarVigilante() {
+  pararVigilante();
+  lastSeenAt = Date.now();
+  watchdog = setInterval(() => {
+    if (!source) return;
+    if (Date.now() - lastSeenAt < SILENCIO_MAX_MS) return;
+    // El servidor lleva demasiado callado. Puede que la red se haya
+    // ido sin que el navegador lo note; se cierra y se reconecta, que
+    // es el mismo camino que cuando el EventSource avisa solo.
+    state.connected = false;
+    state.lastSeenAt = lastSeenAt;
+    try { source.close(); } catch {}
+    source = null;
+    scheduleReconnect();
+  }, VIGILANTE_MS);
+}
+
+function pararVigilante() {
+  if (watchdog) { clearInterval(watchdog); watchdog = null; }
+}
 
 const listeners = new Set();
 // `gap` a true significa: hay cambios que este cliente no va a poder
 // recuperar del canal porque ya no están en el historial. La app lo
 // tiene que honor, no esconderlo.
 const state = {
-  connected: false, revision: 0, lastEventAt: 0, account: null,
+  connected: false, revision: 0, lastEventAt: 0, lastSeenAt: 0, account: null,
   gap: false, serverRevision: 0, lastSyncedAt: 0,
 };
 
@@ -99,6 +136,8 @@ function connect() {
     try { d = JSON.parse(ev.data); } catch {}
     state.connected = true;
     state.account = d.account ?? null;
+    lastSeenAt = Date.now();
+    arrancarVigilante();
     // v2.38.19 — aquí ya NO se adopta la revisión que manda el
     // servidor. Antes sí, y era el agujero entero: al reconectar, el
     // `hello` subía `revision` a la actual, y los eventos perdidos que
@@ -127,6 +166,12 @@ function connect() {
   });
 
   // Cierre de la sincronización: ya se ha entregado todo lo que había.
+  // El latido. Sin esto el vigilante no tiene nada que mirar.
+  es.addEventListener("ping", () => {
+    lastSeenAt = Date.now();
+    state.lastSeenAt = lastSeenAt;
+  });
+
   es.addEventListener("synced", (ev) => {
     let d = {};
     try { d = JSON.parse(ev.data); } catch {}
@@ -142,6 +187,7 @@ function connect() {
     let d = {};
     try { d = JSON.parse(ev.data); } catch {}
     state.lastEventAt = Date.now();
+    lastSeenAt = Date.now();
     // Un mensaje viejo no es un cambio: llega igual después de
     // reconectar, y avisar por él sería recargar sin motivo.
     if (typeof d.revision === "number") {
@@ -156,6 +202,7 @@ function connect() {
   });
 
   es.onerror = () => {
+    pararVigilante();
     // readyState CLOSED significa que se acabó del todo: el EventSource
     // no reintenta solo en ese caso, y es justo el que nos interesa
     // cubrir cuando la app vuelve del segundo plano en un móvil.
@@ -179,6 +226,7 @@ function scheduleReconnect() {
 }
 
 export function stopLive() {
+  pararVigilante();
   if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
   if (source) { try { source.close(); } catch {} source = null; }
   state.connected = false;

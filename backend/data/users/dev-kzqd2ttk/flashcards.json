@@ -1,0 +1,274 @@
+[
+  {
+    "id": "fc-4599554f-77c2-46b4-929d-607ba85ad110",
+    "front": "¿Cuánto es 2+2?",
+    "back": "4",
+    "subject": "",
+    "tags": [],
+    "sourceNoteId": "",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 0,
+      "difficulty": 5,
+      "state": "new",
+      "reps": 0,
+      "lapses": 0,
+      "lastReview": 0,
+      "due": 1790874876830,
+      "retrievability": 1
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "createdAt": 1790874876830,
+    "updatedAt": 1790874876830
+  },
+  {
+    "id": "fc-4b69a4bf-24a5-4f78-95bd-f8f2e8ebe484",
+    "front": "card A",
+    "back": "a",
+    "subject": "",
+    "tags": [],
+    "sourceNoteId": "",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 0.4072,
+      "difficulty": 5,
+      "state": "learning",
+      "reps": 1,
+      "lapses": 0,
+      "lastReview": 1790874876929,
+      "due": 1790875308929,
+      "retrievability": 1,
+      "sched": {
+        "elapsedDays": 0,
+        "targetRetention": 0.9,
+        "migrated": true
+      }
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "reviewHistory": [
+      {
+        "t": 1790874876929,
+        "rating": 1,
+        "r": 1
+      }
+    ],
+    "createdAt": 1790874876869,
+    "updatedAt": 1790874876930
+  },
+  {
+    "id": "fc-81cb6d97-6ce9-4bc3-a769-425734492eaf",
+    "front": "card 2",
+    "back": "x",
+    "subject": "",
+    "tags": [],
+    "sourceNoteId": "",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 0.5,
+      "difficulty": 5,
+      "state": "learning",
+      "reps": 1,
+      "lapses": 0,
+      "lastReview": 1790874876961,
+      "due": 1790875308961,
+      "retrievability": 1,
+      "sched": {
+        "elapsedDays": 0,
+        "targetRetention": 0.9,
+        "migrated": true
+      }
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "reviewHistory": [
+      {
+        "t": 1790874876961,
+        "rating": 2,
+        "r": 1
+      }
+    ],
+    "createdAt": 1790874876946,
+    "updatedAt": 1790874876961
+  },
+  {
+    "id": "fc-3b171838-eb74-478e-80a2-9de796d77503",
+    "front": "card 3",
+    "back": "x",
+    "subject": "",
+    "tags": [],
+    "sourceNoteId": "",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 3.1262,
+      "difficulty": 5,
+      "state": "learning",
+      "reps": 1,
+      "lapses": 0,
+      "lastReview": 1790874876991,
+      "due": 1790875308991,
+      "retrievability": 1,
+      "sched": {
+        "elapsedDays": 0,
+        "targetRetention": 0.9,
+        "migrated": true
+      }
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "reviewHistory": [
+      {
+        "t": 1790874876991,
+        "rating": 3,
+        "r": 1
+      }
+    ],
+    "createdAt": 1790874876976,
+    "updatedAt": 1790874876991
+  },
+  {
+    "id": "fc-b85432fa-88c2-4566-8f84-ceaf6f33e820",
+    "front": "card 4",
+    "back": "x",
+    "subject": "",
+    "tags": [],
+    "sourceNoteId": "",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 15.4722,
+      "difficulty": 5,
+      "state": "learning",
+      "reps": 1,
+      "lapses": 0,
+      "lastReview": 1790874877023,
+      "due": 1790875309023,
+      "retrievability": 1,
+      "sched": {
+        "elapsedDays": 0,
+        "targetRetention": 0.9,
+        "migrated": true
+      }
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "reviewHistory": [
+      {
+        "t": 1790874877023,
+        "rating": 4,
+        "r": 1
+      }
+    ],
+    "createdAt": 1790874877008,
+    "updatedAt": 1790874877023
+  },
+  {
+    "id": "fc-be43dafc-c934-4e0d-af86-a3b50dc2cc4e",
+    "front": "range card",
+    "back": "x",
+    "subject": "",
+    "tags": [],
+    "sourceNoteId": "",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 0,
+      "difficulty": 5,
+      "state": "new",
+      "reps": 0,
+      "lapses": 0,
+      "lastReview": 0,
+      "due": 1790874877038,
+      "retrievability": 1
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "createdAt": 1790874877038,
+    "updatedAt": 1790874877038
+  },
+  {
+    "id": "fc-d0d47edb-9334-46bf-896b-4022edac67c0",
+    "front": "heatmap card",
+    "back": "h",
+    "subject": "",
+    "tags": [],
+    "sourceNoteId": "",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 3.1262,
+      "difficulty": 5,
+      "state": "learning",
+      "reps": 1,
+      "lapses": 0,
+      "lastReview": 1790874877129,
+      "due": 1790875309129,
+      "retrievability": 1,
+      "sched": {
+        "elapsedDays": 0,
+        "targetRetention": 0.9,
+        "migrated": true
+      }
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "reviewHistory": [
+      {
+        "t": 1790874877129,
+        "rating": 3,
+        "r": 1
+      }
+    ],
+    "createdAt": 1790874877074,
+    "updatedAt": 1790874877129
+  },
+  {
+    "id": "fc-bf1c4731-b2ac-48ce-8be4-5005f5c318f3",
+    "front": "retention card",
+    "back": "r",
+    "subject": "",
+    "tags": [],
+    "sourceNoteId": "",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 3.1262,
+      "difficulty": 5,
+      "state": "learning",
+      "reps": 1,
+      "lapses": 0,
+      "lastReview": 1790874877228,
+      "due": 1790875309228,
+      "retrievability": 1,
+      "sched": {
+        "elapsedDays": 0,
+        "targetRetention": 0.9,
+        "migrated": true
+      }
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "reviewHistory": [
+      {
+        "t": 1790874877228,
+        "rating": 3,
+        "r": 1
+      }
+    ],
+    "createdAt": 1790874877147,
+    "updatedAt": 1790874877228
+  }
+]

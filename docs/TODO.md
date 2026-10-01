@@ -160,3 +160,38 @@ El bloque D va aparte y es el más grande de todos: tinta, tiempo real y
 conflictos. Los tres juntos, porque por separado no sirven de nada —un
 trazos que no se sincroniza entre dispositivos es un doodle, y una
 sincronización sin conflictos es una forma de perder trabajo—.
+
+
+## v2.38.20 — lo que queda, con lo que significa
+
+### Cerrado
+
+- El `.glb` de un modelo propio **sobrevive a recargar la nota**: se
+  guarda en IndexedDB y la nota solo lleva su id. Ver
+  `docs/modelos-3d.md`.
+- El canal **deja de mentir cuando el servidor se calla**: el
+  navegador no avisa de que se ha ido la red, así que hay un vigilante
+  que mira cuándo fue la última vez que habló el servidor.
+
+### Abierto, y por qué
+
+- **Que los modelos se sincronicen entre dispositivos.** Ahora el
+  `.glb` vive en IndexedDB, que es **de este dispositivo**. El endpoint
+  de subida por trozos existe y admite 500 MB, pero **no hay ninguna
+  ruta que sirva lo subido**, así que no hay forma de volver a
+  pedirlo. Montar ese camino —subir, servir con autenticación por
+  usuario, limpiar lo que nadie usa, y decidir qué pasa si el modelo no
+  cabe en el cuota— es trabajo de producto, no un parche.
+
+- **El indicador de conexión en toda la app.** El canal ya no miente,
+  pero el "En línea" de la barra usa otro indicador. Que todos miren al
+  mismo `liveState()`.
+
+- **Lápiz de verdad** (Apple Pencil o S Pen): la presión se simula con
+  `PointerEvent` y el rechazo de palma se comprueba con código, no con
+  la palma.
+
+- **Safari en iPad**: todo lo verificado es Chromium.
+
+- **Dos máquinas de verdad**: las pruebas son dos ventanas y dos
+  sesiones simuladas, no dos ordenadores.

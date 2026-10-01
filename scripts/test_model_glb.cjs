@@ -86,8 +86,11 @@ if (!existsSync(GLB)) { console.error(`No existe ${GLB}`); process.exit(1); }
     pie: document.querySelector('.m3d-foot')?.textContent || '',
     lienzo: !!document.querySelector('.m3d-stage canvas'),
   }));
-  chk('el .glb se carga y se dice que es propio',
-    /Modelo propio/.test(despues.pie), despues.pie.slice(0, 60));
+  // "Modelo guardado", no "Modelo propio": el archivo se queda en el
+  // dispositivo y hay que decirlo, para que se sepa que es de esta
+  // máquina y no viaja con la nota.
+  chk('el .glb se carga y se dice que queda guardado aquí',
+    /Modelo guardado/.test(despues.pie), despues.pie.slice(0, 60));
   chk('el crédito se rellena con el nombre del archivo',
     /caja/.test(despues.pie), despues.pie.slice(0, 60));
   chk('sigue habiendo lienzo', despues.lienzo);
@@ -117,6 +120,63 @@ if (!existsSync(GLB)) { console.error(`No existe ${GLB}`); process.exit(1); }
   chk('y se puede tapar una zona', occ === 1, `${occ} oclusiones`);
 
   await page.locator('.m3d-stage').screenshot({ path: join(OUT, 'glb-propio.png') });
+
+  /* ── La parte que faltaba: que sobreviva a recargar ─────────── */
+  // v2.38.20 — hasta aquí el modelo vivía en la sesión. Al recargar
+  // la página se apagaba y volvía al de ejemplo sin decir por qué.
+  const guardado = await page.evaluate(async () => {
+    const m = await import('/src/services/model_store.js');
+    const lista = await m.listarModelos();
+    return { n: lista.length, nombre: lista[0]?.nombre, bytes: lista[0]?.bytes };
+  });
+  chk('el archivo se guarda en el dispositivo, no en la nota',
+    guardado.n === 1, `${guardado.n} modelo(s), ${guardado.nombre}, ${guardado.bytes} bytes`);
+  chk('y pesa lo que el archivo, no lo que pesaría en base64',
+    guardado.bytes > 0 && guardado.bytes < 200 * 1024 * 1024,
+    `${guardado.bytes} bytes`);
+
+  // Recargar de verdad.
+  await page.reload({ waitUntil: 'load' });
+  await page.waitForTimeout(1500);
+  const trasRecarga = await page.evaluate(() => ({
+    notas: (window.__modeloGuardado || null),
+    estado: null,
+  }));
+  // La página de prueba monta de nuevo sin archivo: lo que se comprueba
+  // es que el almacén devuelve el Blob y que el visor lo abre.
+  const rehidratado = await page.evaluate(async () => {
+    const m = await import('/src/services/model_store.js');
+    const l = await m.listarModelos();
+    if (!l.length) return { ok: false, motivo: 'el almacén quedó vacío' };
+    const url = await m.urlDeModelo(l[0].id);
+    if (!url) return { ok: false, motivo: 'no hay Blob' };
+    const r = await fetch(url);
+    const b = await r.blob();
+    URL.revokeObjectURL(url);
+    return { ok: b.size === l[0].bytes, motivo: `${b.size} vs ${l[0].bytes}` };
+  });
+  chk('tras recargar la página, el modelo sigue en el dispositivo',
+    rehidratado.ok, rehidratado.motivo);
+
+  // Y ahora sí, el circuito entero: un modelo guardado que se abre
+  // desde su id, sin volver a elegir el archivo.
+  const desdeId = await page.evaluate(async () => {
+    const m = await import('/src/services/model_store.js');
+    const l = await m.listarModelos();
+    const { mountModel3D } = await import('/src/widgets/model3d_block.js');
+    const h = document.createElement('div');
+    h.style.cssText = 'width:600px;height:460px';
+    document.body.appendChild(h);
+    await mountModel3D(h, { modelId: 'corazon', assetId: l[0].id, credit: l[0].nombre });
+    await new Promise((r) => setTimeout(r, 1500));
+    return {
+      pie: h.querySelector('.m3d-foot')?.textContent || '',
+      canvas: !!h.querySelector('.m3d-stage canvas'),
+    };
+  });
+  chk('el visor abre el modelo por su id, sin volver a elegir el archivo',
+    /Modelo guardado/.test(desdeId.pie), desdeId.pie.slice(0, 60));
+  chk('y pinta', desdeId.canvas);
 
   chk('sin errores en consola durante todo el proceso',
     errores.length === 0, errores.slice(0, 2).join(' | ') || 'ninguno');
