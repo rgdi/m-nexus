@@ -24,14 +24,30 @@
 
 import { escapeHtml } from "../services/safe.js";
 
-const TOOLS = {
-  pen: { color: "#e8e8ef", width: 0.0028, alpha: 1, icon: "✎" },
-  marker: { color: "#a855f7", width: 0.005, alpha: 0.75, icon: "🖍" },
-  highlighter: { color: "#facc15", width: 0.012, alpha: 0.32, icon: "▬" },
-  eraser: { color: "#000", width: 0.018, alpha: 1, icon: "⌫" },
+// v2.38.15 — dos paletas, no una.
+//
+// Estos colores eran los de una superficie oscura. Sobre una hoja de
+// PDF —blanca— un lapiz #e8e8ef es practicamente invisible: se
+// escribia a mano y no se veía nada. `ton` decide cual de las dos.
+const PALETTES = {
+  dark: {
+    pen: { color: "#e8e8ef", width: 0.0028, alpha: 1, icon: "✎" },
+    marker: { color: "#a855f7", width: 0.005, alpha: 0.75, icon: "🖍" },
+    highlighter: { color: "#facc15", width: 0.012, alpha: 0.32, icon: "▬" },
+    eraser: { color: "#000", width: 0.018, alpha: 1, icon: "⌫" },
+  },
+  // Sobre papel: tinta oscura y un resaltador que no tapa el texto.
+  light: {
+    pen: { color: "#111827", width: 0.004, alpha: 1, icon: "✎" },
+    marker: { color: "#7c3aed", width: 0.005, alpha: 0.85, icon: "🖍" },
+    highlighter: { color: "#fde047", width: 0.012, alpha: 0.42, icon: "▬" },
+    eraser: { color: "#fff", width: 0.018, alpha: 1, icon: "⌫" },
+  },
 };
 
+const TOOLS = PALETTES.dark;
 export const INK_TOOLS = TOOLS;
+export const INK_PALETTES = PALETTES;
 
 let device = "d";
 let seq = 0;
@@ -48,6 +64,8 @@ export function mountInkPad(host, opts = {}) {
     background = null,
     onChange = () => {},
     readOnly = false,
+    // "dark" para la superficie oscura, "light" para el papel de un PDF.
+    ton = "dark",
     onStrokeEnd = null,
   } = opts;
 
@@ -131,6 +149,12 @@ export function mountInkPad(host, opts = {}) {
       y: Math.max(0, Math.min(1, (ev.clientY - r.top) / r.height)),
     };
   };
+
+  // La paleta se resuelve una vez. Con `const TOOLS = PALETTES.dark`
+  // fijo, cambiar de tono no cambiaba nada: el lapiz claro se
+  // escribia igual sobre el papel.
+  const tools = PALETTES[ton] || PALETTES.dark;
+  Object.assign(TOOLS, tools);
 
   if (!readOnly) {
     stage.addEventListener("pointerdown", (ev) => {
@@ -309,5 +333,9 @@ function pathOf(s) {
 function speedWidth(from, to, base) {
   const dt = Math.max(1, to.t - from.t);
   const d = Math.hypot(to.x - from.x, to.y - from.y);
-  return base * Math.max(0.35, Math.min(1.4, 1 - (d / dt) * 500));
+  // v2.38.15 — el suelo era 0.35 y el trazo rapido se rompia en
+  // puntos. Escribir deprisa tiene que salir mas fino, no partido:
+  // por debajo de la mitad el segmento desaparece y la linea parece
+  // una serie de rayas sueltas.
+  return base * Math.max(0.5, Math.min(1.4, 1 - (d / dt) * 500));
 }

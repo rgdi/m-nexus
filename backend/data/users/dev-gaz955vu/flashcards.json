@@ -1,0 +1,274 @@
+[
+  {
+    "id": "fc-70336544-dec8-47a6-9e70-8ede0361dfd9",
+    "front": "¿Cuánto es 2+2?",
+    "back": "4",
+    "subject": "",
+    "tags": [],
+    "sourceNoteId": "",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 0,
+      "difficulty": 5,
+      "state": "new",
+      "reps": 0,
+      "lapses": 0,
+      "lastReview": 0,
+      "due": 1790821870164,
+      "retrievability": 1
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "createdAt": 1790821870164,
+    "updatedAt": 1790821870164
+  },
+  {
+    "id": "fc-4fe7ef4b-ebdb-42fb-8e60-aa2eee96fa26",
+    "front": "card A",
+    "back": "a",
+    "subject": "",
+    "tags": [],
+    "sourceNoteId": "",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 0.4072,
+      "difficulty": 5,
+      "state": "learning",
+      "reps": 1,
+      "lapses": 0,
+      "lastReview": 1790821870200,
+      "due": 1790822302200,
+      "retrievability": 1,
+      "sched": {
+        "elapsedDays": 0,
+        "targetRetention": 0.9,
+        "migrated": true
+      }
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "reviewHistory": [
+      {
+        "t": 1790821870200,
+        "rating": 1,
+        "r": 1
+      }
+    ],
+    "createdAt": 1790821870186,
+    "updatedAt": 1790821870201
+  },
+  {
+    "id": "fc-7f4aae8e-dc76-4433-b544-97db3fa605d4",
+    "front": "card 2",
+    "back": "x",
+    "subject": "",
+    "tags": [],
+    "sourceNoteId": "",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 0.5,
+      "difficulty": 5,
+      "state": "learning",
+      "reps": 1,
+      "lapses": 0,
+      "lastReview": 1790821870230,
+      "due": 1790822302230,
+      "retrievability": 1,
+      "sched": {
+        "elapsedDays": 0,
+        "targetRetention": 0.9,
+        "migrated": true
+      }
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "reviewHistory": [
+      {
+        "t": 1790821870230,
+        "rating": 2,
+        "r": 1
+      }
+    ],
+    "createdAt": 1790821870216,
+    "updatedAt": 1790821870230
+  },
+  {
+    "id": "fc-99187ea5-c87b-40e7-9f74-2f5589c83f8a",
+    "front": "card 3",
+    "back": "x",
+    "subject": "",
+    "tags": [],
+    "sourceNoteId": "",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 3.1262,
+      "difficulty": 5,
+      "state": "learning",
+      "reps": 1,
+      "lapses": 0,
+      "lastReview": 1790821870258,
+      "due": 1790822302258,
+      "retrievability": 1,
+      "sched": {
+        "elapsedDays": 0,
+        "targetRetention": 0.9,
+        "migrated": true
+      }
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "reviewHistory": [
+      {
+        "t": 1790821870258,
+        "rating": 3,
+        "r": 1
+      }
+    ],
+    "createdAt": 1790821870244,
+    "updatedAt": 1790821870258
+  },
+  {
+    "id": "fc-06ff98c0-77d2-4a58-a544-9ed196ec4f88",
+    "front": "card 4",
+    "back": "x",
+    "subject": "",
+    "tags": [],
+    "sourceNoteId": "",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 15.4722,
+      "difficulty": 5,
+      "state": "learning",
+      "reps": 1,
+      "lapses": 0,
+      "lastReview": 1790821870286,
+      "due": 1790822302286,
+      "retrievability": 1,
+      "sched": {
+        "elapsedDays": 0,
+        "targetRetention": 0.9,
+        "migrated": true
+      }
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "reviewHistory": [
+      {
+        "t": 1790821870286,
+        "rating": 4,
+        "r": 1
+      }
+    ],
+    "createdAt": 1790821870272,
+    "updatedAt": 1790821870286
+  },
+  {
+    "id": "fc-f87cf6cf-7ad1-4dd3-9db0-effafdf8bdde",
+    "front": "range card",
+    "back": "x",
+    "subject": "",
+    "tags": [],
+    "sourceNoteId": "",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 0,
+      "difficulty": 5,
+      "state": "new",
+      "reps": 0,
+      "lapses": 0,
+      "lastReview": 0,
+      "due": 1790821870301,
+      "retrievability": 1
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "createdAt": 1790821870301,
+    "updatedAt": 1790821870301
+  },
+  {
+    "id": "fc-a8defc30-cc1d-482c-8e48-37a76d5f98b7",
+    "front": "heatmap card",
+    "back": "h",
+    "subject": "",
+    "tags": [],
+    "sourceNoteId": "",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 3.1262,
+      "difficulty": 5,
+      "state": "learning",
+      "reps": 1,
+      "lapses": 0,
+      "lastReview": 1790821870334,
+      "due": 1790822302334,
+      "retrievability": 1,
+      "sched": {
+        "elapsedDays": 0,
+        "targetRetention": 0.9,
+        "migrated": true
+      }
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "reviewHistory": [
+      {
+        "t": 1790821870334,
+        "rating": 3,
+        "r": 1
+      }
+    ],
+    "createdAt": 1790821870319,
+    "updatedAt": 1790821870334
+  },
+  {
+    "id": "fc-86ce84b2-7eaf-45d6-ac7c-e0694bfba6a7",
+    "front": "retention card",
+    "back": "r",
+    "subject": "",
+    "tags": [],
+    "sourceNoteId": "",
+    "sourceExcerpt": "",
+    "cardType": "basic",
+    "fsrs": {
+      "stability": 3.1262,
+      "difficulty": 5,
+      "state": "learning",
+      "reps": 1,
+      "lapses": 0,
+      "lastReview": 1790821870369,
+      "due": 1790822302369,
+      "retrievability": 1,
+      "sched": {
+        "elapsedDays": 0,
+        "targetRetention": 0.9,
+        "migrated": true
+      }
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "reviewHistory": [
+      {
+        "t": 1790821870369,
+        "rating": 3,
+        "r": 1
+      }
+    ],
+    "createdAt": 1790821870350,
+    "updatedAt": 1790821870369
+  }
+]

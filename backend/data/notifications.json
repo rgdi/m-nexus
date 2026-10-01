@@ -1,5 +1,20 @@
 {
-  "lastGeneratedAt": 0,
-  "pending": [],
+  "lastGeneratedAt": 1700000000001,
+  "pending": [
+    {
+      "id": "notif-28a9ccdb-62e1-4b79-adce-65e38fb72502",
+      "severity": "critical",
+      "title": "🚨 1 card en riesgo hoy",
+      "body": "Tu retención predictiva está por debajo del 90%. Repásalas ahora (1 min estimado).",
+      "cardIds": [
+        "dup"
+      ],
+      "optimalWindowStart": 1700000000000,
+      "optimalWindowEnd": 1700014400000,
+      "generatedAt": 1700000000000,
+      "read": false,
+      "dismissed": false
+    }
+  ],
   "history": []
 }

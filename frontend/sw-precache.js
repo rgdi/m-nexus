@@ -145,6 +145,8 @@ const MODULES = [
   "./src/widgets/toast.js",
   "./src/widgets/top_toolbar.js",
   "./src/widgets/tour.js",
+  "./vendor/pdf.min.mjs",
+  "./vendor/pdf.worker.min.mjs",
 ];
 
 // Exposed on self so sw.js can read it: a bare `const` in the worker

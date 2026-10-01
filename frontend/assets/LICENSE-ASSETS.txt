@@ -27,3 +27,10 @@ heart-en.svg    Diagrama del corazon (SVG)
                 https://commons.wikimedia.org/wiki/File:Heart_diagram-en.svg
 
 Redimensionadas a 900px de lado mayor para no cargar de mas en un movil.
+
+vendor/pdf.min.mjs
+vendor/pdf.worker.min.mjs
+  Mozilla PDF.js 4.0.379 — Apache License 2.0
+  https://github.com/mozilla/pdf.js
+  Servido localmente desde el 2026-10-01 (v2.38.15) para que el visor de
+  PDF funcione sin conexion. Antes se cargaba desde cdnjs.

@@ -1,0 +1,18 @@
+movil: {"capas":3,"paginasPdf":3,"modal":true,"canvas":3,"ink":{"capa":[-177,116,744,1052],"stage":[744,1052],"peStage":"auto","peCapa":"none","svg":true,"pos":"absolute","padre":"pdf-page","pagina":[-177,116,744,1052],"pad":null,"enElCamino":{}}}
+movil: 3 superficies de tinta
+movil: trazos por pagina = 9 / 9 / 9
+movil: pagina 1 visible con su trazo = true
+movil: trazo de la pagina 2 sigue con ella = true
+movil: capturas
+ipad: {"capas":3,"paginasPdf":3,"modal":true,"canvas":3,"ink":{"capa":[-122,173,744,1052],"stage":[744,1052],"peStage":"auto","peCapa":"none","svg":true,"pos":"absolute","padre":"pdf-page","pagina":[-122,173,744,1052],"pad":null,"enElCamino":{}}}
+ipad: 3 superficies de tinta
+ipad: trazos por pagina = 9 / 9 / 9
+ipad: pagina 1 visible con su trazo = true
+ipad: trazo de la pagina 2 sigue con ella = true
+ipad: capturas
+pc: {"capas":3,"paginasPdf":3,"modal":true,"canvas":3,"ink":{"capa":[188,126,744,1052],"stage":[744,1052],"peStage":"auto","peCapa":"none","svg":true,"pos":"absolute","padre":"pdf-page","pagina":[188,126,744,1052],"pad":null,"enElCamino":{}}}
+pc: 3 superficies de tinta
+pc: trazos por pagina = 9 / 8 / 8
+pc: pagina 1 visible con su trazo = true
+pc: trazo de la pagina 2 sigue con ella = true
+pc: capturas

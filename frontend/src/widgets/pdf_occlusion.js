@@ -124,7 +124,27 @@ export async function renderOcclusions(pagesHost, documentPath, occlusions) {
   // Clear existing rendered occlusions
   pagesHost.querySelectorAll(".pdf-oclusion-rect[data-persisted='1']").forEach((n) => n.remove());
 
-  const ocs = occlusions ?? (await fetch(`${API}?documentPath=${encodeURIComponent(documentPath)}`).then((r) => r.json()).then((d) => d.occlusions));
+  // v2.38.15 — esto no puede tumbar el PDF.
+  //
+  // La cadena de fetch estaba suelta: sin try/catch, y sin mirar si la
+  // respuesta traia siquiera la lista. Con el backend caido salia
+  // "Failed to fetch" y el visor se quedaba en cero paginas — no se
+  // abria el PDF que el usuario ya tenia en la mano. Y con un 401 la
+  // respuesta no trae `occlusions`, asi que el bucle hacia
+  // `undefined is not iterable`.
+  //
+  // Fallar al pedir oclusiones significa "no hay oclusiones", no "no hay
+  // documento". Son cosas distintas.
+  let ocs = occlusions;
+  if (!Array.isArray(ocs)) {
+    try {
+      const r = await fetch(`${API}?documentPath=${encodeURIComponent(documentPath)}`);
+      const d = r.ok ? await r.json() : null;
+      ocs = Array.isArray(d?.occlusions) ? d.occlusions : [];
+    } catch {
+      ocs = [];   // sin servidor: el PDF se lee igual, sin oclusiones
+    }
+  }
   for (const ocl of ocs) {
     const pageEl = pagesHost.querySelector(`[data-page="${ocl.page}"]`);
     if (!pageEl) continue;

@@ -1,0 +1,37 @@
+[
+  {
+    "id": "note-13eefed0-5571-4710-b0e1-8c5cdc03382e",
+    "title": "Algebra",
+    "body": "Suma: {{c1::2+2::4}}\nProducto: {{c1::3*5::15}}",
+    "subject": "math",
+    "tags": [
+      "algebra",
+      "basics"
+    ],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "folderId": null,
+    "createdAt": 1790821898373,
+    "updatedAt": 1790821898373
+  },
+  {
+    "id": "note-39f8248c-4f42-4a5e-a5ef-d0cdc0c7813f",
+    "title": "X",
+    "body": "{{c1::A::B}}",
+    "subject": "bio",
+    "tags": [],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "folderId": null,
+    "createdAt": 1790821898427,
+    "updatedAt": 1790821898427
+  }
+]

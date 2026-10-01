@@ -23,27 +23,38 @@ let pdfjsPromise = null;
 /** Lazy-load pdf.js from CDN; ensures single-flight */
 function loadPdfJs() {
   if (pdfjsPromise) return pdfjsPromise;
-  // v2.38.2: this loaded pdf.min.mjs with a <script type="module"> tag and
-  // then looked for `window.pdfjsLib`. An ES module never puts anything
-  // on window — it exports bindings — so the check always failed, the
-  // code fell through to a UMD build that does not exist at that
-  // version (404), and the viewer rejected. The PDF viewer has therefore
-  // never loaded, on any device, online or not. Import the module for
-  // real and return its namespace.
+
+  // v2.38.15 — pdf.js va en la app, no en un CDN.
+  //
+  // Venia de cdnjs. En un PWA eso significa que el visor de PDF —la
+  // pantalla donde se lee el material y se subrayan las flashcards—
+  // no abria sin conexion, justo lo contrario de lo que se promete al
+  // instalarla. Ahora va servida desde /vendor y el service worker
+  // la precachea. Si aun asi no esta (una instalacion vieja), se cae
+  // al CDN: mejor un visor lento que ninguno.
+  const LOCAL = "/vendor/pdf.min.mjs";
+  const CDN = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.mjs";
+
   pdfjsPromise = (async () => {
     if (window.pdfjsLib) return window.pdfjsLib;
-    const mod = await import("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.mjs");
-    if (mod && mod.getDocument) {
-      // A worker is required; pdf.js warns loudly without one.
-      if (mod.GlobalWorkerOptions) {
-        mod.GlobalWorkerOptions.workerSrc =
-          "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.mjs";
-      }
-      return mod;
+    for (const url of [LOCAL, CDN]) {
+      try {
+        const mod = await import(/* @vite-ignore */ url);
+        if (mod && mod.getDocument) {
+          if (mod.GlobalWorkerOptions) {
+            // El worker va con la misma copia: si el visor y el
+            // worker son de versiones distintas, pdf.js avisa y se
+            // rompe al procesar la primera pagina.
+            mod.GlobalWorkerOptions.workerSrc = "/vendor/pdf.worker.min.mjs";
+          }
+          return mod;
+        }
+      } catch { /* el siguiente */ }
     }
-    throw new Error("pdf.js cargó pero no exporta getDocument");
+    throw new Error("pdf.js no está disponible ni local ni en el CDN");
   })().catch((e) => {
-    // Let the next attempt retry instead of caching the failure.
+    // Sin reintentos eternos: si la copia local no esta, el siguiente
+    // visito vuelve a probar y ya esta.
     pdfjsPromise = null;
     throw e;
   });
@@ -96,6 +107,10 @@ export async function openPdfViewer({ pdfUrl, title = "Visor PDF", onChange = ()
     actions: [
       { id: "close", label: "Cerrar", variant: "secondary" },
     ],
+    // v2.38.15 — el modal mide lo que mida el resto, y una hoja A4
+    // con un panel lateral al lado no caben: la pagina salia con una
+    // franja de 260 px y no se leia. El visor necesita sitio.
+    className: "scrim scrim--wide",
   });
 
   // v2.38.2: makeModal returns { root, scrim, close, getValue } — there
@@ -105,6 +120,9 @@ export async function openPdfViewer({ pdfUrl, title = "Visor PDF", onChange = ()
   const root = modal.root.querySelector(".pdf-viewer");
   if (!root) throw new Error("el modal no contiene el visor");
   const pagesHost = root.querySelector("[data-pdf-pages]");
+  /** Una superficie por página, y un solo sync para todas. */
+  const inkPads = new Map();
+  let inkSync = null;
   const listEl = root.querySelector("[data-highlight-list]");
   const statEl = root.querySelector("[data-stat]");
   const floating = root.querySelector("[data-floating]");
@@ -116,13 +134,28 @@ export async function openPdfViewer({ pdfUrl, title = "Visor PDF", onChange = ()
   let pdfDoc = null;
   let scale = 1.25;
 
+  // Un id estable por documento, para que la tinta vuelva al mismo
+  // sitio mañana. Con la ruta basta: es lo que el usuario reconoce.
+  // Va aqui y no junto a su uso: renderPages() se llama mas abajo, y
+  // declarado despues el nombre estaria en TDZ.
+  const docId = "pdf:" + String(pdfUrl || title).slice(0, 160);
+
+  // v2.38.15 — makeModal() DEVUELVE la raiz: el que la llama tiene que
+  // montarla en el documento. Este visor la montaba y se la guardaba, y
+  // se quedaba fuera del arbol: el boton "Abrir PDF local" no
+  // abria nada, en ningun dispositivo, y `document.querySelector`
+  // (.pdf-viewer) no encontraba nada. Una funcion async que acaba
+  // devolviendo `modal` mientras su UI no existe nunca.
+  if (!root.isConnected) document.body.appendChild(modal.root);
+
   // ===== PDF rendering =====
   try {
     const pdfjs = await loadPdfJs();
-    // Same version and same module flavour as the library itself: the
-    // .js worker at this version is a 404.
-    pdfjs.GlobalWorkerOptions.workerSrc =
-      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.mjs";
+    // v2.38.15 — aqui se pisaba el worker con la URL del CDN, encima
+    // de la local que acaba de dejar loadPdfJs(). El visor se servia
+    // pdf.js del disco y luego le mandaba a buscar el worker a
+    // internet: sin red, "Failed to fetch" y ni una pagina. La version
+    // ya la fija loadPdfJs, y es la misma copia que la del visor.
     pdfDoc = await pdfjs.getDocument(pdfUrl).promise;
     await renderPages();
   } catch (e) {
@@ -130,6 +163,52 @@ export async function openPdfViewer({ pdfUrl, title = "Visor PDF", onChange = ()
     return modal;
   }
 
+  /**
+   * Una superficie de tinta por página.
+   *
+   * El número de página va en los trazos, no en la posición, que es lo
+   * que hace que al cambiar de zoom o de tamaño siga encima de lo
+   * mismo.
+   */
+  async function mountInkForPage(host, pageNumber, docId) {
+    const { mountInkPad } = await import("./ink_pad.js");
+    const { createInkSync, loadInk } = await import("../services/inkSync.js");
+
+    const doc = await loadInk(docId);
+    const strokes = (doc.pages || [])
+      .filter((p) => p.page === pageNumber - 1)
+      .flatMap((p) => p.strokes || []);
+
+    // Un solo sync por documento, compartido por todas sus páginas: si
+    // no, cada página abre su propio canal y no se sincronizan entre sí
+    // entre sí.
+    if (!inkSync) {
+      inkSync = createInkSync(docId, {
+        onRemote: (incoming) => {
+          for (const s of incoming) {
+            const pad = inkPads.get(s.page);
+            if (pad) pad.merge([s]);
+          }
+        },
+      });
+      inkSync.start(3000);
+    }
+
+    const pad = mountInkPad(host, {
+      strokes,
+      // El PDF es papel: lapiz oscuro. Con la paleta de la superficie
+      // oscura se escribia en #e8e8ef sobre blanco y no se veia.
+      ton: "light",
+      deviceId: docId.slice(0, 24),
+      onStrokeEnd: (_s, nuevos) => {
+        for (const s of nuevos) s.page = pageNumber - 1;
+        inkSync.push(nuevos);
+        // Un?. no protege un nombre no declarado: eso es ReferenceError.
+        if (typeof setInkStatus === "function") setInkStatus("Guardado");
+      },
+    });
+    inkPads.set(pageNumber - 1, pad);
+  }
   async function renderPages() {
     pagesHost.innerHTML = "";
     for (let i = 1; i <= pdfDoc.numPages; i++) {
@@ -150,11 +229,26 @@ export async function openPdfViewer({ pdfUrl, title = "Visor PDF", onChange = ()
       textLayer.style.width = `${viewport.width}px`;
       textLayer.style.height = `${viewport.height}px`;
       wrap.appendChild(textLayer);
+
+      // v2.38.15 — la capa de escritura a mano, por página.
+      //
+      // Se monta UNA SUPERFICIE POR PÁGINA y no una gigante: es lo
+      // único que hace que lo que escribes en la página 3 siga
+      // encima de la página 3 al hacer scroll, y no se mueva con la
+      // pantalla. Un trazo anclado a la poscision del scroll se
+      // despega de su pagina en cuanto se toca.
+      const inkHost = document.createElement("div");
+      inkHost.className = "pdf-ink-layer";
+      wrap.appendChild(inkHost);
+
       pagesHost.appendChild(wrap);
       // eslint-disable-next-line no-await-in-loop
       await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
       // eslint-disable-next-line no-await-in-loop
       await renderTextLayer(page, textLayer, viewport);
+
+      // eslint-disable-next-line no-await-in-loop
+      await mountInkForPage(inkHost, i, docId);
     }
     bindSelectionHandlers();
     await loadExistingHighlights();

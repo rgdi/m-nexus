@@ -2614,6 +2614,17 @@ body.hide-ui .dock, body.hide-ui .lang-switcher, body.hide-ui .top-toolbar { dis
   gap: 16px;
 }
 .pdf-page {
+  /* v2.38.15 — esto era lo que aplastaba el PDF.
+   *
+   * .pdf-pages es una columna flex con altura acotada, y un flex item
+   * se encoge por defecto (flex-shrink: 1). Con tres hojas A4 de
+   * 1052 px dentro de un visor de 700, el navegador las comprimia a
+   * 195 px cada una y las montaba unas encima de otras: el texto se
+   * solapaba y no se leia nada. El lienzo seguia midiendo 1052 por
+   * dentro de una caja de 195, y la capa de tinta —inset:0 sobre esa
+   * caja— se quedaba con un tercio de la pagina.
+   */
+  flex-shrink: 0;
   position: relative;
   background: #fff;
   box-shadow: 0 4px 12px rgba(0,0,0,0.3);
@@ -5025,4 +5036,53 @@ body.dg-scrolling { user-select: none; }
   background: rgba(0,0,0,.6); color: #fff;
   font-size: 11px; font-weight: 700;
   pointer-events: none;
+}
+
+/* v2.38.15 — la capa de escritura a mano sobre cada página del PDF.
+ *
+ * Va POR PÁGINA y no como una capa única sobre el scroll: es lo que
+ * hace que lo escrito siga encima de su página al desplazarse. Con una
+ * capa grande, el trazo se despega en cuanto se toca la pantalla. */
+.pdf-ink-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 3;                 /* sobre la capa de texto, sin taparla */
+  pointer-events: none;
+}
+.pdf-ink-layer .ink-pad { height: 100%; }
+.pdf-ink-layer .ink-stage {
+  /* El `height: 100%` de .ink-pad > .ink-stage no llegaba aqui: dentro
+   * del visor el stage cuelga directo de la capa, sin el envoltorio.
+   * Sin esto medía lo queSvg midiera de serie —150 px— y escribías
+   * sobre una franja, no sobre la hoja. */
+  height: 100%;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  pointer-events: auto;      /* el resto de la página sigue seleccionable */
+  touch-action: none;
+}
+.pdf-ink-layer .ink-status { display: none; }
+.pdf-ink-layer .ink-toolbar {
+  position: absolute;
+  top: 4px; right: 4px;
+  z-index: 2;
+  display: none;             /* el modo se activa desde la barra del visor */
+}
+.pdf-page[data-ink-active="1"] .pdf-ink-layer .ink-toolbar { display: flex; }
+.pdf-ink-layer .ink-cursor { display: none; }
+
+/* v2.38.15 — un modal ancho, para lo que de verdad lo necesita.
+ *
+ * El visor de PDF tiene que mostrar una hoja A4 al lado del
+ * panel de highlights. Con el ancho por defecto la pagina salia
+ * estrecha y no se leia ni el titulo. */
+.scrim--wide .modal-card { max-width: min(1240px, 96vw); }
+.scrim--wide .pdf-viewer { height: 84vh; }
+@media (max-width: 720px) {
+  .scrim--wide .modal-card { max-width: 100vw; }
+  .scrim--wide .pdf-viewer { height: 92vh; }
+  /* En movil el panel de highlights debajo, no al lado. */
+  .scrim--wide .pdf-body { flex-direction: column; }
+  .scrim--wide .pdf-sidepanel { max-height: 34%; }
 }

@@ -58,11 +58,20 @@ def collect() -> list[str]:
     # v2.38.4: los diagramas de la biblioteca de oclusion tambien
     # tienen que estar en el precache. Sin esto la biblioteca aparecia
     # vacia al primer arranque sin red, que es justo cuando se abre.
+    # v2.38.15 — pdf.js y su worker, servidos desde /vendor.
+    #
+    # El visor de PDF es donde se lee el material y se subrayan las
+    # flashcards. Si pdf.js no esta en el precache, sin red el visor
+    # cae al CDN, el CDN no responde, y la pantalla no abre: la
+    # aplicacion "instalada" no puede leerse. Son 1.3 MB y es el precio
+    # de que el visor funcione en un avion.
     for extra in ("assets/occlusion/ear-es.png",
                   "assets/occlusion/pelvis-es.png",
                   "assets/occlusion/muscles-ar.png",
                   "assets/occlusion/anatomia.png",
-                  "assets/occlusion/heart-en.svg"):
+                  "assets/occlusion/heart-en.svg",
+                  "vendor/pdf.min.mjs",
+                  "vendor/pdf.worker.min.mjs"):
         path = os.path.join(FRONTEND, extra)
         if os.path.exists(path):
             files.append("./" + extra)
