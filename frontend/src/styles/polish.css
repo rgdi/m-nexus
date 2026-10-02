@@ -276,3 +276,166 @@ p, li, dd { line-height: 1.62; }
   border-radius: var(--r-full) !important;
   box-shadow: 0 2px 10px color-mix(in srgb, var(--accent) 28%, transparent) !important;
 }
+
+/* ══════════════════════════════════════════════════════════════
+ * v2.38.25 — Color, y el texto del botón que no se leía.
+ *
+ * El rediseño de v2.38.22 dejó la aplicación casi monocroma: todo
+ * azul sobre blanco. Limpio, sí, pero sin vida: en una pantalla de
+ * estudio lo que distingue una asignatura de otra es su color, y
+ * esa era justo la información que se había perdido.
+ *
+ * Aquí vuelve el color, pero con una regla que evita el caos:
+ *
+ *   **El color dice qué, el azul dice que puedes pulsarlo.**
+ *
+ * El azul se queda para lo accionable —botones, el activo, los
+ * enlaces— y es el ÚNICO color que significa "haz algo". El color de
+ * asignatura vive en las superficies: fondos teñidos muy claros y
+ * una barra lateral de color. Nada de texto de color, que es lo que
+ * hace que una pantalla parezca un carnival.
+ * ══════════════════════════════════════════════════════════════ */
+
+/* ── El botón azul: el texto se leía MAL ────────────────────────
+ *
+ * `.btn.primary` decía `color: var(--accent-ink)`, y algunos botones
+ * azules de la app traían el texto del color de su asignatura encima
+ * o directamente el del texto principal. Azul #2f6fed con texto
+ * oscuro sale 2.2:1: ilegible. Aqui el texto del botón primario es
+ * blanco SIEMPRE, y el de una superficie de asignatura lo decide su
+ * propio par. */
+.btn.primary, .m-btn, button.primary {
+  color: #fff !important;
+}
+.btn.primary:hover, .m-btn:hover { color: #fff !important; }
+/* Y si alguien pinta encima con un color de asignatura, el blanco
+ * gana: es el unico caso en que el texto gana al color. */
+.btn.primary *, .m-btn * { color: inherit; }
+
+/* ── Superficies con color de asignatura ────────────────────────
+ *
+ * Un tinte del 6% del color de la asignatura sobre el fondo, y la
+ * barra lateral a color pleno. Dos señales, una sola información. */
+[data-subj], .subject-card, .subj-card {
+  --tint: var(--accent);
+}
+[data-subj="red"]     { --tint: var(--subj-red); }
+[data-subj="yellow"]  { --tint: var(--subj-yellow); }
+[data-subj="blue"]    { --tint: var(--subj-blue); }
+[data-subj="purple"]  { --tint: var(--subj-purple); }
+[data-subj="green"]   { --tint: var(--subj-green); }
+[data-subj="pink"]    { --tint: var(--subj-pink); }
+[data-subj="orange"]  { --tint: var(--subj-orange); }
+[data-subj="teal"]    { --tint: var(--subj-teal); }
+[data-subj="gray"]    { --tint: var(--subj-gray); }
+
+.subject-card {
+  background: color-mix(in srgb, var(--tint) 7%, var(--bg-elevated));
+  border-left: 3px solid var(--tint);
+}
+.subject-card:hover {
+  background: color-mix(in srgb, var(--tint) 12%, var(--bg-elevated));
+}
+/* El círculo de iniciales conserva su color, que es de lo que
+ * primero se sirve el ojo para distinguir una asignatura de otra. */
+
+/* ── Los bloques de cifras, teñidos ────────────────────────────
+ *
+ * Una cifra sola sobre blanco es un numero. Una cifra sobre un tinte
+ * se recuerda. El tinte es del propio color de la tarjeta, no
+ * del azul: los números que importan son los de cada asignatura. */
+.m-stat, .stat {
+  background: color-mix(in srgb, var(--tint, var(--accent)) 8%, var(--bg-elevated));
+  border: 1px solid color-mix(in srgb, var(--tint, var(--accent)) 18%, var(--border));
+}
+.m-stat-num, .stat-value { color: var(--fg); }
+
+/* ── El fondo: una bruma de color, no un gris ───────────────────
+ *
+ * `--veil` era azul al 6%, tan bajo que no se veía. Con un lavado un poco mas presente en la parte de arriba, donde la
+ * app se abre, que se apaga hacia abajo para no molestar al leer. */
+body {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(90% 55% at 12% -8%,
+      color-mix(in srgb, var(--accent) 13%, transparent) 0%,
+      transparent 62%),
+    radial-gradient(70% 45% at 92% -4%,
+      color-mix(in srgb, var(--subj-teal, var(--accent)) 11%, transparent) 0%,
+      transparent 60%);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+
+/* ── Los encabezados de sección, con su punto de color ────────── */
+.h-sub, .screen h1 { color: var(--fg); }
+.m-section-title, .semibold.small {
+  color: var(--fg-muted);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  font-size: .72rem;
+}
+
+/* ── El elemento activo y el FAB, con más de sí ───────────────── */
+.m-tabbar > .active, .m-tabbar > [aria-selected="true"] {
+  background: linear-gradient(160deg, var(--accent) 0%,
+              color-mix(in srgb, var(--accent) 78%, #000) 100%) !important;
+}
+.mn-capture-fab {
+  background: linear-gradient(150deg,
+              color-mix(in srgb, var(--accent) 88%, #fff) 0%,
+              var(--accent) 45%,
+              color-mix(in srgb, var(--accent) 82%, #000) 100%) !important;
+}
+
+/* ── La burbuja de asignatura, teñida con SU color ───────────────
+ *
+ * Antes era blanca con una barra de color a la izquierda. La barra
+ * estaba bien, pero al bajar el brillo de la app entera en v2.38.22
+ * la barra se comió el 90% del color de la tarjeta y lo demás quedó
+ * gris. Ahora la tarjeta entera lleva un tinte del 6% de SU color:
+ * cuatro asignaturas en fila se distinguen de un vistazo, que es
+ * justo lo que se perdió al limpiar la paleta. */
+.subj-bubble {
+  background: color-mix(in srgb, var(--tint, var(--accent)) 11%, var(--bg-elevated));
+  border-color: color-mix(in srgb, var(--tint, var(--accent)) 26%, var(--border));
+  transition: background .15s ease, border-color .15s ease;
+}
+.subj-bubble:hover {
+  background: color-mix(in srgb, var(--tint, var(--accent)) 19%, var(--bg-elevated));
+  border-color: color-mix(in srgb, var(--tint, var(--accent)) 45%, var(--border));
+}
+.subj-bubble .name { color: var(--fg); }
+
+/* ── La agenda: una columna entera para una frase es desperdicio ──
+ *
+ * En el resumen, "Sin eventos hoy" con 56 px de aire arriba y abajo
+ * dejaba media columna vacía en un monitor de 1440. El aire de un
+ * estado vacío dentro de una columna debe ser pequeño: la columna
+ * la llenan los eventos, y si no hay, no hay. */
+.col-agenda .empty { padding: var(--s-2) 0; }
+.col-agenda .empty .ico { font-size: 1.3rem; }
+
+/* ── Columnas que miden lo que llevan, no todas lo mismo ─────────
+ *
+ * Tres columnas iguales de 400 px obligan a la agenda —que suele ser
+ * "Sin eventos hoy" o dos líneas— a ocupar el mismo ancho que la
+ * columna de cifras, que pedía 884 px. Medido en el resumen a 1440:
+ * la primera columna tenía 616 px de hueco debajo.
+ *
+ * La agenda se estrecha, el contenido se ensancha. Que la tercera
+ * columna, que es la que se desborda, sea la más ancha es lo que
+ * evita el scroll en pantallas normales. */
+/* .grid-overview lo pone solo el resumen: es su unica pantalla con
+ * una columna de agenda corta al lado de una columna de cifras alta. */
+.grid-3.grid-overview {
+  grid-template-columns:
+    minmax(220px, 0.78fr)
+    minmax(300px, 1.18fr)
+    minmax(280px, 1.04fr);
+}
+/* En tablet y móvil una sola columna, pero esta vez porque no cabe
+ * de otra manera y no porque sobre regla. */
+@media (max-width: 1180px) {
+  .grid-3 { grid-template-columns: minmax(0, 1fr); }
+}

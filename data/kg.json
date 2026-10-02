@@ -1,0 +1,1735 @@
+{
+  "nodes": [
+    {
+      "id": "37b63baaeed5",
+      "label": "sangre",
+      "freq": 3,
+      "community": 1,
+      "weight": 10
+    },
+    {
+      "id": "d7da8bc817eb",
+      "label": "lleva sangre",
+      "freq": 3,
+      "community": 1,
+      "weight": 10
+    },
+    {
+      "id": "fd10012a9bd1",
+      "label": "lleva",
+      "freq": 2,
+      "community": 1,
+      "weight": 7
+    },
+    {
+      "id": "7a29a03d9495",
+      "label": "corazon musculo bombea",
+      "freq": 1,
+      "community": 1,
+      "weight": 3
+    },
+    {
+      "id": "95cc50da39e9",
+      "label": "musculo bombea sangre",
+      "freq": 1,
+      "community": 1,
+      "weight": 3
+    },
+    {
+      "id": "8f09dae81dfa",
+      "label": "bombea sangre aorta",
+      "freq": 1,
+      "community": 1,
+      "weight": 3
+    },
+    {
+      "id": "a535a3902d5c",
+      "label": "sangre aorta sale",
+      "freq": 1,
+      "community": 1,
+      "weight": 3
+    },
+    {
+      "id": "94417b64eaf3",
+      "label": "aorta sale ventriculo",
+      "freq": 1,
+      "community": 1,
+      "weight": 3
+    },
+    {
+      "id": "9ab139f812e1",
+      "label": "sale ventriculo izquierdo",
+      "freq": 1,
+      "community": 1,
+      "weight": 3
+    },
+    {
+      "id": "261a2e3f1c9b",
+      "label": "ventriculo izquierdo lleva",
+      "freq": 1,
+      "community": 1,
+      "weight": 3
+    },
+    {
+      "id": "dc00cc654b79",
+      "label": "izquierdo lleva sangre",
+      "freq": 1,
+      "community": 1,
+      "weight": 3
+    },
+    {
+      "id": "0ab8c2dcba4c",
+      "label": "lleva sangre cuerpo",
+      "freq": 1,
+      "community": 1,
+      "weight": 3
+    },
+    {
+      "id": "93f36de7c160",
+      "label": "pulmones reciben",
+      "freq": 1,
+      "community": 13,
+      "weight": 3
+    },
+    {
+      "id": "d27dcc45e681",
+      "label": "reciben sangre",
+      "freq": 1,
+      "community": 13,
+      "weight": 3
+    },
+    {
+      "id": "42645649dcde",
+      "label": "sangre intercambio",
+      "freq": 1,
+      "community": 13,
+      "weight": 3
+    },
+    {
+      "id": "83e5cf2f813b",
+      "label": "intercambio gaseoso",
+      "freq": 1,
+      "community": 13,
+      "weight": 3
+    },
+    {
+      "id": "d70b86b16f0d",
+      "label": "pulmones reciben sangre",
+      "freq": 1,
+      "community": 13,
+      "weight": 3
+    },
+    {
+      "id": "8c95db8dbf67",
+      "label": "reciben sangre intercambio",
+      "freq": 1,
+      "community": 13,
+      "weight": 3
+    },
+    {
+      "id": "9b872eab1d6c",
+      "label": "sangre intercambio gaseoso",
+      "freq": 1,
+      "community": 13,
+      "weight": 3
+    },
+    {
+      "id": "ddb3d58afbe3",
+      "label": "intercambio gaseoso ocurre",
+      "freq": 1,
+      "community": 13,
+      "weight": 3
+    },
+    {
+      "id": "9b2005f38ec5",
+      "label": "gaseoso ocurre alveolos",
+      "freq": 1,
+      "community": 13,
+      "weight": 3
+    },
+    {
+      "id": "fea95ba7cc97",
+      "label": "ocurre alveolos traquea",
+      "freq": 1,
+      "community": 13,
+      "weight": 3
+    },
+    {
+      "id": "37cfefa6fe76",
+      "label": "alveolos traquea ramifica",
+      "freq": 1,
+      "community": 13,
+      "weight": 3
+    },
+    {
+      "id": "0ad7112e1917",
+      "label": "traquea ramifica bronquios",
+      "freq": 1,
+      "community": 13,
+      "weight": 3
+    },
+    {
+      "id": "c3acc227f818",
+      "label": "cerebro controla",
+      "freq": 1,
+      "community": 25,
+      "weight": 3
+    },
+    {
+      "id": "52741d7820f9",
+      "label": "controla cuerpo",
+      "freq": 1,
+      "community": 25,
+      "weight": 3
+    },
+    {
+      "id": "ee0f2b251b8f",
+      "label": "cuerpo cerebelo",
+      "freq": 1,
+      "community": 25,
+      "weight": 3
+    },
+    {
+      "id": "a4a396c88a36",
+      "label": "cerebelo coordina",
+      "freq": 1,
+      "community": 25,
+      "weight": 3
+    },
+    {
+      "id": "00919c3a0cfc",
+      "label": "coordina equilibrio",
+      "freq": 1,
+      "community": 25,
+      "weight": 3
+    },
+    {
+      "id": "dc8d17e805f4",
+      "label": "cerebro controla cuerpo",
+      "freq": 1,
+      "community": 25,
+      "weight": 3
+    },
+    {
+      "id": "e38398730ee4",
+      "label": "controla cuerpo cerebelo",
+      "freq": 1,
+      "community": 25,
+      "weight": 3
+    },
+    {
+      "id": "9e7274cafeb2",
+      "label": "cuerpo cerebelo coordina",
+      "freq": 1,
+      "community": 25,
+      "weight": 3
+    },
+    {
+      "id": "571be3e69746",
+      "label": "cerebelo coordina equilibrio",
+      "freq": 1,
+      "community": 25,
+      "weight": 3
+    },
+    {
+      "id": "9ecfbf24aca8",
+      "label": "coordina equilibrio neuronas",
+      "freq": 1,
+      "community": 25,
+      "weight": 3
+    },
+    {
+      "id": "ff9a7a386f17",
+      "label": "equilibrio neuronas comunican",
+      "freq": 1,
+      "community": 25,
+      "weight": 3
+    },
+    {
+      "id": "cd4f6c99e488",
+      "label": "neuronas comunican sinapsis",
+      "freq": 1,
+      "community": 25,
+      "weight": 3
+    },
+    {
+      "id": "2e207c1e203d",
+      "label": "estructura",
+      "freq": 1,
+      "community": 37,
+      "weight": 3
+    },
+    {
+      "id": "712021133d7b",
+      "label": "estructura lleva",
+      "freq": 1,
+      "community": 37,
+      "weight": 3
+    },
+    {
+      "id": "cf6419385243",
+      "label": "sangre ventriculo",
+      "freq": 1,
+      "community": 37,
+      "weight": 3
+    },
+    {
+      "id": "cece7ef79bb3",
+      "label": "ventriculo izquierdo",
+      "freq": 1,
+      "community": 37,
+      "weight": 3
+    },
+    {
+      "id": "3347227c744d",
+      "label": "izquierdo cuerpo",
+      "freq": 1,
+      "community": 37,
+      "weight": 3
+    },
+    {
+      "id": "d7839bc532e6",
+      "label": "cuerpo aorta",
+      "freq": 1,
+      "community": 37,
+      "weight": 3
+    },
+    {
+      "id": "bc47a6edb0c0",
+      "label": "estructura lleva sangre",
+      "freq": 1,
+      "community": 37,
+      "weight": 3
+    },
+    {
+      "id": "9c7f86c8788f",
+      "label": "lleva sangre ventriculo",
+      "freq": 1,
+      "community": 37,
+      "weight": 3
+    },
+    {
+      "id": "d54fd120c905",
+      "label": "sangre ventriculo izquierdo",
+      "freq": 1,
+      "community": 37,
+      "weight": 3
+    },
+    {
+      "id": "737a672d596b",
+      "label": "ventriculo izquierdo cuerpo",
+      "freq": 1,
+      "community": 37,
+      "weight": 3
+    },
+    {
+      "id": "daa67c04146e",
+      "label": "izquierdo cuerpo aorta",
+      "freq": 1,
+      "community": 37,
+      "weight": 3
+    }
+  ],
+  "edges": [
+    {
+      "source": "37b63baaeed5",
+      "target": "fd10012a9bd1",
+      "weight": 1
+    },
+    {
+      "source": "37b63baaeed5",
+      "target": "d7da8bc817eb",
+      "weight": 1
+    },
+    {
+      "source": "37b63baaeed5",
+      "target": "7a29a03d9495",
+      "weight": 1
+    },
+    {
+      "source": "37b63baaeed5",
+      "target": "95cc50da39e9",
+      "weight": 1
+    },
+    {
+      "source": "37b63baaeed5",
+      "target": "8f09dae81dfa",
+      "weight": 1
+    },
+    {
+      "source": "37b63baaeed5",
+      "target": "a535a3902d5c",
+      "weight": 1
+    },
+    {
+      "source": "37b63baaeed5",
+      "target": "94417b64eaf3",
+      "weight": 1
+    },
+    {
+      "source": "37b63baaeed5",
+      "target": "9ab139f812e1",
+      "weight": 1
+    },
+    {
+      "source": "261a2e3f1c9b",
+      "target": "37b63baaeed5",
+      "weight": 1
+    },
+    {
+      "source": "37b63baaeed5",
+      "target": "dc00cc654b79",
+      "weight": 1
+    },
+    {
+      "source": "0ab8c2dcba4c",
+      "target": "37b63baaeed5",
+      "weight": 1
+    },
+    {
+      "source": "d7da8bc817eb",
+      "target": "fd10012a9bd1",
+      "weight": 1
+    },
+    {
+      "source": "7a29a03d9495",
+      "target": "fd10012a9bd1",
+      "weight": 1
+    },
+    {
+      "source": "95cc50da39e9",
+      "target": "fd10012a9bd1",
+      "weight": 1
+    },
+    {
+      "source": "8f09dae81dfa",
+      "target": "fd10012a9bd1",
+      "weight": 1
+    },
+    {
+      "source": "a535a3902d5c",
+      "target": "fd10012a9bd1",
+      "weight": 1
+    },
+    {
+      "source": "94417b64eaf3",
+      "target": "fd10012a9bd1",
+      "weight": 1
+    },
+    {
+      "source": "9ab139f812e1",
+      "target": "fd10012a9bd1",
+      "weight": 1
+    },
+    {
+      "source": "261a2e3f1c9b",
+      "target": "fd10012a9bd1",
+      "weight": 1
+    },
+    {
+      "source": "dc00cc654b79",
+      "target": "fd10012a9bd1",
+      "weight": 1
+    },
+    {
+      "source": "0ab8c2dcba4c",
+      "target": "fd10012a9bd1",
+      "weight": 1
+    },
+    {
+      "source": "7a29a03d9495",
+      "target": "d7da8bc817eb",
+      "weight": 1
+    },
+    {
+      "source": "95cc50da39e9",
+      "target": "d7da8bc817eb",
+      "weight": 1
+    },
+    {
+      "source": "8f09dae81dfa",
+      "target": "d7da8bc817eb",
+      "weight": 1
+    },
+    {
+      "source": "a535a3902d5c",
+      "target": "d7da8bc817eb",
+      "weight": 1
+    },
+    {
+      "source": "94417b64eaf3",
+      "target": "d7da8bc817eb",
+      "weight": 1
+    },
+    {
+      "source": "9ab139f812e1",
+      "target": "d7da8bc817eb",
+      "weight": 1
+    },
+    {
+      "source": "261a2e3f1c9b",
+      "target": "d7da8bc817eb",
+      "weight": 1
+    },
+    {
+      "source": "d7da8bc817eb",
+      "target": "dc00cc654b79",
+      "weight": 1
+    },
+    {
+      "source": "0ab8c2dcba4c",
+      "target": "d7da8bc817eb",
+      "weight": 1
+    },
+    {
+      "source": "7a29a03d9495",
+      "target": "95cc50da39e9",
+      "weight": 1
+    },
+    {
+      "source": "7a29a03d9495",
+      "target": "8f09dae81dfa",
+      "weight": 1
+    },
+    {
+      "source": "7a29a03d9495",
+      "target": "a535a3902d5c",
+      "weight": 1
+    },
+    {
+      "source": "7a29a03d9495",
+      "target": "94417b64eaf3",
+      "weight": 1
+    },
+    {
+      "source": "7a29a03d9495",
+      "target": "9ab139f812e1",
+      "weight": 1
+    },
+    {
+      "source": "261a2e3f1c9b",
+      "target": "7a29a03d9495",
+      "weight": 1
+    },
+    {
+      "source": "7a29a03d9495",
+      "target": "dc00cc654b79",
+      "weight": 1
+    },
+    {
+      "source": "0ab8c2dcba4c",
+      "target": "7a29a03d9495",
+      "weight": 1
+    },
+    {
+      "source": "8f09dae81dfa",
+      "target": "95cc50da39e9",
+      "weight": 1
+    },
+    {
+      "source": "95cc50da39e9",
+      "target": "a535a3902d5c",
+      "weight": 1
+    },
+    {
+      "source": "94417b64eaf3",
+      "target": "95cc50da39e9",
+      "weight": 1
+    },
+    {
+      "source": "95cc50da39e9",
+      "target": "9ab139f812e1",
+      "weight": 1
+    },
+    {
+      "source": "261a2e3f1c9b",
+      "target": "95cc50da39e9",
+      "weight": 1
+    },
+    {
+      "source": "95cc50da39e9",
+      "target": "dc00cc654b79",
+      "weight": 1
+    },
+    {
+      "source": "0ab8c2dcba4c",
+      "target": "95cc50da39e9",
+      "weight": 1
+    },
+    {
+      "source": "8f09dae81dfa",
+      "target": "a535a3902d5c",
+      "weight": 1
+    },
+    {
+      "source": "8f09dae81dfa",
+      "target": "94417b64eaf3",
+      "weight": 1
+    },
+    {
+      "source": "8f09dae81dfa",
+      "target": "9ab139f812e1",
+      "weight": 1
+    },
+    {
+      "source": "261a2e3f1c9b",
+      "target": "8f09dae81dfa",
+      "weight": 1
+    },
+    {
+      "source": "8f09dae81dfa",
+      "target": "dc00cc654b79",
+      "weight": 1
+    },
+    {
+      "source": "0ab8c2dcba4c",
+      "target": "8f09dae81dfa",
+      "weight": 1
+    },
+    {
+      "source": "94417b64eaf3",
+      "target": "a535a3902d5c",
+      "weight": 1
+    },
+    {
+      "source": "9ab139f812e1",
+      "target": "a535a3902d5c",
+      "weight": 1
+    },
+    {
+      "source": "261a2e3f1c9b",
+      "target": "a535a3902d5c",
+      "weight": 1
+    },
+    {
+      "source": "a535a3902d5c",
+      "target": "dc00cc654b79",
+      "weight": 1
+    },
+    {
+      "source": "0ab8c2dcba4c",
+      "target": "a535a3902d5c",
+      "weight": 1
+    },
+    {
+      "source": "94417b64eaf3",
+      "target": "9ab139f812e1",
+      "weight": 1
+    },
+    {
+      "source": "261a2e3f1c9b",
+      "target": "94417b64eaf3",
+      "weight": 1
+    },
+    {
+      "source": "94417b64eaf3",
+      "target": "dc00cc654b79",
+      "weight": 1
+    },
+    {
+      "source": "0ab8c2dcba4c",
+      "target": "94417b64eaf3",
+      "weight": 1
+    },
+    {
+      "source": "261a2e3f1c9b",
+      "target": "9ab139f812e1",
+      "weight": 1
+    },
+    {
+      "source": "9ab139f812e1",
+      "target": "dc00cc654b79",
+      "weight": 1
+    },
+    {
+      "source": "0ab8c2dcba4c",
+      "target": "9ab139f812e1",
+      "weight": 1
+    },
+    {
+      "source": "261a2e3f1c9b",
+      "target": "dc00cc654b79",
+      "weight": 1
+    },
+    {
+      "source": "0ab8c2dcba4c",
+      "target": "261a2e3f1c9b",
+      "weight": 1
+    },
+    {
+      "source": "0ab8c2dcba4c",
+      "target": "dc00cc654b79",
+      "weight": 1
+    },
+    {
+      "source": "93f36de7c160",
+      "target": "d27dcc45e681",
+      "weight": 1
+    },
+    {
+      "source": "42645649dcde",
+      "target": "93f36de7c160",
+      "weight": 1
+    },
+    {
+      "source": "83e5cf2f813b",
+      "target": "93f36de7c160",
+      "weight": 1
+    },
+    {
+      "source": "93f36de7c160",
+      "target": "d70b86b16f0d",
+      "weight": 1
+    },
+    {
+      "source": "8c95db8dbf67",
+      "target": "93f36de7c160",
+      "weight": 1
+    },
+    {
+      "source": "93f36de7c160",
+      "target": "9b872eab1d6c",
+      "weight": 1
+    },
+    {
+      "source": "93f36de7c160",
+      "target": "ddb3d58afbe3",
+      "weight": 1
+    },
+    {
+      "source": "93f36de7c160",
+      "target": "9b2005f38ec5",
+      "weight": 1
+    },
+    {
+      "source": "93f36de7c160",
+      "target": "fea95ba7cc97",
+      "weight": 1
+    },
+    {
+      "source": "37cfefa6fe76",
+      "target": "93f36de7c160",
+      "weight": 1
+    },
+    {
+      "source": "0ad7112e1917",
+      "target": "93f36de7c160",
+      "weight": 1
+    },
+    {
+      "source": "42645649dcde",
+      "target": "d27dcc45e681",
+      "weight": 1
+    },
+    {
+      "source": "83e5cf2f813b",
+      "target": "d27dcc45e681",
+      "weight": 1
+    },
+    {
+      "source": "d27dcc45e681",
+      "target": "d70b86b16f0d",
+      "weight": 1
+    },
+    {
+      "source": "8c95db8dbf67",
+      "target": "d27dcc45e681",
+      "weight": 1
+    },
+    {
+      "source": "9b872eab1d6c",
+      "target": "d27dcc45e681",
+      "weight": 1
+    },
+    {
+      "source": "d27dcc45e681",
+      "target": "ddb3d58afbe3",
+      "weight": 1
+    },
+    {
+      "source": "9b2005f38ec5",
+      "target": "d27dcc45e681",
+      "weight": 1
+    },
+    {
+      "source": "d27dcc45e681",
+      "target": "fea95ba7cc97",
+      "weight": 1
+    },
+    {
+      "source": "37cfefa6fe76",
+      "target": "d27dcc45e681",
+      "weight": 1
+    },
+    {
+      "source": "0ad7112e1917",
+      "target": "d27dcc45e681",
+      "weight": 1
+    },
+    {
+      "source": "42645649dcde",
+      "target": "83e5cf2f813b",
+      "weight": 1
+    },
+    {
+      "source": "42645649dcde",
+      "target": "d70b86b16f0d",
+      "weight": 1
+    },
+    {
+      "source": "42645649dcde",
+      "target": "8c95db8dbf67",
+      "weight": 1
+    },
+    {
+      "source": "42645649dcde",
+      "target": "9b872eab1d6c",
+      "weight": 1
+    },
+    {
+      "source": "42645649dcde",
+      "target": "ddb3d58afbe3",
+      "weight": 1
+    },
+    {
+      "source": "42645649dcde",
+      "target": "9b2005f38ec5",
+      "weight": 1
+    },
+    {
+      "source": "42645649dcde",
+      "target": "fea95ba7cc97",
+      "weight": 1
+    },
+    {
+      "source": "37cfefa6fe76",
+      "target": "42645649dcde",
+      "weight": 1
+    },
+    {
+      "source": "0ad7112e1917",
+      "target": "42645649dcde",
+      "weight": 1
+    },
+    {
+      "source": "83e5cf2f813b",
+      "target": "d70b86b16f0d",
+      "weight": 1
+    },
+    {
+      "source": "83e5cf2f813b",
+      "target": "8c95db8dbf67",
+      "weight": 1
+    },
+    {
+      "source": "83e5cf2f813b",
+      "target": "9b872eab1d6c",
+      "weight": 1
+    },
+    {
+      "source": "83e5cf2f813b",
+      "target": "ddb3d58afbe3",
+      "weight": 1
+    },
+    {
+      "source": "83e5cf2f813b",
+      "target": "9b2005f38ec5",
+      "weight": 1
+    },
+    {
+      "source": "83e5cf2f813b",
+      "target": "fea95ba7cc97",
+      "weight": 1
+    },
+    {
+      "source": "37cfefa6fe76",
+      "target": "83e5cf2f813b",
+      "weight": 1
+    },
+    {
+      "source": "0ad7112e1917",
+      "target": "83e5cf2f813b",
+      "weight": 1
+    },
+    {
+      "source": "8c95db8dbf67",
+      "target": "d70b86b16f0d",
+      "weight": 1
+    },
+    {
+      "source": "9b872eab1d6c",
+      "target": "d70b86b16f0d",
+      "weight": 1
+    },
+    {
+      "source": "d70b86b16f0d",
+      "target": "ddb3d58afbe3",
+      "weight": 1
+    },
+    {
+      "source": "9b2005f38ec5",
+      "target": "d70b86b16f0d",
+      "weight": 1
+    },
+    {
+      "source": "d70b86b16f0d",
+      "target": "fea95ba7cc97",
+      "weight": 1
+    },
+    {
+      "source": "37cfefa6fe76",
+      "target": "d70b86b16f0d",
+      "weight": 1
+    },
+    {
+      "source": "0ad7112e1917",
+      "target": "d70b86b16f0d",
+      "weight": 1
+    },
+    {
+      "source": "8c95db8dbf67",
+      "target": "9b872eab1d6c",
+      "weight": 1
+    },
+    {
+      "source": "8c95db8dbf67",
+      "target": "ddb3d58afbe3",
+      "weight": 1
+    },
+    {
+      "source": "8c95db8dbf67",
+      "target": "9b2005f38ec5",
+      "weight": 1
+    },
+    {
+      "source": "8c95db8dbf67",
+      "target": "fea95ba7cc97",
+      "weight": 1
+    },
+    {
+      "source": "37cfefa6fe76",
+      "target": "8c95db8dbf67",
+      "weight": 1
+    },
+    {
+      "source": "0ad7112e1917",
+      "target": "8c95db8dbf67",
+      "weight": 1
+    },
+    {
+      "source": "9b872eab1d6c",
+      "target": "ddb3d58afbe3",
+      "weight": 1
+    },
+    {
+      "source": "9b2005f38ec5",
+      "target": "9b872eab1d6c",
+      "weight": 1
+    },
+    {
+      "source": "9b872eab1d6c",
+      "target": "fea95ba7cc97",
+      "weight": 1
+    },
+    {
+      "source": "37cfefa6fe76",
+      "target": "9b872eab1d6c",
+      "weight": 1
+    },
+    {
+      "source": "0ad7112e1917",
+      "target": "9b872eab1d6c",
+      "weight": 1
+    },
+    {
+      "source": "9b2005f38ec5",
+      "target": "ddb3d58afbe3",
+      "weight": 1
+    },
+    {
+      "source": "ddb3d58afbe3",
+      "target": "fea95ba7cc97",
+      "weight": 1
+    },
+    {
+      "source": "37cfefa6fe76",
+      "target": "ddb3d58afbe3",
+      "weight": 1
+    },
+    {
+      "source": "0ad7112e1917",
+      "target": "ddb3d58afbe3",
+      "weight": 1
+    },
+    {
+      "source": "9b2005f38ec5",
+      "target": "fea95ba7cc97",
+      "weight": 1
+    },
+    {
+      "source": "37cfefa6fe76",
+      "target": "9b2005f38ec5",
+      "weight": 1
+    },
+    {
+      "source": "0ad7112e1917",
+      "target": "9b2005f38ec5",
+      "weight": 1
+    },
+    {
+      "source": "37cfefa6fe76",
+      "target": "fea95ba7cc97",
+      "weight": 1
+    },
+    {
+      "source": "0ad7112e1917",
+      "target": "fea95ba7cc97",
+      "weight": 1
+    },
+    {
+      "source": "0ad7112e1917",
+      "target": "37cfefa6fe76",
+      "weight": 1
+    },
+    {
+      "source": "52741d7820f9",
+      "target": "c3acc227f818",
+      "weight": 1
+    },
+    {
+      "source": "c3acc227f818",
+      "target": "ee0f2b251b8f",
+      "weight": 1
+    },
+    {
+      "source": "a4a396c88a36",
+      "target": "c3acc227f818",
+      "weight": 1
+    },
+    {
+      "source": "00919c3a0cfc",
+      "target": "c3acc227f818",
+      "weight": 1
+    },
+    {
+      "source": "c3acc227f818",
+      "target": "dc8d17e805f4",
+      "weight": 1
+    },
+    {
+      "source": "c3acc227f818",
+      "target": "e38398730ee4",
+      "weight": 1
+    },
+    {
+      "source": "9e7274cafeb2",
+      "target": "c3acc227f818",
+      "weight": 1
+    },
+    {
+      "source": "571be3e69746",
+      "target": "c3acc227f818",
+      "weight": 1
+    },
+    {
+      "source": "9ecfbf24aca8",
+      "target": "c3acc227f818",
+      "weight": 1
+    },
+    {
+      "source": "c3acc227f818",
+      "target": "ff9a7a386f17",
+      "weight": 1
+    },
+    {
+      "source": "c3acc227f818",
+      "target": "cd4f6c99e488",
+      "weight": 1
+    },
+    {
+      "source": "52741d7820f9",
+      "target": "ee0f2b251b8f",
+      "weight": 1
+    },
+    {
+      "source": "52741d7820f9",
+      "target": "a4a396c88a36",
+      "weight": 1
+    },
+    {
+      "source": "00919c3a0cfc",
+      "target": "52741d7820f9",
+      "weight": 1
+    },
+    {
+      "source": "52741d7820f9",
+      "target": "dc8d17e805f4",
+      "weight": 1
+    },
+    {
+      "source": "52741d7820f9",
+      "target": "e38398730ee4",
+      "weight": 1
+    },
+    {
+      "source": "52741d7820f9",
+      "target": "9e7274cafeb2",
+      "weight": 1
+    },
+    {
+      "source": "52741d7820f9",
+      "target": "571be3e69746",
+      "weight": 1
+    },
+    {
+      "source": "52741d7820f9",
+      "target": "9ecfbf24aca8",
+      "weight": 1
+    },
+    {
+      "source": "52741d7820f9",
+      "target": "ff9a7a386f17",
+      "weight": 1
+    },
+    {
+      "source": "52741d7820f9",
+      "target": "cd4f6c99e488",
+      "weight": 1
+    },
+    {
+      "source": "a4a396c88a36",
+      "target": "ee0f2b251b8f",
+      "weight": 1
+    },
+    {
+      "source": "00919c3a0cfc",
+      "target": "ee0f2b251b8f",
+      "weight": 1
+    },
+    {
+      "source": "dc8d17e805f4",
+      "target": "ee0f2b251b8f",
+      "weight": 1
+    },
+    {
+      "source": "e38398730ee4",
+      "target": "ee0f2b251b8f",
+      "weight": 1
+    },
+    {
+      "source": "9e7274cafeb2",
+      "target": "ee0f2b251b8f",
+      "weight": 1
+    },
+    {
+      "source": "571be3e69746",
+      "target": "ee0f2b251b8f",
+      "weight": 1
+    },
+    {
+      "source": "9ecfbf24aca8",
+      "target": "ee0f2b251b8f",
+      "weight": 1
+    },
+    {
+      "source": "ee0f2b251b8f",
+      "target": "ff9a7a386f17",
+      "weight": 1
+    },
+    {
+      "source": "cd4f6c99e488",
+      "target": "ee0f2b251b8f",
+      "weight": 1
+    },
+    {
+      "source": "00919c3a0cfc",
+      "target": "a4a396c88a36",
+      "weight": 1
+    },
+    {
+      "source": "a4a396c88a36",
+      "target": "dc8d17e805f4",
+      "weight": 1
+    },
+    {
+      "source": "a4a396c88a36",
+      "target": "e38398730ee4",
+      "weight": 1
+    },
+    {
+      "source": "9e7274cafeb2",
+      "target": "a4a396c88a36",
+      "weight": 1
+    },
+    {
+      "source": "571be3e69746",
+      "target": "a4a396c88a36",
+      "weight": 1
+    },
+    {
+      "source": "9ecfbf24aca8",
+      "target": "a4a396c88a36",
+      "weight": 1
+    },
+    {
+      "source": "a4a396c88a36",
+      "target": "ff9a7a386f17",
+      "weight": 1
+    },
+    {
+      "source": "a4a396c88a36",
+      "target": "cd4f6c99e488",
+      "weight": 1
+    },
+    {
+      "source": "00919c3a0cfc",
+      "target": "dc8d17e805f4",
+      "weight": 1
+    },
+    {
+      "source": "00919c3a0cfc",
+      "target": "e38398730ee4",
+      "weight": 1
+    },
+    {
+      "source": "00919c3a0cfc",
+      "target": "9e7274cafeb2",
+      "weight": 1
+    },
+    {
+      "source": "00919c3a0cfc",
+      "target": "571be3e69746",
+      "weight": 1
+    },
+    {
+      "source": "00919c3a0cfc",
+      "target": "9ecfbf24aca8",
+      "weight": 1
+    },
+    {
+      "source": "00919c3a0cfc",
+      "target": "ff9a7a386f17",
+      "weight": 1
+    },
+    {
+      "source": "00919c3a0cfc",
+      "target": "cd4f6c99e488",
+      "weight": 1
+    },
+    {
+      "source": "dc8d17e805f4",
+      "target": "e38398730ee4",
+      "weight": 1
+    },
+    {
+      "source": "9e7274cafeb2",
+      "target": "dc8d17e805f4",
+      "weight": 1
+    },
+    {
+      "source": "571be3e69746",
+      "target": "dc8d17e805f4",
+      "weight": 1
+    },
+    {
+      "source": "9ecfbf24aca8",
+      "target": "dc8d17e805f4",
+      "weight": 1
+    },
+    {
+      "source": "dc8d17e805f4",
+      "target": "ff9a7a386f17",
+      "weight": 1
+    },
+    {
+      "source": "cd4f6c99e488",
+      "target": "dc8d17e805f4",
+      "weight": 1
+    },
+    {
+      "source": "9e7274cafeb2",
+      "target": "e38398730ee4",
+      "weight": 1
+    },
+    {
+      "source": "571be3e69746",
+      "target": "e38398730ee4",
+      "weight": 1
+    },
+    {
+      "source": "9ecfbf24aca8",
+      "target": "e38398730ee4",
+      "weight": 1
+    },
+    {
+      "source": "e38398730ee4",
+      "target": "ff9a7a386f17",
+      "weight": 1
+    },
+    {
+      "source": "cd4f6c99e488",
+      "target": "e38398730ee4",
+      "weight": 1
+    },
+    {
+      "source": "571be3e69746",
+      "target": "9e7274cafeb2",
+      "weight": 1
+    },
+    {
+      "source": "9e7274cafeb2",
+      "target": "9ecfbf24aca8",
+      "weight": 1
+    },
+    {
+      "source": "9e7274cafeb2",
+      "target": "ff9a7a386f17",
+      "weight": 1
+    },
+    {
+      "source": "9e7274cafeb2",
+      "target": "cd4f6c99e488",
+      "weight": 1
+    },
+    {
+      "source": "571be3e69746",
+      "target": "9ecfbf24aca8",
+      "weight": 1
+    },
+    {
+      "source": "571be3e69746",
+      "target": "ff9a7a386f17",
+      "weight": 1
+    },
+    {
+      "source": "571be3e69746",
+      "target": "cd4f6c99e488",
+      "weight": 1
+    },
+    {
+      "source": "9ecfbf24aca8",
+      "target": "ff9a7a386f17",
+      "weight": 1
+    },
+    {
+      "source": "9ecfbf24aca8",
+      "target": "cd4f6c99e488",
+      "weight": 1
+    },
+    {
+      "source": "cd4f6c99e488",
+      "target": "ff9a7a386f17",
+      "weight": 1
+    },
+    {
+      "source": "2e207c1e203d",
+      "target": "712021133d7b",
+      "weight": 1
+    },
+    {
+      "source": "2e207c1e203d",
+      "target": "d7da8bc817eb",
+      "weight": 1
+    },
+    {
+      "source": "2e207c1e203d",
+      "target": "cf6419385243",
+      "weight": 1
+    },
+    {
+      "source": "2e207c1e203d",
+      "target": "cece7ef79bb3",
+      "weight": 1
+    },
+    {
+      "source": "2e207c1e203d",
+      "target": "3347227c744d",
+      "weight": 1
+    },
+    {
+      "source": "2e207c1e203d",
+      "target": "d7839bc532e6",
+      "weight": 1
+    },
+    {
+      "source": "2e207c1e203d",
+      "target": "bc47a6edb0c0",
+      "weight": 1
+    },
+    {
+      "source": "2e207c1e203d",
+      "target": "9c7f86c8788f",
+      "weight": 1
+    },
+    {
+      "source": "2e207c1e203d",
+      "target": "d54fd120c905",
+      "weight": 1
+    },
+    {
+      "source": "2e207c1e203d",
+      "target": "737a672d596b",
+      "weight": 1
+    },
+    {
+      "source": "2e207c1e203d",
+      "target": "daa67c04146e",
+      "weight": 1
+    },
+    {
+      "source": "712021133d7b",
+      "target": "d7da8bc817eb",
+      "weight": 1
+    },
+    {
+      "source": "712021133d7b",
+      "target": "cf6419385243",
+      "weight": 1
+    },
+    {
+      "source": "712021133d7b",
+      "target": "cece7ef79bb3",
+      "weight": 1
+    },
+    {
+      "source": "3347227c744d",
+      "target": "712021133d7b",
+      "weight": 1
+    },
+    {
+      "source": "712021133d7b",
+      "target": "d7839bc532e6",
+      "weight": 1
+    },
+    {
+      "source": "712021133d7b",
+      "target": "bc47a6edb0c0",
+      "weight": 1
+    },
+    {
+      "source": "712021133d7b",
+      "target": "9c7f86c8788f",
+      "weight": 1
+    },
+    {
+      "source": "712021133d7b",
+      "target": "d54fd120c905",
+      "weight": 1
+    },
+    {
+      "source": "712021133d7b",
+      "target": "737a672d596b",
+      "weight": 1
+    },
+    {
+      "source": "712021133d7b",
+      "target": "daa67c04146e",
+      "weight": 1
+    },
+    {
+      "source": "cf6419385243",
+      "target": "d7da8bc817eb",
+      "weight": 1
+    },
+    {
+      "source": "cece7ef79bb3",
+      "target": "d7da8bc817eb",
+      "weight": 1
+    },
+    {
+      "source": "3347227c744d",
+      "target": "d7da8bc817eb",
+      "weight": 1
+    },
+    {
+      "source": "d7839bc532e6",
+      "target": "d7da8bc817eb",
+      "weight": 1
+    },
+    {
+      "source": "bc47a6edb0c0",
+      "target": "d7da8bc817eb",
+      "weight": 1
+    },
+    {
+      "source": "9c7f86c8788f",
+      "target": "d7da8bc817eb",
+      "weight": 1
+    },
+    {
+      "source": "d54fd120c905",
+      "target": "d7da8bc817eb",
+      "weight": 1
+    },
+    {
+      "source": "737a672d596b",
+      "target": "d7da8bc817eb",
+      "weight": 1
+    },
+    {
+      "source": "d7da8bc817eb",
+      "target": "daa67c04146e",
+      "weight": 1
+    },
+    {
+      "source": "cece7ef79bb3",
+      "target": "cf6419385243",
+      "weight": 1
+    },
+    {
+      "source": "3347227c744d",
+      "target": "cf6419385243",
+      "weight": 1
+    },
+    {
+      "source": "cf6419385243",
+      "target": "d7839bc532e6",
+      "weight": 1
+    },
+    {
+      "source": "bc47a6edb0c0",
+      "target": "cf6419385243",
+      "weight": 1
+    },
+    {
+      "source": "9c7f86c8788f",
+      "target": "cf6419385243",
+      "weight": 1
+    },
+    {
+      "source": "cf6419385243",
+      "target": "d54fd120c905",
+      "weight": 1
+    },
+    {
+      "source": "737a672d596b",
+      "target": "cf6419385243",
+      "weight": 1
+    },
+    {
+      "source": "cf6419385243",
+      "target": "daa67c04146e",
+      "weight": 1
+    },
+    {
+      "source": "3347227c744d",
+      "target": "cece7ef79bb3",
+      "weight": 1
+    },
+    {
+      "source": "cece7ef79bb3",
+      "target": "d7839bc532e6",
+      "weight": 1
+    },
+    {
+      "source": "bc47a6edb0c0",
+      "target": "cece7ef79bb3",
+      "weight": 1
+    },
+    {
+      "source": "9c7f86c8788f",
+      "target": "cece7ef79bb3",
+      "weight": 1
+    },
+    {
+      "source": "cece7ef79bb3",
+      "target": "d54fd120c905",
+      "weight": 1
+    },
+    {
+      "source": "737a672d596b",
+      "target": "cece7ef79bb3",
+      "weight": 1
+    },
+    {
+      "source": "cece7ef79bb3",
+      "target": "daa67c04146e",
+      "weight": 1
+    },
+    {
+      "source": "3347227c744d",
+      "target": "d7839bc532e6",
+      "weight": 1
+    },
+    {
+      "source": "3347227c744d",
+      "target": "bc47a6edb0c0",
+      "weight": 1
+    },
+    {
+      "source": "3347227c744d",
+      "target": "9c7f86c8788f",
+      "weight": 1
+    },
+    {
+      "source": "3347227c744d",
+      "target": "d54fd120c905",
+      "weight": 1
+    },
+    {
+      "source": "3347227c744d",
+      "target": "737a672d596b",
+      "weight": 1
+    },
+    {
+      "source": "3347227c744d",
+      "target": "daa67c04146e",
+      "weight": 1
+    },
+    {
+      "source": "bc47a6edb0c0",
+      "target": "d7839bc532e6",
+      "weight": 1
+    },
+    {
+      "source": "9c7f86c8788f",
+      "target": "d7839bc532e6",
+      "weight": 1
+    },
+    {
+      "source": "d54fd120c905",
+      "target": "d7839bc532e6",
+      "weight": 1
+    },
+    {
+      "source": "737a672d596b",
+      "target": "d7839bc532e6",
+      "weight": 1
+    },
+    {
+      "source": "d7839bc532e6",
+      "target": "daa67c04146e",
+      "weight": 1
+    },
+    {
+      "source": "9c7f86c8788f",
+      "target": "bc47a6edb0c0",
+      "weight": 1
+    },
+    {
+      "source": "bc47a6edb0c0",
+      "target": "d54fd120c905",
+      "weight": 1
+    },
+    {
+      "source": "737a672d596b",
+      "target": "bc47a6edb0c0",
+      "weight": 1
+    },
+    {
+      "source": "bc47a6edb0c0",
+      "target": "daa67c04146e",
+      "weight": 1
+    },
+    {
+      "source": "9c7f86c8788f",
+      "target": "d54fd120c905",
+      "weight": 1
+    },
+    {
+      "source": "737a672d596b",
+      "target": "9c7f86c8788f",
+      "weight": 1
+    },
+    {
+      "source": "9c7f86c8788f",
+      "target": "daa67c04146e",
+      "weight": 1
+    },
+    {
+      "source": "737a672d596b",
+      "target": "d54fd120c905",
+      "weight": 1
+    },
+    {
+      "source": "d54fd120c905",
+      "target": "daa67c04146e",
+      "weight": 1
+    },
+    {
+      "source": "737a672d596b",
+      "target": "daa67c04146e",
+      "weight": 1
+    }
+  ],
+  "documents": [
+    {
+      "id": "n1",
+      "type": "note",
+      "title": "Corazón",
+      "entityIds": [
+        "37b63baaeed5",
+        "d7da8bc817eb",
+        "fd10012a9bd1",
+        "7a29a03d9495",
+        "95cc50da39e9",
+        "8f09dae81dfa",
+        "a535a3902d5c",
+        "94417b64eaf3",
+        "9ab139f812e1",
+        "261a2e3f1c9b",
+        "dc00cc654b79",
+        "0ab8c2dcba4c"
+      ]
+    },
+    {
+      "id": "n2",
+      "type": "note",
+      "title": "Aparato respiratorio",
+      "entityIds": [
+        "d70b86b16f0d",
+        "8c95db8dbf67",
+        "9b872eab1d6c",
+        "ddb3d58afbe3",
+        "9b2005f38ec5",
+        "fea95ba7cc97",
+        "37cfefa6fe76",
+        "0ad7112e1917",
+        "93f36de7c160",
+        "d27dcc45e681",
+        "42645649dcde",
+        "83e5cf2f813b"
+      ]
+    },
+    {
+      "id": "n3",
+      "type": "note",
+      "title": "Sistema nervioso",
+      "entityIds": [
+        "dc8d17e805f4",
+        "e38398730ee4",
+        "9e7274cafeb2",
+        "571be3e69746",
+        "9ecfbf24aca8",
+        "ff9a7a386f17",
+        "cd4f6c99e488",
+        "c3acc227f818",
+        "52741d7820f9",
+        "ee0f2b251b8f",
+        "a4a396c88a36",
+        "00919c3a0cfc"
+      ]
+    },
+    {
+      "id": "c1",
+      "type": "card",
+      "entityIds": [
+        "bc47a6edb0c0",
+        "9c7f86c8788f",
+        "d54fd120c905",
+        "737a672d596b",
+        "daa67c04146e",
+        "712021133d7b",
+        "d7da8bc817eb",
+        "cf6419385243",
+        "cece7ef79bb3",
+        "3347227c744d",
+        "d7839bc532e6",
+        "2e207c1e203d"
+      ]
+    }
+  ],
+  "totalFreq": 52,
+  "totalDocs": 4,
+  "updatedAt": 1790936855333
+}

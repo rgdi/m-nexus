@@ -1,0 +1,19 @@
+[
+  {
+    "id": "cloud-compute-new-724zp",
+    "host": "cloud-compute-new-724zp",
+    "port": 4000,
+    "region": "local",
+    "role": "leader",
+    "version": "2.32.0",
+    "capabilities": [
+      "http",
+      "ws",
+      "ocr",
+      "llm"
+    ],
+    "startedAt": 1790936992962,
+    "lastSeen": 1790936992962,
+    "uptimeSec": 0
+  }
+]

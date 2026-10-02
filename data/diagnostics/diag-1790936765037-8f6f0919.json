@@ -1,0 +1,27 @@
+{
+  "id": "diag-1790936765037-8f6f0919",
+  "generatedAt": 1790936765037,
+  "overlap": [],
+  "divergent": [],
+  "deckSummary": [
+    {
+      "deckId": "deck-f5a496bc-2ff2-4e29-9b67-64e5e719f53d",
+      "deckName": "A",
+      "totalCards": 0,
+      "byState": {},
+      "avgStability": 0,
+      "avgDifficulty": 0
+    },
+    {
+      "deckId": "deck-8443dfe0-44ed-4281-a3d0-44392e4e9580",
+      "deckName": "B",
+      "totalCards": 1,
+      "byState": {
+        "lapsed": 1
+      },
+      "avgStability": 2,
+      "avgDifficulty": 5
+    }
+  ],
+  "recommendations": []
+}

@@ -1,0 +1,49 @@
+{
+  "x.pdf": [
+    {
+      "id": "o-1",
+      "documentPath": "x.pdf",
+      "page": 1,
+      "x": 0.1,
+      "y": 0.1,
+      "w": 0.2,
+      "h": 0.2,
+      "label": "A",
+      "color": "#000000",
+      "state": "card-created",
+      "cardId": "fc-ba16a8a3-eda0-4999-a522-0425d2114dd9",
+      "createdAt": 1790936753460,
+      "updatedAt": 1790936753553
+    },
+    {
+      "id": "o-2",
+      "documentPath": "x.pdf",
+      "page": 2,
+      "x": 0.3,
+      "y": 0.3,
+      "w": 0.2,
+      "h": 0.2,
+      "label": "B",
+      "color": "#000000",
+      "state": "card-created",
+      "cardId": "fc-4fe34113-5a1b-449a-af12-57214ad060b9",
+      "createdAt": 1790936753466,
+      "updatedAt": 1790936753625
+    },
+    {
+      "id": "o-3",
+      "documentPath": "x.pdf",
+      "page": 3,
+      "x": 0.5,
+      "y": 0.5,
+      "w": 0.2,
+      "h": 0.2,
+      "label": "C",
+      "color": "#000000",
+      "state": "card-created",
+      "cardId": "fc-existing",
+      "createdAt": 1790936753487,
+      "updatedAt": 1790936753487
+    }
+  ]
+}

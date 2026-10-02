@@ -1,0 +1,29 @@
+[
+  {
+    "id": "fc-2ccbcde1-8349-4c16-9c8c-1fcf268b1112",
+    "front": "El pancreas segrega {{c1::insulina::hint}} y la libera",
+    "back": "El pancreas segrega insulina y la libera",
+    "subject": "bio",
+    "tags": [
+      "bio"
+    ],
+    "cardType": "cloze",
+    "fsrs": {
+      "stability": 0,
+      "difficulty": 5,
+      "state": "new",
+      "reps": 0,
+      "lapses": 0,
+      "lastReview": 0,
+      "due": 1790936783905,
+      "retrievability": 1
+    },
+    "elaborations": [],
+    "relatedTo": [],
+    "interleaveGroup": null,
+    "sourceNoteId": "pdf:combined.pdf:1",
+    "sourceExcerpt": "insulina",
+    "createdAt": 1790936783905,
+    "updatedAt": 1790936783905
+  }
+]

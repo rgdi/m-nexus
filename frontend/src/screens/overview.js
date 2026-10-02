@@ -52,7 +52,7 @@ export async function renderOverview(root) {
 
   // v2.3.0: compact row layout (was square bubble, too dominant)
   const cardsHtml = subjects.slice(0, 5).map(s => `
-    <a class="subj-bubble" href="#/subjects">
+    <a class="subj-bubble" href="#/subjects" style="--tint:${s.color}">
       <div class="color-stripe" style="background:${s.color}"></div>
       <div class="info">
         <div class="name">${escapeHtml(s.name)}</div>
@@ -77,8 +77,8 @@ export async function renderOverview(root) {
         ${nextDeadline ? `<span class="chip bad">${i18n.t("overview.referatBadge", { time: fmtRange(nextDeadline.start, nextDeadline.end).slice(0, -3) })}</span>` : ""}
       </header>
 
-      <div class="grid grid-3" style="align-items:start">
-        <div>
+      <div class="grid grid-3 grid-overview" style="align-items:start">
+        <div class="col-agenda">
           <h3 class="muted small semibold" style="margin-bottom: var(--s-3)">${i18n.t("overview.todaySchedule")}</h3>
           <div class="col gap-2">
             ${events.length === 0
