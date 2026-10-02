@@ -87,6 +87,7 @@ export function mountHeatmap(host, opts = {}) {
           <div class="m-heat-grid" data-heat-grid role="grid" aria-label="Días"></div>
         </div>
       </div>
+      <p class="m-heat-hint">Desliza el mapa para ver el año entero</p>
       <div class="m-heat-legend">
         <span>Menos</span>
         ${[0, 1, 2, 3, 4].map((lv) => `<span class="m-heat-cell" data-lv="${lv}"></span>`).join("")}

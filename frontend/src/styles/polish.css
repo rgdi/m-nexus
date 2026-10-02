@@ -172,12 +172,24 @@ p, li, dd { line-height: 1.62; }
 }
 .list-row:last-child, li.list-item:last-child { border-bottom: 0; }
 
-/* ── Estados vacios: son pantallas, no errores ─────────────────── */
+/* ── Estados vacios: son pantallas, no errores ───────────────────
+ *
+ * v2.38.24 — con el aire nuevo, un estado vacío dentro de UNA COLUMNA
+ * se comia media pantalla: en el resumen, "Sin eventos hoy" con 56 px
+ * de aire arriba y abajo dentro de una de las tres columnas deja un
+ * hueco enorme al lado, y parece que falta media aplicacion.
+ *
+ * Un estado vacío dentro de una columna es una linea. El de pantalla
+ * completa es el que puede respiro. */
 .empty, .empty-state, .doc-list-empty {
   color: var(--fg-faint);
   text-align: center;
-  padding: var(--s-8) var(--s-4);
+  padding: var(--s-3) var(--s-2);
+  font-size: .9rem;
 }
+.empty-state:only-child,
+.screen > .empty:only-child,
+.doc-list-empty { padding: var(--s-7) var(--s-4); font-size: 1rem; }
 .empty .em-title, .empty-state h2 { color: var(--fg-muted); font-weight: 600; }
 
 /* ── Scroll: discreto y de la familia ─────────────────────────── */

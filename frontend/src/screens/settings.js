@@ -70,7 +70,7 @@ export async function renderSettings(root) {
     <div class="screen" style="max-width: 720px; padding: var(--s-6)">
       <header class="screen-header">
         <button class="btn icon" id="back">${backIcon()}</button>
-        <h1 class="h-title">Settings</h1>
+        <h1 class="h-title">Ajustes</h1>
       </header>
 
       <section class="settings-section">
@@ -116,11 +116,11 @@ export async function renderSettings(root) {
       </section>
 
       <section class="settings-section">
-        <h2>Cluster de servidores</h2>
+        <h2>Clúster de servidores</h2>
         <p class="muted">varios servidores sincronizando en paralelo, con auto-descubrimiento</p>
         <a class="settings-option" id="cluster-link" href="#/cluster">
           <span class="ico">🛰️</span>
-          <span class="name">Administrar cluster</span>
+          <span class="name">Administrar el clúster</span>
           <span class="muted small">Ver peers, promover/demote, healthcheck</span>
         </a>
       </section>
@@ -141,18 +141,18 @@ export async function renderSettings(root) {
       </section>
 
       <section class="settings-section">
-        <h2>Export</h2>
+        <h2>Exportar</h2>
         <p class="muted">Descarga tu vault para respaldo o migración</p>
         <div class="settings-grid settings-grid--stack" style="grid-template-columns: 1fr 1fr;">
           <button class="settings-option" id="export-vault">
             <span class="ico">💾</span>
             <span class="name">Full vault (JSON)</span>
-            <span class="muted small">All notes, subjects, tasks, events</span>
+            <span class="muted small">Todas las notas, asignaturas, tareas y eventos</span>
           </button>
           <button class="settings-option" id="export-current-note">
             <span class="ico">📝</span>
             <span class="name">Current note (Markdown)</span>
-            <span class="muted small">Open a note first</span>
+            <span class="muted small">Abre primero una nota</span>
           </button>
         </div>
         <div id="export-status" class="muted small" style="margin-top:8px"></div>
@@ -214,7 +214,7 @@ export async function renderSettings(root) {
             </label>
           </div>
           <div class="form-row">
-            <label>Remote command (optional)
+            <label>Comando remoto (opcional)
               <input name="bk-remote" class="input" value="${escapeHtml(backupConfig.remoteCommand || "")}" placeholder="rclone copy {} remote:bucket/backups" />
             </label>
             <small>{} is replaced with the backup file path.</small>
@@ -453,7 +453,7 @@ export async function renderSettings(root) {
       const m = hash.match(/[?&]id=([^&]+)/);
       const noteId = m ? decodeURIComponent(m[1]) : null;
       if (!noteId) {
-        exportStatus.textContent = i18n.t("settings.openNoteFirst") || "Open a note first";
+        exportStatus.textContent = i18n.t("settings.openNoteFirst") || "Abre primero una nota";
         return;
       }
       exportStatus.textContent = i18n.t("settings.exporting") || "Exporting…";

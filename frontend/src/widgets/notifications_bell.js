@@ -60,7 +60,7 @@ export function mountNotificationBell(host) {
           <div class="notif-empty">
             <div class="notif-empty-icon">🌿</div>
             <p class="notif-empty-title">Sin notificaciones por ahora.</p>
-            <p class="notif-empty-sub">Pulsa "Generar" para que el FSRS-7 analice tus cards.</p>
+            <p class="notif-empty-sub">Pulsa «Generar» para que el FSRS-7 analice tus repasos.</p>
           </div>
         </div>
         <footer class="notif-dropdown-footer">
@@ -140,7 +140,7 @@ export function mountNotificationBell(host) {
         <div class="notif-empty">
           <div class="notif-empty-icon">🌿</div>
           <p class="notif-empty-title">Sin notificaciones por ahora.</p>
-          <p class="notif-empty-sub">Pulsa "Generar" para que el FSRS-7 analice tus cards.</p>
+          <p class="notif-empty-sub">Pulsa «Generar» para que el FSRS-7 analice tus repasos.</p>
         </div>
       `;
       return;

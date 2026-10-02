@@ -21,7 +21,7 @@ export async function renderProgress(root) {
       </div>
 
       <div data-prog-stats class="m-stat-grid">
-        <div class="m-stat"><div class="m-stat-num" data-stat-reviews>—</div><div class="m-stat-lbl">Reviews totales</div></div>
+        <div class="m-stat"><div class="m-stat-num" data-stat-reviews>—</div><div class="m-stat-lbl">Repasos totales</div></div>
         <div class="m-stat"><div class="m-stat-num" data-stat-streak>—</div><div class="m-stat-lbl">Racha actual</div></div>
         <div class="m-stat"><div class="m-stat-num" data-stat-mastered>—</div><div class="m-stat-lbl">Dominadas</div></div>
         <div class="m-stat"><div class="m-stat-num" data-stat-retention>—</div><div class="m-stat-lbl">Retención 30d</div></div>

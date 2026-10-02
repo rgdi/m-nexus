@@ -1,0 +1,298 @@
+[
+  {
+    "id": "note-80a078a2-c3eb-4023-8e46-9edc76342259",
+    "title": "Sistema de conducción cardíaca",
+    "body": "El impulso eléctrico nace en el ==nodo sinoauricular== y baja por el ==haz de His== hacia el ápex.\n\n!!Las aurículas van antes que los ventrículos!!, y por eso la contracción auricular completa el llenado.\n\nVer también: [[Ciclo cardíaco]] y [[Presión arterial]].\n\n#cardio #anatomía",
+    "subject": "",
+    "tags": [],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "folderId": "folder-98296d29-c045-4b51-9c15-463ea87bc8cb",
+    "createdAt": 1790935875281,
+    "updatedAt": 1790935875281
+  },
+  {
+    "id": "note-dfe8d629-6321-4a5d-a9e8-2caca27ff192",
+    "title": "Ciclo cardíaco",
+    "body": "La sístole ventricular expulsa sangre hacia la aorta y la arteria pulmonar.\n\nLa aorta tiene elasticidad para absorber el pico de presión sistólico.\n\nVuelve a [[Sistema de conducción cardíaca]].",
+    "subject": "",
+    "tags": [],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "folderId": "folder-98296d29-c045-4b51-9c15-463ea87bc8cb",
+    "createdAt": 1790935875319,
+    "updatedAt": 1790935875319
+  },
+  {
+    "id": "note-3da71ef1-7dfd-45df-a18c-216effed67d0",
+    "title": "Presión arterial",
+    "body": "La presión arterial es el producto del gasto cardíaco por la resistencia vascular.\n\n#cardio",
+    "subject": "",
+    "tags": [],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "folderId": "folder-98296d29-c045-4b51-9c15-463ea87bc8cb",
+    "createdAt": 1790935875338,
+    "updatedAt": 1790935875338
+  },
+  {
+    "id": "note-c870f705-7158-4ef9-800f-0fcac4865f64",
+    "title": "Cráneo: bones of the skull",
+    "body": "Frontal, parietal, temporal, occipital, esfenoides y etmoides.\n\nLa sutura sagital separa los dos parietales.\n\n#anatomía",
+    "subject": "",
+    "tags": [],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "folderId": "folder-c3e7476d-990a-46d1-81dd-d53ba80366f7",
+    "createdAt": 1790935875364,
+    "updatedAt": 1790935875364
+  },
+  {
+    "id": "note-dc9ceb40-6ba9-4426-906a-0bc115dc20d9",
+    "title": "Paracetamol",
+    "body": "Dosis adultos: 500 mg cada 6 horas. Máximo 4 g al día.\n\nNo combinar con ibuprofeno de forma sistemática.",
+    "subject": "",
+    "tags": [],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "folderId": null,
+    "createdAt": 1790935875383,
+    "updatedAt": 1790935875383
+  },
+  {
+    "id": "journal-2026-10-02-general",
+    "title": "📓 2026-10-02",
+    "body": "",
+    "subject": "",
+    "tags": [
+      "journal",
+      "daily"
+    ],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "folderId": null,
+    "createdAt": 1790935903821,
+    "updatedAt": 1790935903821,
+    "blocks": [
+      {
+        "id": "block-136970f0-b78d-45ae-9c70-f3eeacdb5838",
+        "parentId": null,
+        "order": 0,
+        "text": "📓 Hoy",
+        "type": "text",
+        "meta": {
+          "kind": "heading",
+          "title": "Hoy",
+          "emoji": "📓",
+          "headingLevel": 1,
+          "journalDate": "2026-10-02",
+          "subject": "",
+          "userId": null
+        },
+        "createdAt": 1790935903821,
+        "updatedAt": 1790935903821
+      },
+      {
+        "id": "block-49b8a7aa-47ed-48f6-8620-cc3d76568595",
+        "parentId": null,
+        "order": 1,
+        "text": "¿Cómo me siento hoy?",
+        "type": "text",
+        "meta": {
+          "kind": "mood",
+          "mood": {
+            "score": null,
+            "note": ""
+          }
+        },
+        "createdAt": 1790935903821,
+        "updatedAt": 1790935903821
+      },
+      {
+        "id": "block-f7b6fa37-07b9-4799-9ccd-355f6b6be1d4",
+        "parentId": null,
+        "order": 2,
+        "text": "1. \n2. \n3. ",
+        "type": "text",
+        "meta": {
+          "kind": "gratitude",
+          "title": "3 cosas por las que estoy agradecido/a",
+          "gratitude": true
+        },
+        "createdAt": 1790935903821,
+        "updatedAt": 1790935903821
+      },
+      {
+        "id": "block-cff2f20b-28a9-4a30-873e-fee2b8b78ac0",
+        "parentId": null,
+        "order": 3,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "agenda",
+          "title": "Agenda del día",
+          "agenda": true
+        },
+        "createdAt": 1790935903821,
+        "updatedAt": 1790935903821
+      },
+      {
+        "id": "block-08b6cf3a-064a-43c8-961a-d5d1ece79d96",
+        "parentId": null,
+        "order": 4,
+        "text": "📅 Cargando eventos…",
+        "type": "text",
+        "meta": {
+          "kind": "query-events-today",
+          "query": {
+            "type": "events-today",
+            "refreshOnView": true
+          }
+        },
+        "createdAt": 1790935903821,
+        "updatedAt": 1790935903821
+      },
+      {
+        "id": "block-db95bb43-c81b-4d2b-97dc-3f27f63dde76",
+        "parentId": null,
+        "order": 5,
+        "text": "🃏 Cargando tarjetas…",
+        "type": "cloze",
+        "meta": {
+          "kind": "query-cards-due",
+          "title": "Tarjetas para repasar",
+          "query": {
+            "type": "cards-due",
+            "refreshOnView": true
+          }
+        },
+        "createdAt": 1790935903821,
+        "updatedAt": 1790935903821
+      },
+      {
+        "id": "block-b162bb9f-f200-4e5d-85c0-4c35e0822d9e",
+        "parentId": null,
+        "order": 6,
+        "text": "✓ Cargando tareas…",
+        "type": "text",
+        "meta": {
+          "kind": "query-tasks-open",
+          "title": "Tareas abiertas",
+          "query": {
+            "type": "tasks-open"
+          }
+        },
+        "createdAt": 1790935903821,
+        "updatedAt": 1790935903821
+      },
+      {
+        "id": "block-4440f44c-dfaa-483e-a8bc-31ec9c416772",
+        "parentId": null,
+        "order": 7,
+        "text": "---",
+        "type": "text",
+        "meta": {
+          "kind": "divider",
+          "divider": true
+        },
+        "createdAt": 1790935903821,
+        "updatedAt": 1790935903821
+      },
+      {
+        "id": "block-f329effe-ccb3-4c6e-9110-dd3981d2b832",
+        "parentId": null,
+        "order": 8,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "learnings",
+          "title": "Lo que aprendí hoy",
+          "learnings": true
+        },
+        "createdAt": 1790935903821,
+        "updatedAt": 1790935903821
+      },
+      {
+        "id": "block-fca594c1-b052-4435-84c6-1f8f810b0d2a",
+        "parentId": null,
+        "order": 9,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "questions",
+          "title": "Lo que todavía no entiendo",
+          "questions": true
+        },
+        "createdAt": 1790935903821,
+        "updatedAt": 1790935903821
+      },
+      {
+        "id": "block-87fabed2-9949-4bff-b879-4549d7b1a6e5",
+        "parentId": null,
+        "order": 10,
+        "text": "---",
+        "type": "text",
+        "meta": {
+          "kind": "divider",
+          "divider": true
+        },
+        "createdAt": 1790935903821,
+        "updatedAt": 1790935903821
+      },
+      {
+        "id": "block-9ef2e047-1fb5-4bf1-8b2f-4067629a798a",
+        "parentId": null,
+        "order": 11,
+        "text": "Una frase: ¿qué te llevas de hoy?",
+        "type": "callout",
+        "meta": {
+          "kind": "callout",
+          "title": "Reflexión del día",
+          "emoji": "✨",
+          "calloutTitle": "Reflexión del día"
+        },
+        "createdAt": 1790935903821,
+        "updatedAt": 1790935903821
+      },
+      {
+        "id": "block-eb89da74-5d3b-42c8-875f-d4e803e5fc0d",
+        "parentId": null,
+        "order": 12,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "free",
+          "free": true
+        },
+        "createdAt": 1790935903821,
+        "updatedAt": 1790935903821
+      }
+    ],
+    "isJournal": true,
+    "journalDate": "2026-10-02"
+  }
+]

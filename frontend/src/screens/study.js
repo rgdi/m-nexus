@@ -87,7 +87,7 @@ export async function renderStudy(root) {
   host.innerHTML = `
     <div class="m-stat-grid m-stat-grid--3" style="margin-bottom:16px">
       <div class="m-stat"><div class="m-stat-num" data-study-due>${due}</div><div class="m-stat-lbl">Deben repasar</div></div>
-      <div class="m-stat"><div class="m-stat-num">${minutesCell}</div><div class="m-stat-lbl">${todayMinutes > 0 ? "Min hoy" : "Reviews hoy"}</div></div>
+      <div class="m-stat"><div class="m-stat-num">${minutesCell}</div><div class="m-stat-lbl">${todayMinutes > 0 ? "Min hoy" : "Repasos hoy"}</div></div>
       <div class="m-stat"><div class="m-stat-num">${streak > 0 ? streak : "—"}</div><div class="m-stat-lbl">Días racha</div></div>
     </div>
     <button class="m-btn m-btn--block" data-study-start>

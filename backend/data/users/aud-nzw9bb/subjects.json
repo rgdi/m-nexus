@@ -1,0 +1,28 @@
+[
+  {
+    "name": "cardio",
+    "icon": "C",
+    "color": "var(--subj-blue)",
+    "grade": null,
+    "performance": 0,
+    "prof": "",
+    "next": "",
+    "id": "sub-bee20845-971d-44b8-b81e-eb294630c6a3",
+    "order": 0,
+    "createdAt": 1790935396994,
+    "updatedAt": 1790935396994
+  },
+  {
+    "name": "anatomía",
+    "icon": "A",
+    "color": "var(--subj-blue)",
+    "grade": null,
+    "performance": 0,
+    "prof": "",
+    "next": "",
+    "id": "sub-0eea1ea1-eaae-43fc-b965-74e71f5d3d09",
+    "order": 1,
+    "createdAt": 1790935397017,
+    "updatedAt": 1790935397017
+  }
+]

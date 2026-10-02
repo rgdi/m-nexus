@@ -15,7 +15,15 @@ describe("v2.35.0 — mobile.css design system", () => {
     const path = join(process.cwd(), "src/styles/mobile.css");
     expect(existsSync(path)).toBe(true);
     const css = read("src/styles/mobile.css");
-    expect(css).toMatch(/--m-accent:\s*#8b5cf6/);
+    // v2.38.24 — el morado #8b5cf6 era una SEGUNDA paleta, paralela a
+    // --accent: cambiar los tokens no la movia, y por eso el boton
+    // "Empezar sesion" seguia morado con todo lo demas en azul. Ahora
+    // las dos rampas son el mismo azul, y el test lo fija para que no
+    // vuelva a pasar.
+    expect(css).toMatch(/--m-accent:\s*#2f6fed/);
+    expect(css).toMatch(/--m-accent-05:\s*rgba\(47, 111, 237/);
+    expect(css).not.toMatch(/139, ?92, ?246/);
+    expect(css).not.toMatch(/#8b5cf6|#a78bfa|#6d28d9/);
     // The ramp must be a real ladder, not three near-identical greys.
     // v2.38.1 had #0b0b12 / #12121c / #171724 — steps of ~6/255, which on
     // a phone reads as one flat field.

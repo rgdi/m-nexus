@@ -1,0 +1,234 @@
+[
+  {
+    "id": "note-ea87ca21-ffa3-42eb-9666-410a1245fa82",
+    "title": "Ciclo cardíaco",
+    "body": "Sístole y diástole.\n\n[[Presión]]",
+    "subject": "",
+    "tags": [],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "folderId": "folder-8262d2ed-b99a-4406-8204-d10577eaeb78",
+    "createdAt": 1790935396602,
+    "updatedAt": 1790935396602
+  },
+  {
+    "id": "journal-2026-10-02-general",
+    "title": "📓 2026-10-02",
+    "body": "",
+    "subject": "",
+    "tags": [
+      "journal",
+      "daily"
+    ],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "folderId": null,
+    "createdAt": 1790935443229,
+    "updatedAt": 1790935443229,
+    "blocks": [
+      {
+        "id": "block-2b7e3afb-7800-4bd4-9a41-4fa705562d8e",
+        "parentId": null,
+        "order": 0,
+        "text": "📓 Hoy",
+        "type": "text",
+        "meta": {
+          "kind": "heading",
+          "title": "Hoy",
+          "emoji": "📓",
+          "headingLevel": 1,
+          "journalDate": "2026-10-02",
+          "subject": "",
+          "userId": null
+        },
+        "createdAt": 1790935443229,
+        "updatedAt": 1790935443229
+      },
+      {
+        "id": "block-4cc14511-0ee9-4c79-9992-16f8b4a4f7ad",
+        "parentId": null,
+        "order": 1,
+        "text": "¿Cómo me siento hoy?",
+        "type": "text",
+        "meta": {
+          "kind": "mood",
+          "mood": {
+            "score": null,
+            "note": ""
+          }
+        },
+        "createdAt": 1790935443229,
+        "updatedAt": 1790935443229
+      },
+      {
+        "id": "block-4ef08cc2-f020-4f88-8ae7-0edb393fc9db",
+        "parentId": null,
+        "order": 2,
+        "text": "1. \n2. \n3. ",
+        "type": "text",
+        "meta": {
+          "kind": "gratitude",
+          "title": "3 cosas por las que estoy agradecido/a",
+          "gratitude": true
+        },
+        "createdAt": 1790935443229,
+        "updatedAt": 1790935443229
+      },
+      {
+        "id": "block-3dc17218-c97c-4cf5-a347-c321c97aac66",
+        "parentId": null,
+        "order": 3,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "agenda",
+          "title": "Agenda del día",
+          "agenda": true
+        },
+        "createdAt": 1790935443229,
+        "updatedAt": 1790935443229
+      },
+      {
+        "id": "block-63dde21e-c9aa-4f90-b55e-bd5837365335",
+        "parentId": null,
+        "order": 4,
+        "text": "📅 Cargando eventos…",
+        "type": "text",
+        "meta": {
+          "kind": "query-events-today",
+          "query": {
+            "type": "events-today",
+            "refreshOnView": true
+          }
+        },
+        "createdAt": 1790935443229,
+        "updatedAt": 1790935443229
+      },
+      {
+        "id": "block-1229eb9f-8578-4860-853d-59c1a2a6b732",
+        "parentId": null,
+        "order": 5,
+        "text": "🃏 Cargando tarjetas…",
+        "type": "cloze",
+        "meta": {
+          "kind": "query-cards-due",
+          "title": "Tarjetas para repasar",
+          "query": {
+            "type": "cards-due",
+            "refreshOnView": true
+          }
+        },
+        "createdAt": 1790935443229,
+        "updatedAt": 1790935443229
+      },
+      {
+        "id": "block-ce866b11-5aaf-49c9-8587-699edb56d483",
+        "parentId": null,
+        "order": 6,
+        "text": "✓ Cargando tareas…",
+        "type": "text",
+        "meta": {
+          "kind": "query-tasks-open",
+          "title": "Tareas abiertas",
+          "query": {
+            "type": "tasks-open"
+          }
+        },
+        "createdAt": 1790935443229,
+        "updatedAt": 1790935443229
+      },
+      {
+        "id": "block-7a7ef9f8-a96b-48cd-bdb7-549a2744427d",
+        "parentId": null,
+        "order": 7,
+        "text": "---",
+        "type": "text",
+        "meta": {
+          "kind": "divider",
+          "divider": true
+        },
+        "createdAt": 1790935443229,
+        "updatedAt": 1790935443229
+      },
+      {
+        "id": "block-2965f2d0-fc6c-4fd2-aa46-6c6ec66db244",
+        "parentId": null,
+        "order": 8,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "learnings",
+          "title": "Lo que aprendí hoy",
+          "learnings": true
+        },
+        "createdAt": 1790935443229,
+        "updatedAt": 1790935443229
+      },
+      {
+        "id": "block-0f95fee2-2866-4cf3-bfce-a078d238b7e7",
+        "parentId": null,
+        "order": 9,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "questions",
+          "title": "Lo que todavía no entiendo",
+          "questions": true
+        },
+        "createdAt": 1790935443229,
+        "updatedAt": 1790935443229
+      },
+      {
+        "id": "block-7f3b2366-7d3b-4c59-8010-e40dc9ec5a43",
+        "parentId": null,
+        "order": 10,
+        "text": "---",
+        "type": "text",
+        "meta": {
+          "kind": "divider",
+          "divider": true
+        },
+        "createdAt": 1790935443229,
+        "updatedAt": 1790935443229
+      },
+      {
+        "id": "block-f7660c6a-fe5b-4bfc-a7a8-3033c92733a3",
+        "parentId": null,
+        "order": 11,
+        "text": "Una frase: ¿qué te llevas de hoy?",
+        "type": "callout",
+        "meta": {
+          "kind": "callout",
+          "title": "Reflexión del día",
+          "emoji": "✨",
+          "calloutTitle": "Reflexión del día"
+        },
+        "createdAt": 1790935443229,
+        "updatedAt": 1790935443229
+      },
+      {
+        "id": "block-a512d286-9605-431f-bc45-6c24bb33bb94",
+        "parentId": null,
+        "order": 12,
+        "text": "",
+        "type": "text",
+        "meta": {
+          "kind": "free",
+          "free": true
+        },
+        "createdAt": 1790935443229,
+        "updatedAt": 1790935443229
+      }
+    ],
+    "isJournal": true,
+    "journalDate": "2026-10-02"
+  }
+]

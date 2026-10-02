@@ -27,9 +27,10 @@
  * 0. Tokens
  * ------------------------------------------------------------ */
 :root {
-  /* v2.38.22 — Accent ramp. Antes era violeta (rgb 139,92,246) y era
-   * una SEGUNDA paleta, paralela a --accent: cambiar los tokens no la
-   * movia. Ahora las dos son el mismo azul. */
+  /* v2.38.22 — Rampa del acento. Antes era violeta y era una SEGUNDA
+   * paleta, paralela a --accent: cambiar los tokens no la movia, y por
+   * eso el boton "Empezar sesion" seguia morado con todo lo demas en
+   * azul. Ahora las dos rampas son el mismo azul. */
   --m-accent-05: rgba(47, 111, 237, .05);
   --m-accent-08: rgba(47, 111, 237, .08);
   --m-accent-12: rgba(47, 111, 237, .12);
@@ -2545,3 +2546,32 @@ body:not(.has-floating-window) .capture-fab {
  * la izquierda ya cumple ese papel y las dos se veían montadas a la
  * vez en 1440px. */
 [data-device="desktop"] .m-tabbar { display: none !important; }
+
+/* v2.38.24 — el mapa de calor necesita deslizar, y hay que decirlo.
+ *
+ * Un año son 53 semanas. En 360 px no caben: la tira mide 863 px en un
+ * contenedor de 310. Deslizar es lo correcto —si se apretara para que
+ * cupiera, cada celda mediría 6 px y no secould tocar— pero deslizar
+ * sin avisar esconde la mitad de lo que se ve, que es el peor sitio
+ * donde esconder algo: un control que parece que no existe.
+ *
+ * Con dos velos en los extremos se ve que hay mas, y en pantallas
+ * estrechas se pone un texto que lo dice sin rodeos.
+ */
+.m-heat-wrap { position: relative; }
+.m-heat-wrap::after {
+  content: "";
+  position: absolute; right: 0; top: 0; bottom: 6px; width: 34px;
+  pointer-events: none;
+  background: linear-gradient(to right, rgba(0,0,0,0), var(--bg, #fff));
+  border-radius: 0 8px 8px 0;
+}
+@media (max-width: 520px) {
+  .m-heat-hint {
+    display: block;
+    margin: 6px 2px 0;
+    font-size: .72rem;
+    color: var(--fg-faint);
+  }
+}
+.m-heat-hint { display: none; }

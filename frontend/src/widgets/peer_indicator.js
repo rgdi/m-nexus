@@ -83,7 +83,7 @@ export function mountPeerIndicator() {
   const overlay = document.createElement("div");
   overlay.className = "peer-overlay";
   overlay.setAttribute("role", "region");
-  overlay.setAttribute("aria-label", "Cluster de servidores");
+  overlay.setAttribute("aria-label", "Clúster de servidores");
   overlay.innerHTML = `
     <header class="po-head">
       <strong>Servidor actual</strong>

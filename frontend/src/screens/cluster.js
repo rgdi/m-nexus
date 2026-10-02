@@ -60,7 +60,7 @@ export async function renderCluster(root) {
     <div class="screen cluster-screen">
       <header class="screen-header">
         <button class="icon-btn" id="back" aria-label="Volver">←</button>
-        <h1 class="h-title">Cluster</h1>
+        <h1 class="h-title">Clúster</h1>
         <div class="spacer"></div>
         <button class="icon-btn" id="refresh" aria-label="Refrescar" title="Refrescar">⟳</button>
       </header>

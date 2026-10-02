@@ -57,7 +57,7 @@ export function mountLineChart(host, opts = {}) {
       <div class="m-chart-head">
         <div>
           <div class="m-eyebrow">${esc(opts.eyebrow ?? "Ritmo")}</div>
-          <h3 class="m-chart-title">${esc(opts.title ?? "Reviews por día")}</h3>
+          <h3 class="m-chart-title">${esc(opts.title ?? "Repasos por día")}</h3>
         </div>
         <div class="m-chart-value" data-line-total>—</div>
       </div>
@@ -83,7 +83,7 @@ export function mountLineChart(host, opts = {}) {
   function render(points) {
     if (!points?.length) {
       body.innerHTML = `<div class="m-empty-state" style="padding:24px">
-        <span class="m-emoji">🌱</span><p>Aún no hay reviews. ¡Empieza hoy!</p></div>`;
+        <span class="m-emoji">🌱</span><p>Todavía no hay repasos. ¡Empieza hoy!</p></div>`;
       return;
     }
     const W = 320, H = 128, PAD_X = 6, PAD_Y = 12;
@@ -103,7 +103,7 @@ export function mountLineChart(host, opts = {}) {
     const mid = Math.floor(last / 2);
 
     body.innerHTML = `
-      <svg viewBox="0 0 ${W} ${H + 12}" role="img" aria-label="Reviews por día">
+      <svg viewBox="0 0 ${W} ${H + 12}" role="img" aria-label="Repasos por día">
         <line class="m-axis" x1="0" y1="${H}" x2="${W}" y2="${H}"/>
         <text class="m-axis-lbl" x="${PAD_X}" y="9">max ${max}</text>
         <path class="m-chart-area" d="${area}"/>
@@ -152,7 +152,7 @@ export function mountBarChart(host, opts = {}) {
     const active = points.filter((p) => p.reviews > 0);
     if (!active.length) {
       body.innerHTML = `<div class="m-empty-state" style="padding:24px">
-        <span class="m-emoji">🧠</span><p>Sin reviews registrados todavía</p></div>`;
+        <span class="m-emoji">🧠</span><p>Todavía no hay repasos registrados</p></div>`;
       return;
     }
     const W = 320, H = 110, PAD = 8, GAP = 4;
@@ -163,7 +163,7 @@ export function mountBarChart(host, opts = {}) {
       const y = H - PAD - h;
       const col = p.retention >= 0.9 ? "var(--m-ok)" : p.retention >= 0.75 ? "var(--m-warn)" : "var(--m-danger)";
       return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(3, bw - GAP).toFixed(1)}" height="${h.toFixed(1)}"
-        rx="3" fill="${col}" opacity="${p.reviews > 0 ? 1 : 0.18}"><title>${p.weekStart}: ${Math.round(p.retention * 100)}% (${p.reviews} reviews)</title></rect>`;
+        rx="3" fill="${col}" opacity="${p.reviews > 0 ? 1 : 0.18}"><title>${p.weekStart}: ${Math.round(p.retention * 100)}% (${p.reviews} repasos)</title></rect>`;
     }).join("");
 
     const avg = active.reduce((s, p) => s + p.retention, 0) / active.length;
@@ -189,7 +189,7 @@ export function mountDonut(host, opts = {}) {
       <div class="m-chart-head">
         <div>
           <div class="m-eyebrow">${esc(opts.eyebrow ?? "Distribución")}</div>
-          <h3 class="m-chart-title">${esc(opts.title ?? "Reviews por asignatura")}</h3>
+          <h3 class="m-chart-title">${esc(opts.title ?? "Repasos por asignatura")}</h3>
         </div>
       </div>
       <div data-donut-body>

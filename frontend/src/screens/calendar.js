@@ -121,7 +121,7 @@ function renderDay(events) {
         ${rules}
         ${blocks}
         ${nowTop >= 0 ? `<div class="cal-now" style="top:${nowTop}px"></div>` : ""}
-        <div class="cal-drag-hint">Drag to create event</div>
+        <div class="cal-drag-hint">Arrastra para crear un evento</div>
       </div>
     </div>
   `;
