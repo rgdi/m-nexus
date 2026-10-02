@@ -714,7 +714,7 @@ export async function mountModel3D(host, opts = {}) {
           return;
         }
       } else {
-        fallo = "no está ni en este dispositivo ni en el servidor";
+        fallo = guardado?.error || "no está ni en este dispositivo ni en el servidor";
       }
     }
 

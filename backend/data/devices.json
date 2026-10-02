@@ -1597,5 +1597,103 @@
     "platform": "node",
     "registeredAt": 1790895848377,
     "lastSeenAt": 1790895848377
+  },
+  {
+    "deviceId": "glb-84u68v",
+    "deviceName": "glb",
+    "platform": "web",
+    "registeredAt": 1790933048392,
+    "lastSeenAt": 1790933048392,
+    "lastAccessTokenId": "4b191aa252792dc248cd252895e76cd9"
+  },
+  {
+    "deviceId": "0bf8e838-7bbe-41b6-9e9f-a29a92c38d77",
+    "deviceName": "Linux x86_64",
+    "platform": "web",
+    "registeredAt": 1790933049904,
+    "lastSeenAt": 1790933064345
+  },
+  {
+    "deviceId": "q2846",
+    "deviceName": "q",
+    "platform": "web",
+    "registeredAt": 1790933093335,
+    "lastSeenAt": 1790933093335,
+    "lastAccessTokenId": "2b78dd0115ebb46f1a32981927a3a884"
+  },
+  {
+    "deviceId": "dis-n7kg5g",
+    "deviceName": "diseno",
+    "platform": "web",
+    "registeredAt": 1790933198623,
+    "lastSeenAt": 1790933198623,
+    "lastAccessTokenId": "9e242c29df124fc4989d85cc3394d22e"
+  },
+  {
+    "deviceId": "abd315f4-e8bd-4d72-ac75-cf003d2848d1",
+    "deviceName": "Linux x86_64",
+    "platform": "web",
+    "registeredAt": 1790933200946,
+    "lastSeenAt": 1790933277610
+  },
+  {
+    "deviceId": "dis-ih7mu2",
+    "deviceName": "diseno",
+    "platform": "web",
+    "registeredAt": 1790933307818,
+    "lastSeenAt": 1790933307818,
+    "lastAccessTokenId": "c86f3c66f8f8463e322065c7cbe45bae"
+  },
+  {
+    "deviceId": "40cff0d2-3074-4d04-bbd3-1ec3aaae295f",
+    "deviceName": "Linux x86_64",
+    "platform": "web",
+    "registeredAt": 1790933309909,
+    "lastSeenAt": 1790933386464
+  },
+  {
+    "deviceId": "dis-lj44bs",
+    "deviceName": "diseno",
+    "platform": "web",
+    "registeredAt": 1790933443058,
+    "lastSeenAt": 1790933443058,
+    "lastAccessTokenId": "3ac25644a47571d9999aecf99636578b"
+  },
+  {
+    "deviceId": "9de65b0c-0e52-4c98-ba8b-cb279e71b0e3",
+    "deviceName": "Linux x86_64",
+    "platform": "web",
+    "registeredAt": 1790933445154,
+    "lastSeenAt": 1790933521081
+  },
+  {
+    "deviceId": "dis-e14ic1",
+    "deviceName": "diseno",
+    "platform": "web",
+    "registeredAt": 1790933721451,
+    "lastSeenAt": 1790933721451,
+    "lastAccessTokenId": "17e3d6c63a0cc1e68d2b2e1ff7fe3b12"
+  },
+  {
+    "deviceId": "f126b9ea-d6b7-4dfc-9e04-7d35ea79a1ae",
+    "deviceName": "Linux x86_64",
+    "platform": "web",
+    "registeredAt": 1790933724107,
+    "lastSeenAt": 1790933808537
+  },
+  {
+    "deviceId": "dis-plh0rx",
+    "deviceName": "diseno",
+    "platform": "web",
+    "registeredAt": 1790933837696,
+    "lastSeenAt": 1790933837696,
+    "lastAccessTokenId": "ec88d5ad10d53fd9389e2517937e9570"
+  },
+  {
+    "deviceId": "586b8c9c-d533-4280-b112-d7327ac3f061",
+    "deviceName": "Linux x86_64",
+    "platform": "web",
+    "registeredAt": 1790933839772,
+    "lastSeenAt": 1790933898143
   }
 ]

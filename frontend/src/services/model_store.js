@@ -180,6 +180,25 @@ export async function urlDeModelo(id) {
     return null;
   }
   const blob = await r.blob();
+
+  // v2.38.21 — lo que llega tiene que ser un GLB, y si no lo es, se
+  // dice en vez de guardarlo.
+  //
+  // Un 200 con el cuerpo equivocado es lo que peor sale: un proxy, un
+  // servidor mal enroutado o una ruta que devuelve el index.html dan
+  // 200, y si eso se cachea como si fuera el modelo, ya no se vuelve a
+  // descargar y el modelo no se abre nunca más, ni aunque el servidor
+  // se arregle. Aquí se comprueban los cuatro bytes de la cabecera.
+  const cabecera = new Uint8Array(await blob.slice(0, 4).arrayBuffer());
+  const esGlb = cabecera[0] === 0x67 && cabecera[1] === 0x6c &&
+                cabecera[2] === 0x54 && cabecera[3] === 0x46;   // "glTF"
+  if (!esGlb) {
+    return {
+      url: null, deCache: false,
+      error: `lo que ha vuelto del servidor no es un GLB (${blob.size} bytes de "${blob.type || "sin tipo"}")`,
+    };
+  }
+
   const nombre = r.headers.get("content-disposition")?.match(/filename="?([^";]+)"?/)?.[1] || id;
   await guardarEnCache({ id, nombre, blob, credito: "" }).catch(() => {});
   const url = URL.createObjectURL(blob);

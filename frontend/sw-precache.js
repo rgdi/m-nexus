@@ -83,6 +83,7 @@ const MODULES = [
   "./src/styles/mobile.css",
   "./src/styles/notebook.css",
   "./src/styles/notes-doc.css",
+  "./src/styles/polish.css",
   "./src/styles/popups.css",
   "./src/styles/print.css",
   "./src/styles/tokens.css",

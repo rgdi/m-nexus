@@ -1,0 +1,266 @@
+/* ══════════════════════════════════════════════════════════════
+ * polish.css — v2.38.22
+ *
+ * Los tokens cambian el COLOR de toda la aplicación. Esto cambia cómo
+ * se SIENTE: el aire, el foco, el toque, la profundidad.
+ *
+ * Un diseño limpio no es "pocos colores": es que nada compite con nada.
+ * Para conseguir eso hacen falta cuatro cosas, y aquí están las cuatro:
+ *
+ *   1. **Aire.** El espacio entre bloques es lo que separa un documento
+ *      de una lista. Antes el ritmo era uniforme y plano; ahora hay dos
+ *      escalas, la de dentro y la de entre bloques.
+ *
+ *   2. **Un solo acento.** El color llama la atención, así que si dos
+ *      cosas son primarias no hay ninguna. Todo lo que es emphasis usa
+ *      `--accent` y nada más.
+ *
+ *   3. **Foco visible y consistente.** Un solo anillo para todos los
+ *      controles. Antes cada botón tenía el suyo, o ninguno.
+ *
+ *   4. **El toque responde.** En táctil, ≥44 px y con un estado activo
+ *      que se nota. Un botón que no cambia al pulsarlo parece roto.
+ *
+ * Va el ÚLTIMO en el HTML, después de todo lo demás, para que pueda
+ * ganar en un empate de especificidad sin usar !important por todo.
+ * ══════════════════════════════════════════════════════════════ */
+
+/* ── 1. El fondo, que deja de ser un color plano ───────────────── */
+body {
+  background-image: var(--veil);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+
+/* ── Superficies: tarjeta, campo, chip ─────────────────────────── */
+.card, .panel, .stat, .doc-card, .notecard,
+.screen > .card, .grid > .card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--r-3);
+  box-shadow: var(--shadow-1);
+  transition: box-shadow .18s ease, border-color .18s ease, transform .18s ease;
+}
+
+/* La elevation se gana al MIRAR, no al estar. En reposo es plana; con
+ * el puntero encima sube un escalón. Una lista de diez tarjetas todas
+ * con sombra fuerte es ruido, no jerarquía. */
+.card:hover, .doc-card:hover, .notecard:hover {
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
+  box-shadow: var(--shadow-2);
+}
+
+/* ── 2. Inputs: un solo estilo, en toda la app ─────────────────── */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+select, textarea, .input {
+  background: var(--bg-elevated);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-2);
+  color: var(--fg);
+  min-height: 44px;                 /* dedo, no cursor */
+  padding: 0 var(--s-3);
+  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+textarea { padding: var(--s-2) var(--s-3); min-height: 88px; }
+
+input:hover:not(:disabled), select:hover:not(:disabled), textarea:hover:not(:disabled) {
+  border-color: var(--border-strong);
+}
+
+/* 3. Un solo anillo de foco, en todos los controles. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+  border-color: var(--accent);
+}
+
+/* Los que ya llevan sombra propia la pierden al enfocarse, o se ve un
+ * halo alrededor de la sombra. */
+.card:focus-visible, .doc-card:focus-visible {
+  box-shadow: var(--ring), var(--shadow-2);
+}
+
+/* ── 3. Botones ────────────────────────────────────────────────── */
+.btn, button:not(.ink-tool):not(.m3d-tools button) {
+  border-radius: var(--r-2);
+  font-weight: 550;
+  letter-spacing: -.01em;
+  transition: transform .12s ease, box-shadow .18s ease,
+              background .18s ease, border-color .18s ease;
+}
+.btn:active, button:active { transform: scale(.975); }
+
+.btn.primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border: 1px solid transparent;
+  box-shadow: 0 1px 2px rgba(47,111,237,.20), 0 6px 16px rgba(47,111,237,.18);
+}
+.btn.primary:hover { background: color-mix(in srgb, var(--accent) 88%, #000); }
+.btn.primary:active { box-shadow: 0 1px 2px rgba(47,111,237,.24); }
+
+/* 4. El botón fantasma: se nota que hay algo ahí sin gritar. */
+.btn.ghost, .btn.secondary, button.ghost {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--fg-muted);
+}
+.btn.ghost:hover, .btn.secondary:hover, button.ghost:hover {
+  color: var(--fg);
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--border));
+  background: color-mix(in srgb, var(--accent) 6%, var(--bg-elevated));
+}
+
+/* ── 4. Toque: 44 px, y se nota al pulsar ─────────────────────── */
+@media (pointer: coarse) {
+  .btn, .icon-btn, .tab, .chip, [role="tab"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+@media (hover: none) {
+  /* En táctil no hay :hover, así que el estado "pulsado" se pinta con
+   * una transicion de 90 ms: el dedo se va y el boton vuelve. */
+  .btn, .icon-btn, button {
+    transition-duration: 90ms;
+  }
+}
+
+/* ── Tipografía: el aire entre líneas manda ─────────────────────── */
+h1, h2, h3 { letter-spacing: -.022em; line-height: 1.16; }
+p, li, dd { line-height: 1.62; }
+
+/* El texto de apoyo, un punto mas claro y con mas aire: es la
+ * jerarquia sin gastar un color mas. */
+.muted, .small, .meta { color: var(--fg-faint); }
+
+/* ── La barra y el dock: superficies de verdad ─────────────────── */
+.m-appbar, .m-tabbar, .doc-bar {
+  background: color-mix(in srgb, var(--bg-elevated) 82%, transparent);
+  backdrop-filter: blur(18px) saturate(1.4);
+  border-color: var(--border);
+  box-shadow: var(--shadow-1);
+}
+.m-tabbar {
+  border-radius: var(--r-full);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-2);
+  padding: 6px;
+  gap: 2px;
+}
+.m-tabbar [aria-selected="true"], .m-tabbar .is-active {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-radius: var(--r-full);
+  box-shadow: 0 2px 8px rgba(47,111,237,.22);
+}
+
+/* ── Los números que importan ──────────────────────────────────── */
+.stat-value, .metric, .big-number {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.03em;
+}
+
+/* ── Listas y tablas: filas, no rayas ──────────────────────────── */
+.list, .list-group { border-color: var(--border); }
+.list-row, li.list-item {
+  border-bottom: 1px solid var(--border);
+  transition: background .14s ease;
+}
+.list-row:hover, li.list-item:hover {
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+}
+.list-row:last-child, li.list-item:last-child { border-bottom: 0; }
+
+/* ── Estados vacios: son pantallas, no errores ─────────────────── */
+.empty, .empty-state, .doc-list-empty {
+  color: var(--fg-faint);
+  text-align: center;
+  padding: var(--s-8) var(--s-4);
+}
+.empty .em-title, .empty-state h2 { color: var(--fg-muted); font-weight: 600; }
+
+/* ── Scroll: discreto y de la familia ─────────────────────────── */
+* { scrollbar-color: color-mix(in srgb, var(--fg-faint) 34%, transparent) transparent; }
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--fg-faint) 30%, transparent);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover { background-color: color-mix(in srgb, var(--fg-faint) 52%, transparent); }
+
+/* ── Movimiento: poco, y solo cuando tiene sentido ─────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  .screen { animation: doc-in .22s cubic-bezier(.22,.8,.3,1); }
+  @keyframes doc-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+/* ── Impresión: el papel no lleva velo ni sombra ───────────────── */
+@media print {
+  body { background-image: none; background: #fff; }
+  .m-appbar, .m-tabbar, .doc-add, .doc-menu, .fab { display: none !important; }
+  .card, .panel { box-shadow: none !important; border: 1px solid #ddd !important; }
+}
+
+/* ── v2.38.22 — los que se havian quedado en el morado viejo ─────
+ *
+ * Los tokens cambian lo que USA `var(--accent)`. Lo que tiene el
+ * color escrito a mano —o un degradado fijo en el CSS— se queda en el
+ * morado de antes, y se nota como dos cosas distintas pegadas.
+ *
+ * Estos son los que aparecieron en la primera pasada de capturas, que
+ * es exactamente para lo que sirve mirar:
+ *   · el botón primario del desplegable de notificaciones
+ *   · la píldora activa de la barra de abajo
+ *   · el gradiente del FAB
+ */
+.notif-dropdown .btn.primary,
+.notif-drop .primary,
+[role="menu"] .btn.primary {
+  background: linear-gradient(140deg, var(--accent) 0%,
+              color-mix(in srgb, var(--accent) 82%, #000) 100%) !important;
+  color: var(--accent-ink);
+  border-color: transparent;
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.m-tabbar .active,
+.m-tabbar [aria-current="page"],
+.m-tabbar button.on {
+  background: var(--accent) !important;
+  color: var(--accent-ink) !important;
+}
+.mn-capture-fab {
+  background: linear-gradient(140deg, var(--accent) 0%,
+              color-mix(in srgb, var(--accent) 80%, #000) 100%) !important;
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--accent) 28%, transparent),
+    0 8px 22px color-mix(in srgb, var(--accent) 26%, transparent),
+    0 0 0 6px color-mix(in srgb, var(--accent) 9%, transparent) !important;
+}
+
+/* v2.38.22 — la barra de abajo.
+ *
+ * El elemento activo se ponia azul pero SIN radio: un bloque
+ * rectangular de color dentro de una pastilla. Depende de que clase
+ * use cada pantalla el activo, así que se cubren todas y se le pone
+ * el radio a la fuerza. Es lo único que hay que forzar aquí: el
+ * color lo pone el token y la forma se le olvida a la regla vieja. */
+.m-tabbar > .active, .m-tabbar > [aria-selected="true"],
+.m-tabbar > [aria-current="page"], .m-tabbar > .on, .m-tabbar > button.on,
+.m-tabbar > a.on, .m-tabbar > .is-active {
+  background: var(--accent) !important;
+  color: var(--accent-ink) !important;
+  border-radius: var(--r-full) !important;
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--accent) 28%, transparent) !important;
+}

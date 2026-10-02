@@ -1,0 +1,56 @@
+[
+  {
+    "id": "note-eee06da9-b1e6-4ae5-8793-1f5d957a1760",
+    "title": "Sistema de conducción cardíaca",
+    "body": "El impulso nace en el ==nodo sinoauricular== y baja por el ==haz de His==.\n\n!!Las aurículas van antes que los ventrículos!!\n\nVer también: [[Ciclo cardíaco]].",
+    "subject": "",
+    "tags": [
+      "cardio"
+    ],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "folderId": "folder-1577cedf-f6ec-48ce-9e21-0778497d8be1",
+    "createdAt": 1790933837794,
+    "updatedAt": 1790933837794
+  },
+  {
+    "id": "note-e58b8bb3-ee76-4602-99e6-d4423f7679e9",
+    "title": "Ciclo cardíaco",
+    "body": "Sístole y diástole.\n\nVuelve a [[Sistema de conducción cardíaca]].",
+    "subject": "",
+    "tags": [
+      "cardio"
+    ],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "folderId": "folder-1577cedf-f6ec-48ce-9e21-0778497d8be1",
+    "createdAt": 1790933837814,
+    "updatedAt": 1790933837814
+  },
+  {
+    "id": "note-003539aa-6413-4a32-a723-2e67487e3d30",
+    "title": "Presión arterial",
+    "body": "La aorta tiene elasticidad para absorber el pico sistólico.",
+    "subject": "",
+    "tags": [
+      "cardio"
+    ],
+    "pages": [
+      {
+        "strokes": [],
+        "placeholders": []
+      }
+    ],
+    "folderId": "folder-1577cedf-f6ec-48ce-9e21-0778497d8be1",
+    "createdAt": 1790933837838,
+    "updatedAt": 1790933837838
+  }
+]

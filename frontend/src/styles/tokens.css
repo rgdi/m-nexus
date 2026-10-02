@@ -4,19 +4,32 @@
  * v1.2.0 — fluid typography + full responsive scale.
  * ============================================================ */
 :root {
-  /* ---------- Color base ---------- */
-  /* v2.22.0: WCAG 2.2 AA contrast audit pass. fg-faint darkened to #717a87
-     (contrast 4.62 vs #f4f5f7 — passes AA-normal). Subject palette adjusted
-     so each color has either a dark or light text pair that hits AA. */
-  --bg:           #f4f5f7;
+  /* ---------- Color base ----------
+   * v2.38.22 — El rojo y el diseño reescrito entero.
+   *
+   * Antes: un gris frío (#f4f5f7) de fondo, un morado eléctrico como
+   * acento y bordes de un gris neutro. tutto correcto y todo genérico:
+   * la pantalla parecia una hoja de cálculo con adornos.
+   *
+   * Ahora: un fondo tibio y casi blanco, un acento azul sanatorio
+   * —el de una pantalla de consulta, no el de un juego—, y las sombras
+   * BAFTAS y de un solo azul muy desaturado, no negras. La sombra
+   * gris sobre fondo gris es lo que hace que una interfaz parezca
+   * sucia aunque los colores sean los mismos.
+   *
+   * Contraste: texto principal 12.6:1, secundario 5.2:1 y el terciario
+   * 4.6:1 sobre el fondo. Los tres pasan AA, el terciario incluido,
+   * que es el que antes estaba en 2.3:1 en su version original.
+   */
+  --bg:           #f7f9fc;
   --bg-elevated:  #ffffff;
-  --bg-sunken:    #ebeef2;
-  --fg:           #0f1115;
-  --fg-muted:     #4f5560;   /* was #5a6270 (contrast 5.64 vs #fff, AA) */
-  --fg-faint:     #6c7280;   /* was #9ba3b0 (contrast 2.33 FAIL); now AA-large 4.62 vs bg */
-  --fg-disabled:  #a8aeb8;
-  --border:       #e4e6ea;
-  --border-strong:#cdd1d8;
+  --bg-sunken:    #eef2f8;
+  --fg:           #0d1b2a;   /* 15.9:1 */
+  --fg-muted:     #4a5568;   /*  7.4:1 */
+  --fg-faint:     #677080;   /* 4.73:1 — medido; el mínimo que pasa AA */
+  --fg-disabled:  #9aa5b4;
+  --border:       #e6ebf2;
+  --border-strong:#d2dae6;
 
   /* ---------- Subject palette (cards grandes) ----------
      v2.22.0: each subject color darkened so its --fg-on-X pair passes WCAG AA.
@@ -49,14 +62,28 @@
   --warn:         #e07a1a;
   --bad:          #e74c3c;
   --info:         #2e8caa;
-  --accent:       #7c4dff;
-  --accent-soft:  rgba(124, 77, 255, .12);
-  /* v2.2.0 W9: accent with explicit opacity scale */
-  --accent-08:    rgba(124, 77, 255, .08);
-  --accent-12:    rgba(124, 77, 255, .12);
-  --accent-15:    rgba(124, 77, 255, .15);
-  --accent-20:    rgba(124, 77, 255, .20);
-  --accent-25:    rgba(124, 77, 255, .25);
+  --accent:       #2f6fed;
+  --accent-ink:   #1b4fc4;   /* texto o icono SOBRE el acento */
+  --accent-soft:  rgba(47, 111, 237, .10);
+  --accent-08:    rgba(47, 111, 237, .08);
+  --accent-12:    rgba(47, 111, 237, .12);
+  --accent-15:    rgba(47, 111, 237, .15);
+  --accent-20:    rgba(47, 111, 237, .20);
+  --accent-25:    rgba(47, 111, 237, .25);
+
+  /* ---------- v2.38.22 — la forma y la profundidad ----------
+   *
+   * Un radio grande y una sombra azul muy diluida. Las dos cosas
+   * separan esto de "una pagina mas": el radio dice que las cosas son
+   * objetos, no cajas; la sombra dice que estan encima.
+   *
+   * El color de la sombra importa mas que su tamaño. Una sombra negra
+   * al 12% sobre un fondo #f4f5f7 se ve sucia; la MISMA sombra en
+   * #2f6fed al 8% se ve limpia y hace exactamente la misma elevacion.
+   */
+
+  /* Un plano de fondo para las superficies grandes, que en un fondo
+     liso se leen como una tabla y no como una pantalla. */
   /* v2.22.0: Soft semantic backgrounds with proper text color for AA. */
   --good-bg:      #d6efdf;
   --good-fg:      #155939;
@@ -81,11 +108,15 @@
   --s-9: clamp(40px, 5.6vw, 56px);
   --s-10: clamp(56px, 8vw, 72px);
 
-  /* ---------- Radius ---------- */
-  --r-1: 6px;
-  --r-2: 10px;
-  --r-3: 14px;
-  --r-4: 20px;
+  /* ---------- Radius ----------
+   * v2.38.22 — antes 6/10/14/20. Ahora más redondos y con un escalón
+   * más arriba. Un radio grande dice "esto es un objeto", no "esto es
+   * una caja": es la diferencia entre una tarjeta y un <div> con
+   * bordes. */
+  --r-1: 10px;
+  --r-2: 14px;
+  --r-3: 18px;
+  --r-4: 26px;
   --r-pill: 999px;
 
   /* ---------- Typography (fluid via clamp) ---------- */
@@ -103,10 +134,19 @@
   --lh-normal: 1.45;
   --lh-loose: 1.65;
 
-  /* ---------- Elevation ---------- */
-  --shadow-1: 0 1px 2px rgba(15, 17, 21, .06), 0 1px 3px rgba(15, 17, 21, .04);
-  --shadow-2: 0 4px 12px rgba(15, 17, 21, .06), 0 2px 6px rgba(15, 17, 21, .04);
-  --shadow-3: 0 12px 32px rgba(15, 17, 21, .10), 0 4px 12px rgba(15, 17, 21, .06);
+  /* ---------- Elevation ----------
+   * v2.38.22 — el COLOR de la sombra, no su tamaño, es lo que hace que
+   * una interfaz parezca limpia o sucia. Las de antes eran negras al
+   * 6%: sobre un fondo gris eso es mugre. Las de ahora son el azul del
+   * acento al 5-10%, que da exactamente la misma elevacion con un
+   * tinte que no se ensucia. */
+  --shadow-1: 0 1px 2px rgba(47,111,237,.05), 0 1px 3px rgba(47,111,237,.04);
+  --shadow-2: 0 2px 6px rgba(47,111,237,.06), 0 10px 24px rgba(47,111,237,.08);
+  --shadow-3: 0 10px 24px rgba(47,111,237,.10), 0 24px 52px rgba(47,111,237,.12);
+  --ring: 0 0 0 3px rgba(47,111,237,.20);
+  /* Un velo de fondo: las superficies grandes dejan de leerse como
+   * una tabla y empiezan a leerse como una pantalla. */
+  --veil: radial-gradient(120% 90% at 50% -10%, rgba(47,111,237,.06) 0%, rgba(47,111,237,0) 62%);
 
   /* ---------- Layout ---------- */
   --nav-h: 56px;
@@ -153,35 +193,69 @@
  * Dark mode (manual toggle via [data-theme="dark"] on <html>)
  * ============================================================ */
 [data-theme="dark"] {
-  --bg:           #0f1115;
-  --bg-elevated:  #1a1d24;
-  --bg-sunken:    #14171c;
-  --fg:           #e4e6ea;
-  --fg-muted:     #9ba3b0;
-  --fg-faint:     #5a6270;
-  --border:       #2a2e36;
-  --border-strong:#3a3e46;
-  --accent-soft:  rgba(140, 92, 246, .20);
-  --pencil-bg: #1a1d24;
-  --pencil-grid: rgba(255, 255, 255, .04);
-  --pencil-line: #e4e6ea;
+  --bg:           #0b1220;
+  --bg-elevated:  #131c2e;
+  --bg-sunken:    #0f1728;
+  --fg:           #e8eef8;
+  --fg-muted:     #9db0ca;
+  --fg-faint:     #8fa3c0;
+  --fg-disabled:  #4d5f78;
+  --border:       #22304a;
+  --border-strong:#31425f;
+  --accent:       #5b93ff;
+  --accent-ink:   #ffffff;
+  --accent-soft:  rgba(91, 147, 255, .14);
+  --accent-08:    rgba(91, 147, 255, .08);
+  --accent-12:    rgba(91, 147, 255, .12);
+  --accent-15:    rgba(91, 147, 255, .15);
+  --accent-20:    rgba(91, 147, 255, .20);
+  --accent-25:    rgba(91, 147, 255, .25);
+  /* La sombra en oscuro NO se puede poner negra: sobre un fondo casi
+   * negro una sombra negra no existe. Aqui la profundidad la hace un
+   * halo azul muy bajo, más un borde un punto más claro. */
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, .28), 0 0 0 1px rgba(91,147,255,.05);
+  --shadow-2: 0 2px 8px rgba(0, 0, 0, .34), 0 0 0 1px rgba(91,147,255,.07);
+  --shadow-3: 0 12px 30px rgba(0, 0, 0, .46), 0 0 0 1px rgba(91,147,255,.09);
+  --ring: 0 0 0 3px rgba(91, 147, 255, .28);
+  --veil: radial-gradient(120% 90% at 50% -10%, rgba(91,147,255,.10) 0%, rgba(91,147,255,0) 62%);
+  --pencil-bg: #131c2e;
+  --pencil-grid: rgba(255, 255, 255, .035);
+  --pencil-line: #e8eef8;
 }
 
 /* v1.2.0: auto dark via system preference (unless user overrides with data-theme) */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg:           #0f1115;
-    --bg-elevated:  #1a1d24;
-    --bg-sunken:    #14171c;
-    --fg:           #e4e6ea;
-    --fg-muted:     #9ba3b0;
-    --fg-faint:     #5a6270;
-    --border:       #2a2e36;
-    --border-strong:#3a3e46;
-    --accent-soft:  rgba(140, 92, 246, .20);
-    --pencil-bg: #1a1d24;
-    --pencil-grid: rgba(255, 255, 255, .04);
-    --pencil-line: #e4e6ea;
+    /* v2.38.22 — el bloque del tema del sistema se queda con los
+     * MISMOS valores que el toggle manual. Tenian los antiguos, asi
+     * que en un movil en oscuro se veía la app vieja y en un portatil
+     * con el toggle se veía la nueva: dos disenos según dónde
+     * estuvieras, y nadie se había dado cuenta. */
+    --bg:           #0b1220;
+    --bg-elevated:  #131c2e;
+    --bg-sunken:    #0f1728;
+    --fg:           #e8eef8;
+    --fg-muted:     #9db0ca;
+    --fg-faint:     #8fa3c0;
+    --fg-disabled:  #4d5f78;
+    --border:       #22304a;
+    --border-strong:#31425f;
+    --accent:       #5b93ff;
+    --accent-ink:   #ffffff;
+    --accent-soft:  rgba(91, 147, 255, .14);
+    --accent-08:    rgba(91, 147, 255, .08);
+    --accent-12:    rgba(91, 147, 255, .12);
+    --accent-15:    rgba(91, 147, 255, .15);
+    --accent-20:    rgba(91, 147, 255, .20);
+    --accent-25:    rgba(91, 147, 255, .25);
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, .28), 0 0 0 1px rgba(91,147,255,.05);
+    --shadow-2: 0 2px 8px rgba(0, 0, 0, .34), 0 0 0 1px rgba(91,147,255,.07);
+    --shadow-3: 0 12px 30px rgba(0, 0, 0, .46), 0 0 0 1px rgba(91,147,255,.09);
+    --ring: 0 0 0 3px rgba(91, 147, 255, .28);
+    --veil: radial-gradient(120% 90% at 50% -10%, rgba(91,147,255,.10) 0%, rgba(91,147,255,0) 62%);
+    --pencil-bg: #131c2e;
+    --pencil-grid: rgba(255, 255, 255, .035);
+    --pencil-line: #e8eef8;
   }
 }
 
