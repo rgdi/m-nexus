@@ -1,0 +1,54 @@
+[
+  {
+    "name": "cardio",
+    "icon": "C",
+    "color": "var(--subj-blue)",
+    "grade": null,
+    "performance": 0,
+    "prof": "",
+    "next": "",
+    "id": "sub-ac2e1cc3-b846-4f27-8d84-81273aed57c8",
+    "order": 0,
+    "createdAt": 1790934107444,
+    "updatedAt": 1790934107444
+  },
+  {
+    "name": "anatomía",
+    "icon": "A",
+    "color": "var(--subj-blue)",
+    "grade": null,
+    "performance": 0,
+    "prof": "",
+    "next": "",
+    "id": "sub-c8b62c74-8230-43df-bb49-d7d20cbaa6e0",
+    "order": 1,
+    "createdAt": 1790934107460,
+    "updatedAt": 1790934107460
+  },
+  {
+    "name": "farmacología",
+    "icon": "F",
+    "color": "var(--subj-blue)",
+    "grade": null,
+    "performance": 0,
+    "prof": "",
+    "next": "",
+    "id": "sub-b6b13068-62ef-4ae9-b6b5-14246113104a",
+    "order": 2,
+    "createdAt": 1790934107477,
+    "updatedAt": 1790934107477
+  },
+  {
+    "name": "histología",
+    "icon": "H",
+    "color": "var(--subj-blue)",
+    "grade": null,
+    "performance": 0,
+    "prof": "",
+    "next": "",
+    "id": "sub-e0e23b98-ed97-4f0e-b434-356cdc41a6ee",
+    "order": 3,
+    "createdAt": 1790934107496,
+    "updatedAt": 1790934107496
+  }
+]

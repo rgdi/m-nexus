@@ -32,7 +32,7 @@ body.ai-chat-open .ai-tutor-fab { display: none; }
   gap: 10px;
   padding: 12px 14px;
   border-bottom: 1px solid var(--border);
-  background: linear-gradient(135deg, rgba(86,196,230,0.12), rgba(140,92,246,0.12));
+  background: linear-gradient(135deg, rgba(86,196,230,0.12), rgba(47, 111, 237, 0.12));
 }
 .ai-tutor .head .ico {
   width: 32px; height: 32px;

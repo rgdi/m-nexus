@@ -104,7 +104,7 @@ export async function renderOverview(root) {
         <div>
           <h3 class="muted small semibold" style="margin-bottom: var(--s-3)">${i18n.t("overview.atGlance")}</h3>
           <div class="col gap-3">
-            <a class="stat" href="#/journal" style="text-decoration:none;color:inherit;background:linear-gradient(135deg,rgba(124,77,255,0.10),rgba(34,180,255,0.06));border:1px solid rgba(124,77,255,0.20)">
+            <a class="stat" href="#/journal" style="text-decoration:none;color:inherit;background:linear-gradient(135deg,rgba(47, 111, 237, 0.10),rgba(34,180,255,0.06));border:1px solid rgba(47, 111, 237, 0.20)">
               <div class="lbl">📓 Diario</div>
               <div class="val" style="font-size:var(--fs-md);font-weight:600">${i18n.t("overview.writeEntry")}</div>
               <div class="sub">${i18n.t("overview.writeEntrySub")}</div>

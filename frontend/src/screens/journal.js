@@ -165,7 +165,7 @@ function renderMoodSparkline() {
   });
   return `
     <svg viewBox="0 0 100 100" class="mood-spark" aria-label="Tendencia de ánimo 7d" role="img">
-      <polyline points="${points.join(" ")}" fill="none" stroke="var(--accent, #7c4dff)" stroke-width="2"/>
+      <polyline points="${points.join(" ")}" fill="none" stroke="var(--accent, #2f6fed)" stroke-width="2"/>
       ${last7.map((e, i) => {
         const x = (i / Math.max(1, last7.length - 1)) * 100;
         const y = e.mood ? 100 - ((e.mood - 1) / 4) * 100 : 100;
@@ -189,7 +189,7 @@ function renderHeatmap() {
       ${days.map(([d, n]) => {
         const intensity = Math.min(1, Math.log2(n + 1) / 3);
         return `<a href="#/journal/${d}" class="heat-cell" data-date="${d}" role="gridcell"
-          style="background:rgba(124,77,255,${0.05 + intensity * 0.6})" title="${d}: ${n} journal(s)"></a>`;
+          style="background:rgba(47,111,237,${0.05 + intensity * 0.6})" title="${d}: ${n} journal(s)"></a>`;
       }).join("")}
     </div>
   `;

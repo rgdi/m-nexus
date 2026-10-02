@@ -1,0 +1,20 @@
+[
+  {
+    "id": "folder-f598cb20-1d28-4bc8-9558-48b495bcddb2",
+    "name": "Cardiología",
+    "parentId": null,
+    "color": "var(--subj-blue)",
+    "icon": "folder",
+    "createdAt": 1790934284240,
+    "updatedAt": 1790934284240
+  },
+  {
+    "id": "folder-5b6f92de-f5a0-4e4e-bdd5-9639cdbe86dd",
+    "name": "Anatomía",
+    "parentId": null,
+    "color": "var(--subj-blue)",
+    "icon": "folder",
+    "createdAt": 1790934284269,
+    "updatedAt": 1790934284269
+  }
+]

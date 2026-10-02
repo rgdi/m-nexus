@@ -34,7 +34,7 @@ const PANEL_STYLE = `
 .cv-item.missing-notes .badge { background: rgba(220,38,38,0.15); color: #dc2626; }
 .cv-item.incomplete .badge { background: rgba(217,119,6,0.15); color: #d97706; }
 .cv-item.ok .badge { background: rgba(34,197,94,0.15); color: #16a34a; }
-.cv-item.book-ref .badge { background: rgba(140,92,246,0.15); color: #8c5cf6; }
+.cv-item.book-ref .badge { background: rgba(47, 111, 237, 0.15); color: #8c5cf6; }
 .cv-item .body { flex: 1; min-width: 0; }
 .cv-item .msg { font-size: 13px; }
 .cv-item .ts {
@@ -56,7 +56,7 @@ const PANEL_STYLE = `
 .cv-item .ref-tag {
   font-family: var(--font-mono);
   font-size: 11px;
-  background: rgba(140,92,246,0.15);
+  background: rgba(47, 111, 237, 0.15);
   color: #8c5cf6;
   padding: 2px 8px;
   border-radius: 6px;

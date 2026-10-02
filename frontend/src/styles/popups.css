@@ -57,8 +57,8 @@
 .occlusion-popup-hint {
   font-size: 12px;
   padding: 8px 10px;
-  background: rgba(124, 77, 255, 0.06);
-  border-left: 3px solid var(--accent, #7c4dff);
+  background: rgba(47, 111, 237, 0.06);
+  border-left: 3px solid var(--accent, #2f6fed);
   border-radius: 4px;
   color: var(--fg-muted, #555);
 }
@@ -89,9 +89,9 @@
 
 .flashcard-popup-btn--primary,
 .occlusion-popup-btn--primary {
-  background: var(--accent, #7c4dff);
+  background: var(--accent, #2f6fed);
   color: white;
-  border-color: var(--accent, #7c4dff);
+  border-color: var(--accent, #2f6fed);
 }
 
 .flashcard-popup-status,
@@ -144,7 +144,7 @@
 }
 
 .self-test-empty code {
-  background: rgba(124, 77, 255, 0.12);
+  background: rgba(47, 111, 237, 0.12);
   padding: 1px 4px;
   border-radius: 3px;
   font-family: var(--font-mono);
@@ -171,9 +171,9 @@
 }
 
 .self-test-btn--primary {
-  background: var(--accent, #7c4dff);
+  background: var(--accent, #2f6fed);
   color: white;
-  border-color: var(--accent, #7c4dff);
+  border-color: var(--accent, #2f6fed);
 }
 
 .self-test-btn[disabled] {
@@ -187,7 +187,7 @@
   align-items: center;
   justify-content: center;
   padding: 10px;
-  background: rgba(124, 77, 255, 0.04);
+  background: rgba(47, 111, 237, 0.04);
   border-radius: 6px;
   font-size: 13px;
 }
@@ -207,7 +207,7 @@
 }
 
 .self-test-grade:hover {
-  background: rgba(124, 77, 255, 0.08);
+  background: rgba(47, 111, 237, 0.08);
 }
 
 .self-test-status {

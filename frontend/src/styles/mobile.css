@@ -27,15 +27,17 @@
  * 0. Tokens
  * ------------------------------------------------------------ */
 :root {
-  /* Accent ramp (violet) */
-  --m-accent-05: rgba(139, 92, 246, .05);
-  --m-accent-08: rgba(139, 92, 246, .08);
-  --m-accent-12: rgba(139, 92, 246, .12);
-  --m-accent-20: rgba(139, 92, 246, .20);
-  --m-accent-40: rgba(139, 92, 246, .40);
-  --m-accent: #8b5cf6;
-  --m-accent-bright: #a78bfa;
-  --m-accent-deep: #6d28d9;
+  /* v2.38.22 — Accent ramp. Antes era violeta (rgb 139,92,246) y era
+   * una SEGUNDA paleta, paralela a --accent: cambiar los tokens no la
+   * movia. Ahora las dos son el mismo azul. */
+  --m-accent-05: rgba(47, 111, 237, .05);
+  --m-accent-08: rgba(47, 111, 237, .08);
+  --m-accent-12: rgba(47, 111, 237, .12);
+  --m-accent-20: rgba(47, 111, 237, .20);
+  --m-accent-40: rgba(47, 111, 237, .40);
+  --m-accent: #2f6fed;
+  --m-accent-bright: #7fabff;
+  --m-accent-deep: #1d54b8;
 
   /* Surfaces (dark-first).
    *
@@ -78,7 +80,7 @@
   --m-shadow-sm: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 12px rgba(0, 0, 0, .28);
   --m-shadow: 0 2px 6px rgba(0, 0, 0, .45), 0 12px 32px rgba(0, 0, 0, .38);
   --m-shadow-lg: 0 4px 12px rgba(0, 0, 0, .5), 0 28px 64px rgba(0, 0, 0, .5);
-  --m-shadow-glow: 0 8px 32px rgba(139, 92, 246, .32);
+  --m-shadow-glow: 0 8px 32px rgba(47, 111, 237, .32);
 
   /* Radii */
   --m-r-sm: 12px;
@@ -1554,7 +1556,7 @@
 .cap-kind--shopping { background: rgba(52,211,153,0.2); color: #34d399; }
 .cap-kind--habit    { background: rgba(255,138,76,0.2); color: #ff8a4c; }
 .cap-kind--expense  { background: rgba(255,77,109,0.2); color: #ff4d6d; }
-.cap-kind--event    { background: rgba(124,92,255,0.22); color: #a78bfa; }
+.cap-kind--event    { background: rgba(124,92,255,0.22); color: #7fabff; }
 .cap-x { background: none; border: none; color: var(--m-muted); cursor: pointer; font-size: 13px; padding: 4px 6px; }
 .cap-preview-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
 
@@ -1622,7 +1624,7 @@
   width: 56px; height: 56px;
   border-radius: 50%;
   border: none;
-  background: linear-gradient(140deg, #8b6cff 0%, #6d3ce0 100%);
+  background: linear-gradient(140deg, #4f86f5 0%, #1d54b8 100%);
   color: #fff;
   display: grid; place-items: center;
   /* v2.38.2: the FAB sat on top of cards with a single soft shadow,
@@ -1706,7 +1708,7 @@
 }
 .rag-cite-n {
   flex-shrink: 0; width: 22px; height: 22px; border-radius: 6px;
-  background: rgba(124, 92, 255, 0.2); color: #a78bfa;
+  background: rgba(124, 92, 255, 0.2); color: #7fabff;
   display: grid; place-items: center; font-size: 11.5px; font-weight: 800;
 }
 .rag-cite-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
@@ -1758,7 +1760,7 @@
 .gen-prose p { margin: 0 0 8px; }
 .gen-cites { display: inline-flex; gap: 4px; margin-top: 4px; }
 .gen-cite {
-  font-size: 11px; font-weight: 800; color: #a78bfa;
+  font-size: 11px; font-weight: 800; color: #7fabff;
   background: rgba(124,92,255,0.16); padding: 1px 6px; border-radius: 5px; text-decoration: none;
   /* The blanket `a[href] { min-height: 44px }` WCAG rule is right for
    * standalone controls and wrong here: a citation is a reference sitting
@@ -1778,7 +1780,7 @@ a.gen-cite { min-height: 0; }
 .gen-card-b { font-size: 13.5px; color: var(--m-muted, #9a9ab0); margin-top: 5px; padding-left: 26px; }
 .gen-n {
   flex-shrink: 0; width: 18px; height: 18px; border-radius: 5px;
-  background: rgba(124,92,255,0.2); color: #a78bfa;
+  background: rgba(124,92,255,0.2); color: #7fabff;
   display: grid; place-items: center; font-size: 10.5px; font-weight: 800;
 }
 
@@ -1794,14 +1796,14 @@ a.gen-cite { min-height: 0; }
 .gen-q-why { font-size: 12.5px; color: var(--m-muted, #9a9ab0); margin: 8px 0 0; }
 
 .gen-mm-node { padding: 12px 14px; border-radius: 13px; margin-bottom: 10px; background: var(--m-surface-1, #131322); }
-.gen-mm-node h4 { margin: 0 0 7px; font-size: 14px; color: #a78bfa; }
+.gen-mm-node h4 { margin: 0 0 7px; font-size: 14px; color: #7fabff; }
 .gen-mm-node ul { margin: 0; padding-left: 17px; font-size: 13.5px; line-height: 1.55; }
 
 .gen-sources { margin: 18px 0 14px; font-size: 13px; color: var(--m-muted, #9a9ab0); }
 .gen-sources summary { min-height: 40px; display: flex; align-items: center; cursor: pointer; }
 .gen-sources ul { margin: 0; padding-left: 17px; }
 .gen-sources li { margin-bottom: 6px; }
-.gen-sources a { color: #a78bfa; }
+.gen-sources a { color: #7fabff; }
 .gen-sources em { display: block; font-style: normal; font-size: 11.5px; opacity: .75; }
 .rag-gen {
   width: 100%; min-height: 46px; margin-bottom: 16px;
@@ -1883,7 +1885,7 @@ a.gen-cite { min-height: 0; }
   pointer-events: none;
   padding: 10px 18px;
   border-radius: 14px;
-  background: linear-gradient(140deg, #8b6cff 0%, #6d3ce0 100%);
+  background: linear-gradient(140deg, #4f86f5 0%, #1d54b8 100%);
   color: #fff;
   font-size: 15px; font-weight: 700;
   letter-spacing: -.01em;

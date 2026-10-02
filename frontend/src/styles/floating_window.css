@@ -42,7 +42,7 @@
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
-  background: linear-gradient(180deg, rgba(124, 77, 255, 0.08), rgba(124, 77, 255, 0.02));
+  background: linear-gradient(180deg, rgba(47, 111, 237, 0.08), rgba(47, 111, 237, 0.02));
   border-bottom: 1px solid var(--border);
   cursor: grab;
   user-select: none;
@@ -161,7 +161,7 @@
     border-color: rgba(255, 255, 255, 0.1);
   }
   .floating-window-header {
-    background: linear-gradient(180deg, rgba(124, 77, 255, 0.16), rgba(124, 77, 255, 0.04));
+    background: linear-gradient(180deg, rgba(47, 111, 237, 0.16), rgba(47, 111, 237, 0.04));
   }
 }
 

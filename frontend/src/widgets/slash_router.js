@@ -115,7 +115,7 @@ function flashHint(target, label) {
     position: fixed;
     left: ${Math.min(rect.left, window.innerWidth - 220)}px;
     top: ${Math.max(20, rect.top - 36)}px;
-    background: rgba(124, 77, 255, 0.95);
+    background: rgba(47, 111, 237, 0.95);
     color: white;
     padding: 4px 10px;
     border-radius: 14px;

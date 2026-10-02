@@ -264,7 +264,7 @@
   :root {
     --border-strong: var(--fg);
     --fg-muted: var(--fg);
-    --accent-soft: rgba(140, 92, 246, .25);
+    --accent-soft: rgba(47, 111, 237, .25);
   }
 }
 

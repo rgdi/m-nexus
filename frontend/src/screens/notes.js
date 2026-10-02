@@ -876,8 +876,8 @@ function setupCanvas(root, noteId, pageIdx, strokes, pages) {
     const rect = wrap.getBoundingClientRect();
     ctx.clearRect(0, 0, rect.width, rect.height);
     placeholders.forEach((p) => {
-      ctx.fillStyle = "rgba(140,92,246,0.06)";
-      ctx.strokeStyle = "rgba(140,92,246,0.4)";
+      ctx.fillStyle = "rgba(47, 111, 237, 0.06)";
+      ctx.strokeStyle = "rgba(47, 111, 237, 0.4)";
       ctx.setLineDash([6, 4]);
       ctx.fillRect(p.x, p.y, p.w, p.h);
       ctx.strokeRect(p.x, p.y, p.w, p.h);

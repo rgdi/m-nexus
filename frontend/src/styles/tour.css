@@ -13,7 +13,7 @@
 .tour-highlight {
   position: relative;
   z-index: 2999 !important;
-  box-shadow: 0 0 0 4px rgba(124, 77, 255, 0.85),
+  box-shadow: 0 0 0 4px rgba(47, 111, 237, 0.85),
               0 0 0 9999px rgba(15, 17, 21, 0.55) !important;
   border-radius: 8px;
 }
@@ -43,7 +43,7 @@
   gap: 8px;
   padding: 12px 14px;
   border-bottom: 1px solid var(--border);
-  background: linear-gradient(180deg, rgba(124, 77, 255, 0.08), rgba(124, 77, 255, 0.02));
+  background: linear-gradient(180deg, rgba(47, 111, 237, 0.08), rgba(47, 111, 237, 0.02));
 }
 
 .tour-step-count {
@@ -52,7 +52,7 @@
   color: var(--fg-muted, #888);
   padding: 2px 8px;
   border-radius: 10px;
-  background: rgba(124, 77, 255, 0.12);
+  background: rgba(47, 111, 237, 0.12);
 }
 
 .tour-title {
@@ -105,9 +105,9 @@
 }
 
 .tour-btn--primary {
-  background: var(--accent, #7c4dff);
+  background: var(--accent, #2f6fed);
   color: white;
-  border-color: var(--accent, #7c4dff);
+  border-color: var(--accent, #2f6fed);
   margin-left: auto;
 }
 
@@ -144,8 +144,8 @@
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
-  background: rgba(124, 77, 255, 0.06);
-  border: 1px solid rgba(124, 77, 255, 0.2);
+  background: rgba(47, 111, 237, 0.06);
+  border: 1px solid rgba(47, 111, 237, 0.2);
   border-radius: 8px;
   margin: 0 0 14px;
 }
@@ -156,7 +156,7 @@
   border-radius: 50%;
   border: 1px solid var(--border);
   background: white;
-  color: var(--accent, #7c4dff);
+  color: var(--accent, #2f6fed);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
@@ -166,7 +166,7 @@
 }
 
 .cluster-info-btn:hover {
-  background: var(--accent, #7c4dff);
+  background: var(--accent, #2f6fed);
   color: white;
 }
 

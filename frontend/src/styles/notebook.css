@@ -336,7 +336,7 @@
   border-bottom: 1px dashed #8c5cf6;
   cursor: pointer;
 }
-.tl-bookref:hover { background: rgba(140,92,246,0.08); }
+.tl-bookref:hover { background: rgba(47, 111, 237, 0.08); }
 .tl-flashcard {
   display: inline-flex;
   align-items: center;
@@ -344,13 +344,13 @@
   padding: 2px 8px;
   margin: 0 2px;
   border-radius: 8px;
-  background: linear-gradient(135deg, rgba(86,196,230,0.18), rgba(140,92,246,0.18));
+  background: linear-gradient(135deg, rgba(86,196,230,0.18), rgba(47, 111, 237, 0.18));
   border: 1px solid rgba(86,196,230,0.4);
   color: #1a1d24;
   font-size: 0.9em;
   cursor: pointer;
 }
-.tl-flashcard:hover { background: linear-gradient(135deg, rgba(86,196,230,0.32), rgba(140,92,246,0.32)); }
+.tl-flashcard:hover { background: linear-gradient(135deg, rgba(86,196,230,0.32), rgba(47, 111, 237, 0.32)); }
 
 /* Dark mode */
 [data-theme="dark"] .text-layer,
@@ -425,8 +425,8 @@
  * v1.6.3 — book ref highlight
  * ============================================================ */
 .mini-audio {
-  background: linear-gradient(135deg, rgba(86,196,230,0.12), rgba(140,92,246,0.12));
-  border: 1px solid rgba(140,92,246,0.3);
+  background: linear-gradient(135deg, rgba(86,196,230,0.12), rgba(47, 111, 237, 0.12));
+  border: 1px solid rgba(47, 111, 237, 0.3);
   border-radius: 14px;
   padding: 12px 14px;
   margin-bottom: var(--s-3);
@@ -452,7 +452,7 @@
 .mini-audio .ma-ref {
   font-family: var(--font-mono);
   font-size: 11px;
-  background: rgba(140,92,246,0.2);
+  background: rgba(47, 111, 237, 0.2);
   color: #8c5cf6;
   padding: 3px 8px;
   border-radius: 6px;
@@ -494,13 +494,13 @@
 
 /* v1.6.3: highlight book ref seleccionado */
 .tl-bookref.hl {
-  background: rgba(140,92,246,0.3) !important;
+  background: rgba(47, 111, 237, 0.3) !important;
   border-bottom: 2px solid #8c5cf6 !important;
   animation: hlPulse 2s ease-out 2;
 }
 @keyframes hlPulse {
-  0%, 100% { background: rgba(140,92,246,0.3); }
-  50% { background: rgba(140,92,246,0.6); }
+  0%, 100% { background: rgba(47, 111, 237, 0.3); }
+  50% { background: rgba(47, 111, 237, 0.6); }
 }
 
 /* ============================================================

@@ -665,7 +665,7 @@ const STYLE = `
 .study .empty-state h2 { margin: var(--s-3) 0; }
 .study .empty-state p { margin-bottom: var(--s-4); color: var(--fg-muted); }
 .study .empty-state button {
-  background: var(--accent, #7c4dff); color: #fff; border: 0;
+  background: var(--accent, #2f6fed); color: #fff; border: 0;
   padding: 10px 20px; border-radius: 999px; font: 600 14px/1 system-ui;
   min-height: var(--hit-target, 44px); cursor: pointer;
 }

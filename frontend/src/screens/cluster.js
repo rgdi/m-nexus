@@ -164,7 +164,7 @@ async function openNodeModeModal() {
           <svg viewBox="0 0 480 200" width="100%" height="200" aria-hidden="true">
             <defs>
               <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-                <path d="M0,0 L10,5 L0,10 z" fill="#7c4dff"/>
+                <path d="M0,0 L10,5 L0,10 z" fill="#2f6fed"/>
               </marker>
             </defs>
             <!-- Leader -->
@@ -172,16 +172,16 @@ async function openNodeModeModal() {
             <text x="240" y="42" text-anchor="middle" font-family="system-ui" font-size="13" font-weight="700">👑 Leader</text>
             <text x="240" y="58" text-anchor="middle" font-family="system-ui" font-size="10" fill="#92400e">node-1</text>
             <!-- Follower 1 -->
-            <rect x="40" y="120" width="120" height="50" rx="8" fill="#7c4dff" stroke="#5b21b6" stroke-width="2"/>
+            <rect x="40" y="120" width="120" height="50" rx="8" fill="#2f6fed" stroke="#5b21b6" stroke-width="2"/>
             <text x="100" y="142" text-anchor="middle" font-family="system-ui" font-size="13" font-weight="700" fill="white">🔗 Follower</text>
             <text x="100" y="158" text-anchor="middle" font-family="system-ui" font-size="10" fill="#ede9fe">node-2</text>
             <!-- Follower 2 -->
-            <rect x="320" y="120" width="120" height="50" rx="8" fill="#7c4dff" stroke="#5b21b6" stroke-width="2"/>
+            <rect x="320" y="120" width="120" height="50" rx="8" fill="#2f6fed" stroke="#5b21b6" stroke-width="2"/>
             <text x="380" y="142" text-anchor="middle" font-family="system-ui" font-size="13" font-weight="700" fill="white">🔗 Follower</text>
             <text x="380" y="158" text-anchor="middle" font-family="system-ui" font-size="10" fill="#ede9fe">node-3</text>
             <!-- Arrows: writes from followers up to leader -->
-            <line x1="100" y1="120" x2="200" y2="70" stroke="#7c4dff" stroke-width="2" marker-end="url(#arr)"/>
-            <line x1="380" y1="120" x2="280" y2="70" stroke="#7c4dff" stroke-width="2" marker-end="url(#arr)"/>
+            <line x1="100" y1="120" x2="200" y2="70" stroke="#2f6fed" stroke-width="2" marker-end="url(#arr)"/>
+            <line x1="380" y1="120" x2="280" y2="70" stroke="#2f6fed" stroke-width="2" marker-end="url(#arr)"/>
             <!-- Replication arrows from leader down -->
             <line x1="200" y1="70" x2="100" y2="120" stroke="#10b981" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#arr)"/>
             <line x1="280" y1="70" x2="380" y2="120" stroke="#10b981" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#arr)"/>
